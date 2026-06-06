@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef } from "react";
 import { useAuth } from "../lib/auth";
 import { useTheme, type ThemeMode } from "../theme/theme";
 import { SidebarTree } from "./sidebar/SidebarTree";
+import { OutlinePanel } from "./book/OutlinePanel";
+import { ChevronLeftIcon } from "./book/icons";
+import type { Book } from "../data/books";
 import { Avatar } from "./ui/Avatar";
 import {
   DropdownMenu,
@@ -91,13 +94,14 @@ const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
   { value: "system", label: "System" },
 ];
 
-export function Sidebar() {
+export function Sidebar({ activeBook }: { activeBook: Book | null }) {
   const { session, signOut } = useAuth();
   const { mode, setMode } = useTheme();
   const collapsed = useUIStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
   const width = useUIStore((s) => s.sidebarWidth);
   const setSidebarWidth = useUIStore((s) => s.setSidebarWidth);
+  const setActiveBook = useUIStore((s) => s.setActiveBook);
 
   const dragging = useRef(false);
 
@@ -142,19 +146,34 @@ export function Sidebar() {
       className="relative flex h-full shrink-0 flex-col border-r border-border bg-sidebar"
       style={{ width: collapsed ? COLLAPSED_WIDTH : width }}
     >
+      {/* Clears the macOS overlay traffic lights and lets the user drag the
+          window from the sidebar's title-bar zone. */}
+      <div data-tauri-drag-region className="h-8 shrink-0" />
+
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2">
-        {!collapsed && (
-          <span className="select-none text-sm font-semibold tracking-tight text-text">
-            Scribe
-          </span>
-        )}
+      <div className="flex items-center justify-between gap-2 border-b border-border px-3 pb-2 pt-0.5">
+        {!collapsed &&
+          (activeBook ? (
+            <button
+              type="button"
+              onClick={() => setActiveBook(null)}
+              title="Back to library"
+              className="group -ml-1 flex min-w-0 items-center gap-0.5 rounded-md px-1 py-0.5 text-sm text-muted outline-none transition hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ChevronLeftIcon size={16} className="shrink-0" />
+              <span className="truncate">Library</span>
+            </button>
+          ) : (
+            <span className="select-none text-sm font-semibold tracking-tight text-text">
+              Scribe
+            </span>
+          ))}
         <button
           type="button"
           onClick={toggleSidebar}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className={`flex h-7 w-7 items-center justify-center rounded-md text-muted transition hover:bg-hover hover:text-text ${
+          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted transition hover:bg-hover hover:text-text ${
             collapsed ? "mx-auto" : ""
           }`}
         >
@@ -162,11 +181,16 @@ export function Sidebar() {
         </button>
       </div>
 
-      {/* Nav */}
+      {/* Nav: the Library tree, or the active book's Outline drilled in. */}
       {collapsed ? (
         <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-1" />
       ) : (
-        <SidebarTree />
+        <div
+          key={activeBook ? `book-${activeBook.id}` : "library"}
+          className="scribe-fade-in flex min-h-0 flex-1 flex-col"
+        >
+          {activeBook ? <OutlinePanel book={activeBook} /> : <SidebarTree />}
+        </div>
       )}
 
       {/* Footer */}

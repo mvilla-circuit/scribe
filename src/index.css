@@ -92,6 +92,25 @@ body {
   .scribe-icon-pop { animation: none; }
 }
 
+/* Calm cross-fade when switching between the Title Page and a document. */
+@keyframes scribe-surface-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.scribe-surface-in {
+  animation: scribe-surface-in 150ms ease-out;
+}
+
+/* Gentle fade as the sidebar drills between the Library and a book Outline. */
+.scribe-fade-in {
+  animation: scribe-fade-in 140ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scribe-surface-in,
+  .scribe-fade-in { animation: none; }
+}
+
 .scribe-pop {
   transform-origin: var(--radix-dropdown-menu-content-transform-origin,
     var(--radix-context-menu-content-transform-origin, center));

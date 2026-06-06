@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Scribe",
+        "title": "",
         "width": 1100,
         "height": 760,
         "minWidth": 720,

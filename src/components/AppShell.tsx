@@ -1,5 +1,5 @@
 import { TooltipProvider } from "./ui/Tooltip";
-import { BookPlaceholder } from "./BookPlaceholder";
+import { BookView } from "./book/BookView";
 import { MainEmptyState } from "./MainEmptyState";
 import { Sidebar } from "./Sidebar";
 import { useBooks } from "../data/books";
@@ -12,19 +12,20 @@ export function AppShell() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex h-full flex-col bg-bg">
-        {/* Drag strip clears the macOS overlay traffic lights and lets the user move the window. */}
-        <div data-tauri-drag-region className="h-8 shrink-0" />
-        <div className="flex min-h-0 flex-1">
-          <Sidebar />
-          <section className="min-w-0 flex-1 overflow-y-auto bg-bg">
+      <div className="flex h-full bg-bg">
+        <Sidebar activeBook={activeBook} />
+        <section className="flex min-w-0 flex-1 flex-col overflow-hidden bg-bg">
+          {/* Drag strip aligns with the sidebar's title-bar zone and keeps the
+              window draggable from the content side. */}
+          <div data-tauri-drag-region className="h-8 shrink-0" />
+          <div className="min-h-0 flex-1 overflow-hidden">
             {activeBook ? (
-              <BookPlaceholder title={activeBook.title} />
+              <BookView key={activeBook.id} book={activeBook} />
             ) : (
               <MainEmptyState />
             )}
-          </section>
-        </div>
+          </div>
+        </section>
       </div>
     </TooltipProvider>
   );

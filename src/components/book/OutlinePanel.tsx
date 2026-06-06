@@ -1,0 +1,305 @@
+import { useMemo, useState } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  MeasuringStrategy,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragMoveEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { useUIStore } from "../../store/ui";
+import type { Book } from "../../data/books";
+import {
+  collectDocumentSubtree,
+  useCreateDocument,
+  useDeleteDocument,
+  useDocuments,
+  useMoveDocument,
+  useRenameDocument,
+} from "../../data/documents";
+import { buildDocTree, descendantCount } from "../../data/docTree";
+import { getPositionBetween } from "../../data/ordering";
+import {
+  docNeighbourPositions,
+  flattenDocTree,
+  getDocProjection,
+  removeDocDescendants,
+  type FlatDocNode,
+} from "./outlineDnd";
+import { OutlineDragOverlay, OutlineRow } from "./OutlineRow";
+import { PageIcon, PlusIcon } from "./icons";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
+import { cn } from "../../lib/utils";
+
+type DeleteTarget = { id: string; title: string; descendants: number };
+
+// The in-book navigation that replaces the Library tree inside the main sidebar
+// while a book is open: a pinned Title Page, the nested document hierarchy with
+// CRUD + drag reorder/nest, and a cascade-aware delete confirm.
+export function OutlinePanel({ book }: { book: Book }) {
+  const documentsQuery = useDocuments(book.id);
+  const documents = useMemo(
+    () => documentsQuery.data ?? [],
+    [documentsQuery.data]
+  );
+  const titlePage = documents.find((d) => d.is_title_page) ?? null;
+
+  const expandedArr = useUIStore((s) => s.expandedDocIds);
+  const toggleDocExpanded = useUIStore((s) => s.toggleDocExpanded);
+  const setDocExpanded = useUIStore((s) => s.setDocExpanded);
+  const activeDocId = useUIStore((s) => s.activeDocId);
+  const setActiveDoc = useUIStore((s) => s.setActiveDoc);
+
+  const createDocument = useCreateDocument(book.id);
+  const renameDocument = useRenameDocument(book.id);
+  const moveDocument = useMoveDocument(book.id);
+  const deleteDocument = useDeleteDocument(book.id);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+  const [offsetX, setOffsetX] = useState(0);
+
+  const expanded = useMemo(() => new Set(expandedArr), [expandedArr]);
+  const tree = useMemo(() => buildDocTree(documents), [documents]);
+  const flattened = useMemo(
+    () => flattenDocTree(tree, expanded),
+    [tree, expanded]
+  );
+
+  const visibleNodes = useMemo(() => {
+    if (!activeId) return flattened;
+    return removeDocDescendants(flattened, [activeId]);
+  }, [flattened, activeId]);
+
+  const projection = useMemo(() => {
+    if (!activeId || !overId) return null;
+    return getDocProjection(visibleNodes, activeId, overId, offsetX);
+  }, [visibleNodes, activeId, overId, offsetX]);
+
+  const activeNode = useMemo(
+    () => flattened.find((n) => n.id === activeId) ?? null,
+    [flattened, activeId]
+  );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const endPosition = (parentId: string | null) => {
+    const siblings = documents
+      .filter((d) => !d.is_title_page && d.parent_document_id === parentId)
+      .sort((a, b) => a.position - b.position);
+    const last = siblings[siblings.length - 1];
+    return getPositionBetween(last?.position, undefined);
+  };
+
+  const handleCreate = (parentId: string | null) => {
+    const id = crypto.randomUUID();
+    if (parentId) setDocExpanded(parentId, true);
+    createDocument.mutate({
+      id,
+      title: "Untitled",
+      parent_document_id: parentId,
+      position: endPosition(parentId),
+    });
+    setActiveDoc(id);
+    setEditingId(id);
+  };
+
+  const commitRename = (node: FlatDocNode, value: string) => {
+    setEditingId(null);
+    renameDocument.mutate({ id: node.id, title: value });
+  };
+
+  const requestDelete = (node: FlatDocNode) => {
+    setDeleteTarget({
+      id: node.id,
+      title: node.document.title || "Untitled",
+      descendants: descendantCount(documents, node.id),
+    });
+  };
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    const subtree = collectDocumentSubtree(documents, deleteTarget.id);
+    if (activeDocId && subtree.has(activeDocId)) setActiveDoc(null);
+    deleteDocument.mutate({ id: deleteTarget.id });
+  };
+
+  const onDragStart = (event: DragStartEvent) => {
+    setActiveId(String(event.active.id));
+    setOverId(String(event.active.id));
+    setOffsetX(0);
+    setEditingId(null);
+  };
+
+  const onDragMove = (event: DragMoveEvent) => {
+    setOffsetX(event.delta.x);
+    if (event.over) setOverId(String(event.over.id));
+  };
+
+  const onDragEnd = (event: DragEndEvent) => {
+    const over = event.over ? String(event.over.id) : null;
+    const active = String(event.active.id);
+    const proj = over
+      ? getDocProjection(visibleNodes, active, over, offsetX)
+      : null;
+
+    resetDnd();
+    if (!proj || !over) return;
+    if (proj.parentId === active) return;
+
+    const { prev, next } = docNeighbourPositions(
+      visibleNodes,
+      active,
+      over,
+      proj.parentId
+    );
+    const position = getPositionBetween(prev, next);
+    moveDocument.mutate({
+      id: active,
+      parent_document_id: proj.parentId,
+      position,
+    });
+    if (proj.parentId) setDocExpanded(proj.parentId, true);
+  };
+
+  const resetDnd = () => {
+    setActiveId(null);
+    setOverId(null);
+    setOffsetX(0);
+  };
+
+  const titlePageSelected =
+    activeDocId === null || activeDocId === titlePage?.id;
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* Pinned Title Page + section toolbar stay fixed above the scroll. */}
+      <div className="px-2 pt-1">
+        <button
+          type="button"
+          onClick={() => setActiveDoc(titlePage?.id ?? null)}
+          aria-current={titlePageSelected ? "page" : undefined}
+          className={cn(
+            "flex h-8 w-full items-center gap-1.5 rounded-md pl-1.5 pr-1 text-left text-sm outline-none",
+            "transition-colors focus-visible:ring-2 focus-visible:ring-ring",
+            titlePageSelected
+              ? "bg-selected font-medium text-text"
+              : "text-text hover:bg-hover"
+          )}
+        >
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center text-muted/70">
+            <PageIcon size={15} />
+          </span>
+          <span className="min-w-0 flex-1 truncate">Title Page</span>
+        </button>
+
+        <div className="mt-2 flex items-center justify-between px-1.5">
+          <span className="select-none text-xs font-medium uppercase tracking-wide text-muted">
+            Pages
+          </span>
+          <button
+            type="button"
+            onClick={() => handleCreate(null)}
+            aria-label="New page"
+            title="New page"
+            className="flex h-6 w-6 items-center justify-center rounded-md text-muted transition-colors hover:bg-hover hover:text-text"
+          >
+            <PlusIcon size={16} />
+          </button>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2 pt-1">
+        {flattened.length === 0 ? (
+          <button
+            type="button"
+            onClick={() => handleCreate(null)}
+            className="flex w-full items-center gap-1.5 rounded-md px-1.5 py-1.5 text-left text-sm text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <PlusIcon size={15} className="opacity-70" />
+            Add your first page
+          </button>
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+            onDragStart={onDragStart}
+            onDragMove={onDragMove}
+            onDragEnd={onDragEnd}
+            onDragCancel={resetDnd}
+          >
+            <SortableContext
+              items={visibleNodes.map((n) => n.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div
+                role="tree"
+                aria-label="Document outline"
+                className="flex flex-col gap-0.5"
+              >
+                {visibleNodes.map((node) => (
+                  <OutlineRow
+                    key={node.id}
+                    node={node}
+                    selected={node.id === activeDocId}
+                    editing={editingId === node.id}
+                    expanded={expanded.has(node.id)}
+                    projectionDepth={
+                      node.id === activeId ? projection?.depth ?? null : null
+                    }
+                    onToggleExpand={() => toggleDocExpanded(node.id)}
+                    onSelect={() => setActiveDoc(node.id)}
+                    onStartRename={() => setEditingId(node.id)}
+                    onCommitRename={(value) => commitRename(node, value)}
+                    onCancelRename={() => setEditingId(null)}
+                    onDelete={() => requestDelete(node)}
+                    onNewChild={() => handleCreate(node.id)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+            <DragOverlay dropAnimation={null}>
+              {activeNode ? <OutlineDragOverlay node={activeNode} /> : null}
+            </DragOverlay>
+          </DndContext>
+        )}
+      </div>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        title={deleteTarget ? `Delete "${deleteTarget.title}"?` : ""}
+        description={describeDelete(deleteTarget?.descendants ?? 0)}
+        confirmLabel="Delete"
+        danger
+        onConfirm={confirmDelete}
+      />
+    </div>
+  );
+}
+
+function describeDelete(descendants: number): string {
+  if (descendants === 0) return "This permanently deletes the page.";
+  return `This permanently deletes the page and its ${descendants} nested page${
+    descendants === 1 ? "" : "s"
+  }.`;
+}

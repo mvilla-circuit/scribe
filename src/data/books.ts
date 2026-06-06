@@ -115,6 +115,32 @@ export function useRenameBook() {
   });
 }
 
+// Generic patch for a book's editable fields (subtitle today; icon/cover land
+// in later phases). Kept separate from rename so callers stay explicit.
+export function useUpdateBook() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (
+      input: { id: string } & Partial<
+        Pick<Book, "title" | "subtitle" | "icon" | "cover_url">
+      >
+    ) => {
+      const { id, ...patch } = input;
+      const { error } = await supabase.from("books").update(patch).eq("id", id);
+      if (error) throw error;
+    },
+    onMutate: (input) =>
+      optimistic(qc, (prev) =>
+        prev.map((b) => (b.id === input.id ? { ...b, ...input } : b))
+      ),
+    onError: (_e, _v, ctx) => {
+      rollback(qc, ctx?.previous);
+      toast.error("Couldn't update book");
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: booksKey }),
+  });
+}
+
 export function useMoveBook() {
   const qc = useQueryClient();
   return useMutation({
