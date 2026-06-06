@@ -6,7 +6,7 @@ A minimalist, zen desktop writing app. Scribe is a [Tauri](https://tauri.app) (R
 
 - **Shell**: Tauri 2 (macOS overlay titlebar)
 - **Frontend**: React 19, TypeScript, Vite
-- **Styling**: Tailwind CSS 4 with CSS-variable design tokens (light/dark/system theming)
+- **Styling**: Tailwind CSS 4 with CSS-variable design tokens (light/dark/system theming, chosen from the sidebar settings menu)
 - **State**: Zustand (UI/layout state, persisted to `localStorage`)
 - **Backend/Auth**: Supabase (Postgres + Google OAuth via PKCE)
 
@@ -86,8 +86,10 @@ This works identically in development and production.
 ```
 src/
   components/      App shell: AppShell, Sidebar, MainEmptyState, AuthScreen
-  theme/           ThemeProvider + ThemeToggle (light/dark/system)
+    ui/            Reusable primitives (Avatar, DropdownMenu, Dialog, Tooltip, …)
+  theme/           ThemeProvider (light/dark/system)
   store/           Zustand UI state (sidebar, selection)
+  data/            React Query hooks for books/folders
   lib/             Supabase client, auth provider, generated DB types
   index.css        Design tokens (CSS variables) + Tailwind setup
 src-tauri/         Tauri (Rust) shell, config, and capabilities

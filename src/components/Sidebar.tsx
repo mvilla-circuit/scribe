@@ -1,7 +1,16 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useAuth } from "../lib/auth";
-import { ThemeToggle } from "../theme/ThemeToggle";
+import { useTheme, type ThemeMode } from "../theme/theme";
 import { SidebarTree } from "./sidebar/SidebarTree";
+import { Avatar } from "./ui/Avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/DropdownMenu";
 import {
   SIDEBAR_MAX_WIDTH,
   SIDEBAR_MIN_WIDTH,
@@ -47,13 +56,44 @@ function SignOutIcon() {
   );
 }
 
-function initials(email: string | undefined): string {
-  if (!email) return "?";
-  return email[0]?.toUpperCase() ?? "?";
+function SettingsIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }
+
+function CheckIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M5 12l5 5L19 7"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+  { value: "system", label: "System" },
+];
 
 export function Sidebar() {
   const { session, signOut } = useAuth();
+  const { mode, setMode } = useTheme();
   const collapsed = useUIStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
   const width = useUIStore((s) => s.sidebarWidth);
@@ -86,7 +126,16 @@ export function Sidebar() {
     };
   }, [setSidebarWidth]);
 
+  const meta = session?.user.user_metadata ?? {};
   const email = session?.user.email ?? session?.user.id;
+  const name =
+    (meta.full_name as string | undefined) ??
+    (meta.name as string | undefined) ??
+    email;
+  const avatarUrl =
+    (meta.avatar_url as string | undefined) ??
+    (meta.picture as string | undefined) ??
+    null;
 
   return (
     <aside
@@ -121,46 +170,62 @@ export function Sidebar() {
       )}
 
       {/* Footer */}
-      <div className="border-t border-border px-3 py-3">
-        {collapsed ? (
-          <div className="flex flex-col items-center gap-3">
-            <div
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-xs font-semibold text-white"
-              title={email}
-            >
-              {initials(email)}
+      <div className="border-t border-border px-2 py-2">
+        <div
+          className={`flex items-center gap-2 ${
+            collapsed ? "flex-col" : ""
+          }`}
+        >
+          <Avatar
+            src={avatarUrl}
+            name={name}
+            size={28}
+            title={collapsed ? name : undefined}
+          />
+          {!collapsed && (
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-medium text-text">{name}</p>
+              {email && email !== name && (
+                <p className="truncate text-xs text-muted">{email}</p>
+              )}
             </div>
-            <button
-              type="button"
-              onClick={() => void signOut()}
-              aria-label="Sign out"
-              title="Sign out"
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted transition hover:bg-hover hover:text-text"
-            >
-              <SignOutIcon />
-            </button>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-white">
-                {initials(email)}
-              </div>
-              <span className="truncate text-xs text-muted" title={email}>
-                {email}
-              </span>
-            </div>
-            <ThemeToggle />
-            <button
-              type="button"
-              onClick={() => void signOut()}
-              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium text-muted transition hover:bg-hover hover:text-text"
-            >
-              <SignOutIcon />
-              Sign out
-            </button>
-          </div>
-        )}
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="Settings"
+                title="Settings"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted transition hover:bg-hover hover:text-text data-[state=open]:bg-hover data-[state=open]:text-text"
+              >
+                <SettingsIcon />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="top" align="end" className="min-w-[12rem]">
+              <DropdownMenuLabel>Theme</DropdownMenuLabel>
+              {THEME_OPTIONS.map((opt) => (
+                <DropdownMenuItem
+                  key={opt.value}
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    setMode(opt.value);
+                  }}
+                  className="justify-between"
+                >
+                  {opt.label}
+                  <span className={mode === opt.value ? "text-accent" : "opacity-0"}>
+                    <CheckIcon />
+                  </span>
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => void signOut()}>
+                <SignOutIcon />
+                Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Resize handle */}

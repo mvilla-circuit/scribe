@@ -8,20 +8,6 @@ const base = (size: number) => ({
   "aria-hidden": true as const,
 });
 
-export function ChevronIcon({ className, size = 14 }: IconProps) {
-  return (
-    <svg {...base(size)} className={className}>
-      <path
-        d="M9 6l6 6-6 6"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 export function FolderIcon({ className, size = 16 }: IconProps) {
   return (
     <svg {...base(size)} className={className}>

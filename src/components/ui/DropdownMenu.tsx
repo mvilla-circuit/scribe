@@ -12,7 +12,6 @@ import {
 
 export const DropdownMenu = RDropdown.Root;
 export const DropdownMenuTrigger = RDropdown.Trigger;
-export const DropdownMenuGroup = RDropdown.Group;
 
 export const DropdownMenuContent = forwardRef<
   React.ElementRef<typeof RDropdown.Content>,

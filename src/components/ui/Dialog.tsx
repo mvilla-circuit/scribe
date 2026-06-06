@@ -4,7 +4,6 @@ import { forwardRef } from "react";
 import { cn } from "../../lib/utils";
 
 export const Dialog = RDialog.Root;
-export const DialogTrigger = RDialog.Trigger;
 export const DialogClose = RDialog.Close;
 
 export const DialogContent = forwardRef<

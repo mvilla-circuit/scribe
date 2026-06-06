@@ -6,13 +6,11 @@ import {
   menuContentClass,
   menuItemClass,
   menuItemDangerClass,
-  menuLabelClass,
   menuSeparatorClass,
 } from "./menuStyles";
 
 export const ContextMenu = RContext.Root;
 export const ContextMenuTrigger = RContext.Trigger;
-export const ContextMenuGroup = RContext.Group;
 
 export const ContextMenuContent = forwardRef<
   React.ElementRef<typeof RContext.Content>,
@@ -39,14 +37,6 @@ export const ContextMenuItem = forwardRef<
   />
 ));
 ContextMenuItem.displayName = "ContextMenuItem";
-
-export const ContextMenuLabel = forwardRef<
-  React.ElementRef<typeof RContext.Label>,
-  React.ComponentPropsWithoutRef<typeof RContext.Label>
->(({ className, ...props }, ref) => (
-  <RContext.Label ref={ref} className={cn(menuLabelClass, className)} {...props} />
-));
-ContextMenuLabel.displayName = "ContextMenuLabel";
 
 export const ContextMenuSeparator = forwardRef<
   React.ElementRef<typeof RContext.Separator>,
