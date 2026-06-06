@@ -10,11 +10,14 @@ type UIState = {
   sidebarWidth: number;
   activeBookId: string | null;
   activeDocId: string | null;
+  expandedFolderIds: string[];
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   setSidebarWidth: (width: number) => void;
   setActiveBook: (id: string | null) => void;
   setActiveDoc: (id: string | null) => void;
+  toggleFolderExpanded: (id: string) => void;
+  setFolderExpanded: (id: string, expanded: boolean) => void;
 };
 
 const clampWidth = (width: number) =>
@@ -27,6 +30,7 @@ export const useUIStore = create<UIState>()(
       sidebarWidth: SIDEBAR_DEFAULT_WIDTH,
       activeBookId: null,
       activeDocId: null,
+      expandedFolderIds: [],
       toggleSidebar: () =>
         set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       setSidebarCollapsed: (collapsed) =>
@@ -34,13 +38,28 @@ export const useUIStore = create<UIState>()(
       setSidebarWidth: (width) => set({ sidebarWidth: clampWidth(width) }),
       setActiveBook: (id) => set({ activeBookId: id }),
       setActiveDoc: (id) => set({ activeDocId: id }),
+      toggleFolderExpanded: (id) =>
+        set((s) => ({
+          expandedFolderIds: s.expandedFolderIds.includes(id)
+            ? s.expandedFolderIds.filter((x) => x !== id)
+            : [...s.expandedFolderIds, id],
+        })),
+      setFolderExpanded: (id, expanded) =>
+        set((s) => ({
+          expandedFolderIds: expanded
+            ? s.expandedFolderIds.includes(id)
+              ? s.expandedFolderIds
+              : [...s.expandedFolderIds, id]
+            : s.expandedFolderIds.filter((x) => x !== id),
+        })),
     }),
     {
       name: "scribe-ui",
-      // Only persist layout prefs; selection is per-session.
+      // Persist layout prefs + which folders are open; selection is per-session.
       partialize: (s) => ({
         sidebarCollapsed: s.sidebarCollapsed,
         sidebarWidth: s.sidebarWidth,
+        expandedFolderIds: s.expandedFolderIds,
       }),
     }
   )

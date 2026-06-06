@@ -4,36 +4,60 @@
 
 @theme inline {
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  /* Editorial serif for the reading surface (Phase 3b). */
+  --font-serif: "New York", "Iowan Old Style", Georgia, serif;
   --color-bg: var(--bg);
   --color-surface: var(--surface);
+  --color-elevated: var(--elevated);
   --color-text: var(--text);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
+  --color-selected: var(--selected);
   --color-border: var(--border);
   --color-sidebar: var(--sidebar);
+  --color-tree-group: var(--tree-group);
   --color-hover: var(--hover);
+  --color-ring: var(--ring);
+  --shadow-popover: var(--shadow-popover);
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
 }
 
 :root {
   --bg: #faf9f7;        /* warm paper */
   --surface: #ffffff;
+  --elevated: #ffffff;  /* popover/dialog surface */
   --text: #1c1b1a;
   --muted: #6b6a67;
   --accent: #3b6ea5;
+  --selected: rgba(59, 110, 165, 0.1);
   --border: rgba(0, 0, 0, 0.08);
   --sidebar: #f3f1ee;
+  --tree-group: #eae7e1;  /* gentle card behind an open folder */
   --hover: rgba(0, 0, 0, 0.04);
+  --ring: rgba(59, 110, 165, 0.55);
+  --shadow-popover:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .dark {
   --bg: #16171a;
   --surface: #1e2024;
+  --elevated: #25282d;  /* popover/dialog surface, above surface */
   --text: #e8e6e3;
   --muted: #9a9893;
   --accent: #6f9fd8;
+  --selected: rgba(111, 159, 216, 0.16);
   --border: rgba(255, 255, 255, 0.09);
   --sidebar: #1a1c1f;
+  --tree-group: #25282d;  /* clearly lifted above the dark sidebar */
   --hover: rgba(255, 255, 255, 0.06);
+  --ring: rgba(111, 159, 216, 0.6);
+  --shadow-popover:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 html, body, #root { height: 100%; }
@@ -42,4 +66,50 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
+}
+
+/* --- Premium chrome motion: fast, subtle, no bounce --- */
+@keyframes scribe-pop-in {
+  from { opacity: 0; transform: scale(0.97) translateY(-2px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes scribe-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes scribe-dialog-in {
+  from { opacity: 0; transform: scale(0.97) translateY(4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes scribe-icon-pop {
+  from { transform: scale(0.82); opacity: 0.6; }
+  to { transform: scale(1); opacity: 1; }
+}
+.scribe-icon-pop {
+  animation: scribe-icon-pop 150ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scribe-icon-pop { animation: none; }
+}
+
+.scribe-pop {
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin,
+    var(--radix-context-menu-content-transform-origin, center));
+}
+.scribe-pop[data-state="open"] {
+  animation: scribe-pop-in 140ms ease-out;
+}
+.scribe-overlay[data-state="open"] {
+  animation: scribe-fade-in 140ms ease-out;
+}
+.scribe-dialog[data-state="open"] {
+  animation: scribe-dialog-in 160ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scribe-pop[data-state="open"],
+  .scribe-overlay[data-state="open"],
+  .scribe-dialog[data-state="open"] {
+    animation: none;
+  }
 }

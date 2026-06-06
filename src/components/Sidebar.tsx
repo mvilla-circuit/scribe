@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useAuth } from "../lib/auth";
 import { ThemeToggle } from "../theme/ThemeToggle";
+import { SidebarTree } from "./sidebar/SidebarTree";
 import {
   SIDEBAR_MAX_WIDTH,
   SIDEBAR_MIN_WIDTH,
@@ -113,13 +114,11 @@ export function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-1">
-        {!collapsed && (
-          <p className="px-2 py-6 text-center text-xs leading-relaxed text-muted">
-            No books yet — create one in the next phase.
-          </p>
-        )}
-      </nav>
+      {collapsed ? (
+        <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-1" />
+      ) : (
+        <SidebarTree />
+      )}
 
       {/* Footer */}
       <div className="border-t border-border px-3 py-3">
