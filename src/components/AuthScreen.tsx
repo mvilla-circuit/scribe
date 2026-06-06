@@ -44,7 +44,7 @@ export function AuthScreen() {
 
   return (
     <main className="flex h-full items-center justify-center px-6">
-      <div className="w-full max-w-sm rounded-2xl border border-black/5 bg-surface p-8 shadow-sm">
+      <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-8 shadow-sm">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-semibold tracking-tight text-text">Scribe</h1>
           <p className="mt-2 text-sm text-muted">Sign in to start writing.</p>
@@ -54,7 +54,7 @@ export function AuthScreen() {
           type="button"
           onClick={() => void handleSignIn()}
           disabled={busy}
-          className="flex w-full items-center justify-center gap-3 rounded-lg border border-black/10 bg-bg px-4 py-2.5 text-sm font-medium text-text transition hover:bg-black/[0.03] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-bg px-4 py-2.5 text-sm font-medium text-text transition hover:bg-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
           <GoogleIcon />
           {busy ? "Opening browser…" : "Continue with Google"}

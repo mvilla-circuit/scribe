@@ -9,6 +9,9 @@
   --color-text: var(--text);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
+  --color-border: var(--border);
+  --color-sidebar: var(--sidebar);
+  --color-hover: var(--hover);
 }
 
 :root {
@@ -17,6 +20,9 @@
   --text: #1c1b1a;
   --muted: #6b6a67;
   --accent: #3b6ea5;
+  --border: rgba(0, 0, 0, 0.08);
+  --sidebar: #f3f1ee;
+  --hover: rgba(0, 0, 0, 0.04);
 }
 
 .dark {
@@ -25,6 +31,9 @@
   --text: #e8e6e3;
   --muted: #9a9893;
   --accent: #6f9fd8;
+  --border: rgba(255, 255, 255, 0.09);
+  --sidebar: #1a1c1f;
+  --hover: rgba(255, 255, 255, 0.06);
 }
 
 html, body, #root { height: 100%; }
