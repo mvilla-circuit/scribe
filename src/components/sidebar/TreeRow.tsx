@@ -25,7 +25,8 @@ import {
   PencilIcon,
   TrashIcon,
 } from "./icons";
-import { INDENT, type FlatNode } from "./dndTree";
+import { type FlatNode } from "./dndTree";
+import { SIDEBAR_ICON_SIZE, SidebarRow, SidebarRowOverlay } from "./SidebarRow";
 
 export type TreeRowHandlers = {
   onToggleExpand: () => void;
@@ -45,10 +46,6 @@ type TreeRowProps = TreeRowHandlers & {
   /** Projected depth while this row is being dragged; null otherwise. */
   projectionDepth: number | null;
 };
-
-function rowPadding(depth: number) {
-  return 8 + depth * INDENT;
-}
 
 export function TreeRow({
   node,
@@ -76,38 +73,89 @@ export function TreeRow({
   const isFolder = child.kind === "folder";
   const label = child.kind === "folder" ? child.folder.name : child.book.title;
 
-  // While dragging, this row collapses into an insertion line at the projected
-  // depth so the drop target reads clearly.
-  if (isDragging) {
-    const depth = projectionDepth ?? node.depth;
-    return (
-      <div ref={setNodeRef} style={style} role="treeitem">
-        <div style={{ paddingLeft: rowPadding(depth) }}>
-          <div className="h-9 rounded-md border border-dashed border-accent/50 bg-accent/5" />
-        </div>
-      </div>
-    );
-  }
+  const icon = (
+    <span
+      key={isFolder ? (expanded ? "open" : "closed") : "book"}
+      className={cn(
+        "flex h-5 w-5 shrink-0 items-center justify-center",
+        isFolder && expanded ? "text-accent" : "text-muted",
+        isFolder && "scribe-icon-pop"
+      )}
+    >
+      {isFolder ? (
+        expanded ? (
+          <FolderOpenIcon size={SIDEBAR_ICON_SIZE} />
+        ) : (
+          <FolderIcon size={SIDEBAR_ICON_SIZE} />
+        )
+      ) : (
+        <BookIcon size={SIDEBAR_ICON_SIZE} />
+      )}
+    </span>
+  );
 
-  const renameField = (
+  const labelNode = editing ? (
     <InlineRename
       initialValue={label}
       onCommit={onCommitRename}
       onCancel={onCancelRename}
       placeholder={isFolder ? "Folder name" : "Untitled"}
     />
+  ) : (
+    label
+  );
+
+  const actions = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label="More actions"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="flex h-6 w-6 items-center justify-center rounded text-muted hover:bg-hover hover:text-text"
+        >
+          <MoreIcon size={15} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {isFolder && (
+          <>
+            <DropdownMenuItem onSelect={() => onNewBookInside()}>
+              <BookPlusIcon size={15} />
+              New book
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        <DropdownMenuItem onSelect={() => onStartRename()}>
+          <PencilIcon size={15} />
+          Rename
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem danger onSelect={() => onDelete()}>
+          <TrashIcon size={15} />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 
   const rowInner = (
-    <div
-      ref={setNodeRef}
-      style={{ ...style, paddingLeft: rowPadding(node.depth) }}
-      {...attributes}
-      {...listeners}
-      role="treeitem"
-      aria-expanded={isFolder ? expanded : undefined}
-      aria-selected={!isFolder ? selected : undefined}
-      tabIndex={0}
+    <SidebarRow
+      setNodeRef={setNodeRef}
+      style={style}
+      dragHandleProps={{ ...attributes, ...listeners }}
+      isDragging={isDragging}
+      depth={node.depth}
+      projectionDepth={projectionDepth}
+      selected={selected}
+      editing={editing}
+      ariaExpanded={isFolder ? expanded : undefined}
+      ariaSelected={!isFolder ? selected : undefined}
+      icon={icon}
+      actions={actions}
       onClick={() => {
         if (editing) return;
         if (isFolder) onToggleExpand();
@@ -128,78 +176,9 @@ export function TreeRow({
           onStartRename();
         }
       }}
-      className={cn(
-        "group flex h-9 cursor-default items-center gap-2 rounded-md pr-1 text-sm outline-none",
-        "transition-colors focus-visible:ring-2 focus-visible:ring-ring",
-        selected
-          ? "bg-selected font-medium text-text"
-          : "text-text hover:bg-hover"
-      )}
     >
-      <span
-        key={isFolder ? (expanded ? "open" : "closed") : "book"}
-        className={cn(
-          "flex h-5 w-5 shrink-0 items-center justify-center",
-          isFolder && expanded ? "text-accent" : "text-muted",
-          isFolder && "scribe-icon-pop"
-        )}
-      >
-        {isFolder ? (
-          expanded ? (
-            <FolderOpenIcon size={19} />
-          ) : (
-            <FolderIcon size={19} />
-          )
-        ) : (
-          <BookIcon size={19} />
-        )}
-      </span>
-
-      {editing ? (
-        <span className="min-w-0 flex-1 py-0.5">{renameField}</span>
-      ) : (
-        <span className="min-w-0 flex-1 truncate">{label}</span>
-      )}
-
-      {!editing && (
-        <span className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                tabIndex={-1}
-                aria-label="More actions"
-                onClick={(e) => e.stopPropagation()}
-                onPointerDown={(e) => e.stopPropagation()}
-                className="flex h-6 w-6 items-center justify-center rounded text-muted hover:bg-hover hover:text-text"
-              >
-                <MoreIcon size={15} />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {isFolder && (
-                <>
-                  <DropdownMenuItem onSelect={() => onNewBookInside()}>
-                    <BookPlusIcon size={15} />
-                    New book
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
-              <DropdownMenuItem onSelect={() => onStartRename()}>
-                <PencilIcon size={15} />
-                Rename
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem danger onSelect={() => onDelete()}>
-                <TrashIcon size={15} />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </span>
-      )}
-    </div>
+      {labelNode}
+    </SidebarRow>
   );
 
   return (
@@ -236,11 +215,15 @@ export function DragRowOverlay({ node }: { node: FlatNode }) {
   const isFolder = child.kind === "folder";
   const label = child.kind === "folder" ? child.folder.name : child.book.title;
   return (
-    <div className="flex h-9 items-center gap-2 rounded-md border border-border bg-elevated px-2 pr-3 text-sm text-text shadow-popover">
-      <span className="flex h-5 w-5 items-center justify-center text-muted">
-        {isFolder ? <FolderIcon size={19} /> : <BookIcon size={19} />}
-      </span>
-      <span className="max-w-[14rem] truncate">{label}</span>
-    </div>
+    <SidebarRowOverlay
+      icon={
+        isFolder ? (
+          <FolderIcon size={SIDEBAR_ICON_SIZE} />
+        ) : (
+          <BookIcon size={SIDEBAR_ICON_SIZE} />
+        )
+      }
+      label={label}
+    />
   );
 }

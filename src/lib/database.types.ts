@@ -99,6 +99,10 @@ export type Database = {
           is_title_page: boolean
           parent_document_id: string | null
           position: number
+          read_mode: boolean
+          show_outline: boolean
+          show_subtitle: boolean
+          subtitle: string | null
           title: string
           updated_at: string
           user_id: string
@@ -112,6 +116,10 @@ export type Database = {
           is_title_page?: boolean
           parent_document_id?: string | null
           position?: number
+          read_mode?: boolean
+          show_outline?: boolean
+          show_subtitle?: boolean
+          subtitle?: string | null
           title?: string
           updated_at?: string
           user_id: string
@@ -125,6 +133,10 @@ export type Database = {
           is_title_page?: boolean
           parent_document_id?: string | null
           position?: number
+          read_mode?: boolean
+          show_outline?: boolean
+          show_subtitle?: boolean
+          subtitle?: string | null
           title?: string
           updated_at?: string
           user_id?: string

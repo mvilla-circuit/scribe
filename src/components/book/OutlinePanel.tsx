@@ -37,7 +37,13 @@ import {
   type FlatDocNode,
 } from "./outlineDnd";
 import { OutlineDragOverlay, OutlineRow } from "./OutlineRow";
-import { PageIcon, PlusIcon } from "./icons";
+import { PlusIcon } from "./icons";
+import { BookIcon } from "../sidebar/icons";
+import {
+  SIDEBAR_ICON_SIZE,
+  SIDEBAR_ROW_GAP,
+  sidebarRowPadding,
+} from "../sidebar/SidebarRow";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { cn } from "../../lib/utils";
 
@@ -195,8 +201,9 @@ export function OutlinePanel({ book }: { book: Book }) {
           type="button"
           onClick={() => setActiveDoc(titlePage?.id ?? null)}
           aria-current={titlePageSelected ? "page" : undefined}
+          style={{ paddingLeft: sidebarRowPadding(0) }}
           className={cn(
-            "flex h-8 w-full items-center gap-1.5 rounded-md pl-1.5 pr-1 text-left text-sm outline-none",
+            "flex h-9 w-full items-center gap-2 rounded-md pr-1 text-left text-sm outline-none",
             "transition-colors focus-visible:ring-2 focus-visible:ring-ring",
             titlePageSelected
               ? "bg-selected font-medium text-text"
@@ -204,9 +211,11 @@ export function OutlinePanel({ book }: { book: Book }) {
           )}
         >
           <span className="flex h-5 w-5 shrink-0 items-center justify-center text-muted/70">
-            <PageIcon size={15} />
+            <BookIcon size={SIDEBAR_ICON_SIZE} />
           </span>
-          <span className="min-w-0 flex-1 truncate">Title Page</span>
+          <span className="min-w-0 flex-1 truncate">
+            {book.title || "Untitled"}
+          </span>
         </button>
 
         <div className="mt-2 flex items-center justify-between px-1.5">
@@ -230,9 +239,12 @@ export function OutlinePanel({ book }: { book: Book }) {
           <button
             type="button"
             onClick={() => handleCreate(null)}
-            className="flex w-full items-center gap-1.5 rounded-md px-1.5 py-1.5 text-left text-sm text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
+            style={{ paddingLeft: sidebarRowPadding(0) }}
+            className="flex h-9 w-full items-center gap-2 rounded-md pr-1 text-left text-sm text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <PlusIcon size={15} className="opacity-70" />
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+              <PlusIcon size={SIDEBAR_ICON_SIZE} className="opacity-70" />
+            </span>
             Add your first page
           </button>
         ) : (
@@ -252,7 +264,7 @@ export function OutlinePanel({ book }: { book: Book }) {
               <div
                 role="tree"
                 aria-label="Document outline"
-                className="flex flex-col gap-0.5"
+                className={cn("flex flex-col", SIDEBAR_ROW_GAP)}
               >
                 {visibleNodes.map((node) => (
                   <OutlineRow

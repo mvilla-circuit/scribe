@@ -15,9 +15,6 @@ export function AppShell() {
       <div className="flex h-full bg-bg">
         <Sidebar activeBook={activeBook} />
         <section className="flex min-w-0 flex-1 flex-col overflow-hidden bg-bg">
-          {/* Drag strip aligns with the sidebar's title-bar zone and keeps the
-              window draggable from the content side. */}
-          <div data-tauri-drag-region className="h-8 shrink-0" />
           <div className="min-h-0 flex-1 overflow-hidden">
             {activeBook ? (
               <BookView key={activeBook.id} book={activeBook} />

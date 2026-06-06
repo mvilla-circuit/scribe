@@ -143,7 +143,7 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
 
   return (
     <aside
-      className="relative flex h-full shrink-0 flex-col border-r border-border bg-sidebar"
+      className="relative flex h-full shrink-0 flex-col bg-sidebar"
       style={{ width: collapsed ? COLLAPSED_WIDTH : width }}
     >
       {/* Clears the macOS overlay traffic lights and lets the user drag the
@@ -151,7 +151,7 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
       <div data-tauri-drag-region className="h-8 shrink-0" />
 
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 border-b border-border px-3 pb-2 pt-0.5">
+      <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-0.5">
         {!collapsed &&
           (activeBook ? (
             <button
@@ -194,7 +194,7 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
       )}
 
       {/* Footer */}
-      <div className="border-t border-border px-2 py-2">
+      <div className="px-2 pb-2 pt-3">
         <div
           className={`flex items-center gap-2 ${
             collapsed ? "flex-col" : ""

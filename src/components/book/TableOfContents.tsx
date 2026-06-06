@@ -4,6 +4,7 @@ import type { Document } from "../../data/documents";
 import { buildDocTree, flattenForToc } from "../../data/docTree";
 import { INDENT } from "./outlineDnd";
 import { PlusIcon } from "./icons";
+import { DocumentIcon } from "../ui/DocumentIcon";
 
 type TableOfContentsProps = {
   documents: Document[];
@@ -63,8 +64,15 @@ export function TableOfContents({
               type="button"
               onClick={() => setActiveDoc(entry.document.id)}
               style={{ paddingLeft: entry.depth * INDENT }}
-              className="group flex w-full items-baseline gap-3 rounded-sm py-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="group flex w-full items-baseline gap-2 rounded-sm py-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
+              {entry.document.icon && (
+                <DocumentIcon
+                  icon={entry.document.icon}
+                  size={15}
+                  className="shrink-0"
+                />
+              )}
               <span
                 className="min-w-0 truncate text-[15px] leading-relaxed text-text decoration-accent/40 underline-offset-4 group-hover:underline"
                 style={{ fontFamily: "var(--font-serif)" }}

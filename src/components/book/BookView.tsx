@@ -23,11 +23,16 @@ export function BookView({ book }: { book: Book }) {
         className="scribe-surface-in"
       >
         {showTitlePage ? (
-          <TitlePage
-            book={book}
-            documents={documents}
-            loading={documentsQuery.isLoading}
-          />
+          <>
+            {/* The title page has no breadcrumb bar, so this invisible strip
+                keeps the window draggable from its title-bar zone. */}
+            <div data-tauri-drag-region className="sticky top-0 z-20 h-8 bg-bg" />
+            <TitlePage
+              book={book}
+              documents={documents}
+              loading={documentsQuery.isLoading}
+            />
+          </>
         ) : (
           <DocumentView book={book} document={activeDoc} documents={documents} />
         )}
