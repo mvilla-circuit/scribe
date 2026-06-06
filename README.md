@@ -1,73 +1,94 @@
-# React + TypeScript + Vite
+# Scribe
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A minimalist, zen desktop writing app. Scribe is a [Tauri](https://tauri.app) (Rust) + React + TypeScript application with a Supabase backend and Google sign-in.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Shell**: Tauri 2 (macOS overlay titlebar)
+- **Frontend**: React 19, TypeScript, Vite
+- **Styling**: Tailwind CSS 4 with CSS-variable design tokens (light/dark/system theming)
+- **State**: Zustand (UI/layout state, persisted to `localStorage`)
+- **Backend/Auth**: Supabase (Postgres + Google OAuth via PKCE)
 
-## React Compiler
+## Prerequisites
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- [Node.js](https://nodejs.org) (with `npm`)
+- [Rust](https://www.rust-lang.org/tools/install) toolchain (for Tauri)
+- A [Supabase](https://supabase.com) project with Google auth enabled
 
-## Expanding the ESLint configuration
+## Setup
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1. Install dependencies:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+   ```sh
+   npm install
+   ```
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+2. Create a `.env.local` in the project root with your Supabase project credentials:
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+   ```sh
+   VITE_SUPABASE_URL=https://<your-project-ref>.supabase.co
+   VITE_SUPABASE_ANON_KEY=<your-anon-key>
+   ```
+
+3. **Configure the OAuth redirect URL.** Sign-in uses a localhost loopback
+   server (see [Authentication](#authentication)). In the Supabase dashboard go
+   to **Authentication → URL Configuration → Redirect URLs** and add:
+
+   ```
+   http://localhost:1421
+   ```
+
+   This is required for both development and production builds.
+
+## Development
+
+Run the app in development mode (Vite + the Tauri shell, with HMR):
+
+```sh
+npm run tauri dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Build
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Produce a distributable desktop bundle:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```sh
+npm run tauri build
+```
+
+## Scripts
+
+- `npm run tauri dev` — run the desktop app in development
+- `npm run tauri build` — build the desktop app
+- `npm run dev` — run the Vite frontend only (in a browser)
+- `npm run lint` — run ESLint
+- `npx tsc --noEmit` — type-check the frontend
+
+## Authentication
+
+Scribe signs in with Google through Supabase using the PKCE flow. Because
+OAuth providers don't allow custom URI schemes as redirect targets and macOS
+routes custom schemes to a registered `.app` bundle (which breaks under
+`tauri dev`), Scribe uses a **localhost loopback** instead:
+
+1. On sign-in, [`tauri-plugin-oauth`](https://github.com/FabianLars/tauri-plugin-oauth)
+   starts a temporary local server on port **1421**.
+2. The system browser opens the Google consent screen.
+3. Supabase redirects back to `http://localhost:1421`, which the same running
+   app instance captures — so the PKCE verifier matches and the code exchange
+   succeeds.
+
+This works identically in development and production.
+
+## Project structure
+
+```
+src/
+  components/      App shell: AppShell, Sidebar, MainEmptyState, AuthScreen
+  theme/           ThemeProvider + ThemeToggle (light/dark/system)
+  store/           Zustand UI state (sidebar, selection)
+  lib/             Supabase client, auth provider, generated DB types
+  index.css        Design tokens (CSS variables) + Tailwind setup
+src-tauri/         Tauri (Rust) shell, config, and capabilities
 ```
