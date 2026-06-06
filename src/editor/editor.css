@@ -1,0 +1,192 @@
+/* Editorial prose surface for the TipTap editor.
+ *
+ * The goal is a calm, book-like reading/writing experience: a comfortable type
+ * scale, serif headings that echo the document title, generous line-height and
+ * paragraph rhythm, and restrained list/quote/code/link styling. Everything is
+ * wired to the existing theme tokens so light and dark stay coherent. */
+
+.scribe-prose {
+  font-size: 1.0625rem; /* 17px base — easy on the eyes for long reading */
+  line-height: 1.7;
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* The ProseMirror editable region itself. */
+.scribe-prose .ProseMirror {
+  outline: none;
+  min-height: 16rem;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.scribe-prose .ProseMirror > * + * {
+  margin-top: 0.9em;
+}
+
+/* --- Paragraphs --- */
+.scribe-prose p {
+  margin: 0;
+}
+
+/* --- Headings: serif, tight tracking, clear hierarchy --- */
+.scribe-prose h1,
+.scribe-prose h2,
+.scribe-prose h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.012em;
+  color: var(--color-text);
+}
+.scribe-prose h1 {
+  font-size: 1.9rem;
+  margin-top: 1.6em;
+}
+.scribe-prose h2 {
+  font-size: 1.5rem;
+  margin-top: 1.5em;
+}
+.scribe-prose h3 {
+  font-size: 1.22rem;
+  margin-top: 1.3em;
+}
+/* Don't push the very first block down inside the body. */
+.scribe-prose .ProseMirror > :first-child {
+  margin-top: 0;
+}
+
+/* --- Lists --- */
+.scribe-prose ul,
+.scribe-prose ol {
+  margin: 0;
+  padding-left: 1.4em;
+}
+.scribe-prose ul {
+  list-style: disc;
+}
+.scribe-prose ol {
+  list-style: decimal;
+}
+.scribe-prose li {
+  margin: 0.25em 0;
+  padding-left: 0.2em;
+}
+.scribe-prose li::marker {
+  color: var(--color-muted);
+}
+/* Tighten spacing between nested list items and their parent. */
+.scribe-prose li > p {
+  margin: 0;
+}
+.scribe-prose li > ul,
+.scribe-prose li > ol {
+  margin-top: 0.25em;
+}
+
+/* --- Blockquote: a soft left rule, slightly muted --- */
+.scribe-prose blockquote {
+  margin: 1.2em 0;
+  padding-left: 1.1em;
+  border-left: 3px solid var(--color-border);
+  color: var(--color-muted);
+  font-style: italic;
+}
+.scribe-prose blockquote p {
+  margin: 0.4em 0;
+}
+
+/* --- Inline code + code blocks --- */
+.scribe-prose code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 0.88em;
+  background: var(--color-hover);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0.1em 0.36em;
+}
+.scribe-prose pre {
+  margin: 1.2em 0;
+  background: var(--color-sidebar);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.9em 1.1em;
+  overflow-x: auto;
+  line-height: 1.55;
+}
+.scribe-prose pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.875em;
+  color: var(--color-text);
+}
+
+/* --- Horizontal rule: a centered hairline, not a heavy bar --- */
+.scribe-prose hr {
+  border: none;
+  height: 1px;
+  background: var(--color-border);
+  margin: 2em 0;
+}
+.scribe-prose hr.ProseMirror-selectednode {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 3px;
+  border-radius: 1px;
+}
+
+/* --- Links: underlined accent, gentle hover --- */
+.scribe-prose a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
+  cursor: pointer;
+  transition: text-decoration-color 120ms ease;
+}
+.scribe-prose a:hover {
+  text-decoration-color: var(--color-accent);
+}
+
+/* --- Marks --- */
+.scribe-prose strong {
+  font-weight: 700;
+  /* No explicit color here: forcing one would override the inline color mark,
+   * so bold text (e.g. inside a heading) could never take a custom color. */
+}
+/* Headings already carry weight (600), so bold within one must push further to
+ * read as emphasized rather than blending into the heading itself. */
+.scribe-prose :is(h1, h2, h3) strong {
+  font-weight: 800;
+}
+.scribe-prose mark {
+  background: transparent; /* color comes from the inline highlight value */
+  border-radius: 3px;
+  padding: 0.02em 0.12em;
+  /* Slight negative margin so the wash hugs the text without nudging layout. */
+  margin: 0 -0.04em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* --- Themed text selection --- */
+.scribe-prose .ProseMirror ::selection {
+  background: var(--color-selected);
+}
+
+/* --- Placeholder: only on the first line of an empty document --- */
+.scribe-prose .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--color-muted);
+  opacity: 0.6;
+}
+
+/* The gap-cursor (between block nodes) tinted to the theme accent. */
+.scribe-prose .ProseMirror-gapcursor::after {
+  border-top-color: var(--color-text);
+}

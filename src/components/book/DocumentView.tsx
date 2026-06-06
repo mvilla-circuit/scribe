@@ -1,8 +1,15 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useUIStore } from "../../store/ui";
 import type { Book } from "../../data/books";
-import { useRenameDocument, type Document } from "../../data/documents";
+import {
+  useRenameDocument,
+  useUpdateDocumentContent,
+  type Document,
+} from "../../data/documents";
 import { EditableText } from "./EditableText";
+import { Editor } from "../../editor/Editor";
+import { SaveStatus } from "../../editor/SaveStatus";
+import type { SaveState } from "../../editor/useAutosave";
 
 type DocumentViewProps = {
   book: Book;
@@ -14,7 +21,9 @@ type DocumentViewProps = {
 // region reserved for the Phase 4 TipTap editor.
 export function DocumentView({ book, document, documents }: DocumentViewProps) {
   const renameDocument = useRenameDocument(book.id);
+  const updateContent = useUpdateDocumentContent(book.id);
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
+  const [saveState, setSaveState] = useState<SaveState>("idle");
 
   const ancestors = useMemo(() => {
     const byId = new Map(documents.map((d) => [d.id, d]));
@@ -57,6 +66,9 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
         <span className="max-w-[20ch] truncate px-1 text-text">
           {document.title || "Untitled"}
         </span>
+        <span className="ml-auto pl-3">
+          <SaveStatus state={saveState} />
+        </span>
       </nav>
 
       <EditableText
@@ -68,14 +80,16 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
         style={{ fontFamily: "var(--font-serif)" }}
       />
 
-      {/* Phase 4: the TipTap editor mounts here, bound to useUpdateDocumentContent. */}
-      <div className="mt-10 border-t border-border pt-10">
-        <p
-          className="text-lg leading-relaxed text-muted/70"
-          style={{ fontFamily: "var(--font-serif)" }}
-        >
-          Your words go here — the editor arrives in Phase 4.
-        </p>
+      <div className="mt-8">
+        <Editor
+          key={document.id}
+          documentId={document.id}
+          initialContent={document.content}
+          onPersist={(content) =>
+            updateContent.mutateAsync({ id: document.id, content })
+          }
+          onSaveStateChange={setSaveState}
+        />
       </div>
     </article>
   );
