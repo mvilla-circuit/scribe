@@ -1,5 +1,6 @@
 import type { Folder } from "./folders";
 import type { Book } from "./books";
+import { byPosition } from "./ordering";
 
 export const ROOT = "__root__";
 
@@ -15,11 +16,6 @@ export type TreeModel = {
   // container id (folder id or ROOT) -> ordered children (folders + books)
   children: Map<string, TreeChild[]>;
 };
-
-function compareChildren(a: TreeChild, b: TreeChild): number {
-  if (a.position !== b.position) return a.position - b.position;
-  return a.created_at.localeCompare(b.created_at);
-}
 
 export function buildTree(folders: Folder[], books: Book[]): TreeModel {
   const children = new Map<string, TreeChild[]>();
@@ -48,7 +44,7 @@ export function buildTree(folders: Folder[], books: Book[]): TreeModel {
     });
   }
 
-  for (const list of children.values()) list.sort(compareChildren);
+  for (const list of children.values()) list.sort(byPosition);
   return { children };
 }
 

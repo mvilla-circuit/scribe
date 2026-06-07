@@ -1,5 +1,6 @@
 import type { Document } from "./documents";
 import { byPosition } from "./ordering";
+import { collectSubtree } from "./subtree";
 
 // The book's document hierarchy as a nested tree, ordered by `position`. The
 // Title Page is excluded -- it is pinned separately and is not part of the
@@ -52,22 +53,7 @@ export function flattenForToc(tree: DocTreeNode[]): TocEntry[] {
 }
 
 // Number of descendants a document has (used to warn before a cascade delete).
+// collectSubtree includes the root itself, so subtract it.
 export function descendantCount(documents: Document[], id: string): number {
-  const childrenByParent = new Map<string, Document[]>();
-  for (const doc of documents) {
-    if (!doc.parent_document_id) continue;
-    const list = childrenByParent.get(doc.parent_document_id) ?? [];
-    list.push(doc);
-    childrenByParent.set(doc.parent_document_id, list);
-  }
-  let count = 0;
-  const stack = [id];
-  while (stack.length) {
-    const cur = stack.pop() as string;
-    for (const child of childrenByParent.get(cur) ?? []) {
-      count += 1;
-      stack.push(child.id);
-    }
-  }
-  return count;
+  return collectSubtree(documents, id, (d) => d.parent_document_id).size - 1;
 }

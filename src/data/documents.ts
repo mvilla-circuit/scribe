@@ -1,16 +1,13 @@
 import { useEffect, useRef } from "react";
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  type QueryClient,
-  type QueryKey,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth";
 import type { Json, Tables } from "../lib/database.types";
 import { byPosition } from "./ordering";
+import { collectSubtree } from "./subtree";
+import { optimisticListHandlers } from "./optimisticList";
+import { pageIndexKey } from "./pageIndex";
 
 export type Document = Tables<"documents">;
 
@@ -35,22 +32,27 @@ export function useDocuments(bookId: string | null) {
   });
 }
 
-// Snapshot + rollback helpers shared by every optimistic document mutation.
-async function optimistic(
-  qc: QueryClient,
-  key: QueryKey,
-  update: (prev: Document[]) => Document[]
-): Promise<{ previous: Document[] | undefined }> {
-  await qc.cancelQueries({ queryKey: key });
-  const previous = qc.getQueryData<Document[]>(key);
-  qc.setQueryData<Document[]>(key, (prev) =>
-    (update(prev ?? []) ?? []).slice().sort(byPosition)
-  );
-  return { previous };
-}
-
-function rollback(qc: QueryClient, key: QueryKey, previous: Document[] | undefined) {
-  if (previous) qc.setQueryData(key, previous);
+// Shared config for every optimistic documents mutation, scoped to one book's
+// per-book cache entry.
+function documentHandlers<V>(
+  qc: ReturnType<typeof useQueryClient>,
+  key: ReturnType<typeof documentsKey>,
+  update: (prev: Document[], variables: V) => Document[],
+  errorMessage: string
+) {
+  return optimisticListHandlers<Document, V>({
+    qc,
+    key,
+    sort: byPosition,
+    update,
+    errorMessage,
+    // Keep the cross-book page index fresh too, so page link cards re-resolve
+    // their title/icon/breadcrumb when a document is renamed, moved, or deleted.
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: key });
+      void qc.invalidateQueries({ queryKey: pageIndexKey });
+    },
+  });
 }
 
 // Collects a document plus all of its descendant ids. The DB cascades the
@@ -59,21 +61,7 @@ export function collectDocumentSubtree(
   documents: Document[],
   rootId: string
 ): Set<string> {
-  const childrenByParent = new Map<string, Document[]>();
-  for (const doc of documents) {
-    if (!doc.parent_document_id) continue;
-    const list = childrenByParent.get(doc.parent_document_id) ?? [];
-    list.push(doc);
-    childrenByParent.set(doc.parent_document_id, list);
-  }
-  const ids = new Set<string>();
-  const stack = [rootId];
-  while (stack.length) {
-    const id = stack.pop() as string;
-    ids.add(id);
-    for (const child of childrenByParent.get(id) ?? []) stack.push(child.id);
-  }
-  return ids;
+  return collectSubtree(documents, rootId, (d) => d.parent_document_id);
 }
 
 export function useCreateDocument(bookId: string) {
@@ -102,34 +90,40 @@ export function useCreateDocument(bookId: string) {
       });
       if (error) throw error;
     },
-    onMutate: (input) => {
-      const now = new Date().toISOString();
-      return optimistic(qc, key, (prev) => [
-        ...prev,
-        {
-          id: input.id,
-          user_id: session?.user.id ?? "",
-          book_id: bookId,
-          parent_document_id: input.parent_document_id,
-          title: input.title,
-          icon: null,
-          subtitle: null,
-          show_outline: false,
-          show_subtitle: false,
-          read_mode: false,
-          is_title_page: input.is_title_page ?? false,
-          position: input.position,
-          content: {} as Json,
-          created_at: now,
-          updated_at: now,
-        },
-      ]);
-    },
-    onError: (_e, _v, ctx) => {
-      rollback(qc, key, ctx?.previous);
-      toast.error("Couldn't create page");
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: key }),
+    ...documentHandlers<{
+      id: string;
+      title: string;
+      parent_document_id: string | null;
+      position: number;
+      is_title_page?: boolean;
+    }>(
+      qc,
+      key,
+      (prev, input) => {
+        const now = new Date().toISOString();
+        return [
+          ...prev,
+          {
+            id: input.id,
+            user_id: session?.user.id ?? "",
+            book_id: bookId,
+            parent_document_id: input.parent_document_id,
+            title: input.title,
+            icon: null,
+            subtitle: null,
+            show_outline: false,
+            show_subtitle: false,
+            read_mode: false,
+            is_title_page: input.is_title_page ?? false,
+            position: input.position,
+            content: {} as Json,
+            created_at: now,
+            updated_at: now,
+          },
+        ];
+      },
+      "Couldn't create page"
+    ),
   });
 }
 
@@ -144,15 +138,13 @@ export function useRenameDocument(bookId: string) {
         .eq("id", input.id);
       if (error) throw error;
     },
-    onMutate: (input) =>
-      optimistic(qc, key, (prev) =>
-        prev.map((d) => (d.id === input.id ? { ...d, title: input.title } : d))
-      ),
-    onError: (_e, _v, ctx) => {
-      rollback(qc, key, ctx?.previous);
-      toast.error("Couldn't rename page");
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: key }),
+    ...documentHandlers<{ id: string; title: string }>(
+      qc,
+      key,
+      (prev, input) =>
+        prev.map((d) => (d.id === input.id ? { ...d, title: input.title } : d)),
+      "Couldn't rename page"
+    ),
   });
 }
 
@@ -183,15 +175,25 @@ export function useUpdateDocument(bookId: string) {
         .eq("id", id);
       if (error) throw error;
     },
-    onMutate: (input) =>
-      optimistic(qc, key, (prev) =>
-        prev.map((d) => (d.id === input.id ? { ...d, ...input } : d))
-      ),
-    onError: (_e, _v, ctx) => {
-      rollback(qc, key, ctx?.previous);
-      toast.error("Couldn't update page");
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: key }),
+    ...documentHandlers<
+      { id: string } & Partial<
+        Pick<
+          Document,
+          | "title"
+          | "icon"
+          | "subtitle"
+          | "show_outline"
+          | "show_subtitle"
+          | "read_mode"
+        >
+      >
+    >(
+      qc,
+      key,
+      (prev, input) =>
+        prev.map((d) => (d.id === input.id ? { ...d, ...input } : d)),
+      "Couldn't update page"
+    ),
   });
 }
 
@@ -213,8 +215,14 @@ export function useMoveDocument(bookId: string) {
         .eq("id", input.id);
       if (error) throw error;
     },
-    onMutate: (input) =>
-      optimistic(qc, key, (prev) =>
+    ...documentHandlers<{
+      id: string;
+      parent_document_id: string | null;
+      position: number;
+    }>(
+      qc,
+      key,
+      (prev, input) =>
         prev.map((d) =>
           d.id === input.id
             ? {
@@ -223,13 +231,9 @@ export function useMoveDocument(bookId: string) {
                 position: input.position,
               }
             : d
-        )
-      ),
-    onError: (_e, _v, ctx) => {
-      rollback(qc, key, ctx?.previous);
-      toast.error("Couldn't move page");
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: key }),
+        ),
+      "Couldn't move page"
+    ),
   });
 }
 
@@ -246,16 +250,15 @@ export function useDeleteDocument(bookId: string) {
     },
     // The page and its descendants cascade away in the DB; remove the same set
     // optimistically so the outline and TOC update instantly.
-    onMutate: (input) =>
-      optimistic(qc, key, (prev) => {
+    ...documentHandlers<{ id: string }>(
+      qc,
+      key,
+      (prev, input) => {
         const removed = collectDocumentSubtree(prev, input.id);
         return prev.filter((d) => !removed.has(d.id));
-      }),
-    onError: (_e, _v, ctx) => {
-      rollback(qc, key, ctx?.previous);
-      toast.error("Couldn't delete page");
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: key }),
+      },
+      "Couldn't delete page"
+    ),
   });
 }
 
@@ -272,17 +275,15 @@ export function useUpdateDocumentContent(bookId: string) {
         .eq("id", input.id);
       if (error) throw error;
     },
-    onMutate: (input) =>
-      optimistic(qc, key, (prev) =>
+    ...documentHandlers<{ id: string; content: Json }>(
+      qc,
+      key,
+      (prev, input) =>
         prev.map((d) =>
           d.id === input.id ? { ...d, content: input.content } : d
-        )
-      ),
-    onError: (_e, _v, ctx) => {
-      rollback(qc, key, ctx?.previous);
-      toast.error("Couldn't save changes");
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: key }),
+        ),
+      "Couldn't save changes"
+    ),
   });
 }
 

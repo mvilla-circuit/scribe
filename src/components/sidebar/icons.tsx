@@ -1,7 +1,7 @@
 // Sidebar chrome icons, backed by Lucide so the Library tree and in-book Outline
-// share one consistent, professionally drawn icon set. Thin wrappers preserve
-// the local `{ size, className }` API (and a uniform stroke weight) used across
-// the sidebar, so call sites stay unchanged.
+// share one consistent, professionally drawn icon set. The shared `makeIcon`
+// factory preserves the local `{ size, className }` API and uniform stroke
+// weight, so call sites stay unchanged.
 import {
   Book,
   BookPlus,
@@ -12,27 +12,8 @@ import {
   Pencil,
   Plus,
   Trash2,
-  type LucideProps,
 } from "lucide-react";
-
-type IconProps = { className?: string; size?: number };
-
-// Slightly lighter than Lucide's default 2px stroke to match the app's refined,
-// low-weight aesthetic.
-const STROKE_WIDTH = 1.75;
-
-function makeIcon(Component: React.ComponentType<LucideProps>) {
-  return function Icon({ className, size = 16 }: IconProps) {
-    return (
-      <Component
-        size={size}
-        className={className}
-        strokeWidth={STROKE_WIDTH}
-        aria-hidden
-      />
-    );
-  };
-}
+import { makeIcon } from "../../lib/makeIcon";
 
 export const FolderIcon = makeIcon(Folder);
 export const FolderOpenIcon = makeIcon(FolderOpen);

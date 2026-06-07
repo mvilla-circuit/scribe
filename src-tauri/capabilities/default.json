@@ -11,6 +11,10 @@
     "opener:default",
     "deep-link:default",
     "oauth:allow-start",
-    "oauth:allow-cancel"
+    "oauth:allow-cancel",
+    {
+      "identifier": "http:default",
+      "allow": [{ "url": "https://**" }, { "url": "http://**" }]
+    }
   ]
 }

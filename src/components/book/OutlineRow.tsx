@@ -3,26 +3,17 @@ import { CSS } from "@dnd-kit/utilities";
 import { cn } from "../../lib/utils";
 import { InlineRename } from "../ui/InlineRename";
 import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "../ui/ContextMenu";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../ui/DropdownMenu";
+  RowActionDropdown,
+  RowContextMenu,
+  type RowAction,
+} from "../ui/RowActionMenu";
 import { PencilIcon, TrashIcon } from "../sidebar/icons";
 import {
   SIDEBAR_ICON_SIZE,
   SidebarRow,
   SidebarRowOverlay,
 } from "../sidebar/SidebarRow";
-import { ChevronRightIcon, MoreIcon, PageIcon, PlusIcon } from "./icons";
+import { ChevronRightIcon, PageIcon, PlusIcon } from "./icons";
 import { DocumentIcon } from "../ui/DocumentIcon";
 import { type FlatDocNode } from "./outlineDnd";
 
@@ -129,6 +120,26 @@ export function OutlineRow({
     label
   );
 
+  const menuActions: RowAction[] = [
+    {
+      icon: <PlusIcon size={15} />,
+      label: "Add page inside",
+      onSelect: onNewChild,
+    },
+    {
+      icon: <PencilIcon size={15} />,
+      label: "Rename",
+      onSelect: onStartRename,
+    },
+    {
+      icon: <TrashIcon size={15} />,
+      label: "Delete",
+      onSelect: onDelete,
+      danger: true,
+      separatorBefore: true,
+    },
+  ];
+
   const actions = (
     <>
       <button
@@ -144,35 +155,7 @@ export function OutlineRow({
       >
         <PlusIcon size={15} />
       </button>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            tabIndex={-1}
-            aria-label="More actions"
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-            className="flex h-6 w-6 items-center justify-center rounded text-muted hover:bg-hover hover:text-text"
-          >
-            <MoreIcon size={15} />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => onNewChild()}>
-            <PlusIcon size={15} />
-            Add page inside
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => onStartRename()}>
-            <PencilIcon size={15} />
-            Rename
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem danger onSelect={() => onDelete()}>
-            <TrashIcon size={15} />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <RowActionDropdown actions={menuActions} />
     </>
   );
 
@@ -212,26 +195,7 @@ export function OutlineRow({
     </SidebarRow>
   );
 
-  return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>{rowInner}</ContextMenuTrigger>
-      <ContextMenuContent>
-        <ContextMenuItem onSelect={() => onNewChild()}>
-          <PlusIcon size={15} />
-          Add page inside
-        </ContextMenuItem>
-        <ContextMenuItem onSelect={() => onStartRename()}>
-          <PencilIcon size={15} />
-          Rename
-        </ContextMenuItem>
-        <ContextMenuSeparator />
-        <ContextMenuItem danger onSelect={() => onDelete()}>
-          <TrashIcon size={15} />
-          Delete
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
-  );
+  return <RowContextMenu actions={menuActions}>{rowInner}</RowContextMenu>;
 }
 
 // Clean single-line chip rendered in the DragOverlay so the lifted row follows

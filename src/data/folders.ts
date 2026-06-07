@@ -1,14 +1,10 @@
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  type QueryClient,
-} from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth";
 import type { Tables } from "../lib/database.types";
 import { byPosition } from "./ordering";
+import { collectSubtree } from "./subtree";
+import { optimisticListHandlers } from "./optimisticList";
 
 export type Folder = Tables<"folders">;
 
@@ -28,21 +24,21 @@ export function useFolders() {
   });
 }
 
-// Snapshot + rollback helpers shared by every optimistic folder mutation.
-async function optimistic(
-  qc: QueryClient,
-  update: (prev: Folder[]) => Folder[]
-): Promise<{ previous: Folder[] | undefined }> {
-  await qc.cancelQueries({ queryKey: foldersKey });
-  const previous = qc.getQueryData<Folder[]>(foldersKey);
-  qc.setQueryData<Folder[]>(foldersKey, (prev) =>
-    (update(prev ?? []) ?? []).slice().sort(byPosition)
-  );
-  return { previous };
-}
-
-function rollback(qc: QueryClient, previous: Folder[] | undefined) {
-  if (previous) qc.setQueryData(foldersKey, previous);
+// Shared config for every optimistic folders mutation: same cache key + sort.
+function folderHandlers<V>(
+  qc: ReturnType<typeof useQueryClient>,
+  update: (prev: Folder[], variables: V) => Folder[],
+  errorMessage: string,
+  onSettled?: () => void
+) {
+  return optimisticListHandlers<Folder, V>({
+    qc,
+    key: foldersKey,
+    sort: byPosition,
+    update,
+    errorMessage,
+    onSettled,
+  });
 }
 
 export function useCreateFolder() {
@@ -67,26 +63,30 @@ export function useCreateFolder() {
       });
       if (error) throw error;
     },
-    onMutate: (input) => {
-      const now = new Date().toISOString();
-      return optimistic(qc, (prev) => [
-        ...prev,
-        {
-          id: input.id,
-          user_id: session?.user.id ?? "",
-          name: input.name,
-          parent_folder_id: input.parent_folder_id,
-          position: input.position,
-          created_at: now,
-          updated_at: now,
-        },
-      ]);
-    },
-    onError: (_e, _v, ctx) => {
-      rollback(qc, ctx?.previous);
-      toast.error("Couldn't create folder");
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: foldersKey }),
+    ...folderHandlers<{
+      id: string;
+      name: string;
+      parent_folder_id: string | null;
+      position: number;
+    }>(
+      qc,
+      (prev, input) => {
+        const now = new Date().toISOString();
+        return [
+          ...prev,
+          {
+            id: input.id,
+            user_id: session?.user.id ?? "",
+            name: input.name,
+            parent_folder_id: input.parent_folder_id,
+            position: input.position,
+            created_at: now,
+            updated_at: now,
+          },
+        ];
+      },
+      "Couldn't create folder"
+    ),
   });
 }
 
@@ -100,15 +100,12 @@ export function useRenameFolder() {
         .eq("id", input.id);
       if (error) throw error;
     },
-    onMutate: (input) =>
-      optimistic(qc, (prev) =>
-        prev.map((f) => (f.id === input.id ? { ...f, name: input.name } : f))
-      ),
-    onError: (_e, _v, ctx) => {
-      rollback(qc, ctx?.previous);
-      toast.error("Couldn't rename folder");
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: foldersKey }),
+    ...folderHandlers<{ id: string; name: string }>(
+      qc,
+      (prev, input) =>
+        prev.map((f) => (f.id === input.id ? { ...f, name: input.name } : f)),
+      "Couldn't rename folder"
+    ),
   });
 }
 
@@ -129,8 +126,13 @@ export function useMoveFolder() {
         .eq("id", input.id);
       if (error) throw error;
     },
-    onMutate: (input) =>
-      optimistic(qc, (prev) =>
+    ...folderHandlers<{
+      id: string;
+      parent_folder_id: string | null;
+      position: number;
+    }>(
+      qc,
+      (prev, input) =>
         prev.map((f) =>
           f.id === input.id
             ? {
@@ -139,13 +141,9 @@ export function useMoveFolder() {
                 position: input.position,
               }
             : f
-        )
-      ),
-    onError: (_e, _v, ctx) => {
-      rollback(qc, ctx?.previous);
-      toast.error("Couldn't move folder");
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: foldersKey }),
+        ),
+      "Couldn't move folder"
+    ),
   });
 }
 
@@ -156,21 +154,7 @@ export function collectFolderSubtree(
   folders: Folder[],
   rootId: string
 ): Set<string> {
-  const childrenByParent = new Map<string, Folder[]>();
-  for (const f of folders) {
-    const key = f.parent_folder_id ?? "__root__";
-    const list = childrenByParent.get(key) ?? [];
-    list.push(f);
-    childrenByParent.set(key, list);
-  }
-  const ids = new Set<string>();
-  const stack = [rootId];
-  while (stack.length) {
-    const id = stack.pop() as string;
-    ids.add(id);
-    for (const child of childrenByParent.get(id) ?? []) stack.push(child.id);
-  }
-  return ids;
+  return collectSubtree(folders, rootId, (f) => f.parent_folder_id);
 }
 
 export function useDeleteFolder() {
@@ -185,18 +169,17 @@ export function useDeleteFolder() {
     },
     // The folder and its subfolders cascade away; books inside fall back to the
     // root (folder_id -> null). We invalidate books on settle to reconcile.
-    onMutate: (input) =>
-      optimistic(qc, (prev) => {
+    ...folderHandlers<{ id: string }>(
+      qc,
+      (prev, input) => {
         const removed = collectFolderSubtree(prev, input.id);
         return prev.filter((f) => !removed.has(f.id));
-      }),
-    onError: (_e, _v, ctx) => {
-      rollback(qc, ctx?.previous);
-      toast.error("Couldn't delete folder");
-    },
-    onSettled: () => {
-      void qc.invalidateQueries({ queryKey: foldersKey });
-      void qc.invalidateQueries({ queryKey: ["books"] });
-    },
+      },
+      "Couldn't delete folder",
+      () => {
+        void qc.invalidateQueries({ queryKey: foldersKey });
+        void qc.invalidateQueries({ queryKey: ["books"] });
+      }
+    ),
   });
 }

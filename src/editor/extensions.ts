@@ -2,7 +2,15 @@ import StarterKit from "@tiptap/starter-kit";
 import Highlight from "@tiptap/extension-highlight";
 import { TextStyle, Color } from "@tiptap/extension-text-style";
 import { Placeholder } from "@tiptap/extensions";
+import TaskList from "@tiptap/extension-task-list";
+import TaskItem from "@tiptap/extension-task-item";
+import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import type { Extensions } from "@tiptap/react";
+import { Callout } from "./extensions/Callout";
+import { Column, Columns } from "./extensions/Columns";
+import { LinkCard } from "./extensions/LinkCard";
+import { PageLink } from "./extensions/PageLink";
+import { SlashCommand } from "./extensions/SlashCommand";
 
 // The editor's extension set. StarterKit v3 already brings paragraphs,
 // headings, bold/italic/strike/code, underline, link, blockquote, lists,
@@ -29,5 +37,27 @@ export function buildExtensions(): Extensions {
     // The prompt is scoped to the empty-editor state via the `.is-editor-empty`
     // class in editor.css, so it only whispers on the first line of a blank doc.
     Placeholder.configure({ placeholder: "Start writing…" }),
+
+    // To-do list. TaskList ships the `[] `/`[ ] ` input rule, so it also works
+    // by typing; `nested` lets a task hold sub-tasks.
+    TaskList,
+    TaskItem.configure({ nested: true }),
+
+    // Table family: resizable columns with a header row. The inline add/remove
+    // controls live in `TableControls`, driven by these extensions' commands.
+    Table.configure({ resizable: true }),
+    TableRow,
+    TableHeader,
+    TableCell,
+
+    // Phase 5 custom blocks.
+    Callout,
+    Columns,
+    Column,
+    LinkCard,
+    PageLink,
+
+    // The "/" command menu, surfacing all of the above plus the built-ins.
+    SlashCommand,
   ];
 }

@@ -2,19 +2,11 @@ import { useMemo, useState } from "react";
 import {
   DndContext,
   DragOverlay,
-  KeyboardSensor,
   MeasuringStrategy,
-  PointerSensor,
   closestCenter,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragMoveEvent,
-  type DragStartEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useUIStore } from "../../store/ui";
@@ -36,6 +28,7 @@ import {
   removeDocDescendants,
   type FlatDocNode,
 } from "./outlineDnd";
+import { useTreeDnd } from "../tree/useTreeDnd";
 import { OutlineDragOverlay, OutlineRow } from "./OutlineRow";
 import { PlusIcon } from "./icons";
 import { BookIcon } from "../sidebar/icons";
@@ -74,10 +67,6 @@ export function OutlinePanel({ book }: { book: Book }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [overId, setOverId] = useState<string | null>(null);
-  const [offsetX, setOffsetX] = useState(0);
-
   const expanded = useMemo(() => new Set(expandedArr), [expandedArr]);
   const tree = useMemo(() => buildDocTree(documents), [documents]);
   const flattened = useMemo(
@@ -85,25 +74,22 @@ export function OutlinePanel({ book }: { book: Book }) {
     [tree, expanded]
   );
 
-  const visibleNodes = useMemo(() => {
-    if (!activeId) return flattened;
-    return removeDocDescendants(flattened, [activeId]);
-  }, [flattened, activeId]);
-
-  const projection = useMemo(() => {
-    if (!activeId || !overId) return null;
-    return getDocProjection(visibleNodes, activeId, overId, offsetX);
-  }, [visibleNodes, activeId, overId, offsetX]);
-
-  const activeNode = useMemo(
-    () => flattened.find((n) => n.id === activeId) ?? null,
-    [flattened, activeId]
-  );
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
+  const { sensors, visibleNodes, activeNode, projectionDepthFor, handlers } =
+    useTreeDnd<FlatDocNode>({
+      flattened,
+      removeDescendants: removeDocDescendants,
+      project: getDocProjection,
+      neighbours: docNeighbourPositions,
+      onDragStart: () => setEditingId(null),
+      onMove: ({ id, parentId, position }) => {
+        moveDocument.mutate({
+          id,
+          parent_document_id: parentId,
+          position,
+        });
+        if (parentId) setDocExpanded(parentId, true);
+      },
+    });
 
   const endPosition = (parentId: string | null) => {
     const siblings = documents
@@ -144,50 +130,6 @@ export function OutlinePanel({ book }: { book: Book }) {
     const subtree = collectDocumentSubtree(documents, deleteTarget.id);
     if (activeDocId && subtree.has(activeDocId)) setActiveDoc(null);
     deleteDocument.mutate({ id: deleteTarget.id });
-  };
-
-  const onDragStart = (event: DragStartEvent) => {
-    setActiveId(String(event.active.id));
-    setOverId(String(event.active.id));
-    setOffsetX(0);
-    setEditingId(null);
-  };
-
-  const onDragMove = (event: DragMoveEvent) => {
-    setOffsetX(event.delta.x);
-    if (event.over) setOverId(String(event.over.id));
-  };
-
-  const onDragEnd = (event: DragEndEvent) => {
-    const over = event.over ? String(event.over.id) : null;
-    const active = String(event.active.id);
-    const proj = over
-      ? getDocProjection(visibleNodes, active, over, offsetX)
-      : null;
-
-    resetDnd();
-    if (!proj || !over) return;
-    if (proj.parentId === active) return;
-
-    const { prev, next } = docNeighbourPositions(
-      visibleNodes,
-      active,
-      over,
-      proj.parentId
-    );
-    const position = getPositionBetween(prev, next);
-    moveDocument.mutate({
-      id: active,
-      parent_document_id: proj.parentId,
-      position,
-    });
-    if (proj.parentId) setDocExpanded(proj.parentId, true);
-  };
-
-  const resetDnd = () => {
-    setActiveId(null);
-    setOverId(null);
-    setOffsetX(0);
   };
 
   const titlePageSelected =
@@ -252,10 +194,7 @@ export function OutlinePanel({ book }: { book: Book }) {
             sensors={sensors}
             collisionDetection={closestCenter}
             measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
-            onDragStart={onDragStart}
-            onDragMove={onDragMove}
-            onDragEnd={onDragEnd}
-            onDragCancel={resetDnd}
+            {...handlers}
           >
             <SortableContext
               items={visibleNodes.map((n) => n.id)}
@@ -273,9 +212,7 @@ export function OutlinePanel({ book }: { book: Book }) {
                     selected={node.id === activeDocId}
                     editing={editingId === node.id}
                     expanded={expanded.has(node.id)}
-                    projectionDepth={
-                      node.id === activeId ? projection?.depth ?? null : null
-                    }
+                    projectionDepth={projectionDepthFor(node.id)}
                     onToggleExpand={() => toggleDocExpanded(node.id)}
                     onSelect={() => setActiveDoc(node.id)}
                     onStartRename={() => setEditingId(node.id)}

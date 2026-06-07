@@ -2,19 +2,11 @@ import { useMemo, useState, type ReactNode } from "react";
 import {
   DndContext,
   DragOverlay,
-  KeyboardSensor,
   MeasuringStrategy,
-  PointerSensor,
   closestCenter,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragMoveEvent,
-  type DragStartEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useUIStore } from "../../store/ui";
@@ -46,6 +38,7 @@ import {
   removeDescendants,
   type FlatNode,
 } from "./dndTree";
+import { useTreeDnd } from "../tree/useTreeDnd";
 import { DragRowOverlay, TreeRow } from "./TreeRow";
 import { BookPlusIcon, FolderPlusIcon, PlusIcon } from "./icons";
 import { Button } from "../ui/Button";
@@ -83,11 +76,6 @@ export function SidebarTree() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
-  // DnD transient state.
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [overId, setOverId] = useState<string | null>(null);
-  const [offsetX, setOffsetX] = useState(0);
-
   const folders = useMemo(() => foldersQuery.data ?? [], [foldersQuery.data]);
   const books = useMemo(() => booksQuery.data ?? [], [booksQuery.data]);
   const expanded = useMemo(() => new Set(expandedArr), [expandedArr]);
@@ -98,26 +86,22 @@ export function SidebarTree() {
     [model, expanded]
   );
 
-  // Hide the dragged folder's descendants so it can't be nested inside itself.
-  const visibleNodes = useMemo(() => {
-    if (!activeId) return flattened;
-    return removeDescendants(flattened, [activeId]);
-  }, [flattened, activeId]);
-
-  const projection = useMemo(() => {
-    if (!activeId || !overId) return null;
-    return getProjection(visibleNodes, activeId, overId, offsetX);
-  }, [visibleNodes, activeId, overId, offsetX]);
-
-  const activeNode = useMemo(
-    () => flattened.find((n) => n.id === activeId) ?? null,
-    [flattened, activeId]
-  );
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
+  const { sensors, visibleNodes, activeNode, projectionDepthFor, handlers } =
+    useTreeDnd<FlatNode>({
+      flattened,
+      removeDescendants,
+      project: getProjection,
+      neighbours: neighbourPositions,
+      onDragStart: () => setEditingId(null),
+      onMove: ({ id, parentId, position, node }) => {
+        if (node.kind === "folder") {
+          moveFolder.mutate({ id, parent_folder_id: parentId, position });
+        } else {
+          moveBook.mutate({ id, folder_id: parentId, position });
+        }
+        if (parentId) setFolderExpanded(parentId, true);
+      },
+    });
 
   const endPosition = (containerId: string) => {
     const siblings = childrenOf(model, containerId);
@@ -176,59 +160,6 @@ export function SidebarTree() {
     }
   };
 
-  const onDragStart = (event: DragStartEvent) => {
-    setActiveId(String(event.active.id));
-    setOverId(String(event.active.id));
-    setOffsetX(0);
-    setEditingId(null);
-  };
-
-  const onDragMove = (event: DragMoveEvent) => {
-    setOffsetX(event.delta.x);
-    if (event.over) setOverId(String(event.over.id));
-  };
-
-  const onDragEnd = (event: DragEndEvent) => {
-    const over = event.over ? String(event.over.id) : null;
-    const active = String(event.active.id);
-    const proj = over
-      ? getProjection(visibleNodes, active, over, offsetX)
-      : null;
-
-    resetDnd();
-    if (!proj || !over) return;
-
-    const node = flattened.find((n) => n.id === active);
-    if (!node) return;
-    if (proj.parentId === active) return; // never parent to self
-
-    const { prev, next } = neighbourPositions(
-      visibleNodes,
-      active,
-      over,
-      proj.parentId
-    );
-    const position = getPositionBetween(prev, next);
-
-    if (node.kind === "folder") {
-      // Guard: don't allow nesting under a descendant (already hidden, but be safe).
-      moveFolder.mutate({
-        id: active,
-        parent_folder_id: proj.parentId,
-        position,
-      });
-    } else {
-      moveBook.mutate({ id: active, folder_id: proj.parentId, position });
-    }
-    if (proj.parentId) setFolderExpanded(proj.parentId, true);
-  };
-
-  const resetDnd = () => {
-    setActiveId(null);
-    setOverId(null);
-    setOffsetX(0);
-  };
-
   const isLoading = foldersQuery.isLoading || booksQuery.isLoading;
   const isError = foldersQuery.isError || booksQuery.isError;
   const isEmpty = folders.length === 0 && books.length === 0;
@@ -240,7 +171,7 @@ export function SidebarTree() {
       selected={node.kind === "book" && node.id === activeBookId}
       editing={editingId === node.id}
       expanded={expanded.has(node.id)}
-      projectionDepth={node.id === activeId ? projection?.depth ?? null : null}
+      projectionDepth={projectionDepthFor(node.id)}
       onToggleExpand={() => toggleFolderExpanded(node.id)}
       onSelectBook={() => setActiveBook(node.id)}
       onStartRename={() => setEditingId(node.id)}
@@ -335,10 +266,7 @@ export function SidebarTree() {
             sensors={sensors}
             collisionDetection={closestCenter}
             measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
-            onDragStart={onDragStart}
-            onDragMove={onDragMove}
-            onDragEnd={onDragEnd}
-            onDragCancel={resetDnd}
+            {...handlers}
           >
             <SortableContext
               items={visibleNodes.map((n) => n.id)}

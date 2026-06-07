@@ -12,6 +12,8 @@ import {
 import type { Json } from "../lib/database.types";
 import { buildExtensions } from "./extensions";
 import { BubbleToolbar } from "./BubbleToolbar";
+import { TableControls } from "./extensions/TableControls";
+import { PagePicker } from "./extensions/PagePicker";
 import { extractHeadings, type OutlineHeading } from "./outline";
 import { useAutosave, type PersistFn, type SaveState } from "./useAutosave";
 import "./editor.css";
@@ -110,7 +112,13 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 
   return (
     <div className="scribe-prose">
-      {editor && editable && <BubbleToolbar editor={editor} />}
+      {editor && editable && (
+        <>
+          <BubbleToolbar editor={editor} />
+          <TableControls editor={editor} />
+          <PagePicker />
+        </>
+      )}
       <EditorContent editor={editor} />
     </div>
   );

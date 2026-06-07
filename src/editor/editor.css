@@ -195,3 +195,618 @@
 .scribe-prose .ProseMirror-gapcursor::after {
   border-top-color: var(--color-text);
 }
+
+/* ===========================================================================
+   Phase 5 — custom blocks & slash menu
+   The governing rule: the writing surface stays calm. Every structural control
+   is hidden by default and fades in on hover/focus-within using opacity +
+   transform only, so nothing shifts layout. Popovers are the only elevated
+   surfaces; everything inline is hairline and tonal.
+   ======================================================================== */
+
+/* --- Shared inline block controls --- */
+.scribe-block-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 150ms ease-out, transform 150ms ease-out;
+  pointer-events: none;
+}
+.scribe-block-controls[data-open] {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scribe-block-controls {
+    transition: none;
+  }
+}
+.scribe-block-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.6rem;
+  width: 1.6rem;
+  border-radius: var(--radius-sm);
+  color: var(--color-muted);
+  background: color-mix(in srgb, var(--color-elevated) 86%, transparent);
+  border: 1px solid var(--color-border);
+  outline: none;
+  transition: color 120ms ease, background 120ms ease;
+}
+.scribe-block-btn:hover {
+  color: var(--color-text);
+  background: var(--color-elevated);
+}
+.scribe-block-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-ring);
+}
+
+/* --- Callout --- */
+.scribe-prose .scribe-callout {
+  position: relative;
+  display: flex;
+  gap: 0.7em;
+  margin: 1em 0;
+  padding: 0.85em 1em;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-hover);
+}
+.scribe-callout-emoji {
+  flex-shrink: 0;
+  line-height: 1.5;
+  user-select: none;
+}
+.scribe-callout-emoji-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.7rem;
+  width: 1.7rem;
+  font-size: 1.1rem;
+  line-height: 1;
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: background 120ms ease;
+}
+button.scribe-callout-emoji-btn:hover {
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+.scribe-callout-emoji-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-ring);
+}
+.scribe-callout-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.scribe-callout-body > * + * {
+  margin-top: 0.6em;
+}
+.scribe-callout-body > :first-child {
+  margin-top: 0;
+}
+.scribe-callout-controls {
+  position: absolute;
+  top: 0.5em;
+  right: 0.5em;
+}
+.scribe-callout:hover .scribe-callout-controls,
+.scribe-callout:focus-within .scribe-callout-controls {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* --- Columns --- */
+.scribe-prose .scribe-columns {
+  position: relative;
+  margin: 1em 0;
+}
+.scribe-columns-grid {
+  display: grid;
+  gap: 1.25rem;
+  align-items: start;
+}
+.scribe-prose .scribe-column {
+  position: relative;
+  min-width: 0;
+  border-radius: var(--radius-sm);
+}
+.scribe-column-body > * + * {
+  margin-top: 0.7em;
+}
+.scribe-column-body > :first-child {
+  margin-top: 0;
+}
+/* A hairline gutter hint between columns, only while hovering the block. */
+.scribe-columns:hover .scribe-column:not(:last-child)::after,
+.scribe-columns:focus-within .scribe-column:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -0.65rem;
+  width: 1px;
+  background: var(--color-border);
+}
+.scribe-columns-add {
+  position: absolute;
+  top: 50%;
+  right: -1.9rem;
+  transform: translateY(-50%) translateX(-2px);
+}
+.scribe-columns:hover > .scribe-columns-add,
+.scribe-columns:focus-within > .scribe-columns-add {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+  pointer-events: auto;
+}
+.scribe-column-remove {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.15rem;
+  z-index: 1;
+}
+.scribe-column:hover > .scribe-column-remove,
+.scribe-column:focus-within > .scribe-column-remove {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+/* Stack gracefully on narrow viewports. */
+@media (max-width: 640px) {
+  .scribe-columns-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .scribe-columns:hover .scribe-column::after,
+  .scribe-columns:focus-within .scribe-column::after {
+    display: none;
+  }
+}
+
+/* --- Table --- */
+.scribe-prose .tableWrapper {
+  margin: 1.1em 0;
+  overflow-x: auto;
+}
+.scribe-prose table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  font-size: 0.95em;
+}
+.scribe-prose table td,
+.scribe-prose table th {
+  border: 1px solid var(--color-border);
+  padding: 0.45em 0.65em;
+  vertical-align: top;
+  text-align: left;
+  position: relative;
+  min-width: 3em;
+}
+.scribe-prose table th {
+  background: var(--color-hover);
+  font-weight: 600;
+}
+.scribe-prose table p {
+  margin: 0;
+}
+/* Selected-cell tint + resize handle, from the table extension's decorations. */
+.scribe-prose .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--color-selected);
+  pointer-events: none;
+}
+.scribe-prose .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background: var(--color-accent);
+  opacity: 0;
+  cursor: col-resize;
+}
+.scribe-prose table:hover .column-resize-handle {
+  opacity: 0.5;
+}
+.scribe-prose .column-resize-handle:hover,
+.scribe-prose .resize-cursor .column-resize-handle {
+  opacity: 1;
+}
+.scribe-prose.resize-cursor {
+  cursor: col-resize;
+}
+
+/* The floating, on-focus table control cluster (positioned by Floating UI). */
+.scribe-table-controls {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 30;
+  display: none;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-elevated);
+  box-shadow: var(--shadow-popover);
+}
+.scribe-table-controls[data-visible] {
+  display: flex;
+}
+.scribe-table-ctrl-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.7rem;
+  padding: 0 0.4rem;
+  border-radius: var(--radius-sm);
+  color: var(--color-muted);
+  outline: none;
+  transition: color 120ms ease, background 120ms ease;
+}
+.scribe-table-ctrl-btn:hover {
+  color: var(--color-text);
+  background: var(--color-hover);
+}
+.scribe-table-ctrl-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-ring);
+}
+.scribe-table-ctrl-glyph {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.scribe-table-ctrl-divider {
+  width: 1px;
+  height: 1.1rem;
+  margin: 0 2px;
+  background: var(--color-border);
+}
+
+/* --- External link card (bookmark) --- */
+.scribe-prose .scribe-linkcard {
+  position: relative;
+  margin: 1em 0;
+}
+.scribe-linkcard-body {
+  display: flex;
+  gap: 1rem;
+  align-items: stretch;
+  min-height: 4.5rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  cursor: pointer;
+  outline: none;
+  text-decoration: none;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.scribe-linkcard-body:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-border));
+  background: var(--color-hover);
+}
+.scribe-linkcard-body:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-ring);
+}
+.scribe-linkcard-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: center;
+}
+.scribe-linkcard-site {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--color-muted);
+}
+.scribe-linkcard-favicon {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  object-fit: cover;
+}
+.scribe-linkcard-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.scribe-linkcard-desc {
+  font-size: 0.83rem;
+  color: var(--color-muted);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.scribe-linkcard-thumb {
+  flex-shrink: 0;
+  width: 7.5rem;
+  border-radius: var(--radius-sm);
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-hover);
+}
+.scribe-linkcard-controls {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+}
+.scribe-linkcard:hover .scribe-linkcard-controls,
+.scribe-linkcard:focus-within .scribe-linkcard-controls {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+/* Loading skeleton */
+.scribe-linkcard-skeleton {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  align-items: stretch;
+}
+.scribe-skel {
+  display: block;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--color-hover) 25%,
+    color-mix(in srgb, var(--color-text) 7%, transparent) 37%,
+    var(--color-hover) 63%
+  );
+  background-size: 400% 100%;
+  animation: scribe-skel-shimmer 1.4s ease infinite;
+}
+.scribe-skel-site {
+  width: 35%;
+  height: 0.7rem;
+}
+.scribe-skel-title {
+  width: 80%;
+  height: 0.9rem;
+}
+.scribe-skel-desc {
+  width: 60%;
+  height: 0.7rem;
+}
+@keyframes scribe-skel-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scribe-skel {
+    animation: none;
+  }
+}
+
+/* --- Internal page link card --- */
+.scribe-prose .scribe-pagelink {
+  position: relative;
+  margin: 0.6em 0;
+}
+.scribe-pagelink-body {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.scribe-pagelink-body:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 40%, var(--color-border));
+  background: var(--color-hover);
+}
+.scribe-pagelink-body:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-ring);
+}
+.scribe-pagelink-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.4rem;
+  height: 1.4rem;
+  color: var(--color-muted);
+}
+.scribe-pagelink-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.scribe-pagelink-title {
+  font-weight: 500;
+  font-size: 0.92rem;
+  color: var(--color-text);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scribe-pagelink-crumb {
+  font-size: 0.76rem;
+  color: var(--color-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scribe-pagelink[data-not-found] .scribe-pagelink-body {
+  border-style: dashed;
+  cursor: default;
+}
+.scribe-pagelink[data-not-found] .scribe-pagelink-title {
+  color: var(--color-muted);
+}
+.scribe-pagelink-controls {
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  transform: translateY(-50%);
+}
+.scribe-pagelink:hover .scribe-pagelink-controls,
+.scribe-pagelink:focus-within .scribe-pagelink-controls {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* --- Task list --- */
+.scribe-prose ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.2em;
+  margin: 0;
+}
+.scribe-prose ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55em;
+  margin: 0.25em 0;
+  padding-left: 0;
+}
+.scribe-prose ul[data-type="taskList"] li > label {
+  flex-shrink: 0;
+  margin-top: 0.28em;
+  user-select: none;
+}
+.scribe-prose ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.scribe-prose ul[data-type="taskList"] input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1.05em;
+  height: 1.05em;
+  border: 1.5px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-surface);
+  cursor: pointer;
+  position: relative;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.scribe-prose ul[data-type="taskList"] input[type="checkbox"]:hover {
+  border-color: var(--color-accent);
+}
+.scribe-prose ul[data-type="taskList"] input[type="checkbox"]:checked {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+.scribe-prose ul[data-type="taskList"] input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 0.32em;
+  top: 0.13em;
+  width: 0.22em;
+  height: 0.45em;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.scribe-prose ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: var(--color-muted);
+  text-decoration: line-through;
+}
+.scribe-prose ul[data-type="taskList"] input[type="checkbox"]:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-ring);
+}
+
+/* --- Slash command menu --- */
+.scribe-slash-popup {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 60;
+}
+.scribe-slash-menu {
+  width: 18rem;
+  max-height: 21rem;
+  overflow-y: auto;
+  padding: 0.35rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-elevated);
+  box-shadow: var(--shadow-popover);
+  animation: scribe-pop-in 130ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scribe-slash-menu {
+    animation: none;
+  }
+}
+.scribe-slash-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  outline: none;
+  transition: background 100ms ease;
+}
+.scribe-slash-row.is-selected {
+  background: var(--color-selected);
+}
+.scribe-slash-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.scribe-slash-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.scribe-slash-title {
+  font-size: 0.875rem;
+  color: var(--color-text);
+  line-height: 1.3;
+}
+.scribe-slash-desc {
+  font-size: 0.76rem;
+  color: var(--color-muted);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scribe-slash-empty {
+  padding: 0.9rem 0.75rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}

@@ -38,3 +38,38 @@ export const HIGHLIGHT_COLORS: Swatch[] = [
   { name: "Lilac", value: "rgba(168, 148, 184, 0.30)" },
   { name: "Mist", value: "rgba(150, 158, 150, 0.28)" },
 ];
+
+// Softer washes for callout block backgrounds. A callout tints a whole block,
+// so its fill is lighter than an inline highlight band — enough to set the box
+// apart from the page without ever fighting the text inside it (light or dark).
+export const CALLOUT_COLORS: Swatch[] = [
+  { name: "Rose", value: "rgba(200, 142, 134, 0.16)" },
+  { name: "Peach", value: "rgba(212, 160, 120, 0.16)" },
+  { name: "Honey", value: "rgba(214, 178, 110, 0.17)" },
+  { name: "Sage", value: "rgba(150, 168, 124, 0.16)" },
+  { name: "Mint", value: "rgba(140, 178, 160, 0.16)" },
+  { name: "Sky", value: "rgba(132, 164, 196, 0.16)" },
+  { name: "Lilac", value: "rgba(168, 148, 184, 0.16)" },
+  { name: "Mist", value: "rgba(150, 158, 150, 0.15)" },
+];
+
+// Preset callout variants: each pairs an emoji with one of the callout washes.
+// Picking a variant just writes its (color, icon) onto the node; the custom
+// color swatches and emoji picker can then diverge from any preset freely.
+export type CalloutVariant = {
+  name: string;
+  icon: string;
+  color: string;
+};
+
+export const CALLOUT_VARIANTS: CalloutVariant[] = [
+  { name: "Info", icon: "ℹ️", color: "rgba(132, 164, 196, 0.16)" },
+  { name: "Tip", icon: "💡", color: "rgba(214, 178, 110, 0.17)" },
+  { name: "Warning", icon: "⚠️", color: "rgba(212, 160, 120, 0.16)" },
+  { name: "Danger", icon: "🔥", color: "rgba(200, 142, 134, 0.16)" },
+  { name: "Success", icon: "✅", color: "rgba(140, 178, 160, 0.16)" },
+  { name: "Note", icon: "📝", color: "rgba(150, 158, 150, 0.15)" },
+];
+
+// The default a fresh callout starts from (the Info variant).
+export const CALLOUT_DEFAULT = CALLOUT_VARIANTS[0];

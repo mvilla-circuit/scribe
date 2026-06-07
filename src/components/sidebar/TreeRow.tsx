@@ -3,25 +3,15 @@ import { CSS } from "@dnd-kit/utilities";
 import { cn } from "../../lib/utils";
 import { InlineRename } from "../ui/InlineRename";
 import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "../ui/ContextMenu";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../ui/DropdownMenu";
+  RowActionDropdown,
+  RowContextMenu,
+  type RowAction,
+} from "../ui/RowActionMenu";
 import {
   BookIcon,
   BookPlusIcon,
   FolderIcon,
   FolderOpenIcon,
-  MoreIcon,
   PencilIcon,
   TrashIcon,
 } from "./icons";
@@ -105,42 +95,32 @@ export function TreeRow({
     label
   );
 
-  const actions = (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-label="More actions"
-          onClick={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="flex h-6 w-6 items-center justify-center rounded text-muted hover:bg-hover hover:text-text"
-        >
-          <MoreIcon size={15} />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {isFolder && (
-          <>
-            <DropdownMenuItem onSelect={() => onNewBookInside()}>
-              <BookPlusIcon size={15} />
-              New book
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-          </>
-        )}
-        <DropdownMenuItem onSelect={() => onStartRename()}>
-          <PencilIcon size={15} />
-          Rename
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem danger onSelect={() => onDelete()}>
-          <TrashIcon size={15} />
-          Delete
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+  const menuActions: RowAction[] = [
+    ...(isFolder
+      ? [
+          {
+            icon: <BookPlusIcon size={15} />,
+            label: "New book",
+            onSelect: onNewBookInside,
+          },
+        ]
+      : []),
+    {
+      icon: <PencilIcon size={15} />,
+      label: "Rename",
+      onSelect: onStartRename,
+      separatorBefore: isFolder,
+    },
+    {
+      icon: <TrashIcon size={15} />,
+      label: "Delete",
+      onSelect: onDelete,
+      danger: true,
+      separatorBefore: true,
+    },
+  ];
+
+  const actions = <RowActionDropdown actions={menuActions} />;
 
   const rowInner = (
     <SidebarRow
@@ -181,31 +161,7 @@ export function TreeRow({
     </SidebarRow>
   );
 
-  return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>{rowInner}</ContextMenuTrigger>
-      <ContextMenuContent>
-          {isFolder && (
-            <>
-              <ContextMenuItem onSelect={() => onNewBookInside()}>
-                <BookPlusIcon size={15} />
-                New book
-              </ContextMenuItem>
-              <ContextMenuSeparator />
-            </>
-          )}
-          <ContextMenuItem onSelect={() => onStartRename()}>
-            <PencilIcon size={15} />
-            Rename
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem danger onSelect={() => onDelete()}>
-            <TrashIcon size={15} />
-            Delete
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
-  );
+  return <RowContextMenu actions={menuActions}>{rowInner}</RowContextMenu>;
 }
 
 // A lightweight, non-interactive copy of a row rendered inside the DragOverlay

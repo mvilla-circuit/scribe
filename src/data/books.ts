@@ -1,14 +1,9 @@
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  type QueryClient,
-} from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth";
 import type { Tables } from "../lib/database.types";
 import { byPosition } from "./ordering";
+import { optimisticListHandlers } from "./optimisticList";
 
 export type Book = Tables<"books">;
 
@@ -28,20 +23,19 @@ export function useBooks() {
   });
 }
 
-async function optimistic(
-  qc: QueryClient,
-  update: (prev: Book[]) => Book[]
-): Promise<{ previous: Book[] | undefined }> {
-  await qc.cancelQueries({ queryKey: booksKey });
-  const previous = qc.getQueryData<Book[]>(booksKey);
-  qc.setQueryData<Book[]>(booksKey, (prev) =>
-    (update(prev ?? []) ?? []).slice().sort(byPosition)
-  );
-  return { previous };
-}
-
-function rollback(qc: QueryClient, previous: Book[] | undefined) {
-  if (previous) qc.setQueryData(booksKey, previous);
+// Shared config for every optimistic books mutation: same cache key + sort.
+function bookHandlers<V>(
+  qc: ReturnType<typeof useQueryClient>,
+  update: (prev: Book[], variables: V) => Book[],
+  errorMessage: string
+) {
+  return optimisticListHandlers<Book, V>({
+    qc,
+    key: booksKey,
+    sort: byPosition,
+    update,
+    errorMessage,
+  });
 }
 
 export function useCreateBook() {
@@ -66,30 +60,34 @@ export function useCreateBook() {
       });
       if (error) throw error;
     },
-    onMutate: (input) => {
-      const now = new Date().toISOString();
-      return optimistic(qc, (prev) => [
-        ...prev,
-        {
-          id: input.id,
-          user_id: session?.user.id ?? "",
-          title: input.title,
-          subtitle: null,
-          cover_url: null,
-          icon: null,
-          theme: {},
-          folder_id: input.folder_id,
-          position: input.position,
-          created_at: now,
-          updated_at: now,
-        },
-      ]);
-    },
-    onError: (_e, _v, ctx) => {
-      rollback(qc, ctx?.previous);
-      toast.error("Couldn't create book");
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: booksKey }),
+    ...bookHandlers<{
+      id: string;
+      title: string;
+      folder_id: string | null;
+      position: number;
+    }>(
+      qc,
+      (prev, input) => {
+        const now = new Date().toISOString();
+        return [
+          ...prev,
+          {
+            id: input.id,
+            user_id: session?.user.id ?? "",
+            title: input.title,
+            subtitle: null,
+            cover_url: null,
+            icon: null,
+            theme: {},
+            folder_id: input.folder_id,
+            position: input.position,
+            created_at: now,
+            updated_at: now,
+          },
+        ];
+      },
+      "Couldn't create book"
+    ),
   });
 }
 
@@ -103,15 +101,12 @@ export function useRenameBook() {
         .eq("id", input.id);
       if (error) throw error;
     },
-    onMutate: (input) =>
-      optimistic(qc, (prev) =>
-        prev.map((b) => (b.id === input.id ? { ...b, title: input.title } : b))
-      ),
-    onError: (_e, _v, ctx) => {
-      rollback(qc, ctx?.previous);
-      toast.error("Couldn't rename book");
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: booksKey }),
+    ...bookHandlers<{ id: string; title: string }>(
+      qc,
+      (prev, input) =>
+        prev.map((b) => (b.id === input.id ? { ...b, title: input.title } : b)),
+      "Couldn't rename book"
+    ),
   });
 }
 
@@ -129,15 +124,16 @@ export function useUpdateBook() {
       const { error } = await supabase.from("books").update(patch).eq("id", id);
       if (error) throw error;
     },
-    onMutate: (input) =>
-      optimistic(qc, (prev) =>
-        prev.map((b) => (b.id === input.id ? { ...b, ...input } : b))
-      ),
-    onError: (_e, _v, ctx) => {
-      rollback(qc, ctx?.previous);
-      toast.error("Couldn't update book");
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: booksKey }),
+    ...bookHandlers<
+      { id: string } & Partial<
+        Pick<Book, "title" | "subtitle" | "icon" | "cover_url">
+      >
+    >(
+      qc,
+      (prev, input) =>
+        prev.map((b) => (b.id === input.id ? { ...b, ...input } : b)),
+      "Couldn't update book"
+    ),
   });
 }
 
@@ -155,19 +151,16 @@ export function useMoveBook() {
         .eq("id", input.id);
       if (error) throw error;
     },
-    onMutate: (input) =>
-      optimistic(qc, (prev) =>
+    ...bookHandlers<{ id: string; folder_id: string | null; position: number }>(
+      qc,
+      (prev, input) =>
         prev.map((b) =>
           b.id === input.id
             ? { ...b, folder_id: input.folder_id, position: input.position }
             : b
-        )
-      ),
-    onError: (_e, _v, ctx) => {
-      rollback(qc, ctx?.previous);
-      toast.error("Couldn't move book");
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: booksKey }),
+        ),
+      "Couldn't move book"
+    ),
   });
 }
 
@@ -178,12 +171,10 @@ export function useDeleteBook() {
       const { error } = await supabase.from("books").delete().eq("id", input.id);
       if (error) throw error;
     },
-    onMutate: (input) =>
-      optimistic(qc, (prev) => prev.filter((b) => b.id !== input.id)),
-    onError: (_e, _v, ctx) => {
-      rollback(qc, ctx?.previous);
-      toast.error("Couldn't delete book");
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: booksKey }),
+    ...bookHandlers<{ id: string }>(
+      qc,
+      (prev, input) => prev.filter((b) => b.id !== input.id),
+      "Couldn't delete book"
+    ),
   });
 }

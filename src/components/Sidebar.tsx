@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef } from "react";
+import { Check, LogOut, PanelLeft, Settings } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { useTheme, type ThemeMode } from "../theme/theme";
+import { makeIcon } from "../lib/makeIcon";
 import { SidebarTree } from "./sidebar/SidebarTree";
 import { OutlinePanel } from "./book/OutlinePanel";
 import { ChevronLeftIcon } from "./book/icons";
@@ -22,71 +24,10 @@ import {
 
 const COLLAPSED_WIDTH = 56;
 
-function PanelLeftIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect
-        x="3"
-        y="4"
-        width="18"
-        height="16"
-        rx="2"
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
-      <line x1="9" y1="4" x2="9" y2="20" stroke="currentColor" strokeWidth="1.6" />
-    </svg>
-  );
-}
-
-function SignOutIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-      <path
-        d="M10 8l-4 4 4 4M6 12h10"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function SettingsIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" />
-      <path
-        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M5 12l5 5L19 7"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+const PanelLeftIcon = makeIcon(PanelLeft);
+const SignOutIcon = makeIcon(LogOut);
+const SettingsIcon = makeIcon(Settings);
+const CheckIcon = makeIcon(Check);
 
 const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
   { value: "light", label: "Light" },
