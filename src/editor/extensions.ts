@@ -19,7 +19,11 @@ export function buildExtensions(): Extensions {
     StarterKit.configure({
       heading: { levels: [1, 2, 3] },
     }),
-    Highlight.configure({ multicolor: true }),
+    // Raise the highlight's priority so its <mark> renders as the *outermost*
+    // mark, wrapping bold/italic/etc. Otherwise a bold word inside a highlight
+    // nests as <strong><mark>…</mark></strong>, splitting one highlight into
+    // separate chips; as the outer mark it stays a single continuous wash.
+    Highlight.extend({ priority: 110 }).configure({ multicolor: true }),
     TextStyle,
     Color,
     // The prompt is scoped to the empty-editor state via the `.is-editor-empty`

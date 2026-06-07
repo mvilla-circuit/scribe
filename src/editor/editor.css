@@ -163,10 +163,15 @@
 }
 .scribe-prose mark {
   background: transparent; /* color comes from the inline highlight value */
-  border-radius: 3px;
-  padding: 0.02em 0.12em;
-  /* Slight negative margin so the wash hugs the text without nudging layout. */
-  margin: 0 -0.04em;
+  border-radius: 0.25em;
+  /* Generous padding so the wash reads like a real highlighter band rather than
+   * a tight underline of color. The line-height (1.7) leaves ample room, so the
+   * extra vertical padding doesn't crowd adjacent lines. */
+  padding: 0.12em 0.3em;
+  /* Pull the horizontal padding back into the margin so the highlight hugs the
+   * text without nudging surrounding layout. */
+  margin: 0 -0.12em;
+  /* Keep padding/radius on every line fragment when a highlight wraps. */
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }

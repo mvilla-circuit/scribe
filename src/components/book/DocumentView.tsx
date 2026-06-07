@@ -86,7 +86,9 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
           {document.title || "Untitled"}
         </span>
         <span className="ml-auto flex items-center gap-1 pl-3">
-          <SaveStatus state={saveState} />
+          <span className="mr-2">
+            <SaveStatus state={saveState} />
+          </span>
           <Tooltip content={document.show_outline ? "Hide outline" : "Show outline"}>
             <button
               type="button"
