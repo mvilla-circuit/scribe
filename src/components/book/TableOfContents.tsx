@@ -10,6 +10,8 @@ type TableOfContentsProps = {
   documents: Document[];
   loading: boolean;
   onCreateFirst: () => void;
+  /** The book's resolved title-role font, so the contents echo the cover. */
+  titleFont: string;
 };
 
 // The book's auto Table of Contents: the document hierarchy, depth-indented,
@@ -18,6 +20,7 @@ export function TableOfContents({
   documents,
   loading,
   onCreateFirst,
+  titleFont,
 }: TableOfContentsProps) {
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
   const entries = useMemo(
@@ -34,7 +37,7 @@ export function TableOfContents({
   if (entries.length === 0) {
     return (
       <div className="mt-10 rounded-lg border border-dashed border-border px-6 py-8 text-center">
-        <p className="text-base text-text" style={{ fontFamily: "var(--font-serif)" }}>
+        <p className="text-base text-text" style={{ fontFamily: titleFont }}>
           No documents yet
         </p>
         <p className="mx-auto mt-1.5 max-w-sm text-sm leading-relaxed text-muted">
@@ -63,23 +66,35 @@ export function TableOfContents({
             <button
               type="button"
               onClick={() => setActiveDoc(entry.document.id)}
-              style={{ paddingLeft: entry.depth * INDENT }}
-              className="group flex w-full items-baseline gap-2 rounded-sm py-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="group flex w-full items-stretch rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              {entry.document.icon && (
-                <DocumentIcon
-                  icon={entry.document.icon}
-                  size={15}
-                  className="shrink-0"
-                />
+              {entry.depth > 0 && (
+                <span aria-hidden className="flex shrink-0">
+                  {Array.from({ length: entry.depth }).map((_, level) => (
+                    <span
+                      key={level}
+                      className="border-l border-border"
+                      style={{ width: INDENT }}
+                    />
+                  ))}
+                </span>
               )}
-              <span
-                className="min-w-0 truncate text-[15px] leading-relaxed text-text decoration-accent/40 underline-offset-4 group-hover:underline"
-                style={{ fontFamily: "var(--font-serif)" }}
-              >
-                {entry.document.title || "Untitled"}
+              <span className="flex min-w-0 flex-1 items-baseline gap-2 py-1.5 pl-1">
+                {entry.document.icon && (
+                  <DocumentIcon
+                    icon={entry.document.icon}
+                    size={15}
+                    className="shrink-0"
+                  />
+                )}
+                <span
+                  className="min-w-0 truncate text-[15px] leading-relaxed text-text decoration-accent/40 underline-offset-4 group-hover:underline"
+                  style={{ fontFamily: "var(--font-text)" }}
+                >
+                  {entry.document.title || "Untitled"}
+                </span>
+                <span className="h-px flex-1 translate-y-[-3px] border-b border-dotted border-border opacity-0 transition-opacity group-hover:opacity-100" />
               </span>
-              <span className="h-px flex-1 translate-y-[-3px] border-b border-dotted border-border opacity-0 transition-opacity group-hover:opacity-100" />
             </button>
           </li>
         ))}
