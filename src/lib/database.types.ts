@@ -94,6 +94,7 @@ export type Database = {
           book_id: string
           content: Json
           created_at: string
+          font_overrides: Json | null
           icon: string | null
           id: string
           is_title_page: boolean
@@ -111,6 +112,7 @@ export type Database = {
           book_id: string
           content?: Json
           created_at?: string
+          font_overrides?: Json | null
           icon?: string | null
           id?: string
           is_title_page?: boolean
@@ -128,6 +130,7 @@ export type Database = {
           book_id?: string
           content?: Json
           created_at?: string
+          font_overrides?: Json | null
           icon?: string | null
           id?: string
           is_title_page?: boolean
@@ -231,6 +234,7 @@ export type Database = {
           created_at: string
           default_font: string | null
           display_name: string | null
+          fonts: Json
           id: string
           theme: string
           updated_at: string
@@ -239,6 +243,7 @@ export type Database = {
           created_at?: string
           default_font?: string | null
           display_name?: string | null
+          fonts?: Json
           id: string
           theme?: string
           updated_at?: string
@@ -247,6 +252,7 @@ export type Database = {
           created_at?: string
           default_font?: string | null
           display_name?: string | null
+          fonts?: Json
           id?: string
           theme?: string
           updated_at?: string

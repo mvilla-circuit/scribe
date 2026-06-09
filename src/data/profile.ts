@@ -1,0 +1,75 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { supabase } from "../lib/supabase";
+import { useAuth } from "../lib/auth";
+import type { Json, Tables } from "../lib/database.types";
+import type { FontMap } from "../fonts/catalog";
+
+export type Profile = Tables<"profiles">;
+
+// The global role -> fontId map persisted in profiles.fonts. An empty map means
+// "use the System defaults", preserving the pre-Phase-6 look until the user
+// picks fonts in Settings.
+export type ProfileFonts = FontMap;
+
+export const profileKey = ["profile"] as const;
+
+export function useProfile() {
+  const { session } = useAuth();
+  const userId = session?.user.id;
+  return useQuery({
+    queryKey: profileKey,
+    enabled: !!userId,
+    queryFn: async (): Promise<Profile | null> => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId as string)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// Typed view of the profiles.fonts jsonb column.
+export function profileFonts(
+  profile: Profile | null | undefined
+): ProfileFonts {
+  const fonts = profile?.fonts;
+  if (!fonts || typeof fonts !== "object" || Array.isArray(fonts)) return {};
+  return fonts as ProfileFonts;
+}
+
+// Writes the whole global role -> fontId map (callers merge with the current map
+// before saving). Optimistic so the reading surface restyles instantly.
+export function useUpdateProfileFonts() {
+  const qc = useQueryClient();
+  const { session } = useAuth();
+  return useMutation({
+    mutationFn: async (fonts: ProfileFonts) => {
+      const userId = session?.user.id;
+      if (!userId) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("profiles")
+        .update({ fonts: fonts as Json })
+        .eq("id", userId);
+      if (error) throw error;
+    },
+    onMutate: async (fonts) => {
+      await qc.cancelQueries({ queryKey: profileKey });
+      const previous = qc.getQueryData<Profile | null>(profileKey);
+      qc.setQueryData<Profile | null>(profileKey, (prev) =>
+        prev ? { ...prev, fonts: fonts as Json } : prev
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context) qc.setQueryData(profileKey, context.previous);
+      toast.error("Couldn't save fonts");
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: profileKey });
+    },
+  });
+}

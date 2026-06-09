@@ -2,13 +2,21 @@ import { useMemo, useRef, useState } from "react";
 import { useUIStore } from "../../store/ui";
 import type { Book } from "../../data/books";
 import {
+  docFontOverrides,
   useRenameDocument,
   useUpdateDocument,
   useUpdateDocumentContent,
+  useUpdateDocumentFontOverrides,
   type Document,
 } from "../../data/documents";
+import { bookFontOverrides } from "../../data/books";
+import { profileFonts, useProfile } from "../../data/profile";
 import { cn, formatDateTime, formatRelativeTime } from "../../lib/utils";
+import { resolveFonts } from "../../fonts/resolve";
+import { useScopedFonts } from "../../fonts/useScopedFonts";
+import type { FontMap, FontRole } from "../../fonts/catalog";
 import { EditableText } from "./EditableText";
+import { FontControl } from "./FontControl";
 import { PageOutline } from "./PageOutline";
 import { IconPicker } from "../ui/IconPicker";
 import { DocumentIcon } from "../ui/DocumentIcon";
@@ -31,6 +39,8 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
   const renameDocument = useRenameDocument(book.id);
   const updateDocument = useUpdateDocument(book.id);
   const updateContent = useUpdateDocumentContent(book.id);
+  const updateFontOverrides = useUpdateDocumentFontOverrides(book.id);
+  const { data: profile } = useProfile();
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [headings, setHeadings] = useState<OutlineHeading[]>([]);
@@ -55,8 +65,28 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
 
   const showOutline = document.show_outline && headings.length > 0;
 
+  // Fonts cascade global -> book -> page, resolved live so changes apply without
+  // a reload. Title uses the Display role, body prose the Text role, code the
+  // Code role; the resolved stacks are scoped onto this view via CSS variables.
+  const globalFonts = profileFonts(profile);
+  const bookOverrides = bookFontOverrides(book);
+  const overrides = docFontOverrides(document);
+  const resolved = resolveFonts(globalFonts, bookOverrides, overrides);
+  const fontVars = useScopedFonts(resolved);
+  const titleFont = "var(--font-display)";
+  const bodyFont = "var(--font-text)";
+
+  const writePageFonts = (fonts: FontMap | null) =>
+    updateFontOverrides.mutate({ id: document.id, font_overrides: fonts });
+  const setPageFont = (role: FontRole, fontId: string) =>
+    writePageFonts({ ...overrides, [role]: fontId });
+  const clearPageFont = (role: FontRole) => {
+    const { [role]: _removed, ...rest } = overrides;
+    writePageFonts(Object.keys(rest).length > 0 ? rest : null);
+  };
+
   return (
-    <div className="flex min-h-full flex-col">
+    <div style={fontVars} className="flex min-h-full flex-col">
       <nav
         aria-label="Breadcrumb"
         data-tauri-drag-region
@@ -131,6 +161,15 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
               <SubtitleIcon size={16} />
             </button>
           </Tooltip>
+          <FontControl
+            heading="Page fonts"
+            inheritLabel="book"
+            overrides={overrides}
+            inherited={resolveFonts(globalFonts, bookOverrides)}
+            onSet={setPageFont}
+            onClear={clearPageFont}
+            onClearAll={() => writePageFonts(null)}
+          />
         </span>
       </nav>
 
@@ -149,7 +188,7 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
               placeholder="Untitled"
               onCommit={(title) => renameDocument.mutate({ id: document.id, title })}
               className="text-4xl font-semibold leading-tight tracking-tight text-text"
-              style={{ fontFamily: "var(--font-serif)" }}
+              style={{ fontFamily: titleFont }}
             />
 
             {document.show_subtitle && (
@@ -165,14 +204,18 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
                   })
                 }
                 className="mt-2 text-xl leading-snug text-muted"
-                style={{ fontFamily: "var(--font-serif)" }}
+                style={{ fontFamily: titleFont }}
               />
             )}
 
             <PageMeta document={document} />
           </header>
 
-          <div ref={proseContainerRef} className="mt-8">
+          <div
+            ref={proseContainerRef}
+            className="mt-8"
+            style={{ fontFamily: bodyFont }}
+          >
             <Editor
               ref={editorRef}
               key={document.id}

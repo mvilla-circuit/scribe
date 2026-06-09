@@ -2,10 +2,31 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth";
 import type { Tables } from "../lib/database.types";
+import type { FontMap } from "../fonts/catalog";
 import { byPosition } from "./ordering";
 import { optimisticListHandlers } from "./optimisticList";
 
 export type Book = Tables<"books">;
+
+// A book's `theme` jsonb. `fonts` holds per-role font overrides that take
+// precedence over the global settings; unset roles inherit from global.
+export type BookTheme = {
+  fonts?: FontMap;
+};
+
+// Typed view of the books.theme jsonb column.
+export function bookTheme(book: Book): BookTheme {
+  const theme = book.theme;
+  if (!theme || typeof theme !== "object" || Array.isArray(theme)) return {};
+  return theme as BookTheme;
+}
+
+// The book's per-role font overrides (a partial role -> fontId map).
+export function bookFontOverrides(book: Book): FontMap {
+  const fonts = bookTheme(book).fonts;
+  if (!fonts || typeof fonts !== "object" || Array.isArray(fonts)) return {};
+  return fonts as FontMap;
+}
 
 export const booksKey = ["books"] as const;
 
@@ -110,14 +131,14 @@ export function useRenameBook() {
   });
 }
 
-// Generic patch for a book's editable fields (subtitle today; icon/cover land
-// in later phases). Kept separate from rename so callers stay explicit.
+// Generic patch for a book's editable fields (subtitle, icon/cover, and the
+// Phase 6 font-role `theme`). Kept separate from rename so callers stay explicit.
 export function useUpdateBook() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (
       input: { id: string } & Partial<
-        Pick<Book, "title" | "subtitle" | "icon" | "cover_url">
+        Pick<Book, "title" | "subtitle" | "icon" | "cover_url" | "theme">
       >
     ) => {
       const { id, ...patch } = input;
@@ -126,7 +147,7 @@ export function useUpdateBook() {
     },
     ...bookHandlers<
       { id: string } & Partial<
-        Pick<Book, "title" | "subtitle" | "icon" | "cover_url">
+        Pick<Book, "title" | "subtitle" | "icon" | "cover_url" | "theme">
       >
     >(
       qc,

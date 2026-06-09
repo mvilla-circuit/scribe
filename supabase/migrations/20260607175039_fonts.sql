@@ -1,0 +1,4 @@
+-- Intentionally empty: this file was created by `supabase migration new fonts`
+-- and is superseded by 20260607125150_fonts.sql, which holds the actual
+-- profiles.fonts + documents.font_overrides columns. Kept (not deleted) because
+-- it is already recorded in the remote migration history.

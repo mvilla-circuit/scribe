@@ -1,11 +1,22 @@
 import { getPositionBetween } from "../../data/ordering";
-import { useRenameBook, useUpdateBook, type Book } from "../../data/books";
+import {
+  bookFontOverrides,
+  bookTheme,
+  useRenameBook,
+  useUpdateBook,
+  type Book,
+} from "../../data/books";
 import {
   useCreateDocument,
   type Document,
 } from "../../data/documents";
+import { profileFonts, useProfile } from "../../data/profile";
 import { useUIStore } from "../../store/ui";
+import { resolveFonts } from "../../fonts/resolve";
+import { useScopedFonts } from "../../fonts/useScopedFonts";
+import type { FontMap, FontRole } from "../../fonts/catalog";
 import { EditableText } from "./EditableText";
+import { FontControl } from "./FontControl";
 import { TableOfContents } from "./TableOfContents";
 
 type TitlePageProps = {
@@ -21,6 +32,23 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
   const updateBook = useUpdateBook();
   const createDocument = useCreateDocument(book.id);
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
+  const { data: profile } = useProfile();
+
+  // Fonts cascade global -> book; the Title Page has no page-level layer.
+  const globalFonts = profileFonts(profile);
+  const bookOverrides = bookFontOverrides(book);
+  const resolved = resolveFonts(globalFonts, bookOverrides);
+  const fontVars = useScopedFonts(resolved);
+  const titleFont = "var(--font-display)";
+
+  const writeBookFonts = (fonts: FontMap) =>
+    updateBook.mutate({ id: book.id, theme: { ...bookTheme(book), fonts } });
+  const setBookFont = (role: FontRole, fontId: string) =>
+    writeBookFonts({ ...bookOverrides, [role]: fontId });
+  const clearBookFont = (role: FontRole) => {
+    const { [role]: _removed, ...rest } = bookOverrides;
+    writeBookFonts(rest);
+  };
 
   const createFirstPage = () => {
     const id = crypto.randomUUID();
@@ -38,7 +66,21 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
   };
 
   return (
-    <article className="mx-auto w-full max-w-[68ch] px-8 py-16 sm:py-24">
+    <article
+      style={fontVars}
+      className="group/title relative mx-auto w-full max-w-[68ch] px-8 py-16 sm:py-24"
+    >
+      <div className="absolute right-6 top-5 opacity-0 transition-opacity focus-within:opacity-100 group-hover/title:opacity-100">
+        <FontControl
+          heading="Book fonts"
+          inheritLabel="global"
+          overrides={bookOverrides}
+          inherited={resolveFonts(globalFonts)}
+          onSet={setBookFont}
+          onClear={clearBookFont}
+          onClearAll={() => writeBookFonts({})}
+        />
+      </div>
       <header>
         <EditableText
           value={book.title}
@@ -46,7 +88,7 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
           placeholder="Untitled"
           onCommit={(title) => renameBook.mutate({ id: book.id, title })}
           className="text-[2.75rem] font-semibold leading-tight tracking-tight text-text"
-          style={{ fontFamily: "var(--font-serif)" }}
+          style={{ fontFamily: titleFont }}
         />
         <EditableText
           value={book.subtitle ?? ""}
@@ -57,7 +99,7 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
             updateBook.mutate({ id: book.id, subtitle: subtitle || null })
           }
           className="mt-3 text-xl leading-snug text-muted"
-          style={{ fontFamily: "var(--font-serif)" }}
+          style={{ fontFamily: titleFont }}
         />
       </header>
 
@@ -65,6 +107,7 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
         documents={documents}
         loading={loading}
         onCreateFirst={createFirstPage}
+        titleFont={titleFont}
       />
     </article>
   );

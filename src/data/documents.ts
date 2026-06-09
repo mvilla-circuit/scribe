@@ -4,12 +4,26 @@ import { toast } from "sonner";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth";
 import type { Json, Tables } from "../lib/database.types";
+import type { FontMap } from "../fonts/catalog";
 import { byPosition } from "./ordering";
 import { collectSubtree } from "./subtree";
 import { optimisticListHandlers } from "./optimisticList";
 import { pageIndexKey } from "./pageIndex";
 
 export type Document = Tables<"documents">;
+
+// A page's per-role font overrides (a partial role -> fontId map). NULL on the
+// row means the page inherits everything from its book (which inherits global).
+export type DocFontOverrides = FontMap;
+
+// Typed view of the documents.font_overrides jsonb column.
+export function docFontOverrides(doc: Document): DocFontOverrides {
+  const overrides = doc.font_overrides;
+  if (!overrides || typeof overrides !== "object" || Array.isArray(overrides)) {
+    return {};
+  }
+  return overrides as DocFontOverrides;
+}
 
 // Documents are keyed per book so opening a book loads only its own pages and
 // optimistic mutations touch a single, well-scoped cache entry.
@@ -117,6 +131,7 @@ export function useCreateDocument(bookId: string) {
             is_title_page: input.is_title_page ?? false,
             position: input.position,
             content: {} as Json,
+            font_overrides: null,
             created_at: now,
             updated_at: now,
           },
@@ -283,6 +298,39 @@ export function useUpdateDocumentContent(bookId: string) {
           d.id === input.id ? { ...d, content: input.content } : d
         ),
       "Couldn't save changes"
+    ),
+  });
+}
+
+// Writes or clears a page's font-role overrides. Passing `null` clears the
+// column so the page inherits its book's choice again ("Inherit from book").
+export function useUpdateDocumentFontOverrides(bookId: string) {
+  const qc = useQueryClient();
+  const key = documentsKey(bookId);
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      font_overrides: DocFontOverrides | null;
+    }) => {
+      const { error } = await supabase
+        .from("documents")
+        .update({ font_overrides: input.font_overrides as Json })
+        .eq("id", input.id);
+      if (error) throw error;
+    },
+    ...documentHandlers<{
+      id: string;
+      font_overrides: DocFontOverrides | null;
+    }>(
+      qc,
+      key,
+      (prev, input) =>
+        prev.map((d) =>
+          d.id === input.id
+            ? { ...d, font_overrides: input.font_overrides as Json }
+            : d
+        ),
+      "Couldn't update page fonts"
     ),
   });
 }

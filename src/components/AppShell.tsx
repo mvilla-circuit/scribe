@@ -3,9 +3,11 @@ import { BookView } from "./book/BookView";
 import { MainEmptyState } from "./MainEmptyState";
 import { Sidebar } from "./Sidebar";
 import { useBooks } from "../data/books";
+import { useGlobalFonts } from "../fonts/useGlobalFonts";
 import { useUIStore } from "../store/ui";
 
 export function AppShell() {
+  useGlobalFonts();
   const activeBookId = useUIStore((s) => s.activeBookId);
   const { data: books } = useBooks();
   const activeBook = books?.find((b) => b.id === activeBookId) ?? null;

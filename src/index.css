@@ -3,9 +3,18 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
+  /* App-chrome UI sans — the interface (sidebar, menus, dialogs) always stays
+     on this stable system stack so it never turns serif/mono. */
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
   /* Editorial serif for the reading surface (Phase 3b). */
   --font-serif: "New York", "Iowan Old Style", Georgia, serif;
+  /* Phase 6 typography roles for the reading surface. These default to system
+     stacks and are repointed at runtime to the chosen catalog fonts (see
+     fonts/useGlobalFonts.ts), then referenced via var() on titles, body prose,
+     and code. */
+  --font-display: "New York", "Iowan Old Style", Georgia, serif;
+  --font-text: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --font-code: "SF Mono", ui-monospace, Menlo, monospace;
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-elevated: var(--elevated);

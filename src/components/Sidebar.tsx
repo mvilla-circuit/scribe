@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useRef } from "react";
-import { Check, LogOut, PanelLeft, Settings } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Check, LogOut, PanelLeft, Settings, Type } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { useTheme, type ThemeMode } from "../theme/theme";
 import { makeIcon } from "../lib/makeIcon";
 import { SidebarTree } from "./sidebar/SidebarTree";
 import { OutlinePanel } from "./book/OutlinePanel";
 import { ChevronLeftIcon } from "./book/icons";
+import { SettingsDialog } from "./settings/SettingsDialog";
 import type { Book } from "../data/books";
 import { Avatar } from "./ui/Avatar";
 import {
@@ -28,6 +29,7 @@ const PanelLeftIcon = makeIcon(PanelLeft);
 const SignOutIcon = makeIcon(LogOut);
 const SettingsIcon = makeIcon(Settings);
 const CheckIcon = makeIcon(Check);
+const FontsIcon = makeIcon(Type);
 
 const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
   { value: "light", label: "Light" },
@@ -43,6 +45,7 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
   const width = useUIStore((s) => s.sidebarWidth);
   const setSidebarWidth = useUIStore((s) => s.setSidebarWidth);
   const setActiveBook = useUIStore((s) => s.setActiveBook);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const dragging = useRef(false);
 
@@ -167,6 +170,11 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent side="top" align="end" className="min-w-[12rem]">
+              <DropdownMenuItem onSelect={() => setSettingsOpen(true)}>
+                <FontsIcon />
+                Fonts & settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuLabel>Theme</DropdownMenuLabel>
               {THEME_OPTIONS.map((opt) => (
                 <DropdownMenuItem
@@ -206,6 +214,8 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
           className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-accent/30"
         />
       )}
+
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </aside>
   );
 }
