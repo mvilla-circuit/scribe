@@ -128,11 +128,24 @@
 }
 
 /* --- Horizontal rule: a centered hairline, not a heavy bar --- */
-.scribe-prose hr {
+/* Scoped under `.ProseMirror >` so this out-ranks the generic `> * + *`
+   sibling-spacing rule; otherwise that rule overrides only `margin-top`,
+   leaving less space above the divider than below.
+
+   The hairline is just 1px, but the drag handle resolves its block by
+   hit-testing the pointer (elementsFromPoint) at drag start. A 1px target is
+   almost impossible to hit, so the drag would grab a neighbouring paragraph
+   (or nothing). We keep the line 1px but pad it into a ~24px transparent hit
+   box (line centred via `background-clip: content-box`), and pull the margin
+   in by the same amount so the visible spacing is unchanged. */
+.scribe-prose .ProseMirror > hr {
   border: none;
+  box-sizing: content-box;
   height: 1px;
+  padding: 11px 0;
   background: var(--color-border);
-  margin: 2em 0;
+  background-clip: content-box;
+  margin: calc(2em - 11px) 0;
 }
 .scribe-prose hr.ProseMirror-selectednode {
   outline: 2px solid var(--color-ring);

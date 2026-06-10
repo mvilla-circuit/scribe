@@ -1,8 +1,9 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { ChainedCommands, Editor } from "@tiptap/react";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
 import { DragHandle } from "@tiptap/extension-drag-handle-react";
+import { offset } from "@floating-ui/dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,12 +53,6 @@ const TURN_INTO: TurnInto[] = [
   { label: "Quote", icon: QuoteIcon, apply: (c) => c.toggleBlockquote() },
   { label: "Code", icon: CodeBlockIcon, apply: (c) => c.toggleCodeBlock() },
 ];
-
-// Keep the handle flush against the block's left edge (no positioning offset):
-// a gap here would be a dead zone where the plugin hides the handle on
-// mouseleave before the cursor can reach it. The visual gutter spacing is a
-// transparent hit-area bridge in CSS instead, so the hover never breaks.
-const HANDLE_POSITION = { placement: "left-start" as const };
 
 // Notion-style gutter control. The handle fades in next to the hovered top-level
 // block: drag it to reorder (handled natively by the drag-handle plugin), or
@@ -150,6 +145,46 @@ export function BlockHandle({ editor }: { editor: Editor }) {
     []
   );
 
+  // Vertically center the grip on the block's first text line (and on the block
+  // center for short, lineless blocks like the divider). Kept flush on the main
+  // axis so the CSS hover bridge to the block edge stays intact, and memoized so
+  // the config identity is stable (a changing identity would churn the plugin
+  // and recreate the drop-cursor view). `target.current` mirrors the block the
+  // extension is positioning for, so we read its DOM metrics for the offset.
+  const handlePosition = useMemo(
+    () => ({
+      placement: "left-start" as const,
+      middleware: [
+        offset(({ rects }) => {
+          const t = target.current;
+          if (!t) return 0;
+          const dom = editor.view.nodeDOM(t.pos);
+          if (!(dom instanceof HTMLElement)) return 0;
+          const cs = getComputedStyle(dom);
+          let lineHeight = parseFloat(cs.lineHeight);
+          if (!Number.isFinite(lineHeight)) {
+            lineHeight = (parseFloat(cs.fontSize) || 16) * 1.2;
+          }
+          // First-line band: a real line height for textblocks; for lineless
+          // blocks fall back to the block's own (possibly tiny) height.
+          const band = t.node.type.isTextblock
+            ? lineHeight
+            : Math.min(rects.reference.height, lineHeight);
+          const padTop = t.node.type.isTextblock
+            ? parseFloat(cs.paddingTop) || 0
+            : 0;
+          // crossAxis (vertical for a left placement): shift the grip down so
+          // its center meets the first line's center.
+          return {
+            mainAxis: 0,
+            crossAxis: padTop + band / 2 - rects.floating.height / 2,
+          };
+        }),
+      ],
+    }),
+    [editor]
+  );
+
   const handleElementDragStart = useCallback(() => {
     if (openRef.current) handleOpenChange(false);
     const pos = target.current?.pos;
@@ -203,7 +238,7 @@ export function BlockHandle({ editor }: { editor: Editor }) {
     <DragHandle
       editor={editor}
       className="scribe-drag-handle"
-      computePositionConfig={HANDLE_POSITION}
+      computePositionConfig={handlePosition}
       onNodeChange={handleNodeChange}
       onElementDragStart={handleElementDragStart}
       onElementDragEnd={handleElementDragEnd}
