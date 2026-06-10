@@ -6,6 +6,7 @@
  * wired to the existing theme tokens so light and dark stay coherent. */
 
 .scribe-prose {
+  position: relative; /* anchors the absolutely-positioned block drag handle */
   font-size: 1.0625rem; /* 17px base — easy on the eyes for long reading */
   line-height: 1.7;
   color: var(--color-text);
@@ -194,6 +195,20 @@
   border-top-color: var(--color-text);
 }
 
+/* The drop-cursor placement indicator shown while dragging a block. Soften the
+   accent bar into a rounded pill so it reads as a calm marker, not a hard rule. */
+.scribe-prose .scribe-dropcursor {
+  border-radius: 9999px;
+  opacity: 0.9;
+}
+
+/* The block being dragged: a subtle tonal wash with no layout shift. */
+.scribe-prose .scribe-block-dragging {
+  background: var(--color-hover);
+  border-radius: var(--radius-sm);
+  opacity: 0.6;
+}
+
 /* ===========================================================================
    Phase 5 — custom blocks & slash menu
    The governing rule: the writing surface stays calm. Every structural control
@@ -240,6 +255,54 @@
   background: var(--color-elevated);
 }
 .scribe-block-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-ring);
+}
+
+/* --- Block drag handle (Notion-style gutter grip) ---
+   The drag-handle plugin positions this element in the left gutter and toggles
+   its visibility on hover/focus. We only style the grip itself: a calm, tonal
+   affordance that drags to reorder and clicks to open the block menu. */
+.scribe-drag-handle {
+  z-index: 20;
+  display: flex;
+}
+.scribe-drag-handle[data-dragging="true"] .scribe-drag-handle-btn {
+  cursor: grabbing;
+}
+/* Invisible Radix anchor: overlays the grip so the menu opens beside it. */
+.scribe-drag-handle-anchor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* The button is a transparent hit area whose right padding bridges the gutter
+   to the block's left edge. With the handle positioned flush (no offset), this
+   keeps a continuous hover path so moving onto the grip never loses it. */
+.scribe-drag-handle-btn {
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem 0 0;
+  background: transparent;
+  border: 0;
+  cursor: grab;
+  outline: none;
+}
+/* The visible grip chip — only this carries the tonal hover treatment. */
+.scribe-drag-handle-grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.5rem;
+  width: 1.2rem;
+  border-radius: var(--radius-sm);
+  color: var(--color-muted);
+  transition: color 120ms ease, background 120ms ease;
+}
+.scribe-drag-handle-btn:hover .scribe-drag-handle-grip {
+  color: var(--color-text);
+  background: var(--color-hover);
+}
+.scribe-drag-handle-btn:focus-visible .scribe-drag-handle-grip {
   box-shadow: 0 0 0 2px var(--color-ring);
 }
 

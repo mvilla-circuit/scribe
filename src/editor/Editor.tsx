@@ -12,6 +12,7 @@ import {
 import type { Json } from "../lib/database.types";
 import { buildExtensions } from "./extensions";
 import { BubbleToolbar } from "./BubbleToolbar";
+import { BlockHandle } from "./BlockHandle";
 import { TableControls } from "./extensions/TableControls";
 import { PagePicker } from "./extensions/PagePicker";
 import { extractHeadings, type OutlineHeading } from "./outline";
@@ -115,6 +116,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       {editor && editable && (
         <>
           <BubbleToolbar editor={editor} />
+          <BlockHandle editor={editor} />
           <TableControls editor={editor} />
           <PagePicker />
         </>

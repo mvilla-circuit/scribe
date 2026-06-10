@@ -12,6 +12,7 @@ import {
 
 export const DropdownMenu = RDropdown.Root;
 export const DropdownMenuTrigger = RDropdown.Trigger;
+export const DropdownMenuSub = RDropdown.Sub;
 
 export const DropdownMenuContent = forwardRef<
   React.ElementRef<typeof RDropdown.Content>,
@@ -60,3 +61,29 @@ export const DropdownMenuSeparator = forwardRef<
   />
 ));
 DropdownMenuSeparator.displayName = "DropdownMenuSeparator";
+
+export const DropdownMenuSubTrigger = forwardRef<
+  React.ElementRef<typeof RDropdown.SubTrigger>,
+  React.ComponentPropsWithoutRef<typeof RDropdown.SubTrigger>
+>(({ className, ...props }, ref) => (
+  <RDropdown.SubTrigger
+    ref={ref}
+    className={cn(menuItemClass, "data-[state=open]:bg-hover", className)}
+    {...props}
+  />
+));
+DropdownMenuSubTrigger.displayName = "DropdownMenuSubTrigger";
+
+export const DropdownMenuSubContent = forwardRef<
+  React.ElementRef<typeof RDropdown.SubContent>,
+  React.ComponentPropsWithoutRef<typeof RDropdown.SubContent>
+>(({ className, ...props }, ref) => (
+  <RDropdown.Portal>
+    <RDropdown.SubContent
+      ref={ref}
+      className={cn(menuContentClass, className)}
+      {...props}
+    />
+  </RDropdown.Portal>
+));
+DropdownMenuSubContent.displayName = "DropdownMenuSubContent";

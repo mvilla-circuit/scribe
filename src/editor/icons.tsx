@@ -14,6 +14,7 @@ import {
   Copy,
   ExternalLink,
   FileText,
+  GripVertical,
   Heading1,
   Heading2,
   Heading3,
@@ -76,3 +77,5 @@ export const PlusIcon = makeIcon(Plus);
 export const CloseIcon = makeIcon(X);
 export const EmojiIcon = makeIcon(Smile);
 export const PaletteIcon = makeIcon(Palette);
+// Block gutter drag handle (Notion-style grip).
+export const DragHandleIcon = makeIcon(GripVertical);

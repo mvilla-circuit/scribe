@@ -26,6 +26,7 @@ export function buildExtensions(): Extensions {
   return [
     StarterKit.configure({
       heading: { levels: [1, 2, 3] },
+      dropcursor: { color: "var(--color-accent)", width: 3, class: "scribe-dropcursor" },
     }),
     // Raise the highlight's priority so its <mark> renders as the *outermost*
     // mark, wrapping bold/italic/etc. Otherwise a bold word inside a highlight
