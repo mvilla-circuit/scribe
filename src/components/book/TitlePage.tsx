@@ -1,6 +1,7 @@
 import { getPositionBetween } from "../../data/ordering";
 import {
   bookFontOverrides,
+  bookShowSubtitle,
   bookTheme,
   useRenameBook,
   useUpdateBook,
@@ -12,13 +13,16 @@ import {
 } from "../../data/documents";
 import { profileFonts, useProfile } from "../../data/profile";
 import { useUIStore } from "../../store/ui";
+import { cn } from "../../lib/utils";
 import { resolveFonts } from "../../fonts/resolve";
 import { useScopedFonts } from "../../fonts/useScopedFonts";
 import type { FontMap, FontRole } from "../../fonts/catalog";
 import { DocumentIcon } from "../ui/DocumentIcon";
 import { IconPicker } from "../ui/IconPicker";
+import { Tooltip } from "../ui/Tooltip";
 import { EditableText } from "./EditableText";
 import { FontControl } from "./FontControl";
+import { SubtitleIcon } from "./icons";
 import { TableOfContents } from "./TableOfContents";
 
 type TitlePageProps = {
@@ -42,6 +46,13 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
   const resolved = resolveFonts(globalFonts, bookOverrides);
   const fontVars = useScopedFonts(resolved);
   const titleFont = "var(--font-display)";
+
+  const showSubtitle = bookShowSubtitle(book);
+  const toggleSubtitle = () =>
+    updateBook.mutate({
+      id: book.id,
+      theme: { ...bookTheme(book), showSubtitle: !showSubtitle },
+    });
 
   const writeBookFonts = (fonts: FontMap) =>
     updateBook.mutate({ id: book.id, theme: { ...bookTheme(book), fonts } });
@@ -68,56 +79,82 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
   };
 
   return (
-    <article
-      style={fontVars}
-      className="group/title relative mx-auto w-full max-w-[68ch] px-8 py-16 sm:py-24"
-    >
-      <div className="absolute right-6 top-5 opacity-0 transition-opacity focus-within:opacity-100 group-hover/title:opacity-100">
-        <FontControl
-          heading="Book fonts"
-          inheritLabel="global"
-          overrides={bookOverrides}
-          inherited={resolveFonts(globalFonts)}
-          onSet={setBookFont}
-          onClear={clearBookFont}
-          onClearAll={() => writeBookFonts({})}
-        />
-      </div>
-      <header className="group/header">
-        <BookIconControl
-          icon={book.icon}
-          onSelect={(icon) => updateBook.mutate({ id: book.id, icon })}
-          onRemove={() => updateBook.mutate({ id: book.id, icon: null })}
-        />
+    <div style={fontVars} className="flex min-h-full flex-col">
+      {/* The title page has no breadcrumb, but mirrors the document view's sticky
+          top bar so its settings sit flush with the top edge and the title-bar
+          zone stays draggable. */}
+      <nav
+        aria-label="Book settings"
+        data-tauri-drag-region
+        className="sticky top-0 z-20 flex items-center bg-bg px-8 py-3"
+      >
+        <span className="ml-auto flex items-center gap-1">
+          <Tooltip content={showSubtitle ? "Hide subtitle" : "Show subtitle"}>
+            <button
+              type="button"
+              onClick={toggleSubtitle}
+              aria-pressed={showSubtitle}
+              className={cn(
+                "flex h-7 w-7 items-center justify-center rounded-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
+                showSubtitle
+                  ? "bg-selected text-text"
+                  : "text-muted hover:bg-hover hover:text-text"
+              )}
+            >
+              <SubtitleIcon size={16} />
+            </button>
+          </Tooltip>
+          <FontControl
+            heading="Book fonts"
+            inheritLabel="global"
+            overrides={bookOverrides}
+            inherited={resolveFonts(globalFonts)}
+            onSet={setBookFont}
+            onClear={clearBookFont}
+            onClearAll={() => writeBookFonts({})}
+          />
+        </span>
+      </nav>
 
-        <EditableText
-          value={book.title}
-          ariaLabel="Book title"
-          placeholder="Untitled"
-          onCommit={(title) => renameBook.mutate({ id: book.id, title })}
-          className="text-[2.75rem] font-semibold leading-tight tracking-tight text-text"
-          style={{ fontFamily: titleFont }}
-        />
-        <EditableText
-          value={book.subtitle ?? ""}
-          ariaLabel="Book subtitle"
-          placeholder="Add a subtitle"
-          allowEmpty
-          onCommit={(subtitle) =>
-            updateBook.mutate({ id: book.id, subtitle: subtitle || null })
-          }
-          className="mt-3 text-xl leading-snug text-muted"
-          style={{ fontFamily: titleFont }}
-        />
-      </header>
+      <article className="mx-auto w-full max-w-[68ch] px-8 pb-16 pt-8 sm:pb-24 sm:pt-12">
+        <header className="group/header">
+          <BookIconControl
+            icon={book.icon}
+            onSelect={(icon) => updateBook.mutate({ id: book.id, icon })}
+            onRemove={() => updateBook.mutate({ id: book.id, icon: null })}
+          />
 
-      <TableOfContents
-        documents={documents}
-        loading={loading}
-        onCreateFirst={createFirstPage}
-        titleFont={titleFont}
-      />
-    </article>
+          <EditableText
+            value={book.title}
+            ariaLabel="Book title"
+            placeholder="Untitled"
+            onCommit={(title) => renameBook.mutate({ id: book.id, title })}
+            className="text-[2.75rem] font-semibold leading-tight tracking-tight text-text"
+            style={{ fontFamily: titleFont }}
+          />
+          {showSubtitle && (
+            <EditableText
+              value={book.subtitle ?? ""}
+              ariaLabel="Book subtitle"
+              placeholder="Add a subtitle"
+              allowEmpty
+              onCommit={(subtitle) =>
+                updateBook.mutate({ id: book.id, subtitle: subtitle || null })
+              }
+              className="mt-3 text-xl leading-snug text-muted"
+              style={{ fontFamily: titleFont }}
+            />
+          )}
+        </header>
+
+        <TableOfContents
+          documents={documents}
+          loading={loading}
+          onCreateFirst={createFirstPage}
+          titleFont={titleFont}
+        />
+      </article>
+    </div>
   );
 }
 

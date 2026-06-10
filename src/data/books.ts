@@ -10,8 +10,11 @@ export type Book = Tables<"books">;
 
 // A book's `theme` jsonb. `fonts` holds per-role font overrides that take
 // precedence over the global settings; unset roles inherit from global.
+// `showSubtitle` toggles the Title Page subtitle slot, mirroring the per-page
+// `show_subtitle` column on documents.
 export type BookTheme = {
   fonts?: FontMap;
+  showSubtitle?: boolean;
 };
 
 // Typed view of the books.theme jsonb column.
@@ -26,6 +29,14 @@ export function bookFontOverrides(book: Book): FontMap {
   const fonts = bookTheme(book).fonts;
   if (!fonts || typeof fonts !== "object" || Array.isArray(fonts)) return {};
   return fonts as FontMap;
+}
+
+// Whether the Title Page shows its subtitle slot. Defaults to true when a
+// subtitle already exists so existing books keep showing it, otherwise hidden.
+export function bookShowSubtitle(book: Book): boolean {
+  const flag = bookTheme(book).showSubtitle;
+  if (typeof flag === "boolean") return flag;
+  return Boolean(book.subtitle && book.subtitle.trim().length > 0);
 }
 
 export const booksKey = ["books"] as const;

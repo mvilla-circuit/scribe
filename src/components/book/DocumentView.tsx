@@ -187,7 +187,7 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
               ariaLabel="Document title"
               placeholder="Untitled"
               onCommit={(title) => renameDocument.mutate({ id: document.id, title })}
-              className="text-4xl font-semibold leading-tight tracking-tight text-text"
+              className="text-[2.6rem] font-semibold leading-tight tracking-tight text-text"
               style={{ fontFamily: titleFont }}
             />
 

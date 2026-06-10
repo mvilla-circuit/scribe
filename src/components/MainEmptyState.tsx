@@ -4,6 +4,7 @@ import { useAuth } from "../lib/auth";
 import { makeIcon } from "../lib/makeIcon";
 import { cn } from "../lib/utils";
 import { Button } from "./ui/Button";
+import { DocumentIcon } from "./ui/DocumentIcon";
 import { BookIcon, BookPlusIcon, FolderPlusIcon } from "./sidebar/icons";
 import { useBooks, useCreateBook, type Book } from "../data/books";
 import { useCreateFolder, useFolders } from "../data/folders";
@@ -173,7 +174,11 @@ function RecentBookCard({
       )}
     >
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-tree-group text-muted">
-        <BookIcon size={18} />
+        {book.icon ? (
+          <DocumentIcon icon={book.icon} size={18} />
+        ) : (
+          <BookIcon size={18} />
+        )}
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-text">

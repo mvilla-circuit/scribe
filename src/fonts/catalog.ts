@@ -11,6 +11,17 @@
 // chosen font pulls a handful of small woff2 files and nothing else — fully
 // offline once bundled, no API key.
 
+// Banned fonts — DO NOT re-add. These were removed for not meeting the
+// elegant/editorial bar; every replacement ships a true bold and italic.
+//   Serif:  Cormorant         → Petrona
+//           Spectral          → Vollkorn
+//           EB Garamond       → Gentium Book Plus
+//           Libre Baskerville → Literata
+//   Sans:   Jost              → Plus Jakarta Sans
+//           Epilogue          → Albert Sans
+//           Red Hat Display   → Hanken Grotesk
+//           Nunito Sans       → Figtree
+
 export type FontRole = "display" | "text" | "code";
 export type FontStyle = "serif" | "sans" | "mono";
 
@@ -82,14 +93,14 @@ export const SYSTEM_MONO: FontEntry = {
   system: true,
 };
 
-// Spectral works beautifully as both a display and a reading serif, so it is
+// Vollkorn works beautifully as both a display and a reading serif, so it is
 // offered in both roles from a single shared entry.
-const spectral = webFont("spectral", "Spectral", "serif", () =>
+const vollkorn = webFont("vollkorn", "Vollkorn", "serif", () =>
   Promise.all([
-    import("@fontsource/spectral/latin-400.css"),
-    import("@fontsource/spectral/latin-700.css"),
-    import("@fontsource/spectral/latin-400-italic.css"),
-    import("@fontsource/spectral/latin-700-italic.css"),
+    import("@fontsource/vollkorn/latin-400.css"),
+    import("@fontsource/vollkorn/latin-700.css"),
+    import("@fontsource/vollkorn/latin-400-italic.css"),
+    import("@fontsource/vollkorn/latin-700-italic.css"),
   ])
 );
 
@@ -131,12 +142,12 @@ const DISPLAY_SERIF: FontEntry[] = [
       import("@fontsource/fraunces/latin-700-italic.css"),
     ])
   ),
-  webFont("cormorant", "Cormorant", "serif", () =>
+  webFont("petrona", "Petrona", "serif", () =>
     Promise.all([
-      import("@fontsource/cormorant/latin-400.css"),
-      import("@fontsource/cormorant/latin-700.css"),
-      import("@fontsource/cormorant/latin-400-italic.css"),
-      import("@fontsource/cormorant/latin-700-italic.css"),
+      import("@fontsource/petrona/latin-400.css"),
+      import("@fontsource/petrona/latin-700.css"),
+      import("@fontsource/petrona/latin-400-italic.css"),
+      import("@fontsource/petrona/latin-700-italic.css"),
     ])
   ),
   webFont("bodoni-moda", "Bodoni Moda", "serif", () =>
@@ -147,21 +158,21 @@ const DISPLAY_SERIF: FontEntry[] = [
       import("@fontsource/bodoni-moda/latin-700-italic.css"),
     ])
   ),
-  spectral,
-  webFont("eb-garamond", "EB Garamond", "serif", () =>
+  vollkorn,
+  webFont("gentium-book-plus", "Gentium Book Plus", "serif", () =>
     Promise.all([
-      import("@fontsource/eb-garamond/latin-400.css"),
-      import("@fontsource/eb-garamond/latin-700.css"),
-      import("@fontsource/eb-garamond/latin-400-italic.css"),
-      import("@fontsource/eb-garamond/latin-700-italic.css"),
+      import("@fontsource/gentium-book-plus/latin-400.css"),
+      import("@fontsource/gentium-book-plus/latin-700.css"),
+      import("@fontsource/gentium-book-plus/latin-400-italic.css"),
+      import("@fontsource/gentium-book-plus/latin-700-italic.css"),
     ])
   ),
-  webFont("libre-baskerville", "Libre Baskerville", "serif", () =>
+  webFont("literata", "Literata", "serif", () =>
     Promise.all([
-      import("@fontsource/libre-baskerville/latin-400.css"),
-      import("@fontsource/libre-baskerville/latin-700.css"),
-      import("@fontsource/libre-baskerville/latin-400-italic.css"),
-      import("@fontsource/libre-baskerville/latin-700-italic.css"),
+      import("@fontsource/literata/latin-400.css"),
+      import("@fontsource/literata/latin-700.css"),
+      import("@fontsource/literata/latin-400-italic.css"),
+      import("@fontsource/literata/latin-700-italic.css"),
     ])
   ),
   webFont("crimson-pro", "Crimson Pro", "serif", () =>
@@ -215,28 +226,28 @@ const DISPLAY_SANS: FontEntry[] = [
       import("@fontsource/poppins/latin-700-italic.css"),
     ])
   ),
-  webFont("jost", "Jost", "sans", () =>
+  webFont("plus-jakarta-sans", "Plus Jakarta Sans", "sans", () =>
     Promise.all([
-      import("@fontsource/jost/latin-400.css"),
-      import("@fontsource/jost/latin-700.css"),
-      import("@fontsource/jost/latin-400-italic.css"),
-      import("@fontsource/jost/latin-700-italic.css"),
+      import("@fontsource/plus-jakarta-sans/latin-400.css"),
+      import("@fontsource/plus-jakarta-sans/latin-700.css"),
+      import("@fontsource/plus-jakarta-sans/latin-400-italic.css"),
+      import("@fontsource/plus-jakarta-sans/latin-700-italic.css"),
     ])
   ),
-  webFont("epilogue", "Epilogue", "sans", () =>
+  webFont("albert-sans", "Albert Sans", "sans", () =>
     Promise.all([
-      import("@fontsource/epilogue/latin-400.css"),
-      import("@fontsource/epilogue/latin-700.css"),
-      import("@fontsource/epilogue/latin-400-italic.css"),
-      import("@fontsource/epilogue/latin-700-italic.css"),
+      import("@fontsource/albert-sans/latin-400.css"),
+      import("@fontsource/albert-sans/latin-700.css"),
+      import("@fontsource/albert-sans/latin-400-italic.css"),
+      import("@fontsource/albert-sans/latin-700-italic.css"),
     ])
   ),
-  webFont("red-hat-display", "Red Hat Display", "sans", () =>
+  webFont("hanken-grotesk", "Hanken Grotesk", "sans", () =>
     Promise.all([
-      import("@fontsource/red-hat-display/latin-400.css"),
-      import("@fontsource/red-hat-display/latin-700.css"),
-      import("@fontsource/red-hat-display/latin-400-italic.css"),
-      import("@fontsource/red-hat-display/latin-700-italic.css"),
+      import("@fontsource/hanken-grotesk/latin-400.css"),
+      import("@fontsource/hanken-grotesk/latin-700.css"),
+      import("@fontsource/hanken-grotesk/latin-400-italic.css"),
+      import("@fontsource/hanken-grotesk/latin-700-italic.css"),
     ])
   ),
   ubuntu,
@@ -269,7 +280,7 @@ const TEXT_SERIF: FontEntry[] = [
       import("@fontsource/newsreader/latin-700-italic.css"),
     ])
   ),
-  spectral,
+  vollkorn,
   webFont("merriweather", "Merriweather", "serif", () =>
     Promise.all([
       import("@fontsource/merriweather/latin-400.css"),
@@ -353,12 +364,12 @@ const TEXT_SANS: FontEntry[] = [
       import("@fontsource/open-sans/latin-700-italic.css"),
     ])
   ),
-  webFont("nunito-sans", "Nunito Sans", "sans", () =>
+  webFont("figtree", "Figtree", "sans", () =>
     Promise.all([
-      import("@fontsource/nunito-sans/latin-400.css"),
-      import("@fontsource/nunito-sans/latin-700.css"),
-      import("@fontsource/nunito-sans/latin-400-italic.css"),
-      import("@fontsource/nunito-sans/latin-700-italic.css"),
+      import("@fontsource/figtree/latin-400.css"),
+      import("@fontsource/figtree/latin-700.css"),
+      import("@fontsource/figtree/latin-400-italic.css"),
+      import("@fontsource/figtree/latin-700-italic.css"),
     ])
   ),
   webFont("rubik", "Rubik", "sans", () =>
@@ -367,6 +378,14 @@ const TEXT_SANS: FontEntry[] = [
       import("@fontsource/rubik/latin-700.css"),
       import("@fontsource/rubik/latin-400-italic.css"),
       import("@fontsource/rubik/latin-700-italic.css"),
+    ])
+  ),
+  webFont("roboto", "Roboto", "sans", () =>
+    Promise.all([
+      import("@fontsource/roboto/latin-400.css"),
+      import("@fontsource/roboto/latin-700.css"),
+      import("@fontsource/roboto/latin-400-italic.css"),
+      import("@fontsource/roboto/latin-700-italic.css"),
     ])
   ),
   ubuntu,
@@ -531,7 +550,7 @@ export const DEFAULT_FONT_ID: Record<FontRole, string> = {
   code: SYSTEM_MONO.id,
 };
 
-// Flat id -> entry lookup across every role (deduped; Spectral appears once).
+// Flat id -> entry lookup across every role (deduped; Vollkorn appears once).
 export const FONT_REGISTRY: Record<string, FontEntry> = Object.fromEntries(
   [
     SYSTEM_SERIF,

@@ -228,7 +228,10 @@ export function SidebarTree() {
               <PlusIcon size={16} />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent
+            align="end"
+            onCloseAutoFocus={(e) => e.preventDefault()}
+          >
             <DropdownMenuItem onSelect={() => handleCreate("book", ROOT)}>
               <BookPlusIcon size={15} />
               New book

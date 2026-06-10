@@ -12,10 +12,10 @@ import { FontPicker } from "../settings/FontPicker";
 
 const ResetIcon = makeIcon(RotateCcw);
 
-const ROLE_META: Record<FontRole, { label: string; hint: string }> = {
-  display: { label: "Display", hint: "Titles" },
-  text: { label: "Text", hint: "Body" },
-  code: { label: "Code", hint: "Code" },
+const ROLE_META: Record<FontRole, { label: string }> = {
+  display: { label: "Titles" },
+  text: { label: "Body" },
+  code: { label: "Code" },
 };
 
 type FontControlProps = {
@@ -94,12 +94,9 @@ export function FontControl({
           <div className="mt-3 space-y-3">
             {FONT_ROLES.map((role) => (
               <div key={role}>
-                <div className="mb-1 flex items-baseline justify-between gap-2">
+                <div className="mb-1 flex items-baseline gap-2">
                   <span className="text-xs font-medium text-text">
                     {ROLE_META[role].label}
-                  </span>
-                  <span className="text-[0.7rem] text-muted">
-                    {ROLE_META[role].hint}
                   </span>
                 </div>
                 <FontPicker

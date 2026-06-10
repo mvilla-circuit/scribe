@@ -31,13 +31,14 @@
 }
 
 /* --- Headings: tight tracking, clear hierarchy --- */
-/* Headings inherit the document's resolved body (Text role) font so the whole
-   reading body — paragraphs and headings alike — speaks in one voice. */
+/* Headings use the document's resolved Display (Titles) font so in-content
+   headings echo the document title rather than the body prose. Falls back to
+   the inherited body font if no display stack is scoped. */
 .scribe-prose h1,
 .scribe-prose h2,
 .scribe-prose h3 {
-  font-family: inherit;
-  font-weight: 600;
+  font-family: var(--font-display, inherit);
+  font-weight: 700;
   line-height: 1.25;
   letter-spacing: -0.012em;
   color: var(--color-text);
@@ -157,11 +158,6 @@
   font-weight: 700;
   /* No explicit color here: forcing one would override the inline color mark,
    * so bold text (e.g. inside a heading) could never take a custom color. */
-}
-/* Headings already carry weight (600), so bold within one must push further to
- * read as emphasized rather than blending into the heading itself. */
-.scribe-prose :is(h1, h2, h3) strong {
-  font-weight: 800;
 }
 .scribe-prose mark {
   background: transparent; /* color comes from the inline highlight value */

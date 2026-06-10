@@ -80,7 +80,10 @@ export function RowContextMenu({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      <ContextMenuContent onClick={stopRowClick}>
+      <ContextMenuContent
+        onClick={stopRowClick}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
         <ContextItems actions={actions} />
       </ContextMenuContent>
     </ContextMenu>
@@ -109,7 +112,11 @@ export function RowActionDropdown({
           <MoreIcon size={15} />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" onClick={stopRowClick}>
+      <DropdownMenuContent
+        align="end"
+        onClick={stopRowClick}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
         <DropdownItems actions={actions} />
       </DropdownMenuContent>
     </DropdownMenu>
