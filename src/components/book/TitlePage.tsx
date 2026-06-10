@@ -15,6 +15,8 @@ import { useUIStore } from "../../store/ui";
 import { resolveFonts } from "../../fonts/resolve";
 import { useScopedFonts } from "../../fonts/useScopedFonts";
 import type { FontMap, FontRole } from "../../fonts/catalog";
+import { DocumentIcon } from "../ui/DocumentIcon";
+import { IconPicker } from "../ui/IconPicker";
 import { EditableText } from "./EditableText";
 import { FontControl } from "./FontControl";
 import { TableOfContents } from "./TableOfContents";
@@ -81,7 +83,13 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
           onClearAll={() => writeBookFonts({})}
         />
       </div>
-      <header>
+      <header className="group/header">
+        <BookIconControl
+          icon={book.icon}
+          onSelect={(icon) => updateBook.mutate({ id: book.id, icon })}
+          onRemove={() => updateBook.mutate({ id: book.id, icon: null })}
+        />
+
         <EditableText
           value={book.title}
           ariaLabel="Book title"
@@ -110,5 +118,41 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
         titleFont={titleFont}
       />
     </article>
+  );
+}
+
+function BookIconControl({
+  icon,
+  onSelect,
+  onRemove,
+}: {
+  icon: string | null;
+  onSelect: (icon: string) => void;
+  onRemove: () => void;
+}) {
+  if (icon) {
+    return (
+      <IconPicker value={icon} onSelect={onSelect} onRemove={onRemove}>
+        <button
+          type="button"
+          aria-label="Change book icon"
+          className="mb-3 rounded-md leading-none outline-none transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <DocumentIcon icon={icon} size={48} />
+        </button>
+      </IconPicker>
+    );
+  }
+
+  return (
+    <IconPicker value={icon} onSelect={onSelect} onRemove={onRemove}>
+      <button
+        type="button"
+        className="mb-2 inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm text-muted opacity-0 outline-none transition-opacity hover:bg-hover hover:text-text focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring group-hover/header:opacity-100"
+      >
+        <span className="text-base leading-none">☺</span>
+        Add icon
+      </button>
+    </IconPicker>
   );
 }

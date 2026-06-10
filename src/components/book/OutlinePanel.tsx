@@ -38,6 +38,7 @@ import {
   sidebarRowPadding,
 } from "../sidebar/SidebarRow";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
+import { DocumentIcon } from "../ui/DocumentIcon";
 import { cn } from "../../lib/utils";
 
 type DeleteTarget = { id: string; title: string; descendants: number };
@@ -153,7 +154,11 @@ export function OutlinePanel({ book }: { book: Book }) {
           )}
         >
           <span className="flex h-5 w-5 shrink-0 items-center justify-center text-muted/70">
-            <BookIcon size={SIDEBAR_ICON_SIZE} />
+            {book.icon ? (
+              <DocumentIcon icon={book.icon} size={SIDEBAR_ICON_SIZE} />
+            ) : (
+              <BookIcon size={SIDEBAR_ICON_SIZE} />
+            )}
           </span>
           <span className="min-w-0 flex-1 truncate">
             {book.title || "Untitled"}

@@ -1,6 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "../../lib/utils";
+import { DocumentIcon } from "../ui/DocumentIcon";
 import { InlineRename } from "../ui/InlineRename";
 import {
   RowActionDropdown,
@@ -78,6 +79,8 @@ export function TreeRow({
         ) : (
           <FolderIcon size={SIDEBAR_ICON_SIZE} />
         )
+      ) : child.book.icon ? (
+        <DocumentIcon icon={child.book.icon} size={SIDEBAR_ICON_SIZE} />
       ) : (
         <BookIcon size={SIDEBAR_ICON_SIZE} />
       )}
@@ -175,6 +178,8 @@ export function DragRowOverlay({ node }: { node: FlatNode }) {
       icon={
         isFolder ? (
           <FolderIcon size={SIDEBAR_ICON_SIZE} />
+        ) : child.book.icon ? (
+          <DocumentIcon icon={child.book.icon} size={SIDEBAR_ICON_SIZE} />
         ) : (
           <BookIcon size={SIDEBAR_ICON_SIZE} />
         )
