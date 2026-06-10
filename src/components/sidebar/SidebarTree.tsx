@@ -40,7 +40,7 @@ import {
 } from "./dndTree";
 import { useTreeDnd } from "../tree/useTreeDnd";
 import { DragRowOverlay, TreeRow } from "./TreeRow";
-import { BookPlusIcon, FolderPlusIcon, PlusIcon } from "./icons";
+import { BookIcon, BookPlusIcon, FolderPlusIcon, PlusIcon } from "./icons";
 import { Button } from "../ui/Button";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import {
@@ -319,14 +319,17 @@ function describeFolderDelete(books: number): string {
 
 function EmptyState({ onCreateBook }: { onCreateBook: () => void }) {
   return (
-    <div className="flex flex-col items-center px-3 py-10 text-center">
-      <p className="text-sm font-medium text-text">No books yet</p>
-      <p className="mt-1 text-xs leading-relaxed text-muted">
-        Create your first book to start writing.
+    <div className="flex flex-col items-center px-4 py-12 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-tree-group text-muted">
+        <BookIcon size={22} />
+      </div>
+      <p className="mt-4 text-sm font-medium text-text">No books yet</p>
+      <p className="mt-1 max-w-[15rem] text-xs leading-relaxed text-muted">
+        Books hold your writing. Create one to get started.
       </p>
-      <Button variant="primary" className="mt-4" onClick={onCreateBook}>
+      <Button variant="primary" className="mt-4 whitespace-nowrap" onClick={onCreateBook}>
         <BookPlusIcon size={15} />
-        Create your first book
+        New book
       </Button>
     </div>
   );

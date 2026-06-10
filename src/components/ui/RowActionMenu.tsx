@@ -18,6 +18,13 @@ import {
 
 const MoreIcon = makeIcon(MoreHorizontal);
 
+// The menu content is portaled in the DOM but, in the React tree, it remains a
+// descendant of the clickable row. React dispatches synthetic events through the
+// React tree, so selecting an item bubbles a `click` up into the row's onClick
+// (navigating into the book) and unmounts the dialog the action just opened.
+// Stop the click at the menu content so it never reaches the row.
+const stopRowClick = (e: React.MouseEvent) => e.stopPropagation();
+
 // A single declaration of a tree row's actions, rendered identically as both a
 // hover dropdown and a right-click context menu so each row defines its menu
 // once instead of writing the item list out twice.
@@ -73,7 +80,7 @@ export function RowContextMenu({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      <ContextMenuContent>
+      <ContextMenuContent onClick={stopRowClick}>
         <ContextItems actions={actions} />
       </ContextMenuContent>
     </ContextMenu>
@@ -102,7 +109,7 @@ export function RowActionDropdown({
           <MoreIcon size={15} />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" onClick={stopRowClick}>
         <DropdownItems actions={actions} />
       </DropdownMenuContent>
     </DropdownMenu>
