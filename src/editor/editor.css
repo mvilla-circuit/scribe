@@ -18,6 +18,10 @@
 .scribe-prose .ProseMirror {
   outline: none;
   min-height: 16rem;
+  /* Trailing room so the last lines can scroll up off the bottom edge (paired
+     with the editor's scrollMargin). Inside the editable area so clicking the
+     empty space still drops the caret at the document end. */
+  padding-bottom: max(160px, 30vh);
   white-space: pre-wrap;
   word-wrap: break-word;
 }
@@ -89,16 +93,156 @@
   margin-top: 0.25em;
 }
 
-/* --- Blockquote: a soft left rule, slightly muted --- */
-.scribe-prose blockquote {
-  margin: 1.2em 0;
-  padding-left: 1.1em;
-  border-left: 3px solid var(--color-border);
-  color: var(--color-muted);
-  font-style: italic;
+/* --- Quote blocks ---
+   One node with three treatments. Each reads `--quote-accent` (the per-block
+   swatch) and falls back to the theme accent, deriving its own intensity via
+   color-mix so a single color choice retints the whole block. */
+.scribe-prose .scribe-quote {
+  position: relative;
+  margin: 1.5em 0;
+  --quote-accent-resolved: var(--quote-accent, var(--color-accent));
 }
-.scribe-prose blockquote p {
-  margin: 0.4em 0;
+.scribe-prose .scribe-quote-body > * + * {
+  margin-top: 0.5em;
+}
+.scribe-prose .scribe-quote-body p {
+  margin: 0;
+}
+
+/* The variant treatment lives on the body, not the wrapper, so the attribution
+   line can sit *outside* the panel/rule as a sibling below it. */
+
+/* Pull quote: an editorial statement fronted by an oversized serif quote mark
+   hanging in the margin, set in the display face like the headings. */
+.scribe-prose .scribe-quote--pullquote .scribe-quote-body {
+  position: relative;
+  padding: 0.1em 0 0.1em 2.3em;
+  font-family: var(--font-display, inherit);
+  font-size: 1.2em;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+.scribe-prose .scribe-quote--pullquote .scribe-quote-body::before {
+  content: "\201C";
+  position: absolute;
+  left: -0.02em;
+  top: 0.16em;
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 3em;
+  line-height: 0;
+  color: color-mix(in srgb, var(--quote-accent-resolved) 42%, transparent);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Block quote: a calm, rounded tinted panel — no rule, no italics. */
+.scribe-prose .scribe-quote--blockquote .scribe-quote-body {
+  padding: 0.85em 1.1em;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--quote-accent-resolved) 8%, transparent);
+  color: var(--color-text);
+}
+
+/* Accent quote: a refined, rounded accent rule with slightly larger text. */
+.scribe-prose .scribe-quote--accentquote .scribe-quote-body {
+  padding-left: 1.2em;
+  border-left: 3px solid
+    color-mix(in srgb, var(--quote-accent-resolved) 60%, transparent);
+  border-radius: 2px;
+  font-size: 1.05em;
+  color: var(--color-text);
+}
+
+/* Attribution line: a right-aligned citation sitting just below (outside) the
+   quote, em-dash led. The field auto-sizes to its text via an invisible grid
+   sizer, so the em-dash hugs the text instead of floating at a fixed position
+   (a form `input` can't carry `::before`, so the dash lives on the row). */
+.scribe-prose .scribe-quote-cite {
+  display: flex;
+  justify-content: flex-end;
+  align-items: baseline;
+  margin-top: 0.5em;
+  padding: 0 0.15em;
+  font-size: 0.85em;
+  font-style: normal;
+  color: var(--color-muted);
+}
+.scribe-prose .scribe-quote-cite::before {
+  content: "—";
+  flex: none;
+  margin-right: 0.4em;
+}
+.scribe-prose .scribe-quote-cite-field {
+  display: inline-grid;
+  max-width: 100%;
+}
+.scribe-prose .scribe-quote-cite-field::after {
+  content: attr(data-value) " ";
+  grid-area: 1 / 1;
+  white-space: pre;
+  visibility: hidden;
+}
+.scribe-prose .scribe-quote-cite-input {
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  outline: none;
+  padding: 0;
+}
+.scribe-prose .scribe-quote-cite-field > .scribe-quote-cite-input {
+  grid-area: 1 / 1;
+  width: 100%;
+  min-width: 0;
+}
+.scribe-prose .scribe-quote-cite-input::placeholder {
+  color: var(--color-muted);
+  opacity: 0.6;
+}
+
+/* The quote's hover/focus control cluster (mirrors the callout's). */
+.scribe-quote-controls {
+  position: absolute;
+  top: 0.4em;
+  right: 0.4em;
+}
+.scribe-quote:hover .scribe-quote-controls,
+.scribe-quote:focus-within .scribe-quote-controls {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Themed checkbox for the "Show attribution" toggle in the style popover. */
+.scribe-quote-toggle {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1em;
+  height: 1em;
+  border: 1.5px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-surface);
+  cursor: pointer;
+  position: relative;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.scribe-quote-toggle:checked {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+.scribe-quote-toggle:checked::after {
+  content: "";
+  position: absolute;
+  left: 0.3em;
+  top: 0.12em;
+  width: 0.2em;
+  height: 0.42em;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.scribe-quote-toggle:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-ring);
 }
 
 /* --- Inline code + code blocks --- */
@@ -109,6 +253,14 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   padding: 0.1em 0.36em;
+}
+/* Inline code composes with the other marks (bold/italic/color inherit
+   naturally). For a highlight, let the highlight wash become the chip's own
+   background instead of stacking behind the opaque code fill — the surrounding
+   <mark> supplies the rounded color band. */
+.scribe-prose mark code {
+  background: transparent;
+  border-color: transparent;
 }
 .scribe-prose pre {
   margin: 1.2em 0;
@@ -143,7 +295,9 @@
   box-sizing: content-box;
   height: 1px;
   padding: 11px 0;
-  background: var(--color-border);
+  /* `--color-border` (≈8% black) is too faint for a full-width hairline. Use a
+     stronger, theme-aware tint of the text color so it reads in light and dark. */
+  background: color-mix(in srgb, var(--color-text) 18%, transparent);
   background-clip: content-box;
   margin: calc(2em - 11px) 0;
 }
@@ -172,6 +326,27 @@
   font-weight: 700;
   /* No explicit color here: forcing one would override the inline color mark,
    * so bold text (e.g. inside a heading) could never take a custom color. */
+}
+/* Underline: a thick, marker-like bar with rounded ends rather than the
+ * browser's tight hairline. Drawn as a bottom-anchored `background` gradient
+ * (not a border: a thick border-bottom with zero side borders makes WebKit clip
+ * the rounded corner into the top of each cap). `border-radius` then clips the
+ * bar's ends smoothly, with no notch. The bar is tinted by the `--scribe-underline`
+ * variable a chosen swatch sets, falling back to a calm theme-aware default.
+ * `box-decoration-break` keeps each wrapped fragment's caps rounded. */
+.scribe-prose u {
+  text-decoration: none;
+  background-image: linear-gradient(
+    var(--scribe-underline, color-mix(in srgb, currentColor 50%, transparent)),
+    var(--scribe-underline, color-mix(in srgb, currentColor 50%, transparent))
+  );
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 100% 0.18em;
+  border-radius: 0.1em;
+  padding-bottom: 0.1em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 .scribe-prose mark {
   background: transparent; /* color comes from the inline highlight value */

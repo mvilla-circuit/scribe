@@ -27,6 +27,7 @@ import {
   Minus,
   Palette,
   Plus,
+  Quote,
   RefreshCw,
   Smile,
   Strikethrough,
@@ -58,6 +59,9 @@ export const BulletListIcon = makeIcon(List);
 export const OrderedListIcon = makeIcon(ListOrdered);
 export const TaskListIcon = makeIcon(ListTodo);
 export const QuoteIcon = makeIcon(TextQuote);
+// Pull quote uses the filled quotation-mark glyph to distinguish it from the
+// rule-based block/accent quotes (which share the TextQuote icon).
+export const PullQuoteIcon = makeIcon(Quote);
 export const CodeBlockIcon = makeIcon(Code);
 export const DividerIcon = makeIcon(Minus);
 export const CalloutIcon = makeIcon(Info);

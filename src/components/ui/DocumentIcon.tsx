@@ -36,7 +36,9 @@ export function DocumentIcon({ icon, size, className }: DocumentIconProps) {
         name={parsed.name as IconName}
         size={size}
         className={className}
-        style={{ color: parsed.color ?? "currentColor" }}
+        // Default (uncolored) icons render in the muted tone so they read a
+        // touch lighter than the text; an explicit palette color overrides it.
+        style={{ color: parsed.color ?? "var(--color-muted)" }}
         aria-hidden
       />
     );

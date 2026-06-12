@@ -50,7 +50,7 @@ const TURN_INTO: TurnInto[] = [
   { label: "Bulleted list", icon: BulletListIcon, apply: (c) => c.toggleBulletList() },
   { label: "Numbered list", icon: OrderedListIcon, apply: (c) => c.toggleOrderedList() },
   { label: "To-do list", icon: TaskListIcon, apply: (c) => c.toggleTaskList() },
-  { label: "Quote", icon: QuoteIcon, apply: (c) => c.toggleBlockquote() },
+  { label: "Quote", icon: QuoteIcon, apply: (c) => c.wrapIn("quote") },
   { label: "Code", icon: CodeBlockIcon, apply: (c) => c.toggleCodeBlock() },
 ];
 

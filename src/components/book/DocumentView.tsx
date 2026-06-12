@@ -204,7 +204,7 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
                   })
                 }
                 className="mt-2 text-xl leading-snug text-muted"
-                style={{ fontFamily: titleFont }}
+                style={{ fontFamily: bodyFont }}
               />
             )}
 

@@ -39,6 +39,21 @@ export const HIGHLIGHT_COLORS: Swatch[] = [
   { name: "Mist", value: "rgba(150, 158, 150, 0.28)" },
 ];
 
+// Accent tones for quote blocks. A single solid base hue is stored on the node;
+// each quote variant derives its own intensity from it via `color-mix` in CSS
+// (a faint panel wash, a stronger rule, a soft pull-quote glyph). These reuse
+// the solid Morandi `TEXT_COLORS` so quotes stay in the same restrained family.
+export const QUOTE_ACCENTS: Swatch[] = [
+  { name: "Clay", value: "#b27f78" },
+  { name: "Terracotta", value: "#b07a5c" },
+  { name: "Honey", value: "#b0924f" },
+  { name: "Sage", value: "#84926d" },
+  { name: "Eucalyptus", value: "#5f8a82" },
+  { name: "Dusk", value: "#6f82a6" },
+  { name: "Mauve", value: "#978099" },
+  { name: "Stone", value: "#8c857c" },
+];
+
 // Softer washes for callout block backgrounds. A callout tints a whole block,
 // so its fill is lighter than an inline highlight band — enough to set the box
 // apart from the page without ever fighting the text inside it (light or dark).

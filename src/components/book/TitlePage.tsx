@@ -142,7 +142,7 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
                 updateBook.mutate({ id: book.id, subtitle: subtitle || null })
               }
               className="mt-3 text-xl leading-snug text-muted"
-              style={{ fontFamily: titleFont }}
+              style={{ fontFamily: "var(--font-text)" }}
             />
           )}
         </header>

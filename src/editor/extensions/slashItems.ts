@@ -2,6 +2,7 @@ import type { Editor, Range } from "@tiptap/core";
 import { normalizeUrl } from "../linkPreview";
 import { calloutContent } from "./Callout";
 import { columnsContent } from "./Columns";
+import { quoteContent } from "./Quote";
 import { insertLinkCard } from "./LinkCard";
 import { insertPageLink } from "./PageLink";
 import { usePagePicker } from "./pagePickerStore";
@@ -19,6 +20,7 @@ import {
   Heading3Icon,
   OrderedListIcon,
   PageLinkIcon,
+  PullQuoteIcon,
   QuoteIcon,
   TableIcon,
   TaskListIcon,
@@ -91,11 +93,28 @@ export const slashItems: SlashItem[] = [
     run: (editor, range) => at(editor, range).toggleTaskList().run(),
   },
   {
-    title: "Quote",
-    description: "Capture a quotation",
+    title: "Pull quote",
+    description: "A bold statement with a large quote mark",
+    icon: PullQuoteIcon,
+    aliases: ["pullquote", "quote", "feature", "callout quote"],
+    run: (editor, range) =>
+      at(editor, range).insertContent(quoteContent("pullquote")).run(),
+  },
+  {
+    title: "Block quote",
+    description: "A soft, tinted quotation panel",
     icon: QuoteIcon,
-    aliases: ["blockquote", "citation"],
-    run: (editor, range) => at(editor, range).toggleBlockquote().run(),
+    aliases: ["blockquote", "quote", "citation", "panel"],
+    run: (editor, range) =>
+      at(editor, range).insertContent(quoteContent("blockquote")).run(),
+  },
+  {
+    title: "Accent quote",
+    description: "A quotation with a colored side rule",
+    icon: QuoteIcon,
+    aliases: ["accentquote", "quote", "citation", "rule"],
+    run: (editor, range) =>
+      at(editor, range).insertContent(quoteContent("accentquote")).run(),
   },
   {
     title: "Code block",

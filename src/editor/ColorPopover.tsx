@@ -20,8 +20,8 @@ export function ColorPopover({
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  // Reactively track the active text + highlight values for the selection.
-  const { textColor, highlightColor } = useEditorState({
+  // Reactively track the active text + highlight + underline values.
+  const { textColor, highlightColor, underlineColor } = useEditorState({
     editor,
     selector: ({ editor: e }) => ({
       textColor:
@@ -29,6 +29,9 @@ export function ColorPopover({
           ?.value ?? null,
       highlightColor:
         HIGHLIGHT_COLORS.find((s) => e.isActive("highlight", { color: s.value }))
+          ?.value ?? null,
+      underlineColor:
+        TEXT_COLORS.find((s) => e.isActive("underline", { color: s.value }))
           ?.value ?? null,
     }),
   });
@@ -55,6 +58,12 @@ export function ColorPopover({
     else chain.unsetHighlight().run();
   };
 
+  const setUnderline = (value: string | null) => {
+    const chain = editor.chain().focus();
+    if (value) chain.setMark("underline", { color: value }).run();
+    else chain.unsetMark("underline").run();
+  };
+
   return (
     <div ref={wrapRef} className="relative">
       <Tooltip content="Color & highlight">
@@ -68,17 +77,20 @@ export function ColorPopover({
           className={cn(
             "flex h-8 items-center gap-0.5 rounded-md px-1.5 text-text outline-none transition-colors",
             "hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring",
-            (open || textColor || highlightColor) && "bg-hover"
+            (open || textColor || highlightColor || underlineColor) && "bg-hover"
           )}
         >
-          {/* The "A" previews both: tinted by the active text color, sitting on
-              the active highlight wash. */}
+          {/* The "A" previews all three: tinted by the active text color, sitting
+              on the active highlight wash, underlined in the active line color. */}
           <span
             aria-hidden
             className="flex h-5 w-5 items-center justify-center rounded text-[13px] font-semibold leading-none ring-1 ring-inset ring-border"
             style={{
               background: highlightColor ?? "transparent",
               color: textColor ?? "var(--color-text)",
+              borderBottom: underlineColor
+                ? `2px solid ${underlineColor}`
+                : undefined,
             }}
           >
             A
@@ -112,6 +124,15 @@ export function ColorPopover({
             onPick={(v) => setHighlight(v)}
             onClear={() => setHighlight(null)}
             clearLabel="No highlight"
+          />
+          <div className="my-3.5 h-px bg-border" />
+          <Section
+            label="Underline"
+            swatches={TEXT_COLORS}
+            active={underlineColor}
+            onPick={(v) => setUnderline(v)}
+            onClear={() => setUnderline(null)}
+            clearLabel="No underline"
           />
         </div>
       )}

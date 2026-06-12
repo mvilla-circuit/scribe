@@ -66,7 +66,7 @@ export function TableOfContents({
             <button
               type="button"
               onClick={() => setActiveDoc(entry.document.id)}
-              className="group flex w-full items-stretch rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="group -mx-2 flex w-full items-stretch rounded-md px-2 text-left outline-none transition-colors hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring"
             >
               {entry.depth > 0 && (
                 <span aria-hidden className="flex shrink-0">
@@ -79,7 +79,7 @@ export function TableOfContents({
                   ))}
                 </span>
               )}
-              <span className="flex min-w-0 flex-1 items-baseline gap-2 py-1.5 pl-1">
+              <span className="flex min-w-0 flex-1 items-center gap-2 py-1.5 pl-1">
                 {entry.document.icon && (
                   <DocumentIcon
                     icon={entry.document.icon}
@@ -88,12 +88,11 @@ export function TableOfContents({
                   />
                 )}
                 <span
-                  className="min-w-0 truncate text-[15px] leading-relaxed text-text decoration-accent/40 underline-offset-4 group-hover:underline"
+                  className="min-w-0 truncate text-[15px] leading-relaxed text-text transition-colors group-hover:text-accent"
                   style={{ fontFamily: "var(--font-text)" }}
                 >
                   {entry.document.title || "Untitled"}
                 </span>
-                <span className="h-px flex-1 translate-y-[-3px] border-b border-dotted border-border opacity-0 transition-opacity group-hover:opacity-100" />
               </span>
             </button>
           </li>

@@ -33,6 +33,20 @@ type EditorProps = {
   onOutlineChange?: (headings: OutlineHeading[]) => void;
 };
 
+// Rewrite any legacy StarterKit `blockquote` nodes (no longer in the schema)
+// into the new `quote` node's default variant, so older documents keep their
+// quotations instead of having them dropped on load.
+function migrateLegacyQuotes(node: JSONContent): JSONContent {
+  const migrated: JSONContent =
+    node.type === "blockquote"
+      ? { ...node, type: "quote", attrs: { ...node.attrs, variant: "blockquote" } }
+      : node;
+  if (Array.isArray(migrated.content)) {
+    return { ...migrated, content: migrated.content.map(migrateLegacyQuotes) };
+  }
+  return migrated;
+}
+
 // Stored documents start life as an empty `{}` placeholder; only a real
 // ProseMirror doc has a `type`. Anything else maps to a blank editor.
 function normalizeContent(content: Json): JSONContent | undefined {
@@ -40,7 +54,7 @@ function normalizeContent(content: Json): JSONContent | undefined {
     return undefined;
   }
   if (!("type" in content)) return undefined;
-  return content as JSONContent;
+  return migrateLegacyQuotes(content as JSONContent);
 }
 
 // The writing surface. One editor instance per document (the call site keys it
@@ -74,6 +88,13 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       shouldRerenderOnTransaction: false,
       editorProps: {
         attributes: { spellcheck: "true" },
+        // Keep the caret clear of the viewport's bottom edge while typing: when
+        // ProseMirror scrolls the cursor into view, trigger the scroll early and
+        // leave a comfortable gap beneath it (and a small one up top to clear the
+        // sticky breadcrumb). Paired with the editor's trailing bottom padding so
+        // the last lines actually have room to lift off the bottom.
+        scrollThreshold: { top: 80, bottom: 160, left: 0, right: 0 },
+        scrollMargin: { top: 80, bottom: 160, left: 0, right: 0 },
       },
       onCreate: ({ editor }) =>
         onOutlineChangeRef.current?.(extractHeadings(editor)),
