@@ -5,6 +5,7 @@
 import {
   Book,
   BookPlus,
+  Copy,
   Folder,
   FolderOpen,
   FolderPlus,
@@ -22,5 +23,6 @@ export const PlusIcon = makeIcon(Plus);
 export const MoreIcon = makeIcon(MoreHorizontal);
 export const PencilIcon = makeIcon(Pencil);
 export const TrashIcon = makeIcon(Trash2);
+export const DuplicateIcon = makeIcon(Copy);
 export const FolderPlusIcon = makeIcon(FolderPlus);
 export const BookPlusIcon = makeIcon(BookPlus);

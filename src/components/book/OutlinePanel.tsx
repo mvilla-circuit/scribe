@@ -12,10 +12,12 @@ import {
 import { useUIStore } from "../../store/ui";
 import type { Book } from "../../data/books";
 import {
+  buildDocumentDuplicate,
   collectDocumentSubtree,
   useCreateDocument,
   useDeleteDocument,
   useDocuments,
+  useDuplicateDocument,
   useMoveDocument,
   useRenameDocument,
 } from "../../data/documents";
@@ -61,6 +63,7 @@ export function OutlinePanel({ book }: { book: Book }) {
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
 
   const createDocument = useCreateDocument(book.id);
+  const duplicateDocument = useDuplicateDocument(book.id);
   const renameDocument = useRenameDocument(book.id);
   const moveDocument = useMoveDocument(book.id);
   const deleteDocument = useDeleteDocument(book.id);
@@ -111,6 +114,13 @@ export function OutlinePanel({ book }: { book: Book }) {
     });
     setActiveDoc(id);
     setEditingId(id);
+  };
+
+  const handleDuplicate = (node: FlatDocNode) => {
+    const plan = buildDocumentDuplicate(documents, node.id);
+    if (!plan) return;
+    duplicateDocument.mutate({ rows: plan.rows });
+    setActiveDoc(plan.rootId);
   };
 
   const commitRename = (node: FlatDocNode, value: string) => {
@@ -224,6 +234,7 @@ export function OutlinePanel({ book }: { book: Book }) {
                     onCommitRename={(value) => commitRename(node, value)}
                     onCancelRename={() => setEditingId(null)}
                     onDelete={() => requestDelete(node)}
+                    onDuplicate={() => handleDuplicate(node)}
                     onNewChild={() => handleCreate(node.id)}
                   />
                 ))}

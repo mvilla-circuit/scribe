@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth";
 import type { Json, Tables } from "../lib/database.types";
 import type { FontMap } from "../fonts/catalog";
-import { byPosition } from "./ordering";
+import { byPosition, getPositionBetween } from "./ordering";
 import { collectSubtree } from "./subtree";
 import { optimisticListHandlers } from "./optimisticList";
 import { pageIndexKey } from "./pageIndex";
@@ -78,6 +78,54 @@ export function collectDocumentSubtree(
   return collectSubtree(documents, rootId, (d) => d.parent_document_id);
 }
 
+// Builds the rows for a deep copy of a page and all of its nested pages,
+// inserted as a sibling right after the source. Each copied page gets a fresh
+// id, descendants are re-parented onto those new ids, and only the copy's root
+// is renamed (" copy") and repositioned; descendants keep their relative order.
+// `user_id` is left blank here and stamped by the mutation at insert time.
+export function buildDocumentDuplicate(
+  documents: Document[],
+  sourceId: string
+): { rows: Document[]; rootId: string } | null {
+  const source = documents.find((d) => d.id === sourceId);
+  if (!source || source.is_title_page) return null;
+
+  const subtreeIds = collectDocumentSubtree(documents, sourceId);
+  const idMap = new Map<string, string>();
+  for (const id of subtreeIds) idMap.set(id, crypto.randomUUID());
+
+  const siblings = documents
+    .filter(
+      (d) =>
+        !d.is_title_page && d.parent_document_id === source.parent_document_id
+    )
+    .sort(byPosition);
+  const sourceIdx = siblings.findIndex((d) => d.id === sourceId);
+  const next = siblings[sourceIdx + 1];
+  const rootPosition = getPositionBetween(source.position, next?.position);
+
+  const now = new Date().toISOString();
+  const rows = documents
+    .filter((d) => subtreeIds.has(d.id))
+    .map((d): Document => {
+      const isRoot = d.id === sourceId;
+      return {
+        ...d,
+        id: idMap.get(d.id) as string,
+        user_id: "",
+        parent_document_id: isRoot
+          ? d.parent_document_id
+          : (idMap.get(d.parent_document_id as string) as string),
+        title: isRoot ? `${d.title || "Untitled"} copy` : d.title,
+        position: isRoot ? rootPosition : d.position,
+        created_at: now,
+        updated_at: now,
+      };
+    });
+
+  return { rows, rootId: idMap.get(sourceId) as string };
+}
+
 export function useCreateDocument(bookId: string) {
   const qc = useQueryClient();
   const { session } = useAuth();
@@ -138,6 +186,53 @@ export function useCreateDocument(bookId: string) {
         ];
       },
       "Couldn't create page"
+    ),
+  });
+}
+
+// Inserts a pre-built set of duplicated rows (see buildDocumentDuplicate) in one
+// batch, stamping the current user onto each. The optimistic update appends the
+// same rows so the new pages appear instantly in the outline.
+export function useDuplicateDocument(bookId: string) {
+  const qc = useQueryClient();
+  const { session } = useAuth();
+  const key = documentsKey(bookId);
+
+  return useMutation({
+    mutationFn: async (input: { rows: Document[] }) => {
+      const userId = session?.user.id;
+      if (!userId) throw new Error("Not authenticated");
+      const { error } = await supabase.from("documents").insert(
+        input.rows.map((r) => ({
+          id: r.id,
+          user_id: userId,
+          book_id: r.book_id,
+          parent_document_id: r.parent_document_id,
+          title: r.title,
+          icon: r.icon,
+          subtitle: r.subtitle,
+          show_outline: r.show_outline,
+          show_subtitle: r.show_subtitle,
+          read_mode: r.read_mode,
+          is_title_page: r.is_title_page,
+          position: r.position,
+          content: r.content,
+          font_overrides: r.font_overrides,
+        }))
+      );
+      if (error) throw error;
+    },
+    ...documentHandlers<{ rows: Document[] }>(
+      qc,
+      key,
+      (prev, input) => [
+        ...prev,
+        ...input.rows.map((r) => ({
+          ...r,
+          user_id: session?.user.id ?? "",
+        })),
+      ],
+      "Couldn't duplicate page"
     ),
   });
 }

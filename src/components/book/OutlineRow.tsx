@@ -7,7 +7,7 @@ import {
   RowContextMenu,
   type RowAction,
 } from "../ui/RowActionMenu";
-import { PencilIcon, TrashIcon } from "../sidebar/icons";
+import { DuplicateIcon, PencilIcon, TrashIcon } from "../sidebar/icons";
 import {
   SIDEBAR_ICON_SIZE,
   SidebarRow,
@@ -34,6 +34,7 @@ export type OutlineRowHandlers = {
   onCommitRename: (value: string) => void;
   onCancelRename: () => void;
   onDelete: () => void;
+  onDuplicate: () => void;
   onNewChild: () => void;
 };
 
@@ -58,6 +59,7 @@ export function OutlineRow({
   onCommitRename,
   onCancelRename,
   onDelete,
+  onDuplicate,
   onNewChild,
 }: OutlineRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -130,6 +132,11 @@ export function OutlineRow({
       icon: <PencilIcon size={15} />,
       label: "Rename",
       onSelect: onStartRename,
+    },
+    {
+      icon: <DuplicateIcon size={15} />,
+      label: "Duplicate",
+      onSelect: onDuplicate,
     },
     {
       icon: <TrashIcon size={15} />,
