@@ -100,7 +100,12 @@ export function EditableText({
         }
       }}
       className={cn(
-        "w-full resize-none overflow-hidden bg-transparent outline-none",
+        // `whitespace-pre-wrap` + `break-words` make the field wrap explicitly
+        // rather than leaning on the UA's default textarea wrapping — which the
+        // Tauri WKWebView doesn't reliably apply, leaving long titles/subtitles
+        // on one line that `overflow-hidden` then clips. Now they wrap (and even
+        // a single overlong word breaks) instead of being cut off.
+        "w-full resize-none overflow-hidden whitespace-pre-wrap break-words bg-transparent outline-none",
         "placeholder:text-muted/45 focus-visible:ring-0",
         className
       )}
