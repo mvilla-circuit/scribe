@@ -27,6 +27,9 @@ export function EditableText({
   const [draft, setDraft] = useState(value);
   const ref = useRef<HTMLTextAreaElement>(null);
   const focused = useRef(false);
+  // Caret position to restore after a typographic substitution shortens the
+  // draft; applied in the layout effect so the cursor never jumps to the end.
+  const pendingCaret = useRef<number | null>(null);
 
   // Adopt external changes (e.g. a rename from the outline) unless the user is
   // mid-edit, so we never clobber what they're typing.
@@ -39,6 +42,10 @@ export function EditableText({
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${el.scrollHeight}px`;
+    if (pendingCaret.current !== null) {
+      el.selectionStart = el.selectionEnd = pendingCaret.current;
+      pendingCaret.current = null;
+    }
   }, [draft]);
 
   const commit = () => {
@@ -63,7 +70,20 @@ export function EditableText({
       onFocus={() => {
         focused.current = true;
       }}
-      onChange={(e) => setDraft(e.target.value)}
+      onChange={(e) => {
+        const el = e.target;
+        const caret = el.selectionStart ?? el.value.length;
+        const next = el.value;
+        // Mirror the editor's Typography rule: turn a just-typed "--" at the
+        // caret into an em dash so titles and subtitles get the same treatment
+        // as body text, independent of the OS's smart-substitution setting.
+        if (caret >= 2 && next.slice(caret - 2, caret) === "--") {
+          setDraft(next.slice(0, caret - 2) + "—" + next.slice(caret));
+          pendingCaret.current = caret - 1;
+          return;
+        }
+        setDraft(next);
+      }}
       onBlur={() => {
         focused.current = false;
         commit();

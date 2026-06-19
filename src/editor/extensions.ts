@@ -15,6 +15,7 @@ import { LinkCard } from "./extensions/LinkCard";
 import { PageLink } from "./extensions/PageLink";
 import { Quote } from "./extensions/Quote";
 import { SlashCommand } from "./extensions/SlashCommand";
+import { Typography } from "./extensions/Typography";
 
 // The editor's extension set. StarterKit v3 already brings paragraphs,
 // headings, bold/italic/strike/code, underline, link, blockquote, lists,
@@ -96,6 +97,10 @@ export function buildExtensions(): Extensions {
 
     // Tab / Shift-Tab block indentation for paragraphs and headings.
     Indent,
+
+    // Our own typographic substitutions (e.g. `--` → em dash) so they fire in
+    // every text block instead of depending on the OS's smart-dash setting.
+    Typography,
 
     // The "/" command menu, surfacing all of the above plus the built-ins.
     SlashCommand,
