@@ -3,10 +3,10 @@ import { ReactNodeViewRenderer } from "@tiptap/react";
 import { CALLOUT_DEFAULT } from "../palette";
 import { CalloutView } from "./CalloutView";
 
-// A tinted block that holds any other blocks (`block+`), fronted by an emoji.
-// Both the wash color and the emoji live on the node as plain attributes so the
-// callout round-trips through `documents.content` and the clipboard; the
-// emoji/variant/color controls in `CalloutView` only ever call updateAttributes.
+// A tinted block that holds any other blocks (`block+`), fronted by an icon.
+// Both the wash color and the icon live on the node as plain attributes so the
+// callout round-trips through `documents.content` and the clipboard; the icon
+// picker in `CalloutView` only ever calls updateAttributes.
 export const Callout = Node.create({
   name: "callout",
   group: "block",
@@ -20,13 +20,18 @@ export const Callout = Node.create({
       color: {
         default: CALLOUT_DEFAULT.color,
         parseHTML: (el) => el.getAttribute("data-color"),
-        renderHTML: (attrs) =>
-          attrs.color ? { "data-color": attrs.color } : {},
+        // Always emit `data-color` (empty when "no color" was chosen) so a
+        // deliberately untinted callout round-trips through HTML/clipboard
+        // instead of falling back to the default wash on parse.
+        renderHTML: (attrs) => ({ "data-color": attrs.color ?? "" }),
       },
       icon: {
         default: CALLOUT_DEFAULT.icon,
         parseHTML: (el) => el.getAttribute("data-icon"),
-        renderHTML: (attrs) => (attrs.icon ? { "data-icon": attrs.icon } : {}),
+        // Always emit `data-icon` (empty when the icon was removed) so a
+        // deliberately icon-less callout round-trips through HTML/clipboard
+        // instead of falling back to the default icon on parse.
+        renderHTML: (attrs) => ({ "data-icon": attrs.icon ?? "" }),
       },
     };
   },

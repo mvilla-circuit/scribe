@@ -68,9 +68,9 @@ export const CALLOUT_COLORS: Swatch[] = [
   { name: "Mist", value: "rgba(150, 158, 150, 0.15)" },
 ];
 
-// Preset callout variants: each pairs an emoji with one of the callout washes.
-// Picking a variant just writes its (color, icon) onto the node; the custom
-// color swatches and emoji picker can then diverge from any preset freely.
+// Preset callout variants: each pairs an emoji with a soft block wash. Only the
+// first entry (the default) is used now that callouts pick their icon through
+// the shared page icon picker, but the table is kept for the default wash/icon.
 export type CalloutVariant = {
   name: string;
   icon: string;
