@@ -40,16 +40,25 @@ export function buildExtensions(): Extensions {
       // Disabled in favour of the combinable inline Code added below.
       code: false,
     }),
-    // Raise the highlight's priority so its <mark> renders as the *outermost*
-    // mark, wrapping bold/italic/etc. Otherwise a bold word inside a highlight
-    // nests as <strong><mark>…</mark></strong>, splitting one highlight into
-    // separate chips; as the outer mark it stays a single continuous wash.
+    // Raise the highlight's priority so its <mark> wraps bold/italic/etc.
+    // (everything except the underline, which sits one level further out at
+    // 120). Otherwise a bold word inside a highlight nests as
+    // <strong><mark>…</mark></strong>, splitting one highlight into separate
+    // chips; above those marks it stays a single continuous wash.
     Highlight.extend({ priority: 110 }).configure({ multicolor: true }),
     // Underline carries an optional `color` so it can be tinted from the color
     // flyout like a highlighter. A null color falls back to the elegant default
     // underline styling in editor.css; a value writes an inline
     // `text-decoration-color` that overrides it.
+    //
+    // Priority 120 makes the <u> the *outermost* mark — above the highlight
+    // (110) and the default bold/italic/strike/code (100). Otherwise an inner
+    // italic word (or a partially-overlapping highlight) would split one
+    // underline into separate <u> fragments, and with rounded, cloned caps that
+    // reads as a broken line. As the outer mark the bar stays a single
+    // continuous stroke no matter what other marks sit underneath it.
     Underline.extend({
+      priority: 120,
       addAttributes() {
         return {
           color: {
