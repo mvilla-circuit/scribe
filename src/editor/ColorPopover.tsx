@@ -104,7 +104,7 @@ export function ColorPopover({
           role="menu"
           onMouseDown={(e) => e.preventDefault()}
           className={cn(
-            "absolute right-0 top-[calc(100%+8px)] z-10 w-fit",
+            "absolute right-0 top-[calc(100%+8px)] z-10 w-fit font-sans",
             "rounded-xl border border-border bg-elevated p-3.5 shadow-popover"
           )}
         >
