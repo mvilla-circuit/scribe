@@ -94,3 +94,13 @@ src/
   index.css        Design tokens (CSS variables) + Tailwind setup
 src-tauri/         Tauri (Rust) shell, config, and capabilities
 ```
+
+- Table menu might need to be reorganized
+- Sidebar collapsed state
+- Fix column blocks
+
+- Add sane linting rules
+- Commit changes
+- Fix all lint warnings and errors
+- Review code (refactor as necessary)
+- Add tests
