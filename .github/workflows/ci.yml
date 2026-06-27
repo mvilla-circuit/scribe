@@ -10,9 +10,9 @@ jobs:
     name: Typecheck, lint, circular, dead code, format, build & audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -48,7 +48,7 @@ jobs:
       run:
         working-directory: src-tauri
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Tauri's system dependencies (webkit2gtk et al.) are required to compile
       # the `tauri` crate, which clippy needs to do.

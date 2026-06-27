@@ -1,5 +1,7 @@
 # Scribe
 
+[![CI](https://github.com/mvilla-circuit/scribe/actions/workflows/ci.yml/badge.svg)](https://github.com/mvilla-circuit/scribe/actions/workflows/ci.yml)
+
 A minimalist, zen desktop writing app. Scribe is a [Tauri](https://tauri.app) (Rust) + React + TypeScript application with a Supabase backend and Google sign-in.
 
 ## Stack
@@ -99,8 +101,6 @@ src-tauri/         Tauri (Rust) shell, config, and capabilities
 - Sidebar collapsed state
 - Review fonts again
 
-- Add circular dependency and package version checks
-- Setup CI on repo
 - Setup path aliasing
 - Revisit the relaxed linting rules
 - Add testing
