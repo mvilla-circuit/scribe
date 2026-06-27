@@ -23,6 +23,7 @@
     "lint:circular": "madge --circular src",
     "lint:deadcode": "knip",
     "audit:deps": "npm audit --audit-level=high",
+    "verify": "npm run typecheck && npm run lint && npm run lint:circular && npm run lint:deadcode && npm run format:check && npm run build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "rust:fmt": "cargo fmt --manifest-path src-tauri/Cargo.toml",

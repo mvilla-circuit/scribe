@@ -100,13 +100,14 @@ src-tauri/         Tauri (Rust) shell, config, and capabilities
 - Review fonts again
 
 - Add circular dependency and package version checks
+- Setup CI on repo
 - Setup path aliasing
 - Revisit the relaxed linting rules
+- Add testing
 - Review code (refactor as necessary)
   - SOLID and DRY principles
   - Accessibility
-- Add tests
+- Web bundle needs optimization (`manualChunks`/lazy-loading)
 - Prep version 1 (package name and app icon)
 - Install Scribe
-- Setup CI on repo
 - Update README

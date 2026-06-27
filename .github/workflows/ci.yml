@@ -7,7 +7,7 @@ on:
 
 jobs:
   web:
-    name: Typecheck, lint, format & build
+    name: Typecheck, lint, circular, dead code, format, build & audit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
