@@ -1,14 +1,15 @@
 import { PenLine } from "lucide-react";
 import { useMemo } from "react";
 
-import { type Book, useBooks, useCreateBook } from "../data/books";
-import { useCreateFolder, useFolders } from "../data/folders";
-import { getPositionBetween } from "../data/ordering";
-import { buildTree, childrenOf, ROOT } from "../data/tree";
-import { useAuth } from "../lib/auth";
-import { makeIcon } from "../lib/makeIcon";
-import { cn } from "../lib/utils";
-import { useUIStore } from "../store/ui";
+import { type Book, useBooks, useCreateBook } from "@/data/books";
+import { useCreateFolder, useFolders } from "@/data/folders";
+import { getPositionBetween } from "@/data/ordering";
+import { buildTree, childrenOf, ROOT } from "@/data/tree";
+import { useAuth } from "@/lib/auth";
+import { makeIcon } from "@/lib/makeIcon";
+import { cn } from "@/lib/utils";
+import { useUIStore } from "@/store/ui";
+
 import { BookIcon, BookPlusIcon, FolderPlusIcon } from "./sidebar/icons";
 import { Button } from "./ui/Button";
 import { DocumentIcon } from "./ui/DocumentIcon";

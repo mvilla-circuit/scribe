@@ -1,15 +1,16 @@
 import {
-  profileFonts,
-  useProfile,
-  useUpdateProfileFonts,
-} from "../../data/profile";
-import { DEFAULT_FONT_ID, type FontRole } from "../../fonts/catalog";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
-} from "../ui/Dialog";
+} from "@/components/ui/Dialog";
+import {
+  profileFonts,
+  useProfile,
+  useUpdateProfileFonts,
+} from "@/data/profile";
+import { DEFAULT_FONT_ID, type FontRole } from "@/fonts/catalog";
+
 import { FontPicker } from "./FontPicker";
 
 const ROLE_META: { role: FontRole; label: string; hint: string }[] = [

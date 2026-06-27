@@ -10,38 +10,34 @@ import {
 } from "@dnd-kit/sortable";
 import { type ReactNode, useMemo, useState } from "react";
 
+import { useTreeDnd } from "@/components/tree/useTreeDnd";
+import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu";
+import { Tooltip } from "@/components/ui/Tooltip";
 import {
   useBooks,
   useCreateBook,
   useDeleteBook,
   useMoveBook,
   useRenameBook,
-} from "../../data/books";
+} from "@/data/books";
 import {
   useCreateFolder,
   useDeleteFolder,
   useFolders,
   useMoveFolder,
   useRenameFolder,
-} from "../../data/folders";
-import { getPositionBetween } from "../../data/ordering";
-import {
-  buildTree,
-  childrenOf,
-  countBooksInFolder,
-  ROOT,
-} from "../../data/tree";
-import { useUIStore } from "../../store/ui";
-import { useTreeDnd } from "../tree/useTreeDnd";
-import { Button } from "../ui/Button";
-import { ConfirmDialog } from "../ui/ConfirmDialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../ui/DropdownMenu";
-import { Tooltip } from "../ui/Tooltip";
+} from "@/data/folders";
+import { getPositionBetween } from "@/data/ordering";
+import { buildTree, childrenOf, countBooksInFolder, ROOT } from "@/data/tree";
+import { useUIStore } from "@/store/ui";
+
 import {
   type FlatNode,
   flattenTree,

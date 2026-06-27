@@ -1,5 +1,3 @@
-import type { DocTreeNode } from "../../data/docTree";
-import type { Document } from "../../data/documents";
 import {
   type DndNode,
   INDENT,
@@ -7,7 +5,9 @@ import {
   projectDrop,
   type Projection,
   removeDescendants as genericRemoveDescendants,
-} from "../tree/treeDnd";
+} from "@/components/tree/treeDnd";
+import type { DocTreeNode } from "@/data/docTree";
+import type { Document } from "@/data/documents";
 
 export { INDENT, type Projection };
 

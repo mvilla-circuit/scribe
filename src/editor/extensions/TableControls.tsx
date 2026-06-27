@@ -9,8 +9,8 @@ import { TextSelection } from "@tiptap/pm/state";
 import { type Editor, useEditorState } from "@tiptap/react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 
-import { Tooltip } from "../../components/ui/Tooltip";
-import { BlockColorPopover } from "../BlockColorPopover";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { BlockColorPopover } from "@/editor/BlockColorPopover";
 import {
   AlignBottomIcon,
   AlignCenterIcon,
@@ -29,8 +29,8 @@ import {
   RowBordersIcon,
   SplitCellIcon,
   TrashIcon,
-} from "../icons";
-import { TABLE_CELL_COLORS, TABLE_HEADER_COLORS } from "../palette";
+} from "@/editor/icons";
+import { TABLE_CELL_COLORS, TABLE_HEADER_COLORS } from "@/editor/palette";
 
 // Inline-on-focus table controls. Rather than a persistent toolbar, a compact
 // control cluster floats just above the table the caret is in (and only then),

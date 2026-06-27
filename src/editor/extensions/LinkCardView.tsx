@@ -3,15 +3,16 @@ import { type NodeViewProps, NodeViewWrapper } from "@tiptap/react";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
-import { Tooltip } from "../../components/ui/Tooltip";
+import { Tooltip } from "@/components/ui/Tooltip";
 import {
   CopyIcon,
   ExternalLinkIcon,
   LinkIcon,
   RefreshIcon,
   TrashIcon,
-} from "../icons";
-import { fetchLinkMetadata, hostLabel } from "../linkPreview";
+} from "@/editor/icons";
+import { fetchLinkMetadata, hostLabel } from "@/editor/linkPreview";
+
 import { keepAsLink } from "./linkCardCommands";
 
 type Status = "loading" | "ready" | "error";

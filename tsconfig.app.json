@@ -7,6 +7,12 @@
     "types": ["vite/client"],
     "skipLibCheck": true,
 
+    /* Path aliasing: `@/x` resolves to `src/x` (mirrored in vite.config.ts).
+       `paths` is resolved relative to this file, so no (deprecated) baseUrl. */
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,

@@ -1,7 +1,8 @@
 import * as RPopover from "@radix-ui/react-popover";
 import type { ComponentType } from "react";
 
-import { Tooltip } from "../components/ui/Tooltip";
+import { Tooltip } from "@/components/ui/Tooltip";
+
 import { PaletteIcon } from "./icons";
 import { type Swatch } from "./palette";
 import { SwatchGrid } from "./SwatchGrid";

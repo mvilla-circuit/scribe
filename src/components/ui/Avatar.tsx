@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { cn } from "../../lib/utils";
+import { cn } from "@/lib/utils";
 
 function initials(name: string | undefined): string {
   if (!name) return "?";

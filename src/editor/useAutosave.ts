@@ -1,7 +1,7 @@
 import type { Editor } from "@tiptap/react";
 import { useEffect, useRef, useState } from "react";
 
-import type { Json } from "../lib/database.types";
+import type { Json } from "@/lib/database.types";
 
 export type SaveState = "idle" | "saving" | "saved" | "error";
 

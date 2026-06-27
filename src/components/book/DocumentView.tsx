@@ -1,7 +1,10 @@
 import { useMemo, useRef, useState } from "react";
 
-import type { Book } from "../../data/books";
-import { bookFontOverrides } from "../../data/books";
+import { BannerControl } from "@/components/ui/BannerControl";
+import { SubtitleToggle } from "@/components/ui/SubtitleToggle";
+import { Tooltip } from "@/components/ui/Tooltip";
+import type { Book } from "@/data/books";
+import { bookFontOverrides } from "@/data/books";
 import {
   docFontOverrides,
   type Document,
@@ -9,20 +12,18 @@ import {
   useUpdateDocument,
   useUpdateDocumentContent,
   useUpdateDocumentFontOverrides,
-} from "../../data/documents";
-import { profileFonts, useProfile } from "../../data/profile";
-import { Editor, type EditorHandle } from "../../editor/Editor";
-import type { OutlineHeading } from "../../editor/outline";
-import { SaveStatus } from "../../editor/SaveStatus";
-import type { SaveState } from "../../editor/useAutosave";
-import type { FontMap, FontRole } from "../../fonts/catalog";
-import { resolveFonts } from "../../fonts/resolve";
-import { useScopedFonts } from "../../fonts/useScopedFonts";
-import { cn, formatDateTime, formatRelativeTime } from "../../lib/utils";
-import { useUIStore } from "../../store/ui";
-import { BannerControl } from "../ui/BannerControl";
-import { SubtitleToggle } from "../ui/SubtitleToggle";
-import { Tooltip } from "../ui/Tooltip";
+} from "@/data/documents";
+import { profileFonts, useProfile } from "@/data/profile";
+import { Editor, type EditorHandle } from "@/editor/Editor";
+import type { OutlineHeading } from "@/editor/outline";
+import { SaveStatus } from "@/editor/SaveStatus";
+import type { SaveState } from "@/editor/useAutosave";
+import type { FontMap, FontRole } from "@/fonts/catalog";
+import { resolveFonts } from "@/fonts/resolve";
+import { useScopedFonts } from "@/fonts/useScopedFonts";
+import { cn, formatDateTime, formatRelativeTime } from "@/lib/utils";
+import { useUIStore } from "@/store/ui";
+
 import { EditableText, type EditableTextHandle } from "./EditableText";
 import { FontControl } from "./FontControl";
 import { ListIcon } from "./icons";

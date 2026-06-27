@@ -3,7 +3,8 @@ import "./editor.css";
 import { EditorContent, type JSONContent, useEditor } from "@tiptap/react";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 
-import type { Json } from "../lib/database.types";
+import type { Json } from "@/lib/database.types";
+
 import { BlockHandle } from "./BlockHandle";
 import { BubbleToolbar } from "./BubbleToolbar";
 import { buildExtensions } from "./extensions";

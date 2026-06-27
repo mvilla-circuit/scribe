@@ -1,9 +1,9 @@
 import { type ReactNode } from "react";
 
-import { cn } from "../../lib/utils";
-import { DocumentIcon } from "../ui/DocumentIcon";
-import { IconPicker } from "../ui/IconPicker";
-import { Tooltip } from "../ui/Tooltip";
+import { DocumentIcon } from "@/components/ui/DocumentIcon";
+import { IconPicker } from "@/components/ui/IconPicker";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { cn } from "@/lib/utils";
 
 interface MastheadProps {
   /** The current icon id, or null when none is set. */

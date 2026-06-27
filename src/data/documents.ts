@@ -2,10 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
-import type { FontMap } from "../fonts/catalog";
-import { useAuth } from "../lib/auth";
-import type { Json, Tables } from "../lib/database.types";
-import { supabase } from "../lib/supabase";
+import type { FontMap } from "@/fonts/catalog";
+import { useAuth } from "@/lib/auth";
+import type { Json, Tables } from "@/lib/database.types";
+import { supabase } from "@/lib/supabase";
+
 import { optimisticListHandlers } from "./optimisticList";
 import { byPosition, getPositionBetween } from "./ordering";
 import { pageIndexKey } from "./pageIndex";

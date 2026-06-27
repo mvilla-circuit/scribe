@@ -1,8 +1,9 @@
 import { type Editor, useEditorState } from "@tiptap/react";
 import { useEffect, useRef } from "react";
 
-import { Tooltip } from "../components/ui/Tooltip";
-import { cn } from "../lib/utils";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { cn } from "@/lib/utils";
+
 import { ChevronDownIcon } from "./icons";
 import { HIGHLIGHT_COLORS, type Swatch, TEXT_COLORS } from "./palette";
 import { SwatchGrid } from "./SwatchGrid";

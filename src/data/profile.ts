@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import type { FontMap } from "../fonts/catalog";
-import { useAuth } from "../lib/auth";
-import type { Json, Tables } from "../lib/database.types";
-import { supabase } from "../lib/supabase";
+import type { FontMap } from "@/fonts/catalog";
+import { useAuth } from "@/lib/auth";
+import type { Json, Tables } from "@/lib/database.types";
+import { supabase } from "@/lib/supabase";
 
 export type Profile = Tables<"profiles">;
 

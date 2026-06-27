@@ -1,16 +1,11 @@
 import {
-  childrenOf,
-  ROOT,
-  type TreeChild,
-  type TreeModel,
-} from "../../data/tree";
-import {
   type DndNode,
   neighbourPositions as genericNeighbourPositions,
   projectDrop,
   type Projection,
   removeDescendants as genericRemoveDescendants,
-} from "../tree/treeDnd";
+} from "@/components/tree/treeDnd";
+import { childrenOf, ROOT, type TreeChild, type TreeModel } from "@/data/tree";
 
 export { type Projection };
 

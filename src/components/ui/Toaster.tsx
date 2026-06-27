@@ -1,7 +1,7 @@
 import { CircleCheck, CircleX } from "lucide-react";
 import { Toaster as SonnerToaster } from "sonner";
 
-import { useTheme } from "../../theme/theme";
+import { useTheme } from "@/theme/theme";
 
 // Sonner toasts themed to our CSS tokens so feedback surfaces match the rest of
 // the chrome in both light and dark. Success toasts read green with a check,

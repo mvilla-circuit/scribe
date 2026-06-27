@@ -1,7 +1,8 @@
 import { MoreHorizontal } from "lucide-react";
 import { Fragment, type ReactNode } from "react";
 
-import { makeIcon } from "../../lib/makeIcon";
+import { makeIcon } from "@/lib/makeIcon";
+
 import {
   ContextMenu,
   ContextMenuContent,

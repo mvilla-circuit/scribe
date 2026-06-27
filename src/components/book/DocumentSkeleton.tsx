@@ -1,4 +1,4 @@
-import { Skeleton, SkeletonText } from "../ui/Skeleton";
+import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
 
 // Stands in for DocumentView during a cold load when the user's last page was a
 // deep document, so the reading surface holds its shape instead of flashing the

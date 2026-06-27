@@ -1,4 +1,5 @@
-import { cn } from "../lib/utils";
+import { cn } from "@/lib/utils";
+
 import type { SaveState } from "./useAutosave";
 
 // A whisper-quiet save indicator: a colored status dot plus a short label.

@@ -1,5 +1,6 @@
-import { Tooltip } from "../components/ui/Tooltip";
-import { cn } from "../lib/utils";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { cn } from "@/lib/utils";
+
 import { NoColorIcon } from "./icons";
 import { type Swatch } from "./palette";
 

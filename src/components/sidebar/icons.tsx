@@ -14,7 +14,7 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { makeIcon } from "../../lib/makeIcon";
+import { makeIcon } from "@/lib/makeIcon";
 
 export const FolderIcon = makeIcon(Folder);
 export const FolderOpenIcon = makeIcon(FolderOpen);

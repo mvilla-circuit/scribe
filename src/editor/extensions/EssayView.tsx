@@ -5,14 +5,14 @@ import {
 } from "@tiptap/react";
 import { type CSSProperties, useState } from "react";
 
-import { EditableText } from "../../components/book/EditableText";
-import { DocumentIcon } from "../../components/ui/DocumentIcon";
-import { IconPicker } from "../../components/ui/IconPicker";
-import { SubtitleToggle } from "../../components/ui/SubtitleToggle";
-import { Tooltip } from "../../components/ui/Tooltip";
-import { BlockColorPopover } from "../BlockColorPopover";
-import { EmojiIcon } from "../icons";
-import { QUOTE_ACCENTS } from "../palette";
+import { EditableText } from "@/components/book/EditableText";
+import { DocumentIcon } from "@/components/ui/DocumentIcon";
+import { IconPicker } from "@/components/ui/IconPicker";
+import { SubtitleToggle } from "@/components/ui/SubtitleToggle";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { BlockColorPopover } from "@/editor/BlockColorPopover";
+import { EmojiIcon } from "@/editor/icons";
+import { QUOTE_ACCENTS } from "@/editor/palette";
 
 // The essay's writing surface: a long-form section framed top and bottom by
 // horizontal accent rules, with the whole thing (a header of optional icon +

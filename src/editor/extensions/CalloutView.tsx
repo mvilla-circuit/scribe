@@ -5,12 +5,12 @@ import {
 } from "@tiptap/react";
 import { useState } from "react";
 
-import { DocumentIcon } from "../../components/ui/DocumentIcon";
-import { IconPicker } from "../../components/ui/IconPicker";
-import { Tooltip } from "../../components/ui/Tooltip";
-import { BlockColorPopover } from "../BlockColorPopover";
-import { EmojiIcon } from "../icons";
-import { CALLOUT_COLORS } from "../palette";
+import { DocumentIcon } from "@/components/ui/DocumentIcon";
+import { IconPicker } from "@/components/ui/IconPicker";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { BlockColorPopover } from "@/editor/BlockColorPopover";
+import { EmojiIcon } from "@/editor/icons";
+import { CALLOUT_COLORS } from "@/editor/palette";
 
 // The callout's writing surface: a tinted box with an optional leading icon and
 // a quiet control cluster in the top-right that fades in on hover/focus. The

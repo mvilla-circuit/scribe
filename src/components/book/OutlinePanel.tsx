@@ -10,8 +10,19 @@ import {
 } from "@dnd-kit/sortable";
 import { useMemo, useState } from "react";
 
-import type { Book } from "../../data/books";
-import { buildDocTree, descendantCount } from "../../data/docTree";
+import { BookIcon } from "@/components/sidebar/icons";
+import {
+  SIDEBAR_ICON_SIZE,
+  SIDEBAR_ROW_GAP,
+  sidebarRowPadding,
+} from "@/components/sidebar/SidebarRow";
+import { TreeSkeleton } from "@/components/sidebar/TreeSkeleton";
+import { useTreeDnd } from "@/components/tree/useTreeDnd";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { DocumentIcon } from "@/components/ui/DocumentIcon";
+import { Tooltip } from "@/components/ui/Tooltip";
+import type { Book } from "@/data/books";
+import { buildDocTree, descendantCount } from "@/data/docTree";
 import {
   buildDocumentDuplicate,
   collectDocumentSubtree,
@@ -21,21 +32,11 @@ import {
   useDuplicateDocument,
   useMoveDocument,
   useRenameDocument,
-} from "../../data/documents";
-import { getPositionBetween } from "../../data/ordering";
-import { cn } from "../../lib/utils";
-import { useUIStore } from "../../store/ui";
-import { BookIcon } from "../sidebar/icons";
-import {
-  SIDEBAR_ICON_SIZE,
-  SIDEBAR_ROW_GAP,
-  sidebarRowPadding,
-} from "../sidebar/SidebarRow";
-import { TreeSkeleton } from "../sidebar/TreeSkeleton";
-import { useTreeDnd } from "../tree/useTreeDnd";
-import { ConfirmDialog } from "../ui/ConfirmDialog";
-import { DocumentIcon } from "../ui/DocumentIcon";
-import { Tooltip } from "../ui/Tooltip";
+} from "@/data/documents";
+import { getPositionBetween } from "@/data/ordering";
+import { cn } from "@/lib/utils";
+import { useUIStore } from "@/store/ui";
+
 import { PlusIcon } from "./icons";
 import {
   docNeighbourPositions,

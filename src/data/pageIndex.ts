@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { supabase } from "../lib/supabase";
+import { supabase } from "@/lib/supabase";
 
 // A lightweight, cross-book index of every page the user can see (RLS-scoped).
 // Page link cards resolve their live title/icon/breadcrumb from this, and the

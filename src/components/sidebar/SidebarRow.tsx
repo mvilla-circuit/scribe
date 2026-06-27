@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import type { ReactNode } from "react";
 
-import { cn } from "../../lib/utils";
+import { cn } from "@/lib/utils";
 
 // Shared layout tokens for every sidebar tree row (the Library tree and the
 // in-book Outline). Keeping these in one place guarantees the two trees share

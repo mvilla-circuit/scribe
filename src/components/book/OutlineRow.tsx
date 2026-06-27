@@ -1,21 +1,26 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-import { cn } from "../../lib/utils";
-import { DuplicateIcon, PencilIcon, TrashIcon } from "../sidebar/icons";
+import {
+  DuplicateIcon,
+  PencilIcon,
+  TrashIcon,
+} from "@/components/sidebar/icons";
 import {
   SIDEBAR_ICON_SIZE,
   SidebarRow,
   SidebarRowOverlay,
-} from "../sidebar/SidebarRow";
-import { DocumentIcon } from "../ui/DocumentIcon";
-import { InlineRename } from "../ui/InlineRename";
+} from "@/components/sidebar/SidebarRow";
+import { DocumentIcon } from "@/components/ui/DocumentIcon";
+import { InlineRename } from "@/components/ui/InlineRename";
 import {
   type RowAction,
   RowActionDropdown,
   RowContextMenu,
-} from "../ui/RowActionMenu";
-import { Tooltip } from "../ui/Tooltip";
+} from "@/components/ui/RowActionMenu";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { cn } from "@/lib/utils";
+
 import { ChevronRightIcon, PageIcon, PlusIcon } from "./icons";
 import { type FlatDocNode } from "./outlineDnd";
 

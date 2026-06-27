@@ -16,8 +16,9 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "../components/ui/DropdownMenu";
-import type { IconProps } from "../lib/makeIcon";
+} from "@/components/ui/DropdownMenu";
+import type { IconProps } from "@/lib/makeIcon";
+
 import {
   BulletListIcon,
   CheckIcon,

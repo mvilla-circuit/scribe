@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { useAuth } from "../lib/auth";
-import type { Tables } from "../lib/database.types";
-import { supabase } from "../lib/supabase";
+import { useAuth } from "@/lib/auth";
+import type { Tables } from "@/lib/database.types";
+import { supabase } from "@/lib/supabase";
+
 import { optimisticListHandlers } from "./optimisticList";
 import { byPosition } from "./ordering";
 import { collectSubtree } from "./subtree";

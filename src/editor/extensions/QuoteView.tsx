@@ -5,11 +5,11 @@ import {
 } from "@tiptap/react";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 
-import { Tooltip } from "../../components/ui/Tooltip";
-import { cn } from "../../lib/utils";
-import { BlockColorPopover } from "../BlockColorPopover";
-import { AttributionIcon } from "../icons";
-import { QUOTE_ACCENTS } from "../palette";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { BlockColorPopover } from "@/editor/BlockColorPopover";
+import { AttributionIcon } from "@/editor/icons";
+import { QUOTE_ACCENTS } from "@/editor/palette";
+import { cn } from "@/lib/utils";
 
 // The quote's writing surface: a tinted/ruled/pull-quote block (driven by the
 // `variant` class) whose accent color flows through the `--quote-accent` CSS

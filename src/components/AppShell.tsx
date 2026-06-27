@@ -1,6 +1,7 @@
-import { useBooks } from "../data/books";
-import { useGlobalFonts } from "../fonts/useGlobalFonts";
-import { useUIStore } from "../store/ui";
+import { useBooks } from "@/data/books";
+import { useGlobalFonts } from "@/fonts/useGlobalFonts";
+import { useUIStore } from "@/store/ui";
+
 import { BookView } from "./book/BookView";
 import { MainEmptyState } from "./MainEmptyState";
 import { Sidebar } from "./Sidebar";

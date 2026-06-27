@@ -1,6 +1,5 @@
 import type { Editor, Range } from "@tiptap/core";
 
-import type { IconProps } from "../../lib/makeIcon";
 import {
   BookmarkIcon,
   BulletListIcon,
@@ -20,8 +19,10 @@ import {
   TableIcon,
   TaskListIcon,
   TextIcon,
-} from "../icons";
-import { normalizeUrl } from "../linkPreview";
+} from "@/editor/icons";
+import { normalizeUrl } from "@/editor/linkPreview";
+import type { IconProps } from "@/lib/makeIcon";
+
 import { calloutContent } from "./Callout";
 import { columnsContent } from "./Columns";
 import { essayContent } from "./Essay";

@@ -1,8 +1,8 @@
 import type { IconName } from "lucide-react/dynamic";
 import { DynamicIcon } from "lucide-react/dynamic";
 
-import { parseIcon } from "../../data/icon";
-import { cn } from "../../lib/utils";
+import { parseIcon } from "@/data/icon";
+import { cn } from "@/lib/utils";
 
 interface DocumentIconProps {
   /** The raw stored value from `documents.icon`. */

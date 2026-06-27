@@ -1,11 +1,12 @@
 import { useMemo } from "react";
 
-import { buildDocTree, flattenTocExpanded } from "../../data/docTree";
-import type { Document } from "../../data/documents";
-import { cn } from "../../lib/utils";
-import { useUIStore } from "../../store/ui";
-import { DocumentIcon } from "../ui/DocumentIcon";
-import { Skeleton } from "../ui/Skeleton";
+import { DocumentIcon } from "@/components/ui/DocumentIcon";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { buildDocTree, flattenTocExpanded } from "@/data/docTree";
+import type { Document } from "@/data/documents";
+import { cn } from "@/lib/utils";
+import { useUIStore } from "@/store/ui";
+
 import { ChevronRightIcon, PlusIcon } from "./icons";
 import { INDENT } from "./outlineDnd";
 

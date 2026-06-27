@@ -3,8 +3,9 @@ import { type Editor, useEditorState } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { type ReactNode, useState } from "react";
 
-import { Tooltip } from "../components/ui/Tooltip";
-import { cn } from "../lib/utils";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { cn } from "@/lib/utils";
+
 import { ColorPopover } from "./ColorPopover";
 import {
   BoldIcon,

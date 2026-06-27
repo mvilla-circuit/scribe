@@ -1,7 +1,8 @@
 import { Subtitles } from "lucide-react";
 
-import { makeIcon } from "../../lib/makeIcon";
-import { cn } from "../../lib/utils";
+import { makeIcon } from "@/lib/makeIcon";
+import { cn } from "@/lib/utils";
+
 import { Tooltip } from "./Tooltip";
 
 const SubtitleGlyph = makeIcon(Subtitles);

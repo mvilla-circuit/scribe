@@ -75,6 +75,20 @@ export default defineConfig([
       "@typescript-eslint/no-unnecessary-condition": "off",
       "no-console": ["warn", { allow: ["warn", "error"] }],
       eqeqeq: ["error", "always", { null: "ignore" }],
+      // Non-sibling imports go through the `@/` alias; only same-directory
+      // `./` paths stay relative. Keeps deep `../../../` chains out of the tree.
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["../*", "../**"],
+              message:
+                "Use the '@/' alias instead of parent-relative ('../') imports.",
+            },
+          ],
+        },
+      ],
     },
   },
 

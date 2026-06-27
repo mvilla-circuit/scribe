@@ -1,5 +1,6 @@
-import { cn } from "../../lib/utils";
-import { Skeleton } from "../ui/Skeleton";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { cn } from "@/lib/utils";
+
 import {
   SIDEBAR_ICON_SIZE,
   SIDEBAR_ROW_GAP,

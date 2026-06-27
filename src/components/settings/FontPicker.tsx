@@ -7,10 +7,10 @@ import {
   type FontRole,
   resolveFontEntry,
   ROLE_FONTS,
-} from "../../fonts/catalog";
-import { ensureFontLoaded } from "../../fonts/loadFont";
-import { makeIcon } from "../../lib/makeIcon";
-import { cn } from "../../lib/utils";
+} from "@/fonts/catalog";
+import { ensureFontLoaded } from "@/fonts/loadFont";
+import { makeIcon } from "@/lib/makeIcon";
+import { cn } from "@/lib/utils";
 
 const CheckIcon = makeIcon(Check);
 const ExpandIcon = makeIcon(ChevronsUpDown);

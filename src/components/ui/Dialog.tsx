@@ -2,7 +2,7 @@
 import * as RDialog from "@radix-ui/react-dialog";
 import { forwardRef } from "react";
 
-import { cn } from "../../lib/utils";
+import { cn } from "@/lib/utils";
 
 export const Dialog = RDialog.Root;
 export const DialogClose = RDialog.Close;

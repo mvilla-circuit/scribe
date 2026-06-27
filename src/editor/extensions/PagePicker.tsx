@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { Dialog, DialogContent, DialogTitle } from "../../components/ui/Dialog";
-import { DocumentIcon } from "../../components/ui/DocumentIcon";
-import { useBooks } from "../../data/books";
-import { usePageIndex } from "../../data/pageIndex";
-import { cn } from "../../lib/utils";
-import { BookIcon, PageLinkIcon } from "../icons";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/Dialog";
+import { DocumentIcon } from "@/components/ui/DocumentIcon";
+import { useBooks } from "@/data/books";
+import { usePageIndex } from "@/data/pageIndex";
+import { BookIcon, PageLinkIcon } from "@/editor/icons";
+import { cn } from "@/lib/utils";
+
 import { type PagePickTarget, usePagePicker } from "./pagePickerStore";
 
 type Row = PagePickTarget & {

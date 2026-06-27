@@ -1,6 +1,7 @@
-import type { Book } from "../../data/books";
-import { useDocuments, useEnsureTitlePage } from "../../data/documents";
-import { useUIStore } from "../../store/ui";
+import type { Book } from "@/data/books";
+import { useDocuments, useEnsureTitlePage } from "@/data/documents";
+import { useUIStore } from "@/store/ui";
+
 import { DocumentSkeleton } from "./DocumentSkeleton";
 import { DocumentView } from "./DocumentView";
 import { TitlePage } from "./TitlePage";

@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 
+import { SubtitleToggle } from "@/components/ui/SubtitleToggle";
+import { Tooltip } from "@/components/ui/Tooltip";
 import {
   type Book,
   bookFontOverrides,
@@ -7,17 +9,16 @@ import {
   bookTheme,
   useRenameBook,
   useUpdateBook,
-} from "../../data/books";
-import { buildDocTree, expandableDocIds } from "../../data/docTree";
-import { type Document, useCreateDocument } from "../../data/documents";
-import { getPositionBetween } from "../../data/ordering";
-import { profileFonts, useProfile } from "../../data/profile";
-import type { FontMap, FontRole } from "../../fonts/catalog";
-import { resolveFonts } from "../../fonts/resolve";
-import { useScopedFonts } from "../../fonts/useScopedFonts";
-import { useUIStore } from "../../store/ui";
-import { SubtitleToggle } from "../ui/SubtitleToggle";
-import { Tooltip } from "../ui/Tooltip";
+} from "@/data/books";
+import { buildDocTree, expandableDocIds } from "@/data/docTree";
+import { type Document, useCreateDocument } from "@/data/documents";
+import { getPositionBetween } from "@/data/ordering";
+import { profileFonts, useProfile } from "@/data/profile";
+import type { FontMap, FontRole } from "@/fonts/catalog";
+import { resolveFonts } from "@/fonts/resolve";
+import { useScopedFonts } from "@/fonts/useScopedFonts";
+import { useUIStore } from "@/store/ui";
+
 import { EditableText } from "./EditableText";
 import { FontControl } from "./FontControl";
 import { ChevronsDownUpIcon, ChevronsUpDownIcon } from "./icons";

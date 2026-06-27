@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
-import { EssayIcon } from "../../editor/icons";
-import type { OutlineHeading } from "../../editor/outline";
-import { cn } from "../../lib/utils";
-import { DocumentIcon } from "../ui/DocumentIcon";
+import { DocumentIcon } from "@/components/ui/DocumentIcon";
+import { EssayIcon } from "@/editor/icons";
+import type { OutlineHeading } from "@/editor/outline";
+import { cn } from "@/lib/utils";
 
 interface PageOutlineProps {
   headings: OutlineHeading[];

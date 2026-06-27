@@ -1,7 +1,8 @@
 import { mergeAttributes, Node } from "@tiptap/core";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 
-import { CALLOUT_DEFAULT } from "../palette";
+import { CALLOUT_DEFAULT } from "@/editor/palette";
+
 import { CalloutView } from "./CalloutView";
 
 // A tinted block that holds any other blocks (`block+`), fronted by an icon.

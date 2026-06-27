@@ -101,12 +101,16 @@ src-tauri/         Tauri (Rust) shell, config, and capabilities
 - Sidebar collapsed state
 - Review fonts again
 
-- Setup path aliasing
-- Revisit the relaxed linting rules
 - Add testing
+- Revisit the relaxed linting rules (audit the linting rules again)
+  - Accessibility
+  - Stale/verbose comments
+  - Enforce jsdoc comments
+  - Folder structure
+  - File naming conventions
+  - Variable naming conventions
 - Review code (refactor as necessary)
   - SOLID and DRY principles
-  - Accessibility
 - Web bundle needs optimization (`manualChunks`/lazy-loading)
 - Prep version 1 (package name and app icon)
 - Install Scribe

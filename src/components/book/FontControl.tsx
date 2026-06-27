@@ -1,16 +1,16 @@
 import * as RPopover from "@radix-ui/react-popover";
 import { RotateCcw } from "lucide-react";
 
+import { FontPicker } from "@/components/settings/FontPicker";
+import { Tooltip } from "@/components/ui/Tooltip";
 import {
   FONT_ROLES,
   type FontMap,
   type FontRole,
   type ResolvedFonts,
-} from "../../fonts/catalog";
-import { makeIcon } from "../../lib/makeIcon";
-import { cn } from "../../lib/utils";
-import { FontPicker } from "../settings/FontPicker";
-import { Tooltip } from "../ui/Tooltip";
+} from "@/fonts/catalog";
+import { makeIcon } from "@/lib/makeIcon";
+import { cn } from "@/lib/utils";
 
 const ResetIcon = makeIcon(RotateCcw);
 

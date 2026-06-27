@@ -16,6 +16,10 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
+      // `@/x` -> `src/x` (mirrors tsconfig paths). The `@rollup/plugin-alias`
+      // boundary match only fires on `@/...`, so scoped packages like
+      // `@tiptap/*` and `@radix-ui/*` are left untouched.
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
       "@tiptap/extension-collaboration": collabShim,
       "@tiptap/y-tiptap": collabShim,
     },

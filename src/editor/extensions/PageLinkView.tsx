@@ -2,18 +2,19 @@ import { type NodeViewProps, NodeViewWrapper } from "@tiptap/react";
 import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
 
-import { DocumentIcon } from "../../components/ui/DocumentIcon";
-import { Tooltip } from "../../components/ui/Tooltip";
-import { useBooks } from "../../data/books";
-import { type PageIndexEntry, usePageIndex } from "../../data/pageIndex";
-import { useUIStore } from "../../store/ui";
+import { DocumentIcon } from "@/components/ui/DocumentIcon";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { useBooks } from "@/data/books";
+import { type PageIndexEntry, usePageIndex } from "@/data/pageIndex";
 import {
   BookIcon,
   CopyIcon,
   ExternalLinkIcon,
   PageLinkIcon,
   TrashIcon,
-} from "../icons";
+} from "@/editor/icons";
+import { useUIStore } from "@/store/ui";
+
 import { pageRef, type PageTargetType } from "./pageRef";
 
 // Live-resolving internal page card. It reads the current title/icon and the

@@ -1,14 +1,15 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-import { cn } from "../../lib/utils";
-import { DocumentIcon } from "../ui/DocumentIcon";
-import { InlineRename } from "../ui/InlineRename";
+import { DocumentIcon } from "@/components/ui/DocumentIcon";
+import { InlineRename } from "@/components/ui/InlineRename";
 import {
   type RowAction,
   RowActionDropdown,
   RowContextMenu,
-} from "../ui/RowActionMenu";
+} from "@/components/ui/RowActionMenu";
+import { cn } from "@/lib/utils";
+
 import { type FlatNode } from "./dndTree";
 import {
   BookIcon,

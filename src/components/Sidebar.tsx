@@ -1,11 +1,12 @@
 import { Check, LogOut, PanelLeft, Settings, Type } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { Book } from "../data/books";
-import { useAuth } from "../lib/auth";
-import { makeIcon } from "../lib/makeIcon";
-import { SIDEBAR_MAX_WIDTH, SIDEBAR_MIN_WIDTH, useUIStore } from "../store/ui";
-import { type ThemeMode, useTheme } from "../theme/theme";
+import type { Book } from "@/data/books";
+import { useAuth } from "@/lib/auth";
+import { makeIcon } from "@/lib/makeIcon";
+import { SIDEBAR_MAX_WIDTH, SIDEBAR_MIN_WIDTH, useUIStore } from "@/store/ui";
+import { type ThemeMode, useTheme } from "@/theme/theme";
+
 import { ChevronLeftIcon } from "./book/icons";
 import { OutlinePanel } from "./book/OutlinePanel";
 import { SettingsDialog } from "./settings/SettingsDialog";

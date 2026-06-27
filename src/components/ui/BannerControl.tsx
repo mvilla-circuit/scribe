@@ -2,10 +2,11 @@ import * as RPopover from "@radix-ui/react-popover";
 import { RectangleHorizontal } from "lucide-react";
 import { useState } from "react";
 
-import { BANNER_COLORS } from "../../editor/palette";
-import { SwatchGrid } from "../../editor/SwatchGrid";
-import { makeIcon } from "../../lib/makeIcon";
-import { cn } from "../../lib/utils";
+import { BANNER_COLORS } from "@/editor/palette";
+import { SwatchGrid } from "@/editor/SwatchGrid";
+import { makeIcon } from "@/lib/makeIcon";
+import { cn } from "@/lib/utils";
+
 import { Tooltip } from "./Tooltip";
 
 const BannerGlyph = makeIcon(RectangleHorizontal);

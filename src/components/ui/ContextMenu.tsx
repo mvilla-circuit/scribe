@@ -2,7 +2,8 @@
 import * as RContext from "@radix-ui/react-context-menu";
 import { forwardRef } from "react";
 
-import { cn } from "../../lib/utils";
+import { cn } from "@/lib/utils";
+
 import {
   menuContentClass,
   menuItemClass,

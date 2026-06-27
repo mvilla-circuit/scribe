@@ -3,7 +3,8 @@ import { Plugin } from "@tiptap/pm/state";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import { toast } from "sonner";
 
-import { isBareUrl, normalizeUrl } from "../linkPreview";
+import { isBareUrl, normalizeUrl } from "@/editor/linkPreview";
+
 import { keepAsLink } from "./linkCardCommands";
 import { LinkCardView } from "./LinkCardView";
 

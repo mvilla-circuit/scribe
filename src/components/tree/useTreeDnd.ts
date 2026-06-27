@@ -10,7 +10,8 @@ import {
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useMemo, useState } from "react";
 
-import { getPositionBetween } from "../../data/ordering";
+import { getPositionBetween } from "@/data/ordering";
+
 import type { DndNode, Projection } from "./treeDnd";
 
 // Drag-and-drop orchestration shared by the Library tree and the in-book
