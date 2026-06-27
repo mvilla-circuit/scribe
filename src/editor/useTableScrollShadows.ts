@@ -1,16 +1,18 @@
 import type { Editor } from "@tiptap/react";
 import { useEffect } from "react";
 
-// Drives the horizontal scroll-fade hints on wide tables. Each `.tableWrapper`
-// is its own scroll container, so this measures every one and:
-//   - toggles `data-overflow-start` / `data-overflow-end` when content is
-//     clipped to the left / right (the CSS fades the matching edge gradient in),
-//   - publishes the scroll range as `--tbl-max` so the CSS scroll-driven
-//     animation can pin the overlays to the visible edges on the compositor
-//     (with a `--tbl-fade-*-x` = scrollLeft transform as the fallback for
-//     browsers without scroll-driven animations).
-// It re-measures on scroll, on size changes (window/column resize, fit-to-width),
-// and when tables are inserted or their column widths change.
+/**
+ * Drives the horizontal scroll-fade hints on wide tables. Each `.tableWrapper`
+ * is its own scroll container, so this measures every one and:
+ *   - toggles `data-overflow-start` / `data-overflow-end` when content is
+ *     clipped to the left / right (the CSS fades the matching edge gradient in),
+ *   - publishes the scroll range as `--tbl-max` so the CSS scroll-driven
+ *     animation can pin the overlays to the visible edges on the compositor
+ *     (with a `--tbl-fade-*-x` = scrollLeft transform as the fallback for
+ *     browsers without scroll-driven animations).
+ * It re-measures on scroll, on size changes (window/column resize, fit-to-width),
+ * and when tables are inserted or their column widths change.
+ */
 export function useTableScrollShadows(editor: Editor | null) {
   useEffect(() => {
     if (!editor) return;

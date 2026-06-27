@@ -38,7 +38,7 @@ function applyResolved(resolved: "light" | "dark") {
 }
 
 // Apply the persisted theme before React mounts to avoid a flash of the wrong theme.
-// eslint-disable-next-line react-refresh/only-export-components
+// eslint-disable-next-line react-refresh/only-export-components -- This module pairs the ThemeProvider component with this pre-mount helper by design.
 export function initTheme() {
   applyResolved(resolveMode(readStoredMode()));
 }
@@ -79,7 +79,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
+// eslint-disable-next-line react-refresh/only-export-components -- The theme context hook intentionally ships alongside its ThemeProvider component.
 export function useTheme() {
   const ctx = useContext(ThemeContext);
   if (!ctx) throw new Error("useTheme must be used within a ThemeProvider");

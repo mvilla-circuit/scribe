@@ -1,4 +1,4 @@
-/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable react-refresh/only-export-components -- This module exports row helpers (the padding util and drag-overlay variant) alongside the SidebarRow component. */
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
@@ -80,6 +80,7 @@ export function SidebarRow({
   }
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- Interactive tree row: a real ARIA role (treeitem/button), tabIndex, and click/keyboard handlers are supplied via props, but eslint can't see the dynamic `role`.
     <div
       ref={setNodeRef}
       style={{ ...style, paddingLeft: sidebarRowPadding(depth) }}
@@ -87,6 +88,7 @@ export function SidebarRow({
       role={role}
       aria-expanded={ariaExpanded}
       aria-selected={ariaSelected}
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- Same interactive row element; it is intentionally focusable because its dynamic `role` is interactive.
       tabIndex={0}
       onClick={onClick}
       onDoubleClick={onDoubleClick}

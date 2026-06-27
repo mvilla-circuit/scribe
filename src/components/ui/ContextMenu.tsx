@@ -1,4 +1,4 @@
-/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable react-refresh/only-export-components -- Radix wrapper module that re-exports a whole family of ContextMenu components, which trips react-refresh's single-component-export heuristic. */
 import * as RContext from "@radix-ui/react-context-menu";
 import { forwardRef } from "react";
 

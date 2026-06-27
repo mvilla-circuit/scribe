@@ -185,7 +185,7 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       editor.chain().focus().setNodeSelection(t.pos).run();
       // Deliberate fallback when the async Clipboard API is unavailable
       // (permissions / insecure context); execCommand still works here.
-      // eslint-disable-next-line @typescript-eslint/no-deprecated
+      // eslint-disable-next-line @typescript-eslint/no-deprecated -- Deliberate fallback: execCommand("copy") is the only option when the async Clipboard API is unavailable.
       if (document.execCommand("copy")) toast.success("Block copied");
     }
   }, [editor, menuTarget]);
@@ -299,7 +299,7 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       middleware: [
         // floating-ui invokes this at positioning time (not during render), so
         // reading the live `target.current` here is intentional and safe.
-        // eslint-disable-next-line react-hooks/refs
+        // eslint-disable-next-line react-hooks/refs -- floating-ui invokes this at positioning time, not during render, so reading target.current here is safe.
         offset(({ rects }) => {
           const t = target.current;
           if (!t) return 0;

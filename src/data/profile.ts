@@ -6,15 +6,19 @@ import { useAuth } from "@/lib/auth";
 import type { Json, Tables } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
 
+/** A single row from the `profiles` table. */
 export type Profile = Tables<"profiles">;
 
-// The global role -> fontId map persisted in profiles.fonts. An empty map means
-// "use the System defaults", preserving the pre-Phase-6 look until the user
-// picks fonts in Settings.
+/**
+ * The global role -> fontId map persisted in profiles.fonts. An empty map means
+ * "use the System defaults", preserving the pre-Phase-6 look until the user
+ * picks fonts in Settings.
+ */
 export type ProfileFonts = FontMap;
 
 const profileKey = ["profile"] as const;
 
+/** Query hook for the signed-in user's profile row. */
 export function useProfile() {
   const { session } = useAuth();
   const userId = session?.user.id;
@@ -34,7 +38,7 @@ export function useProfile() {
   });
 }
 
-// Typed view of the profiles.fonts jsonb column.
+/** Typed view of the profiles.fonts jsonb column. */
 export function profileFonts(
   profile: Profile | null | undefined,
 ): ProfileFonts {
@@ -43,8 +47,10 @@ export function profileFonts(
   return fonts;
 }
 
-// Writes the whole global role -> fontId map (callers merge with the current map
-// before saving). Optimistic so the reading surface restyles instantly.
+/**
+ * Writes the whole global role -> fontId map (callers merge with the current map
+ * before saving). Optimistic so the reading surface restyles instantly.
+ */
 export function useUpdateProfileFonts() {
   const qc = useQueryClient();
   const { session } = useAuth();

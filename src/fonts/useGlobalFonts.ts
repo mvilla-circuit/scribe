@@ -12,10 +12,12 @@ const ROLE_VAR: Record<FontRole, string> = {
   code: "--font-code",
 };
 
-// Applies the global role -> font map to the document root: it points
-// --font-display/text/code at each chosen font's stack and lazily loads the
-// three fonts, re-running whenever the profile changes so the reading surface
-// updates instantly. Mount once near the app root.
+/**
+ * Applies the global role -> font map to the document root: it points
+ * --font-display/text/code at each chosen font's stack and lazily loads the
+ * three fonts, re-running whenever the profile changes so the reading surface
+ * updates instantly. Mount once near the app root.
+ */
 export function useGlobalFonts() {
   const { data: profile } = useProfile();
   const fonts = profileFonts(profile);

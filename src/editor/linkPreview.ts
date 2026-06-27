@@ -1,8 +1,10 @@
 import { fetch } from "@tauri-apps/plugin-http";
 
-// Cached bookmark metadata. Mirrors the LinkCard node attrs (minus `url`/
-// `status`), so a successful fetch can be written straight onto the node and
-// persisted into `documents.content` for instant, offline re-renders.
+/**
+ * Cached bookmark metadata. Mirrors the LinkCard node attrs (minus `url`/
+ * `status`), so a successful fetch can be written straight onto the node and
+ * persisted into `documents.content` for instant, offline re-renders.
+ */
 export interface LinkMetadata {
   title: string | null;
   description: string | null;
@@ -19,7 +21,7 @@ const EMPTY: LinkMetadata = {
   image: null,
 };
 
-// A friendly host label, e.g. "https://www.example.com/x" -> "example.com".
+/** A friendly host label, e.g. "https://www.example.com/x" -> "example.com". */
 export function hostLabel(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
@@ -28,8 +30,10 @@ export function hostLabel(url: string): string {
   }
 }
 
-// Normalizes a user-entered URL: adds https:// when no scheme is present so the
-// HTTP plugin (and the eventual <a href>) always get an absolute URL.
+/**
+ * Normalizes a user-entered URL: adds https:// when no scheme is present so the
+ * HTTP plugin (and the eventual <a href>) always get an absolute URL.
+ */
 export function normalizeUrl(raw: string): string | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;
@@ -43,8 +47,10 @@ export function normalizeUrl(raw: string): string | null {
   }
 }
 
-// True for a single, bare URL token (used by the paste rule to decide whether a
-// pasted clipboard string should become a bookmark card).
+/**
+ * True for a single, bare URL token (used by the paste rule to decide whether a
+ * pasted clipboard string should become a bookmark card).
+ */
 export function isBareUrl(text: string): boolean {
   const t = text.trim();
   if (/\s/.test(t)) return false;
@@ -105,9 +111,11 @@ function parseMetadata(html: string, baseUrl: string): LinkMetadata {
   return { title, description, siteName, image, favicon };
 }
 
-// Fetches a page and extracts its OG/Twitter/<title>/favicon metadata. Tolerant
-// by design: any network or parse failure resolves to the bare-domain fallback
-// (a card still renders) rather than throwing.
+/**
+ * Fetches a page and extracts its OG/Twitter/<title>/favicon metadata. Tolerant
+ * by design: any network or parse failure resolves to the bare-domain fallback
+ * (a card still renders) rather than throwing.
+ */
 export async function fetchLinkMetadata(url: string): Promise<LinkMetadata> {
   try {
     const res = await fetch(url, {

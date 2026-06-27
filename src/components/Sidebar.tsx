@@ -221,7 +221,7 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
       {!collapsed && (
         // Pointer-driven resize splitter; the separator role carries the
         // resize semantics (aria-valuenow/min/max) for assistive tech.
-        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- The separator role intentionally carries resize semantics (aria-valuenow/min/max) for this pointer-driven splitter.
         <div
           onMouseDown={onMouseDown}
           role="separator"

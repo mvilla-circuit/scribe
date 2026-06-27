@@ -9,6 +9,7 @@ import { type CommandProps, Extension } from "@tiptap/core";
 // Inside lists/to-dos Tab still nests the item (we defer to the list keymap),
 // and code blocks keep their own Tab behavior.
 
+/** Configuration for the block-indentation extension. */
 export interface IndentOptions {
   /** Node types that can be indented. */
   types: string[];

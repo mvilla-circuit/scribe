@@ -22,15 +22,19 @@
 //           Red Hat Display   → Hanken Grotesk
 //           Nunito Sans       → Figtree
 
+/** The three typography roles that drive the reading surface. */
 export type FontRole = "display" | "text" | "code";
 type FontStyle = "serif" | "sans" | "mono";
 
-// A (partial) role -> fontId map. Stored at each level of the cascade
-// (global / book / page); unset roles inherit from the level above.
+/**
+ * A (partial) role -> fontId map. Stored at each level of the cascade
+ * (global / book / page); unset roles inherit from the level above.
+ */
 export type FontMap = Partial<Record<FontRole, string>>;
-// A fully-resolved map with every role present (after applying defaults).
+/** A fully-resolved map with every role present (after applying defaults). */
 export type ResolvedFonts = Record<FontRole, string>;
 
+/** A single selectable font: its id, label, CSS stack, and lazy CSS loader. */
 export interface FontEntry {
   /** Stable id stored in the DB (matches the `@fontsource` slug for web fonts). */
   id: string;
@@ -570,8 +574,10 @@ export const FONT_REGISTRY: Record<string, FontEntry> = Object.fromEntries(
 
 export const FONT_ROLES: FontRole[] = ["display", "text", "code"];
 
-// Resolves a font id to its entry, falling back to the role's System default
-// when the id is unknown (e.g. a font removed from the catalog).
+/**
+ * Resolves a font id to its entry, falling back to the role's System default
+ * when the id is unknown (e.g. a font removed from the catalog).
+ */
 export function resolveFontEntry(
   fontId: string | undefined,
   role: FontRole,

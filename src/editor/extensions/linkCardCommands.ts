@@ -4,7 +4,7 @@ import type { Editor } from "@tiptap/react";
 // definition and its node view can both invoke them without importing each
 // other (which would form a circular dependency).
 
-// Inserts a fresh bookmark card for `url`, kicking off the metadata fetch.
+/** Inserts a fresh bookmark card for `url`, kicking off the metadata fetch. */
 export function insertLinkCard(editor: Editor, url: string) {
   editor
     .chain()
@@ -13,8 +13,10 @@ export function insertLinkCard(editor: Editor, url: string) {
     .run();
 }
 
-// Replaces the first link card pointing at `url` with a plain inline link, used
-// by the "Keep as link" / "Convert to link" affordances.
+/**
+ * Replaces the first link card pointing at `url` with a plain inline link, used
+ * by the "Keep as link" / "Convert to link" affordances.
+ */
 export function keepAsLink(editor: Editor, url: string) {
   let found: { from: number; to: number } | null = null;
   editor.state.doc.descendants((node, pos) => {

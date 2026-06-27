@@ -113,7 +113,7 @@ export function ColorPopover({
       {open && (
         // Container only swallows mousedown to keep the editor selection;
         // focusable controls live inside it, not on the panel itself.
-        // eslint-disable-next-line jsx-a11y/interactive-supports-focus
+        // eslint-disable-next-line jsx-a11y/interactive-supports-focus -- The panel only swallows mousedown to preserve the editor selection; the focusable controls live inside it, not on the panel.
         <div
           role="menu"
           onMouseDown={(e) => {

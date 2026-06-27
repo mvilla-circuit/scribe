@@ -2,14 +2,17 @@ import type { Document } from "./documents";
 import { byPosition } from "./ordering";
 import { collectSubtree } from "./subtree";
 
-// The book's document hierarchy as a nested tree, ordered by `position`. The
-// Title Page is excluded -- it is pinned separately and is not part of the
-// readable outline/TOC structure.
+/**
+ * The book's document hierarchy as a nested tree, ordered by `position`. The
+ * Title Page is excluded -- it is pinned separately and is not part of the
+ * readable outline/TOC structure.
+ */
 export interface DocTreeNode {
   document: Document;
   children: DocTreeNode[];
 }
 
+/** Builds the nested document tree for a book from its flat document list. */
 export function buildDocTree(documents: Document[]): DocTreeNode[] {
   const hierarchy = documents.filter((d) => !d.is_title_page);
   const validIds = new Set(hierarchy.map((d) => d.id));
@@ -36,16 +39,19 @@ export function buildDocTree(documents: Document[]): DocTreeNode[] {
   return build(null);
 }
 
+/** A flattened table-of-contents row: a document tagged with its nesting depth. */
 export interface TocEntry {
   document: Document;
   depth: number;
   hasChildren: boolean;
 }
 
-// Depth-first, in-order flatten with each entry tagged by its nesting depth and
-// whether it has children. Only descends into nodes whose id is in `expanded`,
-// so a collapsed parent hides its subtree -- the shape the title page's
-// collapsible Table of Contents renders from.
+/**
+ * Depth-first, in-order flatten with each entry tagged by its nesting depth and
+ * whether it has children. Only descends into nodes whose id is in `expanded`,
+ * so a collapsed parent hides its subtree -- the shape the title page's
+ * collapsible Table of Contents renders from.
+ */
 export function flattenTocExpanded(
   tree: DocTreeNode[],
   expanded: Set<string>,
@@ -64,8 +70,10 @@ export function flattenTocExpanded(
   return out;
 }
 
-// All ids in the tree that have children -- the full set of expandable nodes,
-// used to drive the "expand all" toggle and to know when everything is open.
+/**
+ * All ids in the tree that have children -- the full set of expandable nodes,
+ * used to drive the "expand all" toggle and to know when everything is open.
+ */
 export function expandableDocIds(tree: DocTreeNode[]): string[] {
   const ids: string[] = [];
   const walk = (nodes: DocTreeNode[]) => {
@@ -80,8 +88,10 @@ export function expandableDocIds(tree: DocTreeNode[]): string[] {
   return ids;
 }
 
-// Number of descendants a document has (used to warn before a cascade delete).
-// collectSubtree includes the root itself, so subtract it.
+/**
+ * Number of descendants a document has (used to warn before a cascade delete).
+ * collectSubtree includes the root itself, so subtract it.
+ */
 export function descendantCount(documents: Document[], id: string): number {
   return collectSubtree(documents, id, (d) => d.parent_document_id).size - 1;
 }

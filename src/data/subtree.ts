@@ -1,7 +1,9 @@
-// Generic descendant walk shared by the document and folder hierarchies. Given a
-// flat list of items and a way to read each item's parent id, it collects a
-// node plus every descendant beneath it -- the set the DB cascade-deletes, which
-// the UI mirrors optimistically.
+/**
+ * Generic descendant walk shared by the document and folder hierarchies. Given a
+ * flat list of items and a way to read each item's parent id, it collects a
+ * node plus every descendant beneath it -- the set the DB cascade-deletes, which
+ * the UI mirrors optimistically.
+ */
 export function collectSubtree<T extends { id: string }>(
   items: T[],
   rootId: string,

@@ -1,4 +1,4 @@
-/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable react-refresh/only-export-components -- Radix wrapper module that re-exports a whole family of Dialog components, which trips react-refresh's single-component-export heuristic. */
 import * as RDialog from "@radix-ui/react-dialog";
 import { forwardRef } from "react";
 

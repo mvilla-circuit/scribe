@@ -4,6 +4,10 @@ import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
+import eslintComments from "@eslint-community/eslint-plugin-eslint-comments";
+import checkFile from "eslint-plugin-check-file";
+import jsdoc from "eslint-plugin-jsdoc";
+import boundaries from "eslint-plugin-boundaries";
 import prettier from "eslint-config-prettier";
 import tseslint from "typescript-eslint";
 import { defineConfig, globalIgnores } from "eslint/config";
@@ -21,10 +25,16 @@ export default defineConfig([
       tseslint.configs.stylisticTypeChecked,
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
-      jsxA11y.flatConfigs.recommended,
+      jsxA11y.flatConfigs.strict,
     ],
     plugins: {
       "simple-import-sort": simpleImportSort,
+      "@eslint-community/eslint-comments": eslintComments,
+    },
+    // Flag `eslint-disable` directives that no longer suppress anything so they
+    // get cleaned up instead of silently rotting.
+    linterOptions: {
+      reportUnusedDisableDirectives: "error",
     },
     languageOptions: {
       globals: globals.browser,
@@ -36,6 +46,59 @@ export default defineConfig([
     rules: {
       "simple-import-sort/imports": "error",
       "simple-import-sort/exports": "error",
+      // Every `eslint-disable` directive must carry an inline `-- reason` so the
+      // justification travels with the suppression instead of rotting nearby.
+      "@eslint-community/eslint-comments/require-description": [
+        "error",
+        { ignore: [] },
+      ],
+      // Identifier casing. Types are PascalCase; values are camelCase with
+      // PascalCase allowed for React components/constructors and UPPER_CASE for
+      // module-level constants. Object/type members are left unchecked because
+      // they routinely mirror external (DB/API/CSS) key casing. A leading
+      // underscore (intentional discard) is always permitted.
+      "@typescript-eslint/naming-convention": [
+        "error",
+        {
+          selector: "default",
+          format: ["camelCase"],
+          leadingUnderscore: "allow",
+        },
+        {
+          selector: "variable",
+          format: ["camelCase", "PascalCase", "UPPER_CASE"],
+          leadingUnderscore: "allow",
+        },
+        {
+          selector: "function",
+          format: ["camelCase", "PascalCase"],
+        },
+        {
+          selector: "parameter",
+          format: ["camelCase", "PascalCase"],
+          leadingUnderscore: "allow",
+        },
+        {
+          selector: "typeLike",
+          format: ["PascalCase"],
+        },
+        {
+          selector: "import",
+          format: ["camelCase", "PascalCase"],
+        },
+        {
+          // External-facing shapes (DB rows, API payloads, CSS-in-JS, etc.)
+          // dictate their own key casing.
+          selector: ["objectLiteralProperty", "typeProperty"],
+          format: null,
+        },
+        {
+          // Object-literal "methods" are often React component render-props
+          // (e.g. a `components={{ Row, Emoji }}` map), so PascalCase is allowed.
+          selector: "objectLiteralMethod",
+          format: ["camelCase", "PascalCase"],
+        },
+      ],
       // Discard-by-destructuring and intentionally-unused params are signalled
       // with a leading underscore.
       "@typescript-eslint/no-unused-vars": [
@@ -73,6 +136,24 @@ export default defineConfig([
       // positives and would push us to strip defensive guards that are also
       // needed for type narrowing. The safety it adds isn't worth that risk here.
       "@typescript-eslint/no-unnecessary-condition": "off",
+      // Keep `x as T` (unavoidable with loosely-typed libs) but forbid
+      // object-literal casts (`{ ... } as T`), which silently mask missing or
+      // misspelled properties; use a typed variable or `satisfies` instead.
+      "@typescript-eslint/consistent-type-assertions": [
+        "error",
+        { assertionStyle: "as", objectLiteralTypeAssertions: "never" },
+      ],
+      // Ban `as unknown` double-casts: they punch a hole through the type
+      // system to force an otherwise-impossible assertion. Model the type
+      // (or use a type guard) instead.
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "TSAsExpression > TSUnknownKeyword",
+          message:
+            "Avoid `as unknown` double-casts; model the type or use a type guard instead.",
+        },
+      ],
       "no-console": ["warn", { allow: ["warn", "error"] }],
       eqeqeq: ["error", "always", { null: "ignore" }],
       // Non-sibling imports go through the `@/` alias; only same-directory
@@ -103,6 +184,161 @@ export default defineConfig([
       "@typescript-eslint/no-unsafe-call": "off",
       "@typescript-eslint/no-unsafe-member-access": "off",
       "@typescript-eslint/no-unsafe-return": "off",
+    },
+  },
+
+  // File and folder naming. Default convention: PascalCase for `.tsx`
+  // (React components) and camelCase for `.ts` (modules); folders are
+  // lowercase. `.d.ts` files are exempt (their names follow tooling
+  // conventions, e.g. `vite-env.d.ts`).
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/**/*.d.ts"],
+    plugins: { "check-file": checkFile },
+    rules: {
+      "check-file/folder-naming-convention": [
+        "error",
+        { "src/**/": "CAMEL_CASE" },
+      ],
+      "check-file/filename-naming-convention": [
+        "error",
+        {
+          "src/**/*.tsx": "PASCAL_CASE",
+          "src/**/*.ts": "CAMEL_CASE",
+        },
+        { ignoreMiddleExtensions: true },
+      ],
+    },
+  },
+  // Exception: a handful of `.tsx` files are intentionally camelCase because
+  // they are entrypoints (`main.tsx`) or modules whose primary export is not a
+  // single component (icon sets, the theme/auth provider+hook pairs).
+  {
+    files: [
+      "src/main.tsx",
+      "src/**/icons.tsx",
+      "src/lib/makeIcon.tsx",
+      "src/theme/theme.tsx",
+      "src/lib/auth.tsx",
+    ],
+    plugins: { "check-file": checkFile },
+    rules: {
+      "check-file/filename-naming-convention": [
+        "error",
+        { "src/**/*.tsx": "CAMEL_CASE" },
+        { ignoreMiddleExtensions: true },
+      ],
+    },
+  },
+  // Exception: Tiptap extension definitions are PascalCase `.ts` files, named
+  // for the node/extension they declare (mirrors a class-style module export).
+  {
+    files: ["src/editor/extensions/{Indent,SlashCommand,Table,Typography}.ts"],
+    plugins: { "check-file": checkFile },
+    rules: {
+      "check-file/filename-naming-convention": [
+        "error",
+        { "src/**/*.ts": "PASCAL_CASE" },
+        { ignoreMiddleExtensions: true },
+      ],
+    },
+  },
+
+  // Require a JSDoc block on the exported API of the non-component layers
+  // (data/lib/fonts/store and editor utility modules). TypeScript already
+  // carries the types, so only a description block is required - param/return
+  // type tags are off, and `no-types` forbids redundant `{type}` annotations.
+  {
+    files: [
+      "src/data/**/*.ts",
+      "src/lib/**/*.ts",
+      "src/fonts/**/*.ts",
+      "src/store/**/*.ts",
+      "src/editor/**/*.ts",
+    ],
+    ignores: ["src/**/*.d.ts"],
+    plugins: { jsdoc },
+    settings: { jsdoc: { mode: "typescript" } },
+    rules: {
+      "jsdoc/require-jsdoc": [
+        "error",
+        {
+          // Only the exported API needs docs - not internal helpers. Disable
+          // the default "every FunctionDeclaration" requirement and rely solely
+          // on the export-scoped contexts below.
+          require: { FunctionDeclaration: false },
+          contexts: [
+            "ExportNamedDeclaration > FunctionDeclaration",
+            "ExportNamedDeclaration > TSInterfaceDeclaration",
+            "ExportNamedDeclaration > TSTypeAliasDeclaration",
+          ],
+        },
+      ],
+      "jsdoc/require-param": "off",
+      "jsdoc/require-returns": "off",
+      "jsdoc/no-types": "error",
+      "jsdoc/check-alignment": "error",
+    },
+  },
+
+  // Architectural boundaries between the top-level `src/` layers. The allowed
+  // dependency graph below was validated against the real import graph (see the
+  // audit canvas); it locks the lower layers (lib/store/theme/data/fonts) so
+  // they can't reach up into UI code, while reflecting the existing two-way
+  // components<->editor relationship (shared UI primitives live in components).
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/**/*.d.ts"],
+    plugins: { boundaries },
+    settings: {
+      "import/resolver": {
+        typescript: { alwaysTryTypes: true, project: "tsconfig.app.json" },
+      },
+      "boundaries/elements": [
+        { type: "lib", pattern: "src/lib", mode: "folder" },
+        { type: "store", pattern: "src/store", mode: "folder" },
+        { type: "theme", pattern: "src/theme", mode: "folder" },
+        { type: "fonts", pattern: "src/fonts", mode: "folder" },
+        { type: "data", pattern: "src/data", mode: "folder" },
+        { type: "editor", pattern: "src/editor", mode: "folder" },
+        { type: "components", pattern: "src/components", mode: "folder" },
+        { type: "app", pattern: "src/*.{ts,tsx}", mode: "full" },
+      ],
+    },
+    rules: {
+      "boundaries/dependencies": [
+        "error",
+        {
+          default: "disallow",
+          rules: [
+            // The app entrypoints may wire anything together.
+            { from: { type: "app" }, allow: { to: { type: "*" } } },
+            {
+              from: { type: "components" },
+              allow: {
+                to: {
+                  type: ["editor", "data", "fonts", "store", "theme", "lib"],
+                },
+              },
+            },
+            {
+              from: { type: "editor" },
+              allow: { to: { type: ["components", "data", "store", "lib"] } },
+            },
+            {
+              from: { type: "data" },
+              allow: { to: { type: ["fonts", "lib"] } },
+            },
+            {
+              from: { type: "fonts" },
+              allow: { to: { type: ["data", "lib"] } },
+            },
+            // Leaf layers may only reach down to the shared `lib` utilities.
+            { from: { type: "store" }, allow: { to: { type: ["lib"] } } },
+            { from: { type: "theme" }, allow: { to: { type: ["lib"] } } },
+          ],
+        },
+      ],
     },
   },
 

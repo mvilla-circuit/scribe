@@ -31,6 +31,7 @@ import { insertPageLink } from "./PageLink";
 import { usePagePicker } from "./pagePickerStore";
 import { quoteContent } from "./Quote";
 
+/** One entry in the slash (`/`) command menu: its labels, icon, and block-insert action. */
 export interface SlashItem {
   title: string;
   description: string;
@@ -197,7 +198,7 @@ const slashItems: SlashItem[] = [
   },
 ];
 
-// Case-insensitive filter across title + aliases, preserving registry order.
+/** Case-insensitive filter across title + aliases, preserving registry order. */
 export function filterSlashItems(query: string): SlashItem[] {
   const q = query.trim().toLowerCase();
   if (!q) return slashItems;

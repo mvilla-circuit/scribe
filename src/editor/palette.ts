@@ -7,6 +7,7 @@
 // translucent washes (rgba) so they tint the page gently and keep the theme's
 // own text color readable in either mode — no light-on-light surprises.
 
+/** A single selectable text-color or highlight swatch. */
 export interface Swatch {
   /** Stable label shown in the swatch tooltip. */
   name: string;
@@ -155,9 +156,11 @@ export const TABLE_CELL_COLORS: Swatch[] = [
   { name: "Ink", value: "var(--swatch-ink-wash)" },
 ];
 
-// Preset callout variants: each pairs an emoji with a soft block wash. Only the
-// first entry (the default) is used now that callouts pick their icon through
-// the shared page icon picker, but the table is kept for the default wash/icon.
+/**
+ * Preset callout variants: each pairs an emoji with a soft block wash. Only the
+ * first entry (the default) is used now that callouts pick their icon through
+ * the shared page icon picker, but the table is kept for the default wash/icon.
+ */
 export interface CalloutVariant {
   name: string;
   icon: string;

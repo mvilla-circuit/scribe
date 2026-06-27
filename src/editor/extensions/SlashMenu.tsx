@@ -69,7 +69,7 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
     return (
       // Don't steal focus from the editor while clicking a row; the rows
       // themselves are <button>s, so this container is presentational.
-      // eslint-disable-next-line jsx-a11y/no-static-element-interactions
+      // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- Presentational container: the rows inside are real <button>s; this div only guards editor focus on mousedown.
       <div
         ref={listRef}
         className="scribe-slash-menu"

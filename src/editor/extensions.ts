@@ -21,16 +21,18 @@ import { SlashCommand } from "./extensions/SlashCommand";
 import { Table, TableCell, TableHeader } from "./extensions/Table";
 import { Typography } from "./extensions/Typography";
 
-// The editor's extension set. StarterKit v3 already brings paragraphs,
-// headings, bold/italic/strike/code, underline, link, blockquote, lists,
-// code blocks, horizontal rule, hard break, history, the list keymap, the
-// trailing node, and all the markdown input rules (`## `, `- `, `> `, `**`,
-// `` ` ``, `---`, …) that let us transform syntax on the fly without ever
-// showing raw markdown.
-//
-// On top of that we layer the few marks StarterKit omits: a multicolor
-// Highlight, TextStyle + Color for foreground tints, and a Placeholder that
-// only nudges the first empty line.
+/**
+ * The editor's extension set. StarterKit v3 already brings paragraphs,
+ * headings, bold/italic/strike/code, underline, link, blockquote, lists,
+ * code blocks, horizontal rule, hard break, history, the list keymap, the
+ * trailing node, and all the markdown input rules (`## `, `- `, `> `, `**`,
+ * `` ` ``, `---`, …) that let us transform syntax on the fly without ever
+ * showing raw markdown.
+ *
+ * On top of that we layer the few marks StarterKit omits: a multicolor
+ * Highlight, TextStyle + Color for foreground tints, and a Placeholder that
+ * only nudges the first empty line.
+ */
 export function buildExtensions(): Extensions {
   return [
     StarterKit.configure({

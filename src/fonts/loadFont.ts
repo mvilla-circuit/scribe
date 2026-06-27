@@ -10,9 +10,11 @@ import { FONT_REGISTRY, type FontRole, resolveFontEntry } from "./catalog";
 const loaded = new Set<string>();
 const inflight = new Map<string, Promise<void>>();
 
-// Ensures the font's web CSS is loaded. System defaults (no `load`) resolve
-// immediately. Failures (e.g. truly offline before first load) are swallowed so
-// the UI simply falls back to the stack's system fallback rather than throwing.
+/**
+ * Ensures the font's web CSS is loaded. System defaults (no `load`) resolve
+ * immediately. Failures (e.g. truly offline before first load) are swallowed so
+ * the UI simply falls back to the stack's system fallback rather than throwing.
+ */
 export function ensureFontLoaded(fontId: string): Promise<void> {
   const entry = FONT_REGISTRY[fontId];
   if (!entry?.load || loaded.has(fontId)) return Promise.resolve();
@@ -36,8 +38,10 @@ export function ensureFontLoaded(fontId: string): Promise<void> {
   return promise;
 }
 
-// Resolves a font id to the CSS `font-family` stack to assign to a role
-// variable, falling back to the role's System default for unknown ids.
+/**
+ * Resolves a font id to the CSS `font-family` stack to assign to a role
+ * variable, falling back to the role's System default for unknown ids.
+ */
 export function fontStackFor(
   fontId: string | undefined,
   role: FontRole,

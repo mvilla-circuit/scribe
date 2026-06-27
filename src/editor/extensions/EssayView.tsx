@@ -35,8 +35,8 @@ export function EssayView({ node, updateAttributes, editor }: NodeViewProps) {
 
   const [colorOpen, setColorOpen] = useState(false);
 
-  const wrapperStyle = color
-    ? ({ "--essay-accent": color } as CSSProperties)
+  const wrapperStyle: CSSProperties | undefined = color
+    ? { "--essay-accent": color }
     : undefined;
 
   // When not editable an entirely empty header would render as dead space, so

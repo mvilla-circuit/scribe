@@ -2,11 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 
 import { supabase } from "@/lib/supabase";
 
-// A lightweight, cross-book index of every page the user can see (RLS-scoped).
-// Page link cards resolve their live title/icon/breadcrumb from this, and the
-// "Link to page" picker searches it — both without having to load each book's
-// full document list. Renames/deletes invalidate this key (see documents.ts),
-// so cards stay in sync with their target.
+/**
+ * A lightweight, cross-book index of every page the user can see (RLS-scoped).
+ * Page link cards resolve their live title/icon/breadcrumb from this, and the
+ * "Link to page" picker searches it — both without having to load each book's
+ * full document list. Renames/deletes invalidate this key (see documents.ts),
+ * so cards stay in sync with their target.
+ */
 export interface PageIndexEntry {
   id: string;
   title: string;
@@ -18,6 +20,7 @@ export interface PageIndexEntry {
 
 export const pageIndexKey = ["page-index"] as const;
 
+/** Query hook for the cross-book page index that backs link cards and the picker. */
 export function usePageIndex() {
   return useQuery({
     queryKey: pageIndexKey,

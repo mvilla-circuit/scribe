@@ -37,8 +37,8 @@ export function QuoteView({ node, updateAttributes, editor }: NodeViewProps) {
     }
   }, [showAttribution]);
 
-  const wrapperStyle = color
-    ? ({ "--quote-accent": color } as CSSProperties)
+  const wrapperStyle: CSSProperties | undefined = color
+    ? { "--quote-accent": color }
     : undefined;
 
   return (

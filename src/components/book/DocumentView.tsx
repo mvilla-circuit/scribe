@@ -198,13 +198,13 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
           />
           <BannerControl
             value={document.banner_color}
-            onChange={(banner_color) => {
+            onChange={(bannerColor) => {
               updateDocument.mutate({
                 id: document.id,
-                banner_color,
+                banner_color: bannerColor,
                 // Clear any caption when the banner is removed so a re-added
                 // banner starts fresh instead of resurfacing old text.
-                ...(banner_color === null ? { banner_text: null } : {}),
+                ...(bannerColor === null ? { banner_text: null } : {}),
               });
             }}
           />
@@ -227,10 +227,10 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
         text={document.banner_text}
         bodyFont={bodyFont}
         reserveOutline={showOutline}
-        onCommitText={(banner_text) => {
+        onCommitText={(bannerText) => {
           updateDocument.mutate({
             id: document.id,
-            banner_text: banner_text || null,
+            banner_text: bannerText || null,
           });
         }}
       />

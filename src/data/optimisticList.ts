@@ -8,8 +8,10 @@ import { toast } from "sonner";
 // This factory captures that recipe so each table file only declares its
 // mutationFn and the optimistic updater.
 
+/** Comparator used to keep an optimistically-updated cached list sorted. */
 export type Sorter<T> = (a: T, b: T) => number;
 
+/** The snapshot captured in `onMutate` so `onError` can roll the cache back. */
 export interface ListMutationContext<T> {
   previous: T[] | undefined;
 }
@@ -35,8 +37,10 @@ function listOptimism<T>(qc: QueryClient, key: QueryKey, sort: Sorter<T>) {
   return { optimistic, rollback };
 }
 
-// Builds the `onMutate`/`onError`/`onSettled` trio for an optimistic list
-// mutation. Spread the result into `useMutation` alongside its `mutationFn`.
+/**
+ * Builds the `onMutate`/`onError`/`onSettled` trio for an optimistic list
+ * mutation. Spread the result into `useMutation` alongside its `mutationFn`.
+ */
 export function optimisticListHandlers<T, V>(opts: {
   qc: QueryClient;
   key: QueryKey;

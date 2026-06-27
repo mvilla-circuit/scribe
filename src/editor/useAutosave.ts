@@ -3,24 +3,28 @@ import { useEffect, useRef, useState } from "react";
 
 import type { Json } from "@/lib/database.types";
 
+/** Coarse save status surfaced by the autosave indicator. */
 export type SaveState = "idle" | "saving" | "saved" | "error";
 
-// `onPersist` may run synchronously or return a promise we can await to learn
-// whether the write actually succeeded (so the indicator can go green/red).
-// `void` in the union is intentional: it lets sync callbacks return nothing.
-// eslint-disable-next-line @typescript-eslint/no-invalid-void-type
+/**
+ * `onPersist` may run synchronously or return a promise we can await to learn
+ * whether the write actually succeeded (so the indicator can go green/red).
+ */
+// eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- `void` in the union is intentional so synchronous onPersist callbacks can return nothing.
 export type PersistFn = (content: Json) => void | Promise<unknown>;
 
 // How long "Saved" lingers before the indicator drifts back to idle.
 const SAVED_LINGER = 1500;
 
-// Invisible autosave: debounces `editor.getJSON()` and hands it to `onPersist`
-// (the optimistic mutation). Pending edits are flushed immediately on blur and
-// on unmount — and because the editor is keyed by document id, an unmount flush
-// is exactly what guarantees no edits are lost when switching documents.
-//
-// Returns a coarse save state purely for the unobtrusive indicator; the actual
-// persistence/rollback is owned by the injected mutation.
+/**
+ * Invisible autosave: debounces `editor.getJSON()` and hands it to `onPersist`
+ * (the optimistic mutation). Pending edits are flushed immediately on blur and
+ * on unmount — and because the editor is keyed by document id, an unmount flush
+ * is exactly what guarantees no edits are lost when switching documents.
+ *
+ * Returns a coarse save state purely for the unobtrusive indicator; the actual
+ * persistence/rollback is owned by the injected mutation.
+ */
 export function useAutosave(
   editor: Editor | null,
   onPersist: PersistFn,

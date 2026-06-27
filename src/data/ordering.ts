@@ -7,6 +7,10 @@
 
 const STEP = 1024;
 
+/**
+ * Picks a fractional position strictly between two neighbours so a reorder
+ * persists as a single row update. Either bound may be undefined at a list edge.
+ */
 export function getPositionBetween(prev?: number, next?: number): number {
   if (prev === undefined) {
     if (next === undefined) return STEP;
@@ -16,7 +20,7 @@ export function getPositionBetween(prev?: number, next?: number): number {
   return (prev + next) / 2;
 }
 
-// Sort comparator by position then created_at as a stable tiebreaker.
+/** Sort comparator by position then created_at as a stable tiebreaker. */
 export function byPosition<T extends { position: number; created_at: string }>(
   a: T,
   b: T,

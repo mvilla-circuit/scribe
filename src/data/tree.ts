@@ -4,10 +4,12 @@ import { byPosition } from "./ordering";
 
 export const ROOT = "__root__";
 
-// A child of a container (a folder or the root), tagged by kind. Folders and
-// books share one ordered list per container, sorted by `position`. The two DB
-// position columns live in different tables but share the same numeric scale,
-// so we can interleave them freely -- position is purely a sort key here.
+/**
+ * A child of a container (a folder or the root), tagged by kind. Folders and
+ * books share one ordered list per container, sorted by `position`. The two DB
+ * position columns live in different tables but share the same numeric scale,
+ * so we can interleave them freely -- position is purely a sort key here.
+ */
 export type TreeChild =
   | {
       kind: "folder";
@@ -24,11 +26,13 @@ export type TreeChild =
       book: Book;
     };
 
+/** The sidebar tree: a map from container id (folder id or ROOT) to its children. */
 export interface TreeModel {
   // container id (folder id or ROOT) -> ordered children (folders + books)
   children: Map<string, TreeChild[]>;
 }
 
+/** Builds the sidebar tree model by bucketing folders and books under their container. */
 export function buildTree(folders: Folder[], books: Book[]): TreeModel {
   const children = new Map<string, TreeChild[]>();
   const push = (key: string, child: TreeChild) => {
@@ -60,12 +64,15 @@ export function buildTree(folders: Folder[], books: Book[]): TreeModel {
   return { children };
 }
 
+/** The ordered children (folders + books) directly inside a container. */
 export function childrenOf(model: TreeModel, containerId: string): TreeChild[] {
   return model.children.get(containerId) ?? [];
 }
 
-// Number of books directly inside a folder. Folders only ever live at the root
-// and contain books (no nested folders), so a direct count is exact.
+/**
+ * Number of books directly inside a folder. Folders only ever live at the root
+ * and contain books (no nested folders), so a direct count is exact.
+ */
 export function countBooksInFolder(model: TreeModel, folderId: string): number {
   let total = 0;
   for (const child of childrenOf(model, folderId)) {

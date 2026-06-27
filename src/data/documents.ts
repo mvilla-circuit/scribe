@@ -12,13 +12,16 @@ import { byPosition, getPositionBetween } from "./ordering";
 import { pageIndexKey } from "./pageIndex";
 import { collectSubtree } from "./subtree";
 
+/** A single page row from the `documents` table. */
 export type Document = Tables<"documents">;
 
-// A page's per-role font overrides (a partial role -> fontId map). NULL on the
-// row means the page inherits everything from its book (which inherits global).
+/**
+ * A page's per-role font overrides (a partial role -> fontId map). NULL on the
+ * row means the page inherits everything from its book (which inherits global).
+ */
 export type DocFontOverrides = FontMap;
 
-// Typed view of the documents.font_overrides jsonb column.
+/** Typed view of the documents.font_overrides jsonb column. */
 export function docFontOverrides(doc: Document): DocFontOverrides {
   const overrides = doc.font_overrides;
   if (!overrides || typeof overrides !== "object" || Array.isArray(overrides)) {
@@ -31,6 +34,7 @@ export function docFontOverrides(doc: Document): DocFontOverrides {
 // optimistic mutations touch a single, well-scoped cache entry.
 export const documentsKey = (bookId: string) => ["documents", bookId] as const;
 
+/** Query hook for one book's pages, ordered by position. */
 export function useDocuments(bookId: string | null) {
   return useQuery({
     queryKey: documentsKey(bookId ?? "__none__"),
@@ -71,8 +75,10 @@ function documentHandlers<V>(
   });
 }
 
-// Collects a document plus all of its descendant ids. The DB cascades the
-// delete (parent_document_id ON DELETE CASCADE); we mirror that optimistically.
+/**
+ * Collects a document plus all of its descendant ids. The DB cascades the
+ * delete (parent_document_id ON DELETE CASCADE); we mirror that optimistically.
+ */
 export function collectDocumentSubtree(
   documents: Document[],
   rootId: string,
@@ -80,11 +86,13 @@ export function collectDocumentSubtree(
   return collectSubtree(documents, rootId, (d) => d.parent_document_id);
 }
 
-// Builds the rows for a deep copy of a page and all of its nested pages,
-// inserted as a sibling right after the source. Each copied page gets a fresh
-// id, descendants are re-parented onto those new ids, and only the copy's root
-// is renamed (" copy") and repositioned; descendants keep their relative order.
-// `user_id` is left blank here and stamped by the mutation at insert time.
+/**
+ * Builds the rows for a deep copy of a page and all of its nested pages,
+ * inserted as a sibling right after the source. Each copied page gets a fresh
+ * id, descendants are re-parented onto those new ids, and only the copy's root
+ * is renamed (" copy") and repositioned; descendants keep their relative order.
+ * `user_id` is left blank here and stamped by the mutation at insert time.
+ */
 export function buildDocumentDuplicate(
   documents: Document[],
   sourceId: string,
@@ -133,6 +141,7 @@ export function buildDocumentDuplicate(
   return { rows, rootId: idMap.get(sourceId) ?? sourceId };
 }
 
+/** Mutation hook that inserts a new page (optimistically appended to the cache). */
 export function useCreateDocument(bookId: string) {
   const qc = useQueryClient();
   const { session } = useAuth();
@@ -198,9 +207,11 @@ export function useCreateDocument(bookId: string) {
   });
 }
 
-// Inserts a pre-built set of duplicated rows (see buildDocumentDuplicate) in one
-// batch, stamping the current user onto each. The optimistic update appends the
-// same rows so the new pages appear instantly in the outline.
+/**
+ * Inserts a pre-built set of duplicated rows (see buildDocumentDuplicate) in one
+ * batch, stamping the current user onto each. The optimistic update appends the
+ * same rows so the new pages appear instantly in the outline.
+ */
 export function useDuplicateDocument(bookId: string) {
   const qc = useQueryClient();
   const { session } = useAuth();
@@ -246,6 +257,7 @@ export function useDuplicateDocument(bookId: string) {
   });
 }
 
+/** Mutation hook that renames a page. */
 export function useRenameDocument(bookId: string) {
   const qc = useQueryClient();
   const key = documentsKey(bookId);
@@ -267,9 +279,11 @@ export function useRenameDocument(bookId: string) {
   });
 }
 
-// Generic patch for a document's page-level settings (icon, subtitle, banner,
-// outline visibility). Kept separate from rename/move/content so each call
-// site stays explicit about what it touches.
+/**
+ * Generic patch for a document's page-level settings (icon, subtitle, banner,
+ * outline visibility). Kept separate from rename/move/content so each call
+ * site stays explicit about what it touches.
+ */
 export function useUpdateDocument(bookId: string) {
   const qc = useQueryClient();
   const key = documentsKey(bookId);
@@ -318,6 +332,7 @@ export function useUpdateDocument(bookId: string) {
   });
 }
 
+/** Mutation hook that reparents and/or repositions a page within its book. */
 export function useMoveDocument(bookId: string) {
   const qc = useQueryClient();
   const key = documentsKey(bookId);
@@ -358,6 +373,7 @@ export function useMoveDocument(bookId: string) {
   });
 }
 
+/** Mutation hook that deletes a page; descendants cascade away in the DB. */
 export function useDeleteDocument(bookId: string) {
   const qc = useQueryClient();
   const key = documentsKey(bookId);
@@ -383,8 +399,10 @@ export function useDeleteDocument(bookId: string) {
   });
 }
 
-// Persists a document body. Used by the Phase 4 editor; included here so the
-// data layer is complete and the editor only has to call mutate.
+/**
+ * Persists a document body. Used by the Phase 4 editor; included here so the
+ * data layer is complete and the editor only has to call mutate.
+ */
 export function useUpdateDocumentContent(bookId: string) {
   const qc = useQueryClient();
   const key = documentsKey(bookId);
@@ -408,8 +426,10 @@ export function useUpdateDocumentContent(bookId: string) {
   });
 }
 
-// Writes or clears a page's font-role overrides. Passing `null` clears the
-// column so the page inherits its book's choice again ("Inherit from book").
+/**
+ * Writes or clears a page's font-role overrides. Passing `null` clears the
+ * column so the page inherits its book's choice again ("Inherit from book").
+ */
 export function useUpdateDocumentFontOverrides(bookId: string) {
   const qc = useQueryClient();
   const key = documentsKey(bookId);
@@ -452,9 +472,11 @@ const ICON_UPLOAD_TYPES: Record<string, string> = {
   "image/svg+xml": "svg",
 };
 
-// Uploads a custom page icon to the `page-icons` storage bucket under the
-// owner's folder and returns its public URL. The IconPicker stores that URL on
-// the document as an `image` icon.
+/**
+ * Uploads a custom page icon to the `page-icons` storage bucket under the
+ * owner's folder and returns its public URL. The IconPicker stores that URL on
+ * the document as an `image` icon.
+ */
 export function useUploadIcon() {
   const { session } = useAuth();
   return useMutation({
@@ -485,9 +507,11 @@ export function useUploadIcon() {
   });
 }
 
-// Ensures every book has exactly one Title Page. Called when a book opens: once
-// its documents have loaded and none is flagged is_title_page, it creates one.
-// The optimistic insert flips the guard immediately, so it never double-creates.
+/**
+ * Ensures every book has exactly one Title Page. Called when a book opens: once
+ * its documents have loaded and none is flagged is_title_page, it creates one.
+ * The optimistic insert flips the guard immediately, so it never double-creates.
+ */
 export function useEnsureTitlePage(bookId: string | null) {
   const query = useDocuments(bookId);
   const createDocument = useCreateDocument(bookId ?? "__none__");

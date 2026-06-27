@@ -8,10 +8,12 @@ import { optimisticListHandlers } from "./optimisticList";
 import { byPosition } from "./ordering";
 import { collectSubtree } from "./subtree";
 
+/** A single folder row from the `folders` table. */
 export type Folder = Tables<"folders">;
 
 const foldersKey = ["folders"] as const;
 
+/** Query hook for all of the signed-in user's folders, ordered by position. */
 export function useFolders() {
   return useQuery({
     queryKey: foldersKey,
@@ -43,6 +45,7 @@ function folderHandlers<V>(
   });
 }
 
+/** Mutation hook that creates a folder (optimistically appended to the cache). */
 export function useCreateFolder() {
   const qc = useQueryClient();
   const { session } = useAuth();
@@ -92,6 +95,7 @@ export function useCreateFolder() {
   });
 }
 
+/** Mutation hook that renames a folder. */
 export function useRenameFolder() {
   const qc = useQueryClient();
   return useMutation({
@@ -111,6 +115,7 @@ export function useRenameFolder() {
   });
 }
 
+/** Mutation hook that reparents and/or repositions a folder. */
 export function useMoveFolder() {
   const qc = useQueryClient();
   return useMutation({
@@ -156,6 +161,7 @@ function collectFolderSubtree(folders: Folder[], rootId: string): Set<string> {
   return collectSubtree(folders, rootId, (f) => f.parent_folder_id);
 }
 
+/** Mutation hook that deletes a folder; subfolders cascade and books fall back to root. */
 export function useDeleteFolder() {
   const qc = useQueryClient();
   return useMutation({

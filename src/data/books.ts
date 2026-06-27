@@ -8,33 +8,38 @@ import { supabase } from "@/lib/supabase";
 import { optimisticListHandlers } from "./optimisticList";
 import { byPosition } from "./ordering";
 
+/** A single book row from the `books` table. */
 export type Book = Tables<"books">;
 
-// A book's `theme` jsonb. `fonts` holds per-role font overrides that take
-// precedence over the global settings; unset roles inherit from global.
-// `showSubtitle` toggles the Title Page subtitle slot, mirroring the per-page
-// `show_subtitle` column on documents.
+/**
+ * A book's `theme` jsonb. `fonts` holds per-role font overrides that take
+ * precedence over the global settings; unset roles inherit from global.
+ * `showSubtitle` toggles the Title Page subtitle slot, mirroring the per-page
+ * `show_subtitle` column on documents.
+ */
 export interface BookTheme {
   fonts?: FontMap;
   showSubtitle?: boolean;
 }
 
-// Typed view of the books.theme jsonb column.
+/** Typed view of the books.theme jsonb column. */
 export function bookTheme(book: Book): BookTheme {
   const theme = book.theme;
   if (!theme || typeof theme !== "object" || Array.isArray(theme)) return {};
   return theme;
 }
 
-// The book's per-role font overrides (a partial role -> fontId map).
+/** The book's per-role font overrides (a partial role -> fontId map). */
 export function bookFontOverrides(book: Book): FontMap {
   const fonts = bookTheme(book).fonts;
   if (!fonts || typeof fonts !== "object" || Array.isArray(fonts)) return {};
   return fonts;
 }
 
-// Whether the Title Page shows its subtitle slot. Defaults to true when a
-// subtitle already exists so existing books keep showing it, otherwise hidden.
+/**
+ * Whether the Title Page shows its subtitle slot. Defaults to true when a
+ * subtitle already exists so existing books keep showing it, otherwise hidden.
+ */
 export function bookShowSubtitle(book: Book): boolean {
   const flag = bookTheme(book).showSubtitle;
   if (typeof flag === "boolean") return flag;
@@ -43,6 +48,7 @@ export function bookShowSubtitle(book: Book): boolean {
 
 const booksKey = ["books"] as const;
 
+/** Query hook for all of the signed-in user's books, ordered by position. */
 export function useBooks() {
   return useQuery({
     queryKey: booksKey,
@@ -72,6 +78,7 @@ function bookHandlers<V>(
   });
 }
 
+/** Mutation hook that creates a book (optimistically appended to the cache). */
 export function useCreateBook() {
   const qc = useQueryClient();
   const { session } = useAuth();
@@ -125,6 +132,7 @@ export function useCreateBook() {
   });
 }
 
+/** Mutation hook that renames a book. */
 export function useRenameBook() {
   const qc = useQueryClient();
   return useMutation({
@@ -144,8 +152,10 @@ export function useRenameBook() {
   });
 }
 
-// Generic patch for a book's editable fields (subtitle, icon/cover, and the
-// Phase 6 font-role `theme`). Kept separate from rename so callers stay explicit.
+/**
+ * Generic patch for a book's editable fields (subtitle, icon/cover, and the
+ * Phase 6 font-role `theme`). Kept separate from rename so callers stay explicit.
+ */
 export function useUpdateBook() {
   const qc = useQueryClient();
   return useMutation({
@@ -171,6 +181,7 @@ export function useUpdateBook() {
   });
 }
 
+/** Mutation hook that moves a book to a folder and/or repositions it. */
 export function useMoveBook() {
   const qc = useQueryClient();
   return useMutation({
@@ -198,6 +209,7 @@ export function useMoveBook() {
   });
 }
 
+/** Mutation hook that deletes a book; its documents cascade away in the DB. */
 export function useDeleteBook() {
   const qc = useQueryClient();
   return useMutation({
