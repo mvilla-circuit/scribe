@@ -1,5 +1,3 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useEditorState, type Editor } from "@tiptap/react";
 import {
   autoUpdate,
   computePosition,
@@ -8,9 +6,11 @@ import {
   shift,
 } from "@floating-ui/dom";
 import { TextSelection } from "@tiptap/pm/state";
+import { type Editor, useEditorState } from "@tiptap/react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
+
 import { Tooltip } from "../../components/ui/Tooltip";
 import { BlockColorPopover } from "../BlockColorPopover";
-import { TABLE_CELL_COLORS, TABLE_HEADER_COLORS } from "../palette";
 import {
   AlignBottomIcon,
   AlignCenterIcon,
@@ -30,6 +30,7 @@ import {
   SplitCellIcon,
   TrashIcon,
 } from "../icons";
+import { TABLE_CELL_COLORS, TABLE_HEADER_COLORS } from "../palette";
 
 // Inline-on-focus table controls. Rather than a persistent toolbar, a compact
 // control cluster floats just above the table the caret is in (and only then),
@@ -88,8 +89,7 @@ export function TableControls({ editor }: { editor: Editor }) {
         }
         if (
           !cellFound &&
-          (node.type.name === "tableCell" ||
-            node.type.name === "tableHeader")
+          (node.type.name === "tableCell" || node.type.name === "tableHeader")
         ) {
           cellVAlign = (node.attrs.verticalAlign as string | null) ?? null;
           cellBg = (node.attrs.background as string | null) ?? null;
@@ -193,7 +193,7 @@ export function TableControls({ editor }: { editor: Editor }) {
       },
     };
     const update = () => {
-      computePosition(reference, floating, {
+      void computePosition(reference, floating, {
         strategy: "fixed",
         placement: "top-end",
         middleware: [offset(6), flip(), shift({ padding: 8 })],
@@ -220,7 +220,7 @@ export function TableControls({ editor }: { editor: Editor }) {
   const toggleBorders = (attr: "rowBorders" | "colBorders", next: boolean) => {
     if (tablePos < 0) return;
     editor.view.dispatch(
-      editor.state.tr.setNodeAttribute(tablePos, attr, next)
+      editor.state.tr.setNodeAttribute(tablePos, attr, next),
     );
     editor.commands.focus();
   };
@@ -233,7 +233,7 @@ export function TableControls({ editor }: { editor: Editor }) {
   const setHeaderColor = (value: string | null) => {
     if (tablePos < 0) return;
     editor.view.dispatch(
-      editor.state.tr.setNodeAttribute(tablePos, "color", value)
+      editor.state.tr.setNodeAttribute(tablePos, "color", value),
     );
   };
 
@@ -274,11 +274,9 @@ export function TableControls({ editor }: { editor: Editor }) {
       dom instanceof HTMLElement ? dom.querySelector("table") : null;
     if (tableEl) {
       tableEl.style.width = "";
-      tableEl
-        .querySelectorAll<HTMLTableColElement>("col")
-        .forEach((col) => {
-          col.style.width = "";
-        });
+      tableEl.querySelectorAll<HTMLTableColElement>("col").forEach((col) => {
+        col.style.width = "";
+      });
     }
     editor.commands.focus();
   };
@@ -291,7 +289,9 @@ export function TableControls({ editor }: { editor: Editor }) {
       role="toolbar"
       aria-label="Table controls"
       // Keep the selection while clicking a control.
-      onMouseDown={(e) => e.preventDefault()}
+      onMouseDown={(e) => {
+        e.preventDefault();
+      }}
     >
       <div className="scribe-table-ctrl-group">
         <CtrlButton
@@ -301,10 +301,7 @@ export function TableControls({ editor }: { editor: Editor }) {
           <MinusIcon size={14} />
         </CtrlButton>
         <span className="scribe-table-ctrl-label">Row</span>
-        <CtrlButton
-          label="Add row"
-          onClick={() => chain().addRowAfter().run()}
-        >
+        <CtrlButton label="Add row" onClick={() => chain().addRowAfter().run()}>
           <PlusIcon size={14} />
         </CtrlButton>
       </div>
@@ -427,14 +424,18 @@ export function TableControls({ editor }: { editor: Editor }) {
       <CtrlButton
         label={rowBorders ? "Hide row borders" : "Show row borders"}
         active={rowBorders}
-        onClick={() => toggleBorders("rowBorders", !rowBorders)}
+        onClick={() => {
+          toggleBorders("rowBorders", !rowBorders);
+        }}
       >
         <RowBordersIcon size={15} />
       </CtrlButton>
       <CtrlButton
         label={colBorders ? "Hide column borders" : "Show column borders"}
         active={colBorders}
-        onClick={() => toggleBorders("colBorders", !colBorders)}
+        onClick={() => {
+          toggleBorders("colBorders", !colBorders);
+        }}
       >
         <ColumnBordersIcon size={15} />
       </CtrlButton>

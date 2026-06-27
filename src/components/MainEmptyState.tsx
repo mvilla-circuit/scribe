@@ -1,17 +1,18 @@
-import { useMemo } from "react";
 import { PenLine } from "lucide-react";
+import { useMemo } from "react";
+
+import { type Book, useBooks, useCreateBook } from "../data/books";
+import { useCreateFolder, useFolders } from "../data/folders";
+import { getPositionBetween } from "../data/ordering";
+import { buildTree, childrenOf, ROOT } from "../data/tree";
 import { useAuth } from "../lib/auth";
 import { makeIcon } from "../lib/makeIcon";
 import { cn } from "../lib/utils";
+import { useUIStore } from "../store/ui";
+import { BookIcon, BookPlusIcon, FolderPlusIcon } from "./sidebar/icons";
 import { Button } from "./ui/Button";
 import { DocumentIcon } from "./ui/DocumentIcon";
 import { Skeleton } from "./ui/Skeleton";
-import { BookIcon, BookPlusIcon, FolderPlusIcon } from "./sidebar/icons";
-import { useBooks, useCreateBook, type Book } from "../data/books";
-import { useCreateFolder, useFolders } from "../data/folders";
-import { buildTree, childrenOf, ROOT } from "../data/tree";
-import { getPositionBetween } from "../data/ordering";
-import { useUIStore } from "../store/ui";
 
 const BrandIcon = makeIcon(PenLine);
 
@@ -152,7 +153,9 @@ export function MainEmptyState() {
                   <RecentBookCard
                     key={book.id}
                     book={book}
-                    onSelect={() => setActiveBook(book.id)}
+                    onSelect={() => {
+                      setActiveBook(book.id);
+                    }}
                   />
                 ))}
               </div>
@@ -182,7 +185,7 @@ function RecentBookCard({
       title={book.title}
       className={cn(
         "group flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2.5 text-left",
-        "outline-none transition hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring"
+        "outline-none transition hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring",
       )}
     >
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-tree-group text-muted">

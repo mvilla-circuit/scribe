@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import type { ReactNode } from "react";
+
 import { cn } from "../../lib/utils";
 
 // Shared layout tokens for every sidebar tree row (the Library tree and the
@@ -14,7 +15,7 @@ export function sidebarRowPadding(depth: number) {
   return 8 + depth * SIDEBAR_INDENT;
 }
 
-type SidebarRowProps = {
+interface SidebarRowProps {
   // dnd-kit wiring from the caller's useSortable().
   setNodeRef: (node: HTMLElement | null) => void;
   style: React.CSSProperties;
@@ -41,7 +42,7 @@ type SidebarRowProps = {
   onClick?: () => void;
   onDoubleClick?: (e: React.MouseEvent) => void;
   onKeyDown?: (e: React.KeyboardEvent) => void;
-};
+}
 
 // The visual shell for a single tree row. Callers supply the icon, label, and
 // trailing actions; this component owns the row's box, sizing, selection state,
@@ -95,7 +96,7 @@ export function SidebarRow({
         "transition-colors focus-visible:ring-2 focus-visible:ring-ring",
         selected
           ? "bg-selected font-medium text-text"
-          : "text-text hover:bg-hover"
+          : "text-text hover:bg-hover",
       )}
     >
       {icon}

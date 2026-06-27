@@ -5,7 +5,7 @@
 export function collectSubtree<T extends { id: string }>(
   items: T[],
   rootId: string,
-  getParentId: (item: T) => string | null
+  getParentId: (item: T) => string | null,
 ): Set<string> {
   const childrenByParent = new Map<string, T[]>();
   for (const item of items) {
@@ -19,7 +19,8 @@ export function collectSubtree<T extends { id: string }>(
   const ids = new Set<string>();
   const stack = [rootId];
   while (stack.length) {
-    const id = stack.pop() as string;
+    const id = stack.pop();
+    if (id === undefined) break;
     ids.add(id);
     for (const child of childrenByParent.get(id) ?? []) stack.push(child.id);
   }

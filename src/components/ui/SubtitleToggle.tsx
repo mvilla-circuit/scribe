@@ -1,6 +1,7 @@
 import { Subtitles } from "lucide-react";
-import { cn } from "../../lib/utils";
+
 import { makeIcon } from "../../lib/makeIcon";
+import { cn } from "../../lib/utils";
 import { Tooltip } from "./Tooltip";
 
 const SubtitleGlyph = makeIcon(Subtitles);
@@ -36,7 +37,7 @@ export function SubtitleToggle({
                 "flex h-7 w-7 items-center justify-center rounded-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
                 active
                   ? "bg-selected text-text"
-                  : "text-muted hover:bg-hover hover:text-text"
+                  : "text-muted hover:bg-hover hover:text-text",
               )
         }
       >

@@ -15,7 +15,7 @@ const inflight = new Map<string, Promise<void>>();
 // the UI simply falls back to the stack's system fallback rather than throwing.
 export function ensureFontLoaded(fontId: string): Promise<void> {
   const entry = FONT_REGISTRY[fontId];
-  if (!entry || !entry.load || loaded.has(fontId)) return Promise.resolve();
+  if (!entry?.load || loaded.has(fontId)) return Promise.resolve();
 
   const existing = inflight.get(fontId);
   if (existing) return existing;
@@ -40,7 +40,7 @@ export function ensureFontLoaded(fontId: string): Promise<void> {
 // variable, falling back to the role's System default for unknown ids.
 export function fontStackFor(
   fontId: string | undefined,
-  role: FontRole
+  role: FontRole,
 ): string {
   return resolveFontEntry(fontId, role).stack;
 }

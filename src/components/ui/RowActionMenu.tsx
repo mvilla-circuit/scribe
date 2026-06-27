@@ -1,5 +1,6 @@
-import { Fragment, type ReactNode } from "react";
 import { MoreHorizontal } from "lucide-react";
+import { Fragment, type ReactNode } from "react";
+
 import { makeIcon } from "../../lib/makeIcon";
 import {
   ContextMenu,
@@ -24,19 +25,21 @@ const MoreIcon = makeIcon(MoreHorizontal);
 // React tree, so selecting an item bubbles a `click` up into the row's onClick
 // (navigating into the book) and unmounts the dialog the action just opened.
 // Stop the click at the menu content so it never reaches the row.
-const stopRowClick = (e: React.MouseEvent) => e.stopPropagation();
+const stopRowClick = (e: React.MouseEvent) => {
+  e.stopPropagation();
+};
 
 // A single declaration of a tree row's actions, rendered identically as both a
 // hover dropdown and a right-click context menu so each row defines its menu
 // once instead of writing the item list out twice.
-export type RowAction = {
+export interface RowAction {
   icon: ReactNode;
   label: string;
   onSelect: () => void;
   danger?: boolean;
   // Render a separator above this item (ignored when it would lead the menu).
   separatorBefore?: boolean;
-};
+}
 
 function ContextItems({ actions }: { actions: RowAction[] }) {
   return (
@@ -44,7 +47,12 @@ function ContextItems({ actions }: { actions: RowAction[] }) {
       {actions.map((action, i) => (
         <Fragment key={action.label}>
           {action.separatorBefore && i > 0 && <ContextMenuSeparator />}
-          <ContextMenuItem danger={action.danger} onSelect={() => action.onSelect()}>
+          <ContextMenuItem
+            danger={action.danger}
+            onSelect={() => {
+              action.onSelect();
+            }}
+          >
             {action.icon}
             {action.label}
           </ContextMenuItem>
@@ -60,7 +68,12 @@ function DropdownItems({ actions }: { actions: RowAction[] }) {
       {actions.map((action, i) => (
         <Fragment key={action.label}>
           {action.separatorBefore && i > 0 && <DropdownMenuSeparator />}
-          <DropdownMenuItem danger={action.danger} onSelect={() => action.onSelect()}>
+          <DropdownMenuItem
+            danger={action.danger}
+            onSelect={() => {
+              action.onSelect();
+            }}
+          >
             {action.icon}
             {action.label}
           </DropdownMenuItem>
@@ -83,7 +96,9 @@ export function RowContextMenu({
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       <ContextMenuContent
         onClick={stopRowClick}
-        onCloseAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => {
+          e.preventDefault();
+        }}
       >
         <ContextItems actions={actions} />
       </ContextMenuContent>
@@ -107,8 +122,12 @@ export function RowActionDropdown({
             type="button"
             tabIndex={-1}
             aria-label={label}
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+            }}
             className="flex h-6 w-6 items-center justify-center rounded text-muted hover:bg-hover hover:text-text"
           >
             <MoreIcon size={15} />
@@ -118,7 +137,9 @@ export function RowActionDropdown({
       <DropdownMenuContent
         align="end"
         onClick={stopRowClick}
-        onCloseAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => {
+          e.preventDefault();
+        }}
       >
         <DropdownItems actions={actions} />
       </DropdownMenuContent>

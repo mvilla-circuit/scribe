@@ -1,13 +1,14 @@
 /* eslint-disable react-refresh/only-export-components */
 import * as RDialog from "@radix-ui/react-dialog";
 import { forwardRef } from "react";
+
 import { cn } from "../../lib/utils";
 
 export const Dialog = RDialog.Root;
 export const DialogClose = RDialog.Close;
 
 export const DialogContent = forwardRef<
-  React.ElementRef<typeof RDialog.Content>,
+  React.ComponentRef<typeof RDialog.Content>,
   React.ComponentPropsWithoutRef<typeof RDialog.Content>
 >(({ className, children, ...props }, ref) => (
   <RDialog.Portal>
@@ -18,7 +19,7 @@ export const DialogContent = forwardRef<
         "scribe-dialog fixed left-1/2 top-1/2 z-50 w-[min(28rem,calc(100vw-2rem))] " +
           "-translate-x-1/2 -translate-y-1/2 rounded-lg border border-border " +
           "bg-elevated p-5 shadow-popover outline-none",
-        className
+        className,
       )}
       {...props}
     >
@@ -29,19 +30,22 @@ export const DialogContent = forwardRef<
 DialogContent.displayName = "DialogContent";
 
 export const DialogTitle = forwardRef<
-  React.ElementRef<typeof RDialog.Title>,
+  React.ComponentRef<typeof RDialog.Title>,
   React.ComponentPropsWithoutRef<typeof RDialog.Title>
 >(({ className, ...props }, ref) => (
   <RDialog.Title
     ref={ref}
-    className={cn("text-base font-semibold tracking-tight text-text", className)}
+    className={cn(
+      "text-base font-semibold tracking-tight text-text",
+      className,
+    )}
     {...props}
   />
 ));
 DialogTitle.displayName = "DialogTitle";
 
 export const DialogDescription = forwardRef<
-  React.ElementRef<typeof RDialog.Description>,
+  React.ComponentRef<typeof RDialog.Description>,
   React.ComponentPropsWithoutRef<typeof RDialog.Description>
 >(({ className, ...props }, ref) => (
   <RDialog.Description

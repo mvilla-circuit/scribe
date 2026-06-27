@@ -1,38 +1,39 @@
 import { useMemo, useRef, useState } from "react";
-import { useUIStore } from "../../store/ui";
+
 import type { Book } from "../../data/books";
+import { bookFontOverrides } from "../../data/books";
 import {
   docFontOverrides,
+  type Document,
   useRenameDocument,
   useUpdateDocument,
   useUpdateDocumentContent,
   useUpdateDocumentFontOverrides,
-  type Document,
 } from "../../data/documents";
-import { bookFontOverrides } from "../../data/books";
 import { profileFonts, useProfile } from "../../data/profile";
-import { cn, formatDateTime, formatRelativeTime } from "../../lib/utils";
-import { resolveFonts } from "../../fonts/resolve";
-import { useScopedFonts } from "../../fonts/useScopedFonts";
-import type { FontMap, FontRole } from "../../fonts/catalog";
-import { EditableText, type EditableTextHandle } from "./EditableText";
-import { FontControl } from "./FontControl";
-import { Masthead } from "./Masthead";
-import { PageOutline } from "./PageOutline";
-import { ListIcon } from "./icons";
-import { Tooltip } from "../ui/Tooltip";
-import { SubtitleToggle } from "../ui/SubtitleToggle";
-import { BannerControl } from "../ui/BannerControl";
 import { Editor, type EditorHandle } from "../../editor/Editor";
+import type { OutlineHeading } from "../../editor/outline";
 import { SaveStatus } from "../../editor/SaveStatus";
 import type { SaveState } from "../../editor/useAutosave";
-import type { OutlineHeading } from "../../editor/outline";
+import type { FontMap, FontRole } from "../../fonts/catalog";
+import { resolveFonts } from "../../fonts/resolve";
+import { useScopedFonts } from "../../fonts/useScopedFonts";
+import { cn, formatDateTime, formatRelativeTime } from "../../lib/utils";
+import { useUIStore } from "../../store/ui";
+import { BannerControl } from "../ui/BannerControl";
+import { SubtitleToggle } from "../ui/SubtitleToggle";
+import { Tooltip } from "../ui/Tooltip";
+import { EditableText, type EditableTextHandle } from "./EditableText";
+import { FontControl } from "./FontControl";
+import { ListIcon } from "./icons";
+import { Masthead } from "./Masthead";
+import { PageOutline } from "./PageOutline";
 
-type DocumentViewProps = {
+interface DocumentViewProps {
   book: Book;
   document: Document;
   documents: Document[];
-};
+}
 
 // A single document page: breadcrumb trail, page settings (icon, subtitle and
 // outline visibility), an always-editable serif title, and the TipTap editor.
@@ -78,10 +79,12 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
   const titleFont = "var(--font-display)";
   const bodyFont = "var(--font-text)";
 
-  const writePageFonts = (fonts: FontMap | null) =>
+  const writePageFonts = (fonts: FontMap | null) => {
     updateFontOverrides.mutate({ id: document.id, font_overrides: fonts });
-  const setPageFont = (role: FontRole, fontId: string) =>
+  };
+  const setPageFont = (role: FontRole, fontId: string) => {
     writePageFonts({ ...overrides, [role]: fontId });
+  };
   const clearPageFont = (role: FontRole) => {
     const { [role]: _removed, ...rest } = overrides;
     writePageFonts(Object.keys(rest).length > 0 ? rest : null);
@@ -94,7 +97,9 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
         value={document.title}
         ariaLabel="Document title"
         placeholder="Untitled"
-        onCommit={(title) => renameDocument.mutate({ id: document.id, title })}
+        onCommit={(title) => {
+          renameDocument.mutate({ id: document.id, title });
+        }}
         onEnter={() => editorRef.current?.focusStart()}
         className="text-[2.6rem] font-semibold leading-tight tracking-tight text-text"
         style={{ fontFamily: titleFont }}
@@ -106,12 +111,12 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
           ariaLabel="Document subtitle"
           placeholder="Add a subtitle"
           allowEmpty
-          onCommit={(subtitle) =>
+          onCommit={(subtitle) => {
             updateDocument.mutate({
               id: document.id,
               subtitle: subtitle || null,
-            })
-          }
+            });
+          }}
           className="mt-2 text-xl leading-snug text-muted"
           style={{ fontFamily: bodyFont }}
         />
@@ -130,7 +135,9 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
       >
         <button
           type="button"
-          onClick={() => setActiveDoc(null)}
+          onClick={() => {
+            setActiveDoc(null);
+          }}
           className="rounded-sm px-1 outline-none hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
         >
           {book.title}
@@ -140,7 +147,9 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
             <BreadcrumbSep />
             <button
               type="button"
-              onClick={() => setActiveDoc(parent.id)}
+              onClick={() => {
+                setActiveDoc(parent.id);
+              }}
               className="max-w-[16ch] truncate rounded-sm px-1 outline-none hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
             >
               {parent.title || "Untitled"}
@@ -155,21 +164,23 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
           <span className="mr-2">
             <SaveStatus state={saveState} />
           </span>
-          <Tooltip content={document.show_outline ? "Hide outline" : "Show outline"}>
+          <Tooltip
+            content={document.show_outline ? "Hide outline" : "Show outline"}
+          >
             <button
               type="button"
-              onClick={() =>
+              onClick={() => {
                 updateDocument.mutate({
                   id: document.id,
                   show_outline: !document.show_outline,
-                })
-              }
+                });
+              }}
               aria-pressed={document.show_outline}
               className={cn(
                 "flex h-7 w-7 items-center justify-center rounded-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
                 document.show_outline
                   ? "bg-selected text-text"
-                  : "text-muted hover:bg-hover hover:text-text"
+                  : "text-muted hover:bg-hover hover:text-text",
               )}
             >
               <ListIcon size={16} />
@@ -177,24 +188,24 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
           </Tooltip>
           <SubtitleToggle
             active={document.show_subtitle}
-            onToggle={() =>
+            onToggle={() => {
               updateDocument.mutate({
                 id: document.id,
                 show_subtitle: !document.show_subtitle,
-              })
-            }
+              });
+            }}
           />
           <BannerControl
             value={document.banner_color}
-            onChange={(banner_color) =>
+            onChange={(banner_color) => {
               updateDocument.mutate({
                 id: document.id,
                 banner_color,
                 // Clear any caption when the banner is removed so a re-added
                 // banner starts fresh instead of resurfacing old text.
                 ...(banner_color === null ? { banner_text: null } : {}),
-              })
-            }
+              });
+            }}
           />
           <FontControl
             heading="Page fonts"
@@ -203,7 +214,9 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
             inherited={resolveFonts(globalFonts, bookOverrides)}
             onSet={setPageFont}
             onClear={clearPageFont}
-            onClearAll={() => writePageFonts(null)}
+            onClearAll={() => {
+              writePageFonts(null);
+            }}
           />
         </span>
       </nav>
@@ -213,24 +226,24 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
         text={document.banner_text}
         bodyFont={bodyFont}
         reserveOutline={showOutline}
-        onCommitText={(banner_text) =>
+        onCommitText={(banner_text) => {
           updateDocument.mutate({
             id: document.id,
             banner_text: banner_text || null,
-          })
-        }
+          });
+        }}
       />
 
       <div className="mx-auto flex w-full max-w-[1120px] justify-center gap-12 px-8 py-12 sm:py-16">
         <article className="w-full min-w-0 max-w-[68ch]">
           <Masthead
             icon={document.icon}
-            onSelectIcon={(icon) =>
-              updateDocument.mutate({ id: document.id, icon })
-            }
-            onRemoveIcon={() =>
-              updateDocument.mutate({ id: document.id, icon: null })
-            }
+            onSelectIcon={(icon) => {
+              updateDocument.mutate({ id: document.id, icon });
+            }}
+            onRemoveIcon={() => {
+              updateDocument.mutate({ id: document.id, icon: null });
+            }}
             changeIconLabel="Change page icon"
           >
             {titleBlock}

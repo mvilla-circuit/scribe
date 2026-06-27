@@ -1,14 +1,15 @@
-import { useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { supabase } from "../lib/supabase";
+
+import type { FontMap } from "../fonts/catalog";
 import { useAuth } from "../lib/auth";
 import type { Json, Tables } from "../lib/database.types";
-import type { FontMap } from "../fonts/catalog";
-import { byPosition, getPositionBetween } from "./ordering";
-import { collectSubtree } from "./subtree";
+import { supabase } from "../lib/supabase";
 import { optimisticListHandlers } from "./optimisticList";
+import { byPosition, getPositionBetween } from "./ordering";
 import { pageIndexKey } from "./pageIndex";
+import { collectSubtree } from "./subtree";
 
 export type Document = Tables<"documents">;
 
@@ -22,23 +23,23 @@ export function docFontOverrides(doc: Document): DocFontOverrides {
   if (!overrides || typeof overrides !== "object" || Array.isArray(overrides)) {
     return {};
   }
-  return overrides as DocFontOverrides;
+  return overrides;
 }
 
 // Documents are keyed per book so opening a book loads only its own pages and
 // optimistic mutations touch a single, well-scoped cache entry.
-export const documentsKey = (bookId: string) =>
-  ["documents", bookId] as const;
+export const documentsKey = (bookId: string) => ["documents", bookId] as const;
 
 export function useDocuments(bookId: string | null) {
   return useQuery({
     queryKey: documentsKey(bookId ?? "__none__"),
     enabled: bookId !== null,
     queryFn: async (): Promise<Document[]> => {
+      if (bookId === null) return [];
       const { data, error } = await supabase
         .from("documents")
         .select("*")
-        .eq("book_id", bookId as string)
+        .eq("book_id", bookId)
         .order("position", { ascending: true });
       if (error) throw error;
       return (data ?? []).slice().sort(byPosition);
@@ -52,7 +53,7 @@ function documentHandlers<V>(
   qc: ReturnType<typeof useQueryClient>,
   key: ReturnType<typeof documentsKey>,
   update: (prev: Document[], variables: V) => Document[],
-  errorMessage: string
+  errorMessage: string,
 ) {
   return optimisticListHandlers<Document, V>({
     qc,
@@ -73,7 +74,7 @@ function documentHandlers<V>(
 // delete (parent_document_id ON DELETE CASCADE); we mirror that optimistically.
 export function collectDocumentSubtree(
   documents: Document[],
-  rootId: string
+  rootId: string,
 ): Set<string> {
   return collectSubtree(documents, rootId, (d) => d.parent_document_id);
 }
@@ -85,7 +86,7 @@ export function collectDocumentSubtree(
 // `user_id` is left blank here and stamped by the mutation at insert time.
 export function buildDocumentDuplicate(
   documents: Document[],
-  sourceId: string
+  sourceId: string,
 ): { rows: Document[]; rootId: string } | null {
   const source = documents.find((d) => d.id === sourceId);
   if (!source || source.is_title_page) return null;
@@ -97,7 +98,7 @@ export function buildDocumentDuplicate(
   const siblings = documents
     .filter(
       (d) =>
-        !d.is_title_page && d.parent_document_id === source.parent_document_id
+        !d.is_title_page && d.parent_document_id === source.parent_document_id,
     )
     .sort(byPosition);
   const sourceIdx = siblings.findIndex((d) => d.id === sourceId);
@@ -109,13 +110,18 @@ export function buildDocumentDuplicate(
     .filter((d) => subtreeIds.has(d.id))
     .map((d): Document => {
       const isRoot = d.id === sourceId;
+      // Every subtree id is in idMap; the `??` fallbacks just keep the types
+      // honest (they never trigger given the filter above).
+      const newId = idMap.get(d.id) ?? d.id;
+      const newParent =
+        d.parent_document_id === null
+          ? null
+          : (idMap.get(d.parent_document_id) ?? d.parent_document_id);
       return {
         ...d,
-        id: idMap.get(d.id) as string,
+        id: newId,
         user_id: "",
-        parent_document_id: isRoot
-          ? d.parent_document_id
-          : (idMap.get(d.parent_document_id as string) as string),
+        parent_document_id: isRoot ? d.parent_document_id : newParent,
         title: isRoot ? `${d.title || "Untitled"} copy` : d.title,
         position: isRoot ? rootPosition : d.position,
         created_at: now,
@@ -123,7 +129,7 @@ export function buildDocumentDuplicate(
       };
     });
 
-  return { rows, rootId: idMap.get(sourceId) as string };
+  return { rows, rootId: idMap.get(sourceId) ?? sourceId };
 }
 
 export function useCreateDocument(bookId: string) {
@@ -179,14 +185,14 @@ export function useCreateDocument(bookId: string) {
             show_subtitle: false,
             is_title_page: input.is_title_page ?? false,
             position: input.position,
-            content: {} as Json,
+            content: {},
             font_overrides: null,
             created_at: now,
             updated_at: now,
           },
         ];
       },
-      "Couldn't create page"
+      "Couldn't create page",
     ),
   });
 }
@@ -220,7 +226,7 @@ export function useDuplicateDocument(bookId: string) {
           position: r.position,
           content: r.content,
           font_overrides: r.font_overrides,
-        }))
+        })),
       );
       if (error) throw error;
     },
@@ -234,7 +240,7 @@ export function useDuplicateDocument(bookId: string) {
           user_id: session?.user.id ?? "",
         })),
       ],
-      "Couldn't duplicate page"
+      "Couldn't duplicate page",
     ),
   });
 }
@@ -255,7 +261,7 @@ export function useRenameDocument(bookId: string) {
       key,
       (prev, input) =>
         prev.map((d) => (d.id === input.id ? { ...d, title: input.title } : d)),
-      "Couldn't rename page"
+      "Couldn't rename page",
     ),
   });
 }
@@ -279,7 +285,7 @@ export function useUpdateDocument(bookId: string) {
           | "show_outline"
           | "show_subtitle"
         >
-      >
+      >,
     ) => {
       const { id, ...patch } = input;
       const { error } = await supabase
@@ -306,7 +312,7 @@ export function useUpdateDocument(bookId: string) {
       key,
       (prev, input) =>
         prev.map((d) => (d.id === input.id ? { ...d, ...input } : d)),
-      "Couldn't update page"
+      "Couldn't update page",
     ),
   });
 }
@@ -344,9 +350,9 @@ export function useMoveDocument(bookId: string) {
                 parent_document_id: input.parent_document_id,
                 position: input.position,
               }
-            : d
+            : d,
         ),
-      "Couldn't move page"
+      "Couldn't move page",
     ),
   });
 }
@@ -371,7 +377,7 @@ export function useDeleteDocument(bookId: string) {
         const removed = collectDocumentSubtree(prev, input.id);
         return prev.filter((d) => !removed.has(d.id));
       },
-      "Couldn't delete page"
+      "Couldn't delete page",
     ),
   });
 }
@@ -394,9 +400,9 @@ export function useUpdateDocumentContent(bookId: string) {
       key,
       (prev, input) =>
         prev.map((d) =>
-          d.id === input.id ? { ...d, content: input.content } : d
+          d.id === input.id ? { ...d, content: input.content } : d,
         ),
-      "Couldn't save changes"
+      "Couldn't save changes",
     ),
   });
 }
@@ -413,7 +419,7 @@ export function useUpdateDocumentFontOverrides(bookId: string) {
     }) => {
       const { error } = await supabase
         .from("documents")
-        .update({ font_overrides: input.font_overrides as Json })
+        .update({ font_overrides: input.font_overrides })
         .eq("id", input.id);
       if (error) throw error;
     },
@@ -426,10 +432,10 @@ export function useUpdateDocumentFontOverrides(bookId: string) {
       (prev, input) =>
         prev.map((d) =>
           d.id === input.id
-            ? { ...d, font_overrides: input.font_overrides as Json }
-            : d
+            ? { ...d, font_overrides: input.font_overrides }
+            : d,
         ),
-      "Couldn't update page fonts"
+      "Couldn't update page fonts",
     ),
   });
 }
@@ -472,7 +478,7 @@ export function useUploadIcon() {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Couldn't upload icon"
+        error instanceof Error ? error.message : "Couldn't upload icon",
       );
     },
   });

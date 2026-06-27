@@ -1,15 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react";
 import * as RPopover from "@radix-ui/react-popover";
 import { EmojiPicker } from "frimousse";
-import { DynamicIcon, iconNames, type IconName } from "lucide-react/dynamic";
+import { DynamicIcon, iconNames } from "lucide-react/dynamic";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+import { useUploadIcon } from "../../data/documents";
+import { type IconValue, parseIcon, serializeIcon } from "../../data/icon";
+import { NoColorIcon } from "../../editor/icons";
+import { TEXT_COLORS } from "../../editor/palette";
 import { cn } from "../../lib/utils";
 import { Tooltip } from "./Tooltip";
-import { parseIcon, serializeIcon, type IconValue } from "../../data/icon";
-import { useUploadIcon } from "../../data/documents";
-import { TEXT_COLORS } from "../../editor/palette";
-import { NoColorIcon } from "../../editor/icons";
 
-type IconPickerProps = {
+interface IconPickerProps {
   /** The trigger element. Rendered via Radix `asChild`. */
   children: React.ReactNode;
   value: string | null;
@@ -17,7 +18,7 @@ type IconPickerProps = {
   onSelect: (icon: string) => void;
   onRemove: () => void;
   align?: RPopover.PopoverContentProps["align"];
-};
+}
 
 type Tab = "glyph" | "emoji" | "upload";
 
@@ -59,15 +60,27 @@ export function IconPicker({
           className="scribe-pop z-50 flex w-[19rem] flex-col overflow-hidden rounded-lg border border-border bg-elevated text-text shadow-popover outline-none"
         >
           <div className="flex items-center gap-1 border-b border-border p-1.5">
-            <TabButton active={tab === "glyph"} onClick={() => setTab("glyph")}>
+            <TabButton
+              active={tab === "glyph"}
+              onClick={() => {
+                setTab("glyph");
+              }}
+            >
               Icons
             </TabButton>
-            <TabButton active={tab === "emoji"} onClick={() => setTab("emoji")}>
+            <TabButton
+              active={tab === "emoji"}
+              onClick={() => {
+                setTab("emoji");
+              }}
+            >
               Emoji
             </TabButton>
             <TabButton
               active={tab === "upload"}
-              onClick={() => setTab("upload")}
+              onClick={() => {
+                setTab("upload");
+              }}
             >
               Upload
             </TabButton>
@@ -114,7 +127,7 @@ function TabButton({
       onClick={onClick}
       className={cn(
         "h-7 rounded-md px-2.5 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
-        active ? "bg-hover text-text" : "text-muted hover:text-text"
+        active ? "bg-hover text-text" : "text-muted hover:text-text",
       )}
     >
       {children}
@@ -136,7 +149,7 @@ function GlyphSection({
   const currentGlyph = current?.type === "glyph" ? current : null;
   const [query, setQuery] = useState("");
   const [color, setColor] = useState<string | null>(
-    currentGlyph?.color ?? null
+    currentGlyph?.color ?? null,
   );
   const [visibleCount, setVisibleCount] = useState(GLYPH_PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -169,10 +182,12 @@ function GlyphSection({
           setVisibleCount((count) => count + GLYPH_PAGE_SIZE);
         }
       },
-      { rootMargin: "200px" }
+      { rootMargin: "200px" },
     );
     observer.observe(sentinel);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+    };
   }, [hasMore, results.length]);
 
   // Picking a color stages it for the next glyph pick, and — if a glyph is
@@ -182,7 +197,7 @@ function GlyphSection({
     if (currentGlyph) {
       onSelect(
         serializeIcon({ type: "glyph", name: currentGlyph.name, color: next }),
-        false
+        false,
       );
     }
   };
@@ -192,7 +207,9 @@ function GlyphSection({
       <div className="border-b border-border p-2">
         <input
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+          }}
           placeholder="Search icons…"
           className="h-8 w-full rounded-md border border-border bg-bg px-2.5 text-sm text-text outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-ring"
         />
@@ -210,23 +227,19 @@ function GlyphSection({
                 key={name}
                 type="button"
                 title={name}
-                onClick={() =>
-                  onSelect(serializeIcon({ type: "glyph", name, color }))
-                }
+                onClick={() => {
+                  onSelect(serializeIcon({ type: "glyph", name, color }));
+                }}
                 className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-md outline-none transition-colors hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring",
-                  currentGlyph?.name === name && "bg-selected"
+                  currentGlyph?.name === name && "bg-selected",
                 )}
               >
-                <DynamicIcon name={name as IconName} size={18} aria-hidden />
+                <DynamicIcon name={name} size={18} aria-hidden />
               </button>
             ))}
             {hasMore && (
-              <div
-                ref={sentinelRef}
-                aria-hidden
-                className="col-span-8 h-1"
-              />
+              <div ref={sentinelRef} aria-hidden className="col-span-8 h-1" />
             )}
           </>
         )}
@@ -236,7 +249,9 @@ function GlyphSection({
         <ColorSwatch
           active={color === null}
           color={null}
-          onClick={() => pickColor(null)}
+          onClick={() => {
+            pickColor(null);
+          }}
         />
         {TEXT_COLORS.map((swatch) => (
           <ColorSwatch
@@ -244,7 +259,9 @@ function GlyphSection({
             active={color === swatch.value}
             color={swatch.value}
             title={swatch.name}
-            onClick={() => pickColor(swatch.value)}
+            onClick={() => {
+              pickColor(swatch.value);
+            }}
           />
         ))}
       </div>
@@ -279,7 +296,7 @@ function ColorSwatch({
             "focus-visible:ring-2 focus-visible:ring-ring",
             active
               ? "ring-2 ring-ring ring-offset-1 ring-offset-elevated"
-              : "hover:scale-110 hover:text-text"
+              : "hover:scale-110 hover:text-text",
           )}
         >
           <NoColorIcon size={18} />
@@ -300,7 +317,7 @@ function ColorSwatch({
           "focus-visible:ring-2 focus-visible:ring-ring",
           active
             ? "ring-2 ring-ring ring-offset-1 ring-offset-elevated"
-            : "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] hover:scale-110 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]"
+            : "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] hover:scale-110 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]",
         )}
         style={{ background: color }}
       />
@@ -312,9 +329,9 @@ function EmojiSection({ onSelect }: { onSelect: (icon: string) => void }) {
   return (
     <EmojiPicker.Root
       className="flex h-full flex-col"
-      onEmojiSelect={({ emoji }) =>
-        onSelect(serializeIcon({ type: "emoji", emoji }))
-      }
+      onEmojiSelect={({ emoji }) => {
+        onSelect(serializeIcon({ type: "emoji", emoji }));
+      }}
     >
       <div className="border-b border-border p-2">
         <EmojiPicker.Search
@@ -350,7 +367,7 @@ function EmojiSection({ onSelect }: { onSelect: (icon: string) => void }) {
                 type="button"
                 className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-md text-lg outline-none",
-                  emoji.isActive && "bg-hover"
+                  emoji.isActive && "bg-hover",
                 )}
                 {...props}
               >
@@ -395,7 +412,9 @@ function UploadSection({ onSelect }: { onSelect: (icon: string) => void }) {
           e.preventDefault();
           setDragging(true);
         }}
-        onDragLeave={() => setDragging(false)}
+        onDragLeave={() => {
+          setDragging(false);
+        }}
         onDrop={(e) => {
           e.preventDefault();
           setDragging(false);
@@ -405,15 +424,13 @@ function UploadSection({ onSelect }: { onSelect: (icon: string) => void }) {
           "flex w-full flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border px-4 text-sm outline-none transition-colors",
           "hover:border-ring hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring",
           dragging && "border-ring bg-hover",
-          uploadIcon.isPending && "opacity-60"
+          uploadIcon.isPending && "opacity-60",
         )}
       >
         <span className="font-medium text-text">
           {uploadIcon.isPending ? "Uploading…" : "Upload an image"}
         </span>
-        <span className="text-xs text-muted">
-          Click or drag a file here
-        </span>
+        <span className="text-xs text-muted">Click or drag a file here</span>
       </button>
       <p className="mt-3 text-center text-xs text-muted">
         PNG, JPG, WEBP, GIF or SVG · up to 1 MB

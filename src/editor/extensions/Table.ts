@@ -2,8 +2,8 @@ import {
   Table as BaseTable,
   TableCell as BaseTableCell,
   TableHeader as BaseTableHeader,
-  TableView,
   type TableOptions,
+  TableView,
 } from "@tiptap/extension-table";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import type { EditorView } from "@tiptap/pm/view";
@@ -51,7 +51,7 @@ class ColorTableView extends TableView {
     applyTableAttrs(this.table, node.attrs);
   }
 
-  update(node: ProseMirrorNode) {
+  override update(node: ProseMirrorNode) {
     const updated = super.update(node);
     if (updated) applyTableAttrs(this.table, node.attrs);
     return updated;
@@ -73,20 +73,19 @@ export const Table = BaseTable.extend({
       color: {
         default: null,
         parseHTML: (el) =>
-          (el as HTMLElement).style.getPropertyValue(HEADER_FILL_VAR).trim() ||
-          null,
+          el.style.getPropertyValue(HEADER_FILL_VAR).trim() || null,
         renderHTML: (attrs) =>
           attrs.color ? { style: `${HEADER_FILL_VAR}:${attrs.color}` } : {},
       },
       rowBorders: {
         default: true,
-        parseHTML: (el) => !(el as HTMLElement).hasAttribute(NO_ROW_BORDERS_ATTR),
+        parseHTML: (el) => !el.hasAttribute(NO_ROW_BORDERS_ATTR),
         renderHTML: (attrs) =>
           attrs.rowBorders ? {} : { [NO_ROW_BORDERS_ATTR]: "" },
       },
       colBorders: {
         default: true,
-        parseHTML: (el) => !(el as HTMLElement).hasAttribute(NO_COL_BORDERS_ATTR),
+        parseHTML: (el) => !el.hasAttribute(NO_COL_BORDERS_ATTR),
         renderHTML: (attrs) =>
           attrs.colBorders ? {} : { [NO_COL_BORDERS_ATTR]: "" },
       },

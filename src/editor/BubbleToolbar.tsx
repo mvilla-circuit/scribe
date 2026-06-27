@@ -1,17 +1,18 @@
-import { useState, type ReactNode } from "react";
-import { BubbleMenu } from "@tiptap/react/menus";
-import { useEditorState, type Editor } from "@tiptap/react";
 import { TextSelection } from "@tiptap/pm/state";
-import { cn } from "../lib/utils";
+import { type Editor, useEditorState } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
+import { type ReactNode, useState } from "react";
+
 import { Tooltip } from "../components/ui/Tooltip";
+import { cn } from "../lib/utils";
 import { ColorPopover } from "./ColorPopover";
 import {
   BoldIcon,
-  ItalicIcon,
-  UnderlineIcon,
-  StrikeIcon,
   CodeIcon,
+  ItalicIcon,
   LinkIcon,
+  StrikeIcon,
+  UnderlineIcon,
 } from "./icons";
 
 // The selection toolbar: a floating, segmented bar of inline-formatting
@@ -43,12 +44,7 @@ export function BubbleToolbar({ editor }: { editor: Editor }) {
     if (url === null) return;
     const href = url.trim();
     if (!href) return;
-    editor
-      .chain()
-      .focus()
-      .extendMarkRange("link")
-      .setLink({ href })
-      .run();
+    editor.chain().focus().extendMarkRange("link").setLink({ href }).run();
   };
 
   return (
@@ -161,14 +157,14 @@ function ToggleButton({
         type="button"
         aria-label={label}
         aria-pressed={isActive}
-        onMouseDown={(e) => e.preventDefault()}
+        onMouseDown={(e) => {
+          e.preventDefault();
+        }}
         onClick={onClick}
         className={cn(
           "flex h-8 w-8 items-center justify-center rounded-md outline-none transition-colors",
           "focus-visible:ring-2 focus-visible:ring-ring",
-          isActive
-            ? "bg-selected text-accent"
-            : "text-text hover:bg-hover"
+          isActive ? "bg-selected text-accent" : "text-text hover:bg-hover",
         )}
       >
         {children}

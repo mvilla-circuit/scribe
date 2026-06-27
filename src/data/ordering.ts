@@ -8,8 +8,10 @@
 const STEP = 1024;
 
 export function getPositionBetween(prev?: number, next?: number): number {
-  if (prev === undefined && next === undefined) return STEP;
-  if (prev === undefined) return (next as number) - STEP;
+  if (prev === undefined) {
+    if (next === undefined) return STEP;
+    return next - STEP;
+  }
   if (next === undefined) return prev + STEP;
   return (prev + next) / 2;
 }
@@ -17,7 +19,7 @@ export function getPositionBetween(prev?: number, next?: number): number {
 // Sort comparator by position then created_at as a stable tiebreaker.
 export function byPosition<T extends { position: number; created_at: string }>(
   a: T,
-  b: T
+  b: T,
 ): number {
   if (a.position !== b.position) return a.position - b.position;
   return a.created_at.localeCompare(b.created_at);

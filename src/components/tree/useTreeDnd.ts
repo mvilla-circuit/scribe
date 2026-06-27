@@ -1,14 +1,15 @@
-import { useMemo, useState } from "react";
 import {
+  type DragEndEvent,
+  type DragMoveEvent,
+  type DragStartEvent,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
-  type DragEndEvent,
-  type DragMoveEvent,
-  type DragStartEvent,
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { useMemo, useState } from "react";
+
 import { getPositionBetween } from "../../data/ordering";
 import type { DndNode, Projection } from "./treeDnd";
 
@@ -17,7 +18,7 @@ import type { DndNode, Projection } from "./treeDnd";
 // memos (descendant hiding, live projection, the lifted node), and run the same
 // drag lifecycle. Each tree supplies only its domain logic: how to project a
 // drop, how to find neighbours, and what "move" means.
-type UseTreeDndParams<T extends DndNode> = {
+interface UseTreeDndParams<T extends DndNode> {
   // The fully flattened, ordered node list (before descendant hiding).
   flattened: T[];
   removeDescendants: (nodes: T[], ids: string[]) => T[];
@@ -25,13 +26,13 @@ type UseTreeDndParams<T extends DndNode> = {
     nodes: T[],
     activeId: string,
     overId: string,
-    offsetX: number
+    offsetX: number,
   ) => Projection | null;
   neighbours: (
     nodes: T[],
     activeId: string,
     overId: string,
-    parentId: string | null
+    parentId: string | null,
   ) => { prev?: number; next?: number };
   // Persist a completed move. `position` is a fresh fractional index between
   // the drop neighbours; `node` is the dragged node from the flattened list.
@@ -43,7 +44,7 @@ type UseTreeDndParams<T extends DndNode> = {
   }) => void;
   // Run alongside drag start (e.g. exit an in-progress rename).
   onDragStart?: () => void;
-};
+}
 
 export function useTreeDnd<T extends DndNode>({
   flattened,
@@ -59,7 +60,9 @@ export function useTreeDnd<T extends DndNode>({
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   // Hide the dragged node's descendants so it can't be nested inside itself.
@@ -75,7 +78,7 @@ export function useTreeDnd<T extends DndNode>({
 
   const activeNode = useMemo(
     () => flattened.find((n) => n.id === activeId) ?? null,
-    [flattened, activeId]
+    [flattened, activeId],
   );
 
   const reset = () => {
@@ -107,7 +110,12 @@ export function useTreeDnd<T extends DndNode>({
       const node = flattened.find((n) => n.id === active);
       if (!node) return;
 
-      const { prev, next } = neighbours(visibleNodes, active, over, proj.parentId);
+      const { prev, next } = neighbours(
+        visibleNodes,
+        active,
+        over,
+        proj.parentId,
+      );
       const position = getPositionBetween(prev, next);
       onMove({ id: active, parentId: proj.parentId, position, node });
     },
@@ -117,7 +125,14 @@ export function useTreeDnd<T extends DndNode>({
   // Projected depth for the row currently being dragged (drives its insertion
   // line), or null for every other row.
   const projectionDepthFor = (id: string) =>
-    id === activeId ? projection?.depth ?? null : null;
+    id === activeId ? (projection?.depth ?? null) : null;
 
-  return { activeId, sensors, visibleNodes, activeNode, projectionDepthFor, handlers };
+  return {
+    activeId,
+    sensors,
+    visibleNodes,
+    activeNode,
+    projectionDepthFor,
+    handlers,
+  };
 }

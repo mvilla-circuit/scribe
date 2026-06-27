@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import * as RContext from "@radix-ui/react-context-menu";
 import { forwardRef } from "react";
+
 import { cn } from "../../lib/utils";
 import {
   menuContentClass,
@@ -13,7 +14,7 @@ export const ContextMenu = RContext.Root;
 export const ContextMenuTrigger = RContext.Trigger;
 
 export const ContextMenuContent = forwardRef<
-  React.ElementRef<typeof RContext.Content>,
+  React.ComponentRef<typeof RContext.Content>,
   React.ComponentPropsWithoutRef<typeof RContext.Content>
 >(({ className, ...props }, ref) => (
   <RContext.Portal>
@@ -27,7 +28,7 @@ export const ContextMenuContent = forwardRef<
 ContextMenuContent.displayName = "ContextMenuContent";
 
 export const ContextMenuItem = forwardRef<
-  React.ElementRef<typeof RContext.Item>,
+  React.ComponentRef<typeof RContext.Item>,
   React.ComponentPropsWithoutRef<typeof RContext.Item> & { danger?: boolean }
 >(({ className, danger, ...props }, ref) => (
   <RContext.Item
@@ -39,7 +40,7 @@ export const ContextMenuItem = forwardRef<
 ContextMenuItem.displayName = "ContextMenuItem";
 
 export const ContextMenuSeparator = forwardRef<
-  React.ElementRef<typeof RContext.Separator>,
+  React.ComponentRef<typeof RContext.Separator>,
   React.ComponentPropsWithoutRef<typeof RContext.Separator>
 >(({ className, ...props }, ref) => (
   <RContext.Separator

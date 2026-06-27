@@ -5,7 +5,7 @@ export const SIDEBAR_MIN_WIDTH = 200;
 export const SIDEBAR_MAX_WIDTH = 420;
 export const SIDEBAR_DEFAULT_WIDTH = 260;
 
-type UIState = {
+interface UIState {
   sidebarCollapsed: boolean;
   sidebarWidth: number;
   activeBookId: string | null;
@@ -21,7 +21,7 @@ type UIState = {
   setFolderExpanded: (id: string, expanded: boolean) => void;
   toggleDocExpanded: (id: string) => void;
   setDocExpanded: (id: string, expanded: boolean) => void;
-};
+}
 
 const clampWidth = (width: number) =>
   Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, width));
@@ -37,8 +37,7 @@ export const useUIStore = create<UIState>()(
       expandedDocIds: [],
       toggleSidebar: () =>
         set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
-      setSidebarCollapsed: (collapsed) =>
-        set({ sidebarCollapsed: collapsed }),
+      setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
       setSidebarWidth: (width) => set({ sidebarWidth: clampWidth(width) }),
       // Opening a different book always lands on its Title Page, never on a
       // stale document carried over from the previously open book.
@@ -46,7 +45,7 @@ export const useUIStore = create<UIState>()(
         set((s) =>
           s.activeBookId === id
             ? { activeBookId: id }
-            : { activeBookId: id, activeDocId: null }
+            : { activeBookId: id, activeDocId: null },
         ),
       setActiveDoc: (id) => set({ activeDocId: id }),
       toggleFolderExpanded: (id) =>
@@ -88,6 +87,6 @@ export const useUIStore = create<UIState>()(
         expandedFolderIds: s.expandedFolderIds,
         expandedDocIds: s.expandedDocIds,
       }),
-    }
-  )
+    },
+  ),
 );

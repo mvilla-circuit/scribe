@@ -1,27 +1,20 @@
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-} from "react";
-import {
-  EditorContent,
-  useEditor,
-  type JSONContent,
-} from "@tiptap/react";
-import type { Json } from "../lib/database.types";
-import { CALLOUT_DEFAULT } from "./palette";
-import { buildExtensions } from "./extensions";
-import { BubbleToolbar } from "./BubbleToolbar";
-import { BlockHandle } from "./BlockHandle";
-import { TableControls } from "./extensions/TableControls";
-import { PagePicker } from "./extensions/PagePicker";
-import { extractHeadings, type OutlineHeading } from "./outline";
-import { useAutosave, type PersistFn, type SaveState } from "./useAutosave";
-import { useTableScrollShadows } from "./useTableScrollShadows";
 import "./editor.css";
 
-export type EditorHandle = {
+import { EditorContent, type JSONContent, useEditor } from "@tiptap/react";
+import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+
+import type { Json } from "../lib/database.types";
+import { BlockHandle } from "./BlockHandle";
+import { BubbleToolbar } from "./BubbleToolbar";
+import { buildExtensions } from "./extensions";
+import { PagePicker } from "./extensions/PagePicker";
+import { TableControls } from "./extensions/TableControls";
+import { extractHeadings, type OutlineHeading } from "./outline";
+import { CALLOUT_DEFAULT } from "./palette";
+import { type PersistFn, type SaveState, useAutosave } from "./useAutosave";
+import { useTableScrollShadows } from "./useTableScrollShadows";
+
+export interface EditorHandle {
   /** Smooth-scroll the heading at the given ProseMirror position into view. */
   scrollToPos: (pos: number) => void;
   /**
@@ -30,9 +23,9 @@ export type EditorHandle = {
    * from the page title on Enter.
    */
   focusStart: () => void;
-};
+}
 
-type EditorProps = {
+interface EditorProps {
   documentId: string;
   initialContent: Json;
   onPersist: PersistFn;
@@ -42,8 +35,8 @@ type EditorProps = {
   // Fired when Backspace is pressed with the caret on an empty first row, so the
   // caller can hand focus back to the page title. Return `true` if the handoff
   // happened (which suppresses the default delete).
-  onLeaveStart?: () => boolean | void;
-};
+  onLeaveStart?: () => boolean | undefined;
+}
 
 // Rewrite legacy "block quote" content into the `callout` block, which replaced
 // it. Two shapes are migrated: old StarterKit `blockquote` nodes (no longer in
@@ -79,7 +72,7 @@ function normalizeContent(content: Json): JSONContent | undefined {
     return undefined;
   }
   if (!("type" in content)) return undefined;
-  return migrateLegacyQuotes(content as JSONContent);
+  return migrateLegacyQuotes(content);
 }
 
 // The writing surface. One editor instance per document (the call site keys it
@@ -97,7 +90,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     onOutlineChange,
     onLeaveStart,
   },
-  ref
+  ref,
 ) {
   // Keep the latest outline callback in a ref so the editor's `onCreate` /
   // `onUpdate` handlers (captured once at creation) always call the current one.
@@ -153,7 +146,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       onUpdate: ({ editor }) =>
         onOutlineChangeRef.current?.(extractHeadings(editor)),
     },
-    [documentId]
+    [documentId],
   );
 
   const saveState = useAutosave(editor, onPersist);
@@ -195,7 +188,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         chain.setTextSelection(1).run();
       },
     }),
-    [editor]
+    [editor],
   );
 
   return (

@@ -5,10 +5,10 @@ import { collectSubtree } from "./subtree";
 // The book's document hierarchy as a nested tree, ordered by `position`. The
 // Title Page is excluded -- it is pinned separately and is not part of the
 // readable outline/TOC structure.
-export type DocTreeNode = {
+export interface DocTreeNode {
   document: Document;
   children: DocTreeNode[];
-};
+}
 
 export function buildDocTree(documents: Document[]): DocTreeNode[] {
   const hierarchy = documents.filter((d) => !d.is_title_page);
@@ -36,11 +36,11 @@ export function buildDocTree(documents: Document[]): DocTreeNode[] {
   return build(null);
 }
 
-export type TocEntry = {
+export interface TocEntry {
   document: Document;
   depth: number;
   hasChildren: boolean;
-};
+}
 
 // Depth-first, in-order flatten with each entry tagged by its nesting depth and
 // whether it has children. Only descends into nodes whose id is in `expanded`,
@@ -48,7 +48,7 @@ export type TocEntry = {
 // collapsible Table of Contents renders from.
 export function flattenTocExpanded(
   tree: DocTreeNode[],
-  expanded: Set<string>
+  expanded: Set<string>,
 ): TocEntry[] {
   const out: TocEntry[] = [];
   const walk = (nodes: DocTreeNode[], depth: number) => {

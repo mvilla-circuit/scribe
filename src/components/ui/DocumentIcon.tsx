@@ -1,15 +1,16 @@
-import { DynamicIcon } from "lucide-react/dynamic";
 import type { IconName } from "lucide-react/dynamic";
+import { DynamicIcon } from "lucide-react/dynamic";
+
 import { parseIcon } from "../../data/icon";
 import { cn } from "../../lib/utils";
 
-type DocumentIconProps = {
+interface DocumentIconProps {
   /** The raw stored value from `documents.icon`. */
   icon: string | null | undefined;
   /** Pixel size: emoji font size, glyph box, and image box all use this. */
   size: number;
   className?: string;
-};
+}
 
 // Renders a page icon from its stored column value, dispatching on kind: emoji
 // glyphs are plain text, Lucide glyphs render via DynamicIcon (tinted with the

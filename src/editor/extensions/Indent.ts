@@ -1,4 +1,4 @@
-import { Extension, type CommandProps } from "@tiptap/core";
+import { type CommandProps, Extension } from "@tiptap/core";
 
 // Block indentation: Tab nudges the current text block (paragraph or heading)
 // one level to the right, Shift-Tab pulls it back. The indent is stored as a
@@ -50,7 +50,7 @@ export const Indent = Extension.create<IndentOptions>({
             parseHTML: (element) => {
               const value = parseInt(
                 element.getAttribute("data-indent") ?? "0",
-                10
+                10,
               );
               return Number.isFinite(value) && value > 0 ? value : 0;
             },

@@ -1,16 +1,17 @@
-import { useMemo, useState } from "react";
 import {
+  closestCenter,
   DndContext,
   DragOverlay,
   MeasuringStrategy,
-  closestCenter,
 } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { useUIStore } from "../../store/ui";
+import { useMemo, useState } from "react";
+
 import type { Book } from "../../data/books";
+import { buildDocTree, descendantCount } from "../../data/docTree";
 import {
   buildDocumentDuplicate,
   collectDocumentSubtree,
@@ -21,31 +22,35 @@ import {
   useMoveDocument,
   useRenameDocument,
 } from "../../data/documents";
-import { buildDocTree, descendantCount } from "../../data/docTree";
 import { getPositionBetween } from "../../data/ordering";
-import {
-  docNeighbourPositions,
-  flattenDocTree,
-  getDocProjection,
-  removeDocDescendants,
-  type FlatDocNode,
-} from "./outlineDnd";
-import { useTreeDnd } from "../tree/useTreeDnd";
-import { TreeSkeleton } from "../sidebar/TreeSkeleton";
-import { OutlineDragOverlay, OutlineRow } from "./OutlineRow";
-import { PlusIcon } from "./icons";
+import { cn } from "../../lib/utils";
+import { useUIStore } from "../../store/ui";
 import { BookIcon } from "../sidebar/icons";
 import {
   SIDEBAR_ICON_SIZE,
   SIDEBAR_ROW_GAP,
   sidebarRowPadding,
 } from "../sidebar/SidebarRow";
+import { TreeSkeleton } from "../sidebar/TreeSkeleton";
+import { useTreeDnd } from "../tree/useTreeDnd";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { DocumentIcon } from "../ui/DocumentIcon";
 import { Tooltip } from "../ui/Tooltip";
-import { cn } from "../../lib/utils";
+import { PlusIcon } from "./icons";
+import {
+  docNeighbourPositions,
+  type FlatDocNode,
+  flattenDocTree,
+  getDocProjection,
+  removeDocDescendants,
+} from "./outlineDnd";
+import { OutlineDragOverlay, OutlineRow } from "./OutlineRow";
 
-type DeleteTarget = { id: string; title: string; descendants: number };
+interface DeleteTarget {
+  id: string;
+  title: string;
+  descendants: number;
+}
 
 // The in-book navigation that replaces the Library tree inside the main sidebar
 // while a book is open: a pinned Title Page, the nested document hierarchy with
@@ -54,7 +59,7 @@ export function OutlinePanel({ book }: { book: Book }) {
   const documentsQuery = useDocuments(book.id);
   const documents = useMemo(
     () => documentsQuery.data ?? [],
-    [documentsQuery.data]
+    [documentsQuery.data],
   );
   const titlePage = documents.find((d) => d.is_title_page) ?? null;
 
@@ -77,7 +82,7 @@ export function OutlinePanel({ book }: { book: Book }) {
   const tree = useMemo(() => buildDocTree(documents), [documents]);
   const flattened = useMemo(
     () => flattenDocTree(tree, expanded),
-    [tree, expanded]
+    [tree, expanded],
   );
 
   const { sensors, visibleNodes, activeNode, projectionDepthFor, handlers } =
@@ -86,7 +91,9 @@ export function OutlinePanel({ book }: { book: Book }) {
       removeDescendants: removeDocDescendants,
       project: getDocProjection,
       neighbours: docNeighbourPositions,
-      onDragStart: () => setEditingId(null),
+      onDragStart: () => {
+        setEditingId(null);
+      },
       onMove: ({ id, parentId, position }) => {
         moveDocument.mutate({
           id,
@@ -154,7 +161,9 @@ export function OutlinePanel({ book }: { book: Book }) {
       <div className="px-2 pt-1">
         <button
           type="button"
-          onClick={() => setActiveDoc(titlePage?.id ?? null)}
+          onClick={() => {
+            setActiveDoc(titlePage?.id ?? null);
+          }}
           aria-current={titlePageSelected ? "page" : undefined}
           style={{ paddingLeft: sidebarRowPadding(0) }}
           className={cn(
@@ -162,7 +171,7 @@ export function OutlinePanel({ book }: { book: Book }) {
             "transition-colors focus-visible:ring-2 focus-visible:ring-ring",
             titlePageSelected
               ? "bg-selected font-medium text-text"
-              : "text-text hover:bg-hover"
+              : "text-text hover:bg-hover",
           )}
         >
           <span className="flex h-5 w-5 shrink-0 items-center justify-center text-muted/70">
@@ -184,7 +193,9 @@ export function OutlinePanel({ book }: { book: Book }) {
           <Tooltip content="New page">
             <button
               type="button"
-              onClick={() => handleCreate(null)}
+              onClick={() => {
+                handleCreate(null);
+              }}
               aria-label="New page"
               className="flex h-6 w-6 items-center justify-center rounded-md text-muted transition-colors hover:bg-hover hover:text-text"
             >
@@ -200,7 +211,9 @@ export function OutlinePanel({ book }: { book: Book }) {
         ) : flattened.length === 0 ? (
           <button
             type="button"
-            onClick={() => handleCreate(null)}
+            onClick={() => {
+              handleCreate(null);
+            }}
             style={{ paddingLeft: sidebarRowPadding(0) }}
             className="flex h-9 w-full items-center gap-2 rounded-md pr-1 text-left text-sm text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
           >
@@ -233,14 +246,30 @@ export function OutlinePanel({ book }: { book: Book }) {
                     editing={editingId === node.id}
                     expanded={expanded.has(node.id)}
                     projectionDepth={projectionDepthFor(node.id)}
-                    onToggleExpand={() => toggleDocExpanded(node.id)}
-                    onSelect={() => setActiveDoc(node.id)}
-                    onStartRename={() => setEditingId(node.id)}
-                    onCommitRename={(value) => commitRename(node, value)}
-                    onCancelRename={() => setEditingId(null)}
-                    onDelete={() => requestDelete(node)}
-                    onDuplicate={() => handleDuplicate(node)}
-                    onNewChild={() => handleCreate(node.id)}
+                    onToggleExpand={() => {
+                      toggleDocExpanded(node.id);
+                    }}
+                    onSelect={() => {
+                      setActiveDoc(node.id);
+                    }}
+                    onStartRename={() => {
+                      setEditingId(node.id);
+                    }}
+                    onCommitRename={(value) => {
+                      commitRename(node, value);
+                    }}
+                    onCancelRename={() => {
+                      setEditingId(null);
+                    }}
+                    onDelete={() => {
+                      requestDelete(node);
+                    }}
+                    onDuplicate={() => {
+                      handleDuplicate(node);
+                    }}
+                    onNewChild={() => {
+                      handleCreate(node.id);
+                    }}
                   />
                 ))}
               </div>

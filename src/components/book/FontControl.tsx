@@ -1,13 +1,14 @@
 import * as RPopover from "@radix-ui/react-popover";
 import { RotateCcw } from "lucide-react";
-import { cn } from "../../lib/utils";
-import { makeIcon } from "../../lib/makeIcon";
+
 import {
   FONT_ROLES,
   type FontMap,
   type FontRole,
   type ResolvedFonts,
 } from "../../fonts/catalog";
+import { makeIcon } from "../../lib/makeIcon";
+import { cn } from "../../lib/utils";
 import { FontPicker } from "../settings/FontPicker";
 import { Tooltip } from "../ui/Tooltip";
 
@@ -19,7 +20,7 @@ const ROLE_META: Record<FontRole, { label: string }> = {
   code: { label: "Code" },
 };
 
-type FontControlProps = {
+interface FontControlProps {
   /** Popover heading, e.g. "Book fonts" or "Page fonts". */
   heading: string;
   /** Name of the level inherited from, e.g. "global" or "book". */
@@ -33,7 +34,7 @@ type FontControlProps = {
   onClearAll: () => void;
   /** Extra classes for the trigger (positioning, hover-reveal). */
   triggerClassName?: string;
-};
+}
 
 // A quiet inline "Aa" control that overrides the Display / Text / Code fonts for
 // this book or page. It is the same picker as global Settings, but each role
@@ -60,7 +61,7 @@ export function FontControl({
             aria-label="Fonts"
             className={cn(
               "flex h-7 items-center justify-center rounded-md px-1.5 text-sm text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-hover data-[state=open]:text-text",
-              triggerClassName
+              triggerClassName,
             )}
           >
             <span className="leading-none">
@@ -106,8 +107,12 @@ export function FontControl({
                   value={overrides[role] ?? inherited[role]}
                   overridden={overrides[role] != null}
                   inheritLabel={inheritLabel}
-                  onSelect={(id) => onSet(role, id)}
-                  onInherit={() => onClear(role)}
+                  onSelect={(id) => {
+                    onSet(role, id);
+                  }}
+                  onInherit={() => {
+                    onClear(role);
+                  }}
                 />
               </div>
             ))}

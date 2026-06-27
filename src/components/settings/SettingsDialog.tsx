@@ -1,15 +1,15 @@
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "../ui/Dialog";
-import {
   profileFonts,
   useProfile,
   useUpdateProfileFonts,
 } from "../../data/profile";
 import { DEFAULT_FONT_ID, type FontRole } from "../../fonts/catalog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "../ui/Dialog";
 import { FontPicker } from "./FontPicker";
 
 const ROLE_META: { role: FontRole; label: string; hint: string }[] = [
@@ -18,10 +18,10 @@ const ROLE_META: { role: FontRole; label: string; hint: string }[] = [
   { role: "code", label: "Code", hint: "Inline code and code blocks" },
 ];
 
-type SettingsDialogProps = {
+interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-};
+}
 
 // The Typography settings surface: a global font for each of the three
 // reading-surface roles (Display / Text / Code), with a live preview. The
@@ -62,7 +62,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               <FontPicker
                 role={role}
                 value={fonts[role] ?? DEFAULT_FONT_ID[role]}
-                onSelect={(id) => setRole(role, id)}
+                onSelect={(id) => {
+                  setRole(role, id);
+                }}
               />
             </div>
           ))}

@@ -1,9 +1,9 @@
 // Tiny class-name joiner: filters falsy values and joins with spaces.
-export function cn(...parts: Array<string | false | null | undefined>): string {
+export function cn(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(" ");
 }
 
-const RELATIVE_THRESHOLDS: Array<[Intl.RelativeTimeFormatUnit, number]> = [
+const RELATIVE_THRESHOLDS: [Intl.RelativeTimeFormatUnit, number][] = [
   ["year", 60 * 60 * 24 * 365],
   ["month", 60 * 60 * 24 * 30],
   ["week", 60 * 60 * 24 * 7],

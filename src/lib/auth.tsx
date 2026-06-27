@@ -1,25 +1,26 @@
+import { cancel, onUrl, start } from "@fabianlars/tauri-plugin-oauth";
+import type { Session } from "@supabase/supabase-js";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   createContext,
+  type ReactNode,
   useContext,
   useEffect,
   useState,
-  type ReactNode,
 } from "react";
-import type { Session } from "@supabase/supabase-js";
-import { cancel, onUrl, start } from "@fabianlars/tauri-plugin-oauth";
-import { openUrl } from "@tauri-apps/plugin-opener";
+
 import { supabase } from "./supabase";
 
 // Fixed loopback port the OAuth provider redirects back to. Must be listed in
 // Supabase's Auth → URL Configuration → Redirect URLs as `http://localhost:1421`.
 const OAUTH_PORT = 1421;
 
-type AuthContextValue = {
+interface AuthContextValue {
   session: Session | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
-};
+}
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
@@ -40,7 +41,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Desktop OAuth via a localhost loopback server: the same running app that
@@ -64,7 +67,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error("Could not parse OAuth redirect", url, err);
         } finally {
           unlisten();
-          await cancel(port).catch(() => {});
+          await cancel(port).catch(() => {
+            /* best-effort cleanup; ignore */
+          });
         }
       })();
     });
@@ -81,7 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.url) await openUrl(data.url);
     } catch (err) {
       unlisten();
-      await cancel(port).catch(() => {});
+      await cancel(port).catch(() => {
+        /* best-effort cleanup; ignore */
+      });
       throw err;
     }
   };
@@ -92,7 +99,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ session, loading, signInWithGoogle, signOut }}>
+    <AuthContext.Provider
+      value={{ session, loading, signInWithGoogle, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   );

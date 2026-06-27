@@ -1,9 +1,9 @@
-import { useUIStore } from "../../store/ui";
 import type { Book } from "../../data/books";
 import { useDocuments, useEnsureTitlePage } from "../../data/documents";
-import { TitlePage } from "./TitlePage";
-import { DocumentView } from "./DocumentView";
+import { useUIStore } from "../../store/ui";
 import { DocumentSkeleton } from "./DocumentSkeleton";
+import { DocumentView } from "./DocumentView";
+import { TitlePage } from "./TitlePage";
 
 // The warm editorial reading surface. Navigation lives in the main sidebar's
 // Outline (drilled in from the Library), so this is a single full-width column
@@ -42,7 +42,11 @@ export function BookView({ book }: { book: Book }) {
             loading={documentsQuery.isLoading}
           />
         ) : (
-          <DocumentView book={book} document={activeDoc} documents={documents} />
+          <DocumentView
+            book={book}
+            document={activeDoc}
+            documents={documents}
+          />
         )}
       </div>
     </div>

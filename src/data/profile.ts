@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { supabase } from "../lib/supabase";
+
+import type { FontMap } from "../fonts/catalog";
 import { useAuth } from "../lib/auth";
 import type { Json, Tables } from "../lib/database.types";
-import type { FontMap } from "../fonts/catalog";
+import { supabase } from "../lib/supabase";
 
 export type Profile = Tables<"profiles">;
 
@@ -21,10 +22,11 @@ export function useProfile() {
     queryKey: profileKey,
     enabled: !!userId,
     queryFn: async (): Promise<Profile | null> => {
+      if (userId === undefined) return null;
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", userId as string)
+        .eq("id", userId)
         .single();
       if (error) throw error;
       return data;
@@ -34,11 +36,11 @@ export function useProfile() {
 
 // Typed view of the profiles.fonts jsonb column.
 export function profileFonts(
-  profile: Profile | null | undefined
+  profile: Profile | null | undefined,
 ): ProfileFonts {
   const fonts = profile?.fonts;
   if (!fonts || typeof fonts !== "object" || Array.isArray(fonts)) return {};
-  return fonts as ProfileFonts;
+  return fonts;
 }
 
 // Writes the whole global role -> fontId map (callers merge with the current map
@@ -52,7 +54,7 @@ export function useUpdateProfileFonts() {
       if (!userId) throw new Error("Not authenticated");
       const { error } = await supabase
         .from("profiles")
-        .update({ fonts: fonts as Json })
+        .update({ fonts: fonts })
         .eq("id", userId);
       if (error) throw error;
     },
@@ -60,7 +62,7 @@ export function useUpdateProfileFonts() {
       await qc.cancelQueries({ queryKey: profileKey });
       const previous = qc.getQueryData<Profile | null>(profileKey);
       qc.setQueryData<Profile | null>(profileKey, (prev) =>
-        prev ? { ...prev, fonts: fonts as Json } : prev
+        prev ? { ...prev, fonts: fonts as Json } : prev,
       );
       return { previous };
     },

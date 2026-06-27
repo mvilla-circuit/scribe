@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
+
 import { cn } from "../../lib/utils";
 
-type InlineRenameProps = {
+interface InlineRenameProps {
   initialValue: string;
   onCommit: (value: string) => void;
   onCancel: () => void;
   placeholder?: string;
   className?: string;
-};
+}
 
 // Inline editable field used for create/rename. Autofocuses and selects all on
 // mount, commits the trimmed value on Enter or blur, and cancels on Escape.
@@ -50,9 +51,15 @@ export function InlineRename({
       value={value}
       placeholder={placeholder}
       spellCheck={false}
-      onChange={(e) => setValue(e.target.value)}
-      onClick={(e) => e.stopPropagation()}
-      onPointerDown={(e) => e.stopPropagation()}
+      onChange={(e) => {
+        setValue(e.target.value);
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+      }}
+      onPointerDown={(e) => {
+        e.stopPropagation();
+      }}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
           e.preventDefault();
@@ -66,7 +73,7 @@ export function InlineRename({
       className={cn(
         "w-full min-w-0 rounded-sm border border-accent/60 bg-surface px-1.5 py-0.5 " +
           "text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        className
+        className,
       )}
     />
   );

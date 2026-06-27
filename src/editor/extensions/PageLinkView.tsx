@@ -1,11 +1,12 @@
+import { type NodeViewProps, NodeViewWrapper } from "@tiptap/react";
 import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
-import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
-import { useUIStore } from "../../store/ui";
-import { usePageIndex, type PageIndexEntry } from "../../data/pageIndex";
-import { useBooks } from "../../data/books";
+
 import { DocumentIcon } from "../../components/ui/DocumentIcon";
 import { Tooltip } from "../../components/ui/Tooltip";
+import { useBooks } from "../../data/books";
+import { type PageIndexEntry, usePageIndex } from "../../data/pageIndex";
+import { useUIStore } from "../../store/ui";
 import {
   BookIcon,
   CopyIcon,
@@ -81,7 +82,7 @@ export function PageLinkView({
   // Keep the stale `label` fallback in step with the live title (used for export
   // and as the placeholder before the index loads), without it being canonical.
   useEffect(() => {
-    if (resolved && resolved.title && resolved.title !== staleLabel) {
+    if (resolved?.title && resolved.title !== staleLabel) {
       updateAttributes({ label: resolved.title });
     }
   }, [resolved, staleLabel, updateAttributes]);
@@ -152,7 +153,12 @@ export function PageLinkView({
               </Ctrl>
             </>
           )}
-          <Ctrl label="Remove" onClick={() => deleteNode()}>
+          <Ctrl
+            label="Remove"
+            onClick={() => {
+              deleteNode();
+            }}
+          >
             <TrashIcon size={14} />
           </Ctrl>
         </div>
@@ -175,7 +181,9 @@ function Ctrl({
       <button
         type="button"
         aria-label={label}
-        onMouseDown={(e) => e.preventDefault()}
+        onMouseDown={(e) => {
+          e.preventDefault();
+        }}
         onClick={onClick}
         className="scribe-block-btn"
       >

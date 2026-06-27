@@ -7,12 +7,12 @@
 // translucent washes (rgba) so they tint the page gently and keep the theme's
 // own text color readable in either mode — no light-on-light surprises.
 
-export type Swatch = {
+export interface Swatch {
   /** Stable label shown in the swatch tooltip. */
   name: string;
   /** The exact value stored on the mark (must round-trip for active state). */
   value: string;
-};
+}
 
 // Solid Morandi tones for foreground text — fourteen low-chroma hues ordered as
 // a calm hue sweep: a neutral stone first, then a warm-to-cool rainbow (yellow,
@@ -107,7 +107,7 @@ export const CALLOUT_COLORS: Swatch[] = [
 // "Ink" tone is dropped: it flips to near-white in the dark theme, which would
 // hide the banner's fixed light caption text.
 export const BANNER_COLORS: Swatch[] = TEXT_COLORS.filter(
-  (s) => s.name !== "Ink"
+  (s) => s.name !== "Ink",
 );
 
 // Header washes for the table block. A table header strip (the header row and/or
@@ -158,20 +158,25 @@ export const TABLE_CELL_COLORS: Swatch[] = [
 // Preset callout variants: each pairs an emoji with a soft block wash. Only the
 // first entry (the default) is used now that callouts pick their icon through
 // the shared page icon picker, but the table is kept for the default wash/icon.
-export type CalloutVariant = {
+export interface CalloutVariant {
   name: string;
   icon: string;
   color: string;
+}
+
+// The default a fresh callout starts from (the Info variant). Defined as its
+// own constant so it's statically known to exist (vs. an array index lookup).
+export const CALLOUT_DEFAULT: CalloutVariant = {
+  name: "Info",
+  icon: "ℹ️",
+  color: "rgba(120, 178, 210, 0.16)",
 };
 
 export const CALLOUT_VARIANTS: CalloutVariant[] = [
-  { name: "Info", icon: "ℹ️", color: "rgba(120, 178, 210, 0.16)" },
+  CALLOUT_DEFAULT,
   { name: "Tip", icon: "💡", color: "rgba(214, 178, 110, 0.17)" },
   { name: "Warning", icon: "⚠️", color: "rgba(212, 160, 120, 0.16)" },
   { name: "Danger", icon: "🔥", color: "rgba(200, 142, 134, 0.16)" },
   { name: "Success", icon: "✅", color: "rgba(140, 178, 160, 0.16)" },
   { name: "Note", icon: "📝", color: "rgba(150, 158, 150, 0.15)" },
 ];
-
-// The default a fresh callout starts from (the Info variant).
-export const CALLOUT_DEFAULT = CALLOUT_VARIANTS[0];

@@ -1,14 +1,15 @@
 import { useMemo } from "react";
-import { useUIStore } from "../../store/ui";
-import type { Document } from "../../data/documents";
+
 import { buildDocTree, flattenTocExpanded } from "../../data/docTree";
+import type { Document } from "../../data/documents";
 import { cn } from "../../lib/utils";
-import { INDENT } from "./outlineDnd";
-import { ChevronRightIcon, PlusIcon } from "./icons";
+import { useUIStore } from "../../store/ui";
 import { DocumentIcon } from "../ui/DocumentIcon";
 import { Skeleton } from "../ui/Skeleton";
+import { ChevronRightIcon, PlusIcon } from "./icons";
+import { INDENT } from "./outlineDnd";
 
-type TableOfContentsProps = {
+interface TableOfContentsProps {
   documents: Document[];
   loading: boolean;
   onCreateFirst: () => void;
@@ -18,7 +19,7 @@ type TableOfContentsProps = {
   expandedIds: Set<string>;
   /** Toggle a single parent's expansion. */
   onToggle: (id: string) => void;
-};
+}
 
 // The book's auto Table of Contents: the document hierarchy, depth-indented,
 // click-to-navigate. Updates live as the outline changes. Expansion state is
@@ -36,7 +37,7 @@ export function TableOfContents({
   const tree = useMemo(() => buildDocTree(documents), [documents]);
   const entries = useMemo(
     () => flattenTocExpanded(tree, expandedIds),
-    [tree, expandedIds]
+    [tree, expandedIds],
   );
 
   if (loading && entries.length === 0) {
@@ -97,21 +98,25 @@ export function TableOfContents({
                   type="button"
                   aria-label={expanded ? "Collapse" : "Expand"}
                   aria-expanded={expanded}
-                  onClick={() => onToggle(entry.document.id)}
+                  onClick={() => {
+                    onToggle(entry.document.id);
+                  }}
                   className="-ml-5 flex w-5 shrink-0 items-center justify-center self-stretch rounded text-muted outline-none transition-colors hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <ChevronRightIcon
                     size={14}
                     className={cn(
                       "transition-transform duration-150",
-                      expanded && "rotate-90"
+                      expanded && "rotate-90",
                     )}
                   />
                 </button>
               )}
               <button
                 type="button"
-                onClick={() => setActiveDoc(entry.document.id)}
+                onClick={() => {
+                  setActiveDoc(entry.document.id);
+                }}
                 className="flex min-w-0 flex-1 items-center gap-2 rounded-md py-1.5 pl-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {entry.document.icon && (

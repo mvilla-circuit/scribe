@@ -1,6 +1,10 @@
 /* eslint-disable react-refresh/only-export-components */
 import * as RTooltip from "@radix-ui/react-tooltip";
-import { forwardRef, type ComponentPropsWithoutRef, type ReactNode } from "react";
+import {
+  type ComponentPropsWithoutRef,
+  forwardRef,
+  type ReactNode,
+} from "react";
 
 export const TooltipProvider = RTooltip.Provider;
 
@@ -24,7 +28,10 @@ type TooltipProps = {
 // Without this forwarding, the outer trigger's onClick/ref would land on Tooltip
 // (a plain component) and never reach the button, so the popover never opens.
 export const Tooltip = forwardRef<HTMLButtonElement, TooltipProps>(
-  function Tooltip({ content, children, side = "bottom", ...triggerProps }, ref) {
+  function Tooltip(
+    { content, children, side = "bottom", ...triggerProps },
+    ref,
+  ) {
     return (
       <RTooltip.Root delayDuration={300}>
         <RTooltip.Trigger asChild ref={ref} {...triggerProps}>
@@ -34,13 +41,13 @@ export const Tooltip = forwardRef<HTMLButtonElement, TooltipProps>(
           <RTooltip.Content
             side={side}
             sideOffset={6}
-          className="scribe-pop z-50 rounded-md bg-inverted px-2 py-1 text-xs text-inverted-text shadow-popover"
-        >
-          {content}
-          <RTooltip.Arrow className="fill-inverted" />
-        </RTooltip.Content>
+            className="scribe-pop z-50 rounded-md bg-inverted px-2 py-1 text-xs text-inverted-text shadow-popover"
+          >
+            {content}
+            <RTooltip.Arrow className="fill-inverted" />
+          </RTooltip.Content>
         </RTooltip.Portal>
       </RTooltip.Root>
     );
-  }
+  },
 );

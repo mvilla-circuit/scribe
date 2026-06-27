@@ -1,9 +1,10 @@
 import { PenLine } from "lucide-react";
+
 import { AppShell } from "./components/AppShell";
 import { AuthScreen } from "./components/AuthScreen";
 import { Toaster } from "./components/ui/Toaster";
-import { makeIcon } from "./lib/makeIcon";
 import { useAuth } from "./lib/auth";
+import { makeIcon } from "./lib/makeIcon";
 
 const BrandIcon = makeIcon(PenLine);
 
@@ -32,13 +33,7 @@ function App() {
 
   return (
     <>
-      {loading ? (
-        <BootLoader />
-      ) : session ? (
-        <AppShell />
-      ) : (
-        <AuthScreen />
-      )}
+      {loading ? <BootLoader /> : session ? <AppShell /> : <AuthScreen />}
       <Toaster />
     </>
   );

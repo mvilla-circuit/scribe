@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from "./Dialog";
 
-type ConfirmDialogProps = {
+interface ConfirmDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
@@ -16,7 +16,7 @@ type ConfirmDialogProps = {
   cancelLabel?: string;
   danger?: boolean;
   onConfirm: () => void;
-};
+}
 
 // A focused confirmation modal: title + cascade-aware description + a pair of
 // actions. Enter confirms (the confirm button is autofocused), Escape cancels.
@@ -34,7 +34,9 @@ export function ConfirmDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogTitle>{title}</DialogTitle>
-        {description ? <DialogDescription>{description}</DialogDescription> : null}
+        {description ? (
+          <DialogDescription>{description}</DialogDescription>
+        ) : null}
         <div className="mt-5 flex justify-end gap-2">
           <DialogClose asChild>
             <Button variant="ghost">{cancelLabel}</Button>

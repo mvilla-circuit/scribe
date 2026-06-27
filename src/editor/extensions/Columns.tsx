@@ -1,5 +1,6 @@
-import { Node, mergeAttributes } from "@tiptap/core";
+import { mergeAttributes, Node } from "@tiptap/core";
 import { ReactNodeViewRenderer } from "@tiptap/react";
+
 import { ColumnsView, ColumnView } from "./ColumnsView";
 
 // A simple equal-width layout primitive: `columns` holds 2-3 `column` children,
@@ -22,11 +23,7 @@ export const Columns = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return [
-      "div",
-      mergeAttributes(HTMLAttributes, { "data-columns": "" }),
-      0,
-    ];
+    return ["div", mergeAttributes(HTMLAttributes, { "data-columns": "" }), 0];
   },
 
   addNodeView() {

@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
+import { useEffect, useRef, useState } from "react";
+
 import type { Json } from "../lib/database.types";
 
 export type SaveState = "idle" | "saving" | "saved" | "error";
 
 // `onPersist` may run synchronously or return a promise we can await to learn
 // whether the write actually succeeded (so the indicator can go green/red).
+// `void` in the union is intentional: it lets sync callbacks return nothing.
+// eslint-disable-next-line @typescript-eslint/no-invalid-void-type
 export type PersistFn = (content: Json) => void | Promise<unknown>;
 
 // How long "Saved" lingers before the indicator drifts back to idle.
@@ -21,7 +24,7 @@ const SAVED_LINGER = 1500;
 export function useAutosave(
   editor: Editor | null,
   onPersist: PersistFn,
-  delay = 700
+  delay = 700,
 ): SaveState {
   const [state, setState] = useState<SaveState>("idle");
 
@@ -49,29 +52,35 @@ export function useAutosave(
       pending.current = null;
       const result = persistRef.current(content);
       const promise =
-        result && typeof (result as Promise<unknown>).then === "function"
-          ? (result as Promise<unknown>)
-          : null;
+        result && typeof result.then === "function" ? result : null;
 
       if (!notify) {
         // Still let the write happen, but swallow any rejection so it doesn't
         // surface as an unhandled promise after the component is gone.
-        promise?.catch(() => {});
+        promise?.catch(() => {
+          /* swallow: the component is gone, nothing to surface */
+        });
         return;
       }
 
       if (idleTimer.current) clearTimeout(idleTimer.current);
       if (!promise) {
         setState("saved");
-        idleTimer.current = setTimeout(() => setState("idle"), SAVED_LINGER);
+        idleTimer.current = setTimeout(() => {
+          setState("idle");
+        }, SAVED_LINGER);
         return;
       }
       promise.then(
         () => {
           setState("saved");
-          idleTimer.current = setTimeout(() => setState("idle"), SAVED_LINGER);
+          idleTimer.current = setTimeout(() => {
+            setState("idle");
+          }, SAVED_LINGER);
         },
-        () => setState("error") // stays red until the next edit/save
+        () => {
+          setState("error");
+        }, // stays red until the next edit/save
       );
     };
 
@@ -80,10 +89,14 @@ export function useAutosave(
       if (idleTimer.current) clearTimeout(idleTimer.current);
       setState("saving");
       if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => flush(true), delay);
+      timer.current = setTimeout(() => {
+        flush(true);
+      }, delay);
     };
 
-    const handleBlur = () => flush(true);
+    const handleBlur = () => {
+      flush(true);
+    };
 
     editor.on("update", handleUpdate);
     editor.on("blur", handleBlur);

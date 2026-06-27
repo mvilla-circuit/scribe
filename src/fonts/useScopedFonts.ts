@@ -1,4 +1,5 @@
-import { useEffect, type CSSProperties } from "react";
+import { type CSSProperties, useEffect } from "react";
+
 import { type ResolvedFonts } from "./catalog";
 import { ensureFontLoaded, fontStackFor } from "./loadFont";
 

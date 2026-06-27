@@ -1,5 +1,5 @@
-import { useEffect } from "react";
 import type { Editor } from "@tiptap/react";
+import { useEffect } from "react";
 
 // Drives the horizontal scroll-fade hints on wide tables. Each `.tableWrapper`
 // is its own scroll container, so this measures every one and:
@@ -14,7 +14,7 @@ import type { Editor } from "@tiptap/react";
 export function useTableScrollShadows(editor: Editor | null) {
   useEffect(() => {
     if (!editor) return;
-    const root = editor.view.dom as HTMLElement;
+    const root = editor.view.dom;
 
     // Where scroll-driven animations exist, the CSS pins the overlays on the
     // compositor (jitter-free) and JS need only flag overflow + publish --tbl-max.
@@ -41,9 +41,10 @@ export function useTableScrollShadows(editor: Editor | null) {
       }
     };
 
-    const wrappers = () =>
-      root.querySelectorAll<HTMLElement>(".tableWrapper");
-    const syncAll = () => wrappers().forEach(sync);
+    const wrappers = () => root.querySelectorAll<HTMLElement>(".tableWrapper");
+    const syncAll = () => {
+      wrappers().forEach(sync);
+    };
 
     // Track each wrapper (viewport width) and its table (content width), since a
     // table can slip in or out of overflow without firing a scroll event.

@@ -3,13 +3,13 @@ import { fetch } from "@tauri-apps/plugin-http";
 // Cached bookmark metadata. Mirrors the LinkCard node attrs (minus `url`/
 // `status`), so a successful fetch can be written straight onto the node and
 // persisted into `documents.content` for instant, offline re-renders.
-export type LinkMetadata = {
+export interface LinkMetadata {
   title: string | null;
   description: string | null;
   siteName: string | null;
   favicon: string | null;
   image: string | null;
-};
+}
 
 const EMPTY: LinkMetadata = {
   title: null,
@@ -51,7 +51,10 @@ export function isBareUrl(text: string): boolean {
   return /^https?:\/\/\S+$/i.test(t);
 }
 
-function absolute(href: string | null | undefined, base: string): string | null {
+function absolute(
+  href: string | null | undefined,
+  base: string,
+): string | null {
   if (!href) return null;
   try {
     return new URL(href, base).toString();
@@ -66,7 +69,7 @@ function parseMetadata(html: string, baseUrl: string): LinkMetadata {
   const meta = (selector: string): string | null => {
     const el = doc.querySelector(selector);
     const content = el?.getAttribute("content");
-    return content && content.trim() ? content.trim() : null;
+    return content?.trim() ? content.trim() : null;
   };
 
   const title =
@@ -79,12 +82,11 @@ function parseMetadata(html: string, baseUrl: string): LinkMetadata {
     meta('meta[name="twitter:description"]') ??
     meta('meta[name="description"]');
 
-  const siteName =
-    meta('meta[property="og:site_name"]') ?? hostLabel(baseUrl);
+  const siteName = meta('meta[property="og:site_name"]') ?? hostLabel(baseUrl);
 
   const image = absolute(
     meta('meta[property="og:image"]') ?? meta('meta[name="twitter:image"]'),
-    baseUrl
+    baseUrl,
   );
 
   const iconHref =

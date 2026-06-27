@@ -1,5 +1,6 @@
-import { Node, mergeAttributes } from "@tiptap/core";
+import { mergeAttributes, Node } from "@tiptap/core";
 import { ReactNodeViewRenderer } from "@tiptap/react";
+
 import { EssayView } from "./EssayView";
 
 // A long-form section block: a header (optional icon, a title, an optional
@@ -54,8 +55,7 @@ export const Essay = Node.create({
       icon: {
         default: null,
         parseHTML: (el) => el.getAttribute("data-icon"),
-        renderHTML: (attrs) =>
-          attrs.icon ? { "data-icon": attrs.icon } : {},
+        renderHTML: (attrs) => (attrs.icon ? { "data-icon": attrs.icon } : {}),
       },
       color: {
         default: null,

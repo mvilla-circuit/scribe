@@ -1,36 +1,34 @@
-import { getPositionBetween } from "../../data/ordering";
+import { useMemo, useState } from "react";
+
 import {
+  type Book,
   bookFontOverrides,
   bookShowSubtitle,
   bookTheme,
   useRenameBook,
   useUpdateBook,
-  type Book,
 } from "../../data/books";
-import {
-  useCreateDocument,
-  type Document,
-} from "../../data/documents";
+import { buildDocTree, expandableDocIds } from "../../data/docTree";
+import { type Document, useCreateDocument } from "../../data/documents";
+import { getPositionBetween } from "../../data/ordering";
 import { profileFonts, useProfile } from "../../data/profile";
-import { useUIStore } from "../../store/ui";
+import type { FontMap, FontRole } from "../../fonts/catalog";
 import { resolveFonts } from "../../fonts/resolve";
 import { useScopedFonts } from "../../fonts/useScopedFonts";
-import type { FontMap, FontRole } from "../../fonts/catalog";
-import { buildDocTree, expandableDocIds } from "../../data/docTree";
-import { useMemo, useState } from "react";
-import { Tooltip } from "../ui/Tooltip";
+import { useUIStore } from "../../store/ui";
 import { SubtitleToggle } from "../ui/SubtitleToggle";
-import { ChevronsDownUpIcon, ChevronsUpDownIcon } from "./icons";
+import { Tooltip } from "../ui/Tooltip";
 import { EditableText } from "./EditableText";
 import { FontControl } from "./FontControl";
+import { ChevronsDownUpIcon, ChevronsUpDownIcon } from "./icons";
 import { Masthead } from "./Masthead";
 import { TableOfContents } from "./TableOfContents";
 
-type TitlePageProps = {
+interface TitlePageProps {
   book: Book;
   documents: Document[];
   loading: boolean;
-};
+}
 
 // The book's editable cover page: title + subtitle in editorial serif, hosting
 // the auto Table of Contents. The freeform body becomes editable in Phase 4.
@@ -49,11 +47,12 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
   const titleFont = "var(--font-display)";
 
   const showSubtitle = bookShowSubtitle(book);
-  const toggleSubtitle = () =>
+  const toggleSubtitle = () => {
     updateBook.mutate({
       id: book.id,
       theme: { ...bookTheme(book), showSubtitle: !showSubtitle },
     });
+  };
 
   // Contents expansion is local + session-scoped: the cover always opens
   // collapsed (only first-level pages visible). State lives here so the
@@ -62,26 +61,30 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const expandable = useMemo(
     () => expandableDocIds(buildDocTree(documents)),
-    [documents]
+    [documents],
   );
   const allExpanded =
     expandable.length > 0 && expandable.every((id) => expandedIds.has(id));
 
-  const toggleDoc = (id: string) =>
+  const toggleDoc = (id: string) => {
     setExpandedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
+  };
 
-  const toggleAll = () =>
+  const toggleAll = () => {
     setExpandedIds(allExpanded ? new Set() : new Set(expandable));
+  };
 
-  const writeBookFonts = (fonts: FontMap) =>
+  const writeBookFonts = (fonts: FontMap) => {
     updateBook.mutate({ id: book.id, theme: { ...bookTheme(book), fonts } });
-  const setBookFont = (role: FontRole, fontId: string) =>
+  };
+  const setBookFont = (role: FontRole, fontId: string) => {
     writeBookFonts({ ...bookOverrides, [role]: fontId });
+  };
   const clearBookFont = (role: FontRole) => {
     const { [role]: _removed, ...rest } = bookOverrides;
     writeBookFonts(rest);
@@ -90,7 +93,7 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
   const createFirstPage = () => {
     const id = crypto.randomUUID();
     const siblings = documents.filter(
-      (d) => !d.is_title_page && d.parent_document_id === null
+      (d) => !d.is_title_page && d.parent_document_id === null,
     );
     const last = siblings[siblings.length - 1];
     createDocument.mutate({
@@ -108,7 +111,9 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
         value={book.title}
         ariaLabel="Book title"
         placeholder="Untitled"
-        onCommit={(title) => renameBook.mutate({ id: book.id, title })}
+        onCommit={(title) => {
+          renameBook.mutate({ id: book.id, title });
+        }}
         className="text-[2.75rem] font-semibold leading-tight tracking-tight text-text"
         style={{ fontFamily: titleFont }}
       />
@@ -118,9 +123,9 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
           ariaLabel="Book subtitle"
           placeholder="Add a subtitle"
           allowEmpty
-          onCommit={(subtitle) =>
-            updateBook.mutate({ id: book.id, subtitle: subtitle || null })
-          }
+          onCommit={(subtitle) => {
+            updateBook.mutate({ id: book.id, subtitle: subtitle || null });
+          }}
           className="mt-3 text-xl leading-snug text-muted"
           style={{ fontFamily: "var(--font-text)" }}
         />
@@ -164,7 +169,9 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
             inherited={resolveFonts(globalFonts)}
             onSet={setBookFont}
             onClear={clearBookFont}
-            onClearAll={() => writeBookFonts({})}
+            onClearAll={() => {
+              writeBookFonts({});
+            }}
           />
         </span>
       </nav>
@@ -172,8 +179,12 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
       <article className="mx-auto w-full max-w-[68ch] px-8 pb-16 pt-8 sm:pb-24 sm:pt-12">
         <Masthead
           icon={book.icon}
-          onSelectIcon={(icon) => updateBook.mutate({ id: book.id, icon })}
-          onRemoveIcon={() => updateBook.mutate({ id: book.id, icon: null })}
+          onSelectIcon={(icon) => {
+            updateBook.mutate({ id: book.id, icon });
+          }}
+          onRemoveIcon={() => {
+            updateBook.mutate({ id: book.id, icon: null });
+          }}
           changeIconLabel="Change book icon"
         >
           {titleBlock}

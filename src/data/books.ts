@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "../lib/supabase";
+
+import type { FontMap } from "../fonts/catalog";
 import { useAuth } from "../lib/auth";
 import type { Tables } from "../lib/database.types";
-import type { FontMap } from "../fonts/catalog";
-import { byPosition } from "./ordering";
+import { supabase } from "../lib/supabase";
 import { optimisticListHandlers } from "./optimisticList";
+import { byPosition } from "./ordering";
 
 export type Book = Tables<"books">;
 
@@ -12,23 +13,23 @@ export type Book = Tables<"books">;
 // precedence over the global settings; unset roles inherit from global.
 // `showSubtitle` toggles the Title Page subtitle slot, mirroring the per-page
 // `show_subtitle` column on documents.
-export type BookTheme = {
+export interface BookTheme {
   fonts?: FontMap;
   showSubtitle?: boolean;
-};
+}
 
 // Typed view of the books.theme jsonb column.
 export function bookTheme(book: Book): BookTheme {
   const theme = book.theme;
   if (!theme || typeof theme !== "object" || Array.isArray(theme)) return {};
-  return theme as BookTheme;
+  return theme;
 }
 
 // The book's per-role font overrides (a partial role -> fontId map).
 export function bookFontOverrides(book: Book): FontMap {
   const fonts = bookTheme(book).fonts;
   if (!fonts || typeof fonts !== "object" || Array.isArray(fonts)) return {};
-  return fonts as FontMap;
+  return fonts;
 }
 
 // Whether the Title Page shows its subtitle slot. Defaults to true when a
@@ -59,7 +60,7 @@ export function useBooks() {
 function bookHandlers<V>(
   qc: ReturnType<typeof useQueryClient>,
   update: (prev: Book[], variables: V) => Book[],
-  errorMessage: string
+  errorMessage: string,
 ) {
   return optimisticListHandlers<Book, V>({
     qc,
@@ -118,7 +119,7 @@ export function useCreateBook() {
           },
         ];
       },
-      "Couldn't create book"
+      "Couldn't create book",
     ),
   });
 }
@@ -137,7 +138,7 @@ export function useRenameBook() {
       qc,
       (prev, input) =>
         prev.map((b) => (b.id === input.id ? { ...b, title: input.title } : b)),
-      "Couldn't rename book"
+      "Couldn't rename book",
     ),
   });
 }
@@ -150,7 +151,7 @@ export function useUpdateBook() {
     mutationFn: async (
       input: { id: string } & Partial<
         Pick<Book, "title" | "subtitle" | "icon" | "cover_url" | "theme">
-      >
+      >,
     ) => {
       const { id, ...patch } = input;
       const { error } = await supabase.from("books").update(patch).eq("id", id);
@@ -164,7 +165,7 @@ export function useUpdateBook() {
       qc,
       (prev, input) =>
         prev.map((b) => (b.id === input.id ? { ...b, ...input } : b)),
-      "Couldn't update book"
+      "Couldn't update book",
     ),
   });
 }
@@ -189,9 +190,9 @@ export function useMoveBook() {
         prev.map((b) =>
           b.id === input.id
             ? { ...b, folder_id: input.folder_id, position: input.position }
-            : b
+            : b,
         ),
-      "Couldn't move book"
+      "Couldn't move book",
     ),
   });
 }
@@ -200,13 +201,16 @@ export function useDeleteBook() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { id: string }) => {
-      const { error } = await supabase.from("books").delete().eq("id", input.id);
+      const { error } = await supabase
+        .from("books")
+        .delete()
+        .eq("id", input.id);
       if (error) throw error;
     },
     ...bookHandlers<{ id: string }>(
       qc,
       (prev, input) => prev.filter((b) => b.id !== input.id),
-      "Couldn't delete book"
+      "Couldn't delete book",
     ),
   });
 }

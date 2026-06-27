@@ -1,5 +1,6 @@
-import { Node, mergeAttributes, wrappingInputRule } from "@tiptap/core";
+import { mergeAttributes, Node, wrappingInputRule } from "@tiptap/core";
 import { ReactNodeViewRenderer } from "@tiptap/react";
+
 import { QuoteView } from "./QuoteView";
 
 export type QuoteVariant = "pullquote" | "accentquote";

@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import { cn } from "../../lib/utils";
 
 function initials(name: string | undefined): string {
@@ -30,7 +31,7 @@ export function Avatar({
       style={{ width: size, height: size }}
       className={cn(
         "flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent text-xs font-semibold text-white",
-        className
+        className,
       )}
     >
       {showImage ? (
@@ -38,7 +39,9 @@ export function Avatar({
           src={src ?? undefined}
           alt={name ?? "Profile"}
           referrerPolicy="no-referrer"
-          onError={() => setFailed(true)}
+          onError={() => {
+            setFailed(true);
+          }}
           className="h-full w-full object-cover"
         />
       ) : (

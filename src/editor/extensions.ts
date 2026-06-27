@@ -1,14 +1,15 @@
-import StarterKit from "@tiptap/starter-kit";
-import Highlight from "@tiptap/extension-highlight";
-import Underline from "@tiptap/extension-underline";
 import Code from "@tiptap/extension-code";
-import { TextStyle, Color } from "@tiptap/extension-text-style";
-import TextAlign from "@tiptap/extension-text-align";
-import { Placeholder } from "@tiptap/extensions";
-import TaskList from "@tiptap/extension-task-list";
-import TaskItem from "@tiptap/extension-task-item";
+import Highlight from "@tiptap/extension-highlight";
 import { TableRow } from "@tiptap/extension-table";
+import TaskItem from "@tiptap/extension-task-item";
+import TaskList from "@tiptap/extension-task-list";
+import TextAlign from "@tiptap/extension-text-align";
+import { Color, TextStyle } from "@tiptap/extension-text-style";
+import Underline from "@tiptap/extension-underline";
+import { Placeholder } from "@tiptap/extensions";
 import type { Extensions } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+
 import { Callout } from "./extensions/Callout";
 import { Column, Columns } from "./extensions/Columns";
 import { Essay } from "./extensions/Essay";
@@ -34,7 +35,11 @@ export function buildExtensions(): Extensions {
   return [
     StarterKit.configure({
       heading: { levels: [1, 2, 3] },
-      dropcursor: { color: "var(--color-accent)", width: 3, class: "scribe-dropcursor" },
+      dropcursor: {
+        color: "var(--color-accent)",
+        width: 3,
+        class: "scribe-dropcursor",
+      },
       // Disabled in favour of the color-aware Underline added below.
       underline: false,
       // Disabled in favour of the multi-variant Quote node added below, which
@@ -69,9 +74,7 @@ export function buildExtensions(): Extensions {
             parseHTML: (el) =>
               el.style.getPropertyValue("--scribe-underline") || null,
             renderHTML: (attrs) =>
-              attrs.color
-                ? { style: `--scribe-underline:${attrs.color}` }
-                : {},
+              attrs.color ? { style: `--scribe-underline:${attrs.color}` } : {},
           },
         };
       },

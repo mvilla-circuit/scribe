@@ -5,18 +5,19 @@ import {
   useRef,
   useState,
 } from "react";
+
 import { cn } from "../../lib/utils";
 import type { SlashItem } from "./slashItems";
 
-export type SlashMenuProps = {
+export interface SlashMenuProps {
   items: SlashItem[];
   command: (item: SlashItem) => void;
-};
+}
 
-export type SlashMenuRef = {
+export interface SlashMenuRef {
   // Returns true when the key was consumed, so the editor keymap stands down.
   onKeyDown: (event: KeyboardEvent) => boolean;
-};
+}
 
 // The slash popup: icon + title + description rows, full keyboard navigation,
 // hover highlight, and a "No results" state. Positioning is owned by the
@@ -36,7 +37,7 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
 
     useEffect(() => {
       const el = listRef.current?.querySelector<HTMLElement>(
-        `[data-idx="${selected}"]`
+        `[data-idx="${selected}"]`,
       );
       el?.scrollIntoView({ block: "nearest" });
     }, [selected]);
@@ -65,11 +66,15 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
     }));
 
     return (
+      // Don't steal focus from the editor while clicking a row; the rows
+      // themselves are <button>s, so this container is presentational.
+      // eslint-disable-next-line jsx-a11y/no-static-element-interactions
       <div
         ref={listRef}
         className="scribe-slash-menu"
-        // Don't steal focus from the editor while clicking a row.
-        onMouseDown={(e) => e.preventDefault()}
+        onMouseDown={(e) => {
+          e.preventDefault();
+        }}
       >
         {items.length === 0 ? (
           <div className="scribe-slash-empty">No results</div>
@@ -81,11 +86,15 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
                 key={item.title}
                 type="button"
                 data-idx={idx}
-                onMouseEnter={() => setSelected(idx)}
-                onClick={() => command(item)}
+                onMouseEnter={() => {
+                  setSelected(idx);
+                }}
+                onClick={() => {
+                  command(item);
+                }}
                 className={cn(
                   "scribe-slash-row",
-                  idx === selected && "is-selected"
+                  idx === selected && "is-selected",
                 )}
               >
                 <span className="scribe-slash-icon">
@@ -101,5 +110,5 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
         )}
       </div>
     );
-  }
+  },
 );

@@ -4,7 +4,10 @@
 // set reads consistently.
 import type { LucideProps } from "lucide-react";
 
-export type IconProps = { className?: string; size?: number };
+export interface IconProps {
+  className?: string;
+  size?: number;
+}
 
 // Slightly lighter than Lucide's default 2px stroke to match the app's refined,
 // low-weight aesthetic.

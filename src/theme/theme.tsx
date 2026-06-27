@@ -1,20 +1,20 @@
 import {
   createContext,
+  type ReactNode,
   useContext,
   useEffect,
   useState,
-  type ReactNode,
 } from "react";
 
 export type ThemeMode = "light" | "dark" | "system";
 
 const STORAGE_KEY = "scribe-theme";
 
-type ThemeContextValue = {
+interface ThemeContextValue {
   mode: ThemeMode;
   resolved: "light" | "dark";
   setMode: (mode: ThemeMode) => void;
-};
+}
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
@@ -46,7 +46,7 @@ export function initTheme() {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>(readStoredMode);
   const [resolved, setResolved] = useState<"light" | "dark">(() =>
-    resolveMode(readStoredMode())
+    resolveMode(readStoredMode()),
   );
 
   // While in `system`, follow OS changes.
@@ -59,7 +59,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       applyResolved(next);
     };
     media.addEventListener("change", onChange);
-    return () => media.removeEventListener("change", onChange);
+    return () => {
+      media.removeEventListener("change", onChange);
+    };
   }, [mode]);
 
   const setMode = (next: ThemeMode) => {

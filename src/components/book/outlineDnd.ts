@@ -1,12 +1,12 @@
 import type { DocTreeNode } from "../../data/docTree";
 import type { Document } from "../../data/documents";
 import {
+  type DndNode,
   INDENT,
   neighbourPositions as genericNeighbourPositions,
   projectDrop,
-  removeDescendants as genericRemoveDescendants,
-  type DndNode,
   type Projection,
+  removeDescendants as genericRemoveDescendants,
 } from "../tree/treeDnd";
 
 export { INDENT, type Projection };
@@ -21,13 +21,13 @@ export type FlatDocNode = DndNode & {
 // so any node can be a parent.
 export function flattenDocTree(
   tree: DocTreeNode[],
-  expanded: Set<string>
+  expanded: Set<string>,
 ): FlatDocNode[] {
   const out: FlatDocNode[] = [];
   const walk = (
     nodes: DocTreeNode[],
     depth: number,
-    parentId: string | null
+    parentId: string | null,
   ) => {
     for (const node of nodes) {
       const hasChildren = node.children.length > 0;
@@ -50,7 +50,7 @@ export function flattenDocTree(
 
 export function removeDocDescendants(
   nodes: FlatDocNode[],
-  ids: string[]
+  ids: string[],
 ): FlatDocNode[] {
   return genericRemoveDescendants(nodes, ids);
 }
@@ -61,7 +61,7 @@ export function getDocProjection(
   nodes: FlatDocNode[],
   activeId: string,
   overId: string,
-  dragOffsetX: number
+  dragOffsetX: number,
 ): Projection | null {
   return projectDrop(nodes, activeId, overId, dragOffsetX, {
     maxDepthForPrev: (prev) => prev.depth + 1,
@@ -73,7 +73,7 @@ export function docNeighbourPositions(
   nodes: FlatDocNode[],
   activeId: string,
   overId: string,
-  targetParentId: string | null
+  targetParentId: string | null,
 ): { prev?: number; next?: number } {
   return genericNeighbourPositions(nodes, activeId, overId, targetParentId);
 }

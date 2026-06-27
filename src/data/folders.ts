@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "../lib/supabase";
+
 import { useAuth } from "../lib/auth";
 import type { Tables } from "../lib/database.types";
+import { supabase } from "../lib/supabase";
+import { optimisticListHandlers } from "./optimisticList";
 import { byPosition } from "./ordering";
 import { collectSubtree } from "./subtree";
-import { optimisticListHandlers } from "./optimisticList";
 
 export type Folder = Tables<"folders">;
 
@@ -29,7 +30,7 @@ function folderHandlers<V>(
   qc: ReturnType<typeof useQueryClient>,
   update: (prev: Folder[], variables: V) => Folder[],
   errorMessage: string,
-  onSettled?: () => void
+  onSettled?: () => void,
 ) {
   return optimisticListHandlers<Folder, V>({
     qc,
@@ -85,7 +86,7 @@ export function useCreateFolder() {
           },
         ];
       },
-      "Couldn't create folder"
+      "Couldn't create folder",
     ),
   });
 }
@@ -104,7 +105,7 @@ export function useRenameFolder() {
       qc,
       (prev, input) =>
         prev.map((f) => (f.id === input.id ? { ...f, name: input.name } : f)),
-      "Couldn't rename folder"
+      "Couldn't rename folder",
     ),
   });
 }
@@ -140,9 +141,9 @@ export function useMoveFolder() {
                 parent_folder_id: input.parent_folder_id,
                 position: input.position,
               }
-            : f
+            : f,
         ),
-      "Couldn't move folder"
+      "Couldn't move folder",
     ),
   });
 }
@@ -152,7 +153,7 @@ export function useMoveFolder() {
 // not deleted -- they fall back to the root level.
 export function collectFolderSubtree(
   folders: Folder[],
-  rootId: string
+  rootId: string,
 ): Set<string> {
   return collectSubtree(folders, rootId, (f) => f.parent_folder_id);
 }
@@ -179,7 +180,7 @@ export function useDeleteFolder() {
       () => {
         void qc.invalidateQueries({ queryKey: foldersKey });
         void qc.invalidateQueries({ queryKey: ["books"] });
-      }
+      },
     ),
   });
 }

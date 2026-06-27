@@ -1,20 +1,20 @@
-import { Extension, type Range } from "@tiptap/core";
-import type { Editor } from "@tiptap/react";
+import {
+  computePosition,
+  flip,
+  offset,
+  shift,
+  type VirtualElement,
+} from "@floating-ui/dom";
+import { Extension } from "@tiptap/core";
 import { ReactRenderer } from "@tiptap/react";
 import Suggestion, {
   exitSuggestion,
   type SuggestionKeyDownProps,
   type SuggestionProps,
 } from "@tiptap/suggestion";
-import {
-  type VirtualElement,
-  computePosition,
-  flip,
-  offset,
-  shift,
-} from "@floating-ui/dom";
-import { SlashMenu, type SlashMenuProps, type SlashMenuRef } from "./SlashMenu";
+
 import { filterSlashItems, type SlashItem } from "./slashItems";
+import { SlashMenu, type SlashMenuProps, type SlashMenuRef } from "./SlashMenu";
 
 // The "/" command. Wraps TipTap's Suggestion utility: it tracks the typed
 // query, filters the item registry, and renders a Floating-UI-positioned React
@@ -40,12 +40,12 @@ export const SlashCommand = Extension.create({
           if ($from.parentOffset === 0) return true;
           const before = $from.parent.textBetween(
             $from.parentOffset - 1,
-            $from.parentOffset
+            $from.parentOffset,
           );
           return before === "" || /\s/.test(before);
         },
         command: ({ editor, range, props }) => {
-          props.run(editor as Editor, range as Range);
+          props.run(editor, range);
         },
         render: renderSlashMenu,
       }),

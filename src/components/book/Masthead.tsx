@@ -1,10 +1,11 @@
 import { type ReactNode } from "react";
+
 import { cn } from "../../lib/utils";
-import { IconPicker } from "../ui/IconPicker";
 import { DocumentIcon } from "../ui/DocumentIcon";
+import { IconPicker } from "../ui/IconPicker";
 import { Tooltip } from "../ui/Tooltip";
 
-type MastheadProps = {
+interface MastheadProps {
   /** The current icon id, or null when none is set. */
   icon: string | null;
   onSelectIcon: (icon: string) => void;
@@ -13,7 +14,7 @@ type MastheadProps = {
   changeIconLabel: string;
   /** The title block (title, subtitle, and any meta) shown with the icon. */
   children: ReactNode;
-};
+}
 
 // The shared title masthead for the book cover and document pages: an icon plus
 // the title block, composed so the two read as one header.
@@ -36,7 +37,7 @@ export function Masthead({
       <div
         className={cn(
           "mb-2",
-          icon && "xl:absolute xl:right-full xl:top-0 xl:mr-3 xl:mb-0"
+          icon && "xl:absolute xl:right-full xl:top-0 xl:mr-3 xl:mb-0",
         )}
       >
         <MastheadIconControl

@@ -55,6 +55,7 @@ import {
   Underline,
   X,
 } from "lucide-react";
+
 import { makeIcon } from "../lib/makeIcon";
 
 export const BoldIcon = makeIcon(Bold);

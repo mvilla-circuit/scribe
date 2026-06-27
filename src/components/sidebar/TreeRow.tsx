@@ -1,13 +1,15 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+
 import { cn } from "../../lib/utils";
 import { DocumentIcon } from "../ui/DocumentIcon";
 import { InlineRename } from "../ui/InlineRename";
 import {
+  type RowAction,
   RowActionDropdown,
   RowContextMenu,
-  type RowAction,
 } from "../ui/RowActionMenu";
+import { type FlatNode } from "./dndTree";
 import {
   BookIcon,
   BookPlusIcon,
@@ -16,10 +18,9 @@ import {
   PencilIcon,
   TrashIcon,
 } from "./icons";
-import { type FlatNode } from "./dndTree";
 import { SIDEBAR_ICON_SIZE, SidebarRow, SidebarRowOverlay } from "./SidebarRow";
 
-export type TreeRowHandlers = {
+export interface TreeRowHandlers {
   onToggleExpand: () => void;
   onSelectBook: () => void;
   onStartRename: () => void;
@@ -27,7 +28,7 @@ export type TreeRowHandlers = {
   onCancelRename: () => void;
   onDelete: () => void;
   onNewBookInside: () => void;
-};
+}
 
 type TreeRowProps = TreeRowHandlers & {
   node: FlatNode;
@@ -52,8 +53,14 @@ export function TreeRow({
   onDelete,
   onNewBookInside,
 }: TreeRowProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: node.id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: node.id });
 
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
@@ -70,7 +77,7 @@ export function TreeRow({
       className={cn(
         "flex h-5 w-5 shrink-0 items-center justify-center",
         isFolder && expanded ? "text-accent" : "text-muted",
-        isFolder && "scribe-icon-pop"
+        isFolder && "scribe-icon-pop",
       )}
     >
       {isFolder ? (

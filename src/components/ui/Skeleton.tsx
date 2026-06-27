@@ -1,7 +1,8 @@
 import type { CSSProperties } from "react";
+
 import { cn } from "../../lib/utils";
 
-type SkeletonProps = {
+interface SkeletonProps {
   /** CSS width (number → px, string → as-is). Defaults to 100%. */
   width?: number | string;
   /** CSS height (number → px, string → as-is). Defaults to 0.7rem. */
@@ -10,7 +11,7 @@ type SkeletonProps = {
   radius?: number | string;
   className?: string;
   style?: CSSProperties;
-};
+}
 
 const dim = (value: number | string | undefined): string | undefined =>
   typeof value === "number" ? `${value}px` : value;

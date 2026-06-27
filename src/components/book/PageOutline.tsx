@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
-import type { OutlineHeading } from "../../editor/outline";
-import { EssayIcon } from "../../editor/icons";
-import { DocumentIcon } from "../ui/DocumentIcon";
-import { cn } from "../../lib/utils";
 
-type PageOutlineProps = {
+import { EssayIcon } from "../../editor/icons";
+import type { OutlineHeading } from "../../editor/outline";
+import { cn } from "../../lib/utils";
+import { DocumentIcon } from "../ui/DocumentIcon";
+
+interface PageOutlineProps {
   headings: OutlineHeading[];
   onSelect: (pos: number) => void;
   // The element wrapping the rendered prose, used to observe heading elements
   // for active-section tracking.
   containerRef: React.RefObject<HTMLElement | null>;
-};
+}
 
 // A sticky right-margin rail listing the page's headings (levels 1-3). Clicking
 // an entry scrolls to it; the entry under the reading position is highlighted
@@ -30,11 +31,11 @@ export function PageOutline({
     // while editing; either way we only keep titled ones so the element order
     // stays aligned with `headings` (which skips untitled essays).
     const els = Array.from(
-      root.querySelectorAll<HTMLElement>("h1, h2, h3, .scribe-essay-title")
+      root.querySelectorAll<HTMLElement>("h1, h2, h3, .scribe-essay-title"),
     ).filter((el) => {
       if (!el.classList.contains("scribe-essay-title")) return true;
       const text =
-        el instanceof HTMLTextAreaElement ? el.value : el.textContent ?? "";
+        el instanceof HTMLTextAreaElement ? el.value : (el.textContent ?? "");
       return text.trim().length > 0;
     });
     if (els.length === 0) return;
@@ -50,10 +51,14 @@ export function PageOutline({
         }
         if (visible.size > 0) setActiveIndex(Math.min(...visible));
       },
-      { rootMargin: "-80px 0px -65% 0px" }
+      { rootMargin: "-80px 0px -65% 0px" },
     );
-    els.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+    els.forEach((el) => {
+      observer.observe(el);
+    });
+    return () => {
+      observer.disconnect();
+    };
   }, [containerRef, headings]);
 
   if (headings.length === 0) return null;
@@ -71,7 +76,9 @@ export function PageOutline({
           <li key={`${heading.pos}-${index}`}>
             <button
               type="button"
-              onClick={() => onSelect(heading.pos)}
+              onClick={() => {
+                onSelect(heading.pos);
+              }}
               aria-label={
                 heading.essay
                   ? `Essay: ${heading.text || "Untitled essay"}`
@@ -83,7 +90,7 @@ export function PageOutline({
                 "focus-visible:text-text",
                 index === activeIndex
                   ? "border-accent font-medium text-text"
-                  : "border-transparent text-muted hover:text-text"
+                  : "border-transparent text-muted hover:text-text",
               )}
             >
               {heading.essay &&

@@ -1,15 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, LogOut, PanelLeft, Settings, Type } from "lucide-react";
-import { useAuth } from "../lib/auth";
-import { useTheme, type ThemeMode } from "../theme/theme";
-import { makeIcon } from "../lib/makeIcon";
-import { SidebarTree } from "./sidebar/SidebarTree";
-import { OutlinePanel } from "./book/OutlinePanel";
-import { ChevronLeftIcon } from "./book/icons";
-import { SettingsDialog } from "./settings/SettingsDialog";
+import { useCallback, useEffect, useRef, useState } from "react";
+
 import type { Book } from "../data/books";
+import { useAuth } from "../lib/auth";
+import { makeIcon } from "../lib/makeIcon";
+import { SIDEBAR_MAX_WIDTH, SIDEBAR_MIN_WIDTH, useUIStore } from "../store/ui";
+import { type ThemeMode, useTheme } from "../theme/theme";
+import { ChevronLeftIcon } from "./book/icons";
+import { OutlinePanel } from "./book/OutlinePanel";
+import { SettingsDialog } from "./settings/SettingsDialog";
+import { SidebarTree } from "./sidebar/SidebarTree";
 import { Avatar } from "./ui/Avatar";
-import { Tooltip } from "./ui/Tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,11 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/DropdownMenu";
-import {
-  SIDEBAR_MAX_WIDTH,
-  SIDEBAR_MIN_WIDTH,
-  useUIStore,
-} from "../store/ui";
+import { Tooltip } from "./ui/Tooltip";
 
 const COLLAPSED_WIDTH = 56;
 
@@ -102,7 +99,9 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
             <Tooltip content="Back to library">
               <button
                 type="button"
-                onClick={() => setActiveBook(null)}
+                onClick={() => {
+                  setActiveBook(null);
+                }}
                 aria-label="Back to library"
                 className="group -ml-1 flex min-w-0 items-center gap-0.5 rounded-md px-1 py-0.5 text-sm text-muted outline-none transition hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
               >
@@ -144,9 +143,7 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
       {/* Footer */}
       <div className="px-2 pb-2 pt-3">
         <div
-          className={`flex items-center gap-2 ${
-            collapsed ? "flex-col" : ""
-          }`}
+          className={`flex items-center gap-2 ${collapsed ? "flex-col" : ""}`}
         >
           {collapsed && name ? (
             <Tooltip content={name} side="right">
@@ -177,8 +174,16 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
                 </button>
               </DropdownMenuTrigger>
             </Tooltip>
-            <DropdownMenuContent side="top" align="end" className="min-w-[12rem]">
-              <DropdownMenuItem onSelect={() => setSettingsOpen(true)}>
+            <DropdownMenuContent
+              side="top"
+              align="end"
+              className="min-w-[12rem]"
+            >
+              <DropdownMenuItem
+                onSelect={() => {
+                  setSettingsOpen(true);
+                }}
+              >
                 <FontsIcon />
                 Fonts & settings
               </DropdownMenuItem>
@@ -194,7 +199,9 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
                   className="justify-between"
                 >
                   {opt.label}
-                  <span className={mode === opt.value ? "text-accent" : "opacity-0"}>
+                  <span
+                    className={mode === opt.value ? "text-accent" : "opacity-0"}
+                  >
                     <CheckIcon />
                   </span>
                 </DropdownMenuItem>
@@ -211,6 +218,9 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
 
       {/* Resize handle */}
       {!collapsed && (
+        // Pointer-driven resize splitter; the separator role carries the
+        // resize semantics (aria-valuenow/min/max) for assistive tech.
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
         <div
           onMouseDown={onMouseDown}
           role="separator"

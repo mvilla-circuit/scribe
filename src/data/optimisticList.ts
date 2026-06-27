@@ -10,22 +10,24 @@ import { toast } from "sonner";
 
 export type Sorter<T> = (a: T, b: T) => number;
 
-export type ListMutationContext<T> = { previous: T[] | undefined };
+export interface ListMutationContext<T> {
+  previous: T[] | undefined;
+}
 
 // Low-level snapshot/apply/rollback pair, bound to one query key + sort. Exposed
 // for the rare caller that needs to run an optimistic update by hand.
 export function listOptimism<T>(
   qc: QueryClient,
   key: QueryKey,
-  sort: Sorter<T>
+  sort: Sorter<T>,
 ) {
   async function optimistic(
-    update: (prev: T[]) => T[]
+    update: (prev: T[]) => T[],
   ): Promise<ListMutationContext<T>> {
     await qc.cancelQueries({ queryKey: key });
     const previous = qc.getQueryData<T[]>(key);
     qc.setQueryData<T[]>(key, (prev) =>
-      (update(prev ?? []) ?? []).slice().sort(sort)
+      (update(prev ?? []) ?? []).slice().sort(sort),
     );
     return { previous };
   }
@@ -50,14 +52,18 @@ export function optimisticListHandlers<T, V>(opts: {
   // Defaults to invalidating this list's key; override to invalidate more.
   onSettled?: () => void;
 }) {
-  const { optimistic, rollback } = listOptimism<T>(opts.qc, opts.key, opts.sort);
+  const { optimistic, rollback } = listOptimism<T>(
+    opts.qc,
+    opts.key,
+    opts.sort,
+  );
   return {
     onMutate: (variables: V) =>
       optimistic((prev) => opts.update(prev, variables)),
     onError: (
       _error: unknown,
       _variables: V,
-      context: ListMutationContext<T> | undefined
+      context: ListMutationContext<T> | undefined,
     ) => {
       rollback(context?.previous);
       toast.error(opts.errorMessage);

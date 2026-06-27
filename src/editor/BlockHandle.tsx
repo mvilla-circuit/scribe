@@ -1,10 +1,12 @@
-import { useCallback, useMemo, useRef, useState } from "react";
-import type { ChainedCommands, Editor } from "@tiptap/react";
+import { offset } from "@floating-ui/dom";
 import type { JSONContent } from "@tiptap/core";
+import { DragHandle } from "@tiptap/extension-drag-handle-react";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
-import { DragHandle } from "@tiptap/extension-drag-handle-react";
-import { offset } from "@floating-ui/dom";
+import type { ChainedCommands, Editor } from "@tiptap/react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +17,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "../components/ui/DropdownMenu";
-import { toast } from "sonner";
+import type { IconProps } from "../lib/makeIcon";
 import {
   BulletListIcon,
   CheckIcon,
@@ -34,7 +36,6 @@ import {
   TextIcon,
   TrashIcon,
 } from "./icons";
-import type { IconProps } from "../lib/makeIcon";
 
 // Column-count choices offered for a `columns` block. "1" flattens the block
 // back to normal top-level blocks; 2-3 set the number of side-by-side columns.
@@ -50,23 +51,46 @@ const COLUMN_OPTIONS: {
 
 // A single block target: the ProseMirror node currently under the gutter handle
 // and the absolute position right before it.
-type Target = { node: PMNode; pos: number };
+interface Target {
+  node: PMNode;
+  pos: number;
+}
 
 // "Turn into" conversions. Each applies to the textblock the handle points at,
 // mirroring the slash-menu commands so block typing stays consistent.
-type TurnInto = {
+interface TurnInto {
   label: string;
   icon: (props: IconProps) => React.ReactNode;
   apply: (chain: ChainedCommands) => ChainedCommands;
-};
+}
 
 const TURN_INTO: TurnInto[] = [
   { label: "Text", icon: TextIcon, apply: (c) => c.setParagraph() },
-  { label: "Heading 1", icon: Heading1Icon, apply: (c) => c.setNode("heading", { level: 1 }) },
-  { label: "Heading 2", icon: Heading2Icon, apply: (c) => c.setNode("heading", { level: 2 }) },
-  { label: "Heading 3", icon: Heading3Icon, apply: (c) => c.setNode("heading", { level: 3 }) },
-  { label: "Bulleted list", icon: BulletListIcon, apply: (c) => c.toggleBulletList() },
-  { label: "Numbered list", icon: OrderedListIcon, apply: (c) => c.toggleOrderedList() },
+  {
+    label: "Heading 1",
+    icon: Heading1Icon,
+    apply: (c) => c.setNode("heading", { level: 1 }),
+  },
+  {
+    label: "Heading 2",
+    icon: Heading2Icon,
+    apply: (c) => c.setNode("heading", { level: 2 }),
+  },
+  {
+    label: "Heading 3",
+    icon: Heading3Icon,
+    apply: (c) => c.setNode("heading", { level: 3 }),
+  },
+  {
+    label: "Bulleted list",
+    icon: BulletListIcon,
+    apply: (c) => c.toggleBulletList(),
+  },
+  {
+    label: "Numbered list",
+    icon: OrderedListIcon,
+    apply: (c) => c.toggleOrderedList(),
+  },
   { label: "To-do list", icon: TaskListIcon, apply: (c) => c.toggleTaskList() },
   { label: "Quote", icon: QuoteIcon, apply: (c) => c.wrapIn("quote") },
   { label: "Code", icon: CodeBlockIcon, apply: (c) => c.toggleCodeBlock() },
@@ -96,7 +120,7 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       if (editor.isDestroyed) return;
       editor.view.dispatch(editor.state.tr.setMeta("lockDragHandle", locked));
     },
-    [editor]
+    [editor],
   );
 
   const handleOpenChange = useCallback(
@@ -105,7 +129,7 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       lock(next);
       if (next) setMenuTarget(target.current);
     },
-    [lock]
+    [lock],
   );
 
   const openMenu = useCallback(() => {
@@ -121,7 +145,7 @@ export function BlockHandle({ editor }: { editor: Editor }) {
     editor
       .chain()
       .focus()
-      .insertContentAt(t.pos + node.nodeSize, node.toJSON())
+      .insertContentAt(t.pos + node.nodeSize, node.toJSON() as JSONContent)
       .run();
   }, [editor, menuTarget]);
 
@@ -142,7 +166,9 @@ export function BlockHandle({ editor }: { editor: Editor }) {
     } catch {
       return;
     }
-    const { dom, text } = editor.view.serializeForClipboard(selection.content());
+    const { dom, text } = editor.view.serializeForClipboard(
+      selection.content(),
+    );
     try {
       await navigator.clipboard.write([
         new ClipboardItem({
@@ -156,6 +182,9 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       // to selecting the node and letting the browser's native copy command run
       // through ProseMirror's own copy handler.
       editor.chain().focus().setNodeSelection(t.pos).run();
+      // Deliberate fallback when the async Clipboard API is unavailable
+      // (permissions / insecure context); execCommand still works here.
+      // eslint-disable-next-line @typescript-eslint/no-deprecated
       if (document.execCommand("copy")) toast.success("Block copied");
     }
   }, [editor, menuTarget]);
@@ -176,9 +205,16 @@ export function BlockHandle({ editor }: { editor: Editor }) {
     (option: TurnInto) => {
       const t = menuTarget;
       if (!t) return;
-      option.apply(editor.chain().focus().setTextSelection(t.pos + 1)).run();
+      option
+        .apply(
+          editor
+            .chain()
+            .focus()
+            .setTextSelection(t.pos + 1),
+        )
+        .run();
     },
-    [editor, menuTarget]
+    [editor, menuTarget],
   );
 
   // Re-shape a `columns` block to `count` columns, preserving content. Reducing
@@ -189,12 +225,12 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       const t = menuTarget;
       if (!t) return;
       const node = editor.state.doc.nodeAt(t.pos);
-      if (!node || node.type.name !== "columns") return;
+      if (node?.type.name !== "columns") return;
 
       const columns: JSONContent[][] = [];
       node.forEach((col) => {
         const blocks: JSONContent[] = [];
-        col.forEach((child) => blocks.push(child.toJSON()));
+        col.forEach((child) => blocks.push(child.toJSON() as JSONContent));
         columns.push(blocks);
       });
 
@@ -203,7 +239,7 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       if (count <= 1) {
         const blocks = columns.flat();
         const allEmpty = blocks.every(
-          (b) => b.type === "paragraph" && !(b.content && b.content.length)
+          (b) => b.type === "paragraph" && !b.content?.length,
         );
         const content =
           blocks.length === 0 || allEmpty ? [{ type: "paragraph" }] : blocks;
@@ -214,7 +250,7 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       const newColumns: JSONContent[] = [];
       for (let i = 0; i < count; i++) {
         const blocks =
-          i < count - 1 ? columns[i] ?? [] : columns.slice(i).flat();
+          i < count - 1 ? (columns[i] ?? []) : columns.slice(i).flat();
         newColumns.push({
           type: "column",
           content: blocks.length ? blocks : [{ type: "paragraph" }],
@@ -226,13 +262,17 @@ export function BlockHandle({ editor }: { editor: Editor }) {
         .insertContentAt(range, { type: "columns", content: newColumns })
         .run();
     },
-    [editor, menuTarget]
+    [editor, menuTarget],
   );
 
   // Keep `open` readable from the stable drag callbacks without making them a
   // dependency (which would change their identity and churn plugin registration).
+  // Synced in an effect rather than during render so the ref write happens after
+  // commit; the only reader (drag start) fires on a later user interaction.
   const openRef = useRef(open);
-  openRef.current = open;
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
 
   // These three callbacks are passed to <DragHandle>, which re-registers its
   // ProseMirror plugin whenever any of them change identity. Re-registration
@@ -243,7 +283,7 @@ export function BlockHandle({ editor }: { editor: Editor }) {
     ({ node, pos }: { node: PMNode | null; pos: number }) => {
       target.current = node && pos >= 0 ? { node, pos } : null;
     },
-    []
+    [],
   );
 
   // Vertically center the grip on the block's first text line (and on the block
@@ -256,6 +296,9 @@ export function BlockHandle({ editor }: { editor: Editor }) {
     () => ({
       placement: "left-start" as const,
       middleware: [
+        // floating-ui invokes this at positioning time (not during render), so
+        // reading the live `target.current` here is intentional and safe.
+        // eslint-disable-next-line react-hooks/refs
         offset(({ rects }) => {
           const t = target.current;
           if (!t) return 0;
@@ -283,7 +326,7 @@ export function BlockHandle({ editor }: { editor: Editor }) {
         }),
       ],
     }),
-    [editor]
+    [editor],
   );
 
   const handleElementDragStart = useCallback(() => {
@@ -305,13 +348,14 @@ export function BlockHandle({ editor }: { editor: Editor }) {
     // so PM uses `node.replace`, which deletes the exact node selection-free.
     queueMicrotask(() => {
       if (editor.isDestroyed || pos == null) return;
-      const dragging = editor.view.dragging as
-        | { node?: NodeSelection; slice?: { content: { firstChild: PMNode | null } } }
-        | null;
+      const dragging = editor.view.dragging as {
+        node?: NodeSelection;
+        slice?: { content: { firstChild: PMNode | null } };
+      } | null;
       if (!dragging || dragging.node) return;
       const node = editor.state.doc.nodeAt(pos);
       const sliceFirst = dragging.slice?.content?.firstChild ?? null;
-      if (!node || !sliceFirst || node.type !== sliceFirst.type) return;
+      if (!node || node.type !== sliceFirst?.type) return;
       try {
         dragging.node = NodeSelection.create(editor.state.doc, pos);
       } catch {
@@ -337,7 +381,7 @@ export function BlockHandle({ editor }: { editor: Editor }) {
 
   // A `columns` block gets a persistent column-count control (1/2/3).
   const isColumns = menuTarget?.node.type.name === "columns";
-  const columnCount = isColumns ? menuTarget?.node.childCount ?? 0 : 0;
+  const columnCount = isColumns ? (menuTarget?.node.childCount ?? 0) : 0;
 
   return (
     <DragHandle
@@ -350,7 +394,11 @@ export function BlockHandle({ editor }: { editor: Editor }) {
     >
       <DropdownMenu open={open} onOpenChange={handleOpenChange}>
         <DropdownMenuTrigger asChild>
-          <span className="scribe-drag-handle-anchor" aria-hidden tabIndex={-1} />
+          <span
+            className="scribe-drag-handle-anchor"
+            aria-hidden
+            tabIndex={-1}
+          />
         </DropdownMenuTrigger>
         <button
           type="button"
@@ -367,7 +415,9 @@ export function BlockHandle({ editor }: { editor: Editor }) {
         <DropdownMenuContent
           align="start"
           side="bottom"
-          onCloseAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+          }}
         >
           {canTurnInto && (
             <>
@@ -380,7 +430,9 @@ export function BlockHandle({ editor }: { editor: Editor }) {
                   {TURN_INTO.map((option) => (
                     <DropdownMenuItem
                       key={option.label}
-                      onSelect={() => turnInto(option)}
+                      onSelect={() => {
+                        turnInto(option);
+                      }}
                     >
                       <option.icon size={15} />
                       {option.label}
@@ -402,7 +454,9 @@ export function BlockHandle({ editor }: { editor: Editor }) {
                   {COLUMN_OPTIONS.map((option) => (
                     <DropdownMenuItem
                       key={option.count}
-                      onSelect={() => setColumnCount(option.count)}
+                      onSelect={() => {
+                        setColumnCount(option.count);
+                      }}
                     >
                       <option.icon size={15} />
                       {option.label}

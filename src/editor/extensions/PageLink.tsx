@@ -1,6 +1,7 @@
-import { Node, mergeAttributes } from "@tiptap/core";
+import { mergeAttributes, Node } from "@tiptap/core";
 import { Plugin } from "@tiptap/pm/state";
-import { ReactNodeViewRenderer, type Editor } from "@tiptap/react";
+import { type Editor, ReactNodeViewRenderer } from "@tiptap/react";
+
 import { PageLinkView } from "./PageLinkView";
 
 export type PageTargetType = "document" | "book";
@@ -80,9 +81,11 @@ export const PageLink = Node.create({
             ).trim();
             const match = PAGE_REF.exec(text);
             if (!match) return false;
+            const targetId = match[2];
+            if (!targetId) return false;
             const targetType: PageTargetType =
               match[1] === "book" ? "book" : "document";
-            insertPageLink(editor, { targetType, targetId: match[2] });
+            insertPageLink(editor, { targetType, targetId });
             return true;
           },
         },
@@ -93,11 +96,11 @@ export const PageLink = Node.create({
 
 export function insertPageLink(
   editor: Editor,
-  attrs: { targetType: PageTargetType; targetId: string; label?: string | null }
+  attrs: {
+    targetType: PageTargetType;
+    targetId: string;
+    label?: string | null;
+  },
 ) {
-  editor
-    .chain()
-    .focus()
-    .insertContent({ type: "pageLink", attrs })
-    .run();
+  editor.chain().focus().insertContent({ type: "pageLink", attrs }).run();
 }

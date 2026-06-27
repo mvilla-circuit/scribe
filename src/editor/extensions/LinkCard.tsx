@@ -1,7 +1,8 @@
-import { Node, mergeAttributes } from "@tiptap/core";
+import { mergeAttributes, Node } from "@tiptap/core";
 import { Plugin } from "@tiptap/pm/state";
-import { ReactNodeViewRenderer, type Editor } from "@tiptap/react";
+import { type Editor, ReactNodeViewRenderer } from "@tiptap/react";
 import { toast } from "sonner";
+
 import { isBareUrl, normalizeUrl } from "../linkPreview";
 import { LinkCardView } from "./LinkCardView";
 
@@ -20,7 +21,8 @@ export const LinkCard = Node.create({
     return {
       url: {
         default: null,
-        parseHTML: (el) => el.getAttribute("data-url") ?? el.getAttribute("href"),
+        parseHTML: (el) =>
+          el.getAttribute("data-url") ?? el.getAttribute("href"),
         renderHTML: (attrs) =>
           attrs.url ? { href: attrs.url, "data-url": attrs.url } : {},
       },
@@ -114,7 +116,9 @@ export const LinkCard = Node.create({
             toast.success("Added bookmark", {
               action: {
                 label: "Keep as link",
-                onClick: () => keepAsLink(editor, url),
+                onClick: () => {
+                  keepAsLink(editor, url);
+                },
               },
             });
             return true;

@@ -1,5 +1,6 @@
-import { Toaster as SonnerToaster } from "sonner";
 import { CircleCheck, CircleX } from "lucide-react";
+import { Toaster as SonnerToaster } from "sonner";
+
 import { useTheme } from "../../theme/theme";
 
 // Sonner toasts themed to our CSS tokens so feedback surfaces match the rest of

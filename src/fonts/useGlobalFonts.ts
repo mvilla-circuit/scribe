@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+
 import { profileFonts, useProfile } from "../data/profile";
 import { DEFAULT_FONT_ID, FONT_ROLES, type FontRole } from "./catalog";
 import { ensureFontLoaded, fontStackFor } from "./loadFont";

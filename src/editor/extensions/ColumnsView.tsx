@@ -1,8 +1,9 @@
 import {
   NodeViewContent,
-  NodeViewWrapper,
   type NodeViewProps,
+  NodeViewWrapper,
 } from "@tiptap/react";
+
 import { Tooltip } from "../../components/ui/Tooltip";
 import { CloseIcon } from "../icons";
 import { MIN_COLUMNS } from "./Columns";

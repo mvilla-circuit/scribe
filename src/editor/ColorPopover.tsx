@@ -1,9 +1,10 @@
+import { type Editor, useEditorState } from "@tiptap/react";
 import { useEffect, useRef } from "react";
-import { useEditorState, type Editor } from "@tiptap/react";
-import { cn } from "../lib/utils";
+
 import { Tooltip } from "../components/ui/Tooltip";
-import { TEXT_COLORS, HIGHLIGHT_COLORS, type Swatch } from "./palette";
+import { cn } from "../lib/utils";
 import { ChevronDownIcon } from "./icons";
+import { HIGHLIGHT_COLORS, type Swatch, TEXT_COLORS } from "./palette";
 import { SwatchGrid } from "./SwatchGrid";
 
 // A single combined color control: one trigger opens a flyout holding both the
@@ -29,8 +30,9 @@ export function ColorPopover({
         TEXT_COLORS.find((s) => e.isActive("textStyle", { color: s.value }))
           ?.value ?? null,
       highlightColor:
-        HIGHLIGHT_COLORS.find((s) => e.isActive("highlight", { color: s.value }))
-          ?.value ?? null,
+        HIGHLIGHT_COLORS.find((s) =>
+          e.isActive("highlight", { color: s.value }),
+        )?.value ?? null,
       underlineColor:
         TEXT_COLORS.find((s) => e.isActive("underline", { color: s.value }))
           ?.value ?? null,
@@ -44,7 +46,9 @@ export function ColorPopover({
       if (!wrapRef.current?.contains(e.target as Node)) onOpenChange(false);
     };
     document.addEventListener("pointerdown", onDown, true);
-    return () => document.removeEventListener("pointerdown", onDown, true);
+    return () => {
+      document.removeEventListener("pointerdown", onDown, true);
+    };
   }, [open, onOpenChange]);
 
   const setText = (value: string | null) => {
@@ -73,12 +77,17 @@ export function ColorPopover({
           aria-label="Color and highlight"
           aria-haspopup="true"
           aria-expanded={open}
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => onOpenChange(!open)}
+          onMouseDown={(e) => {
+            e.preventDefault();
+          }}
+          onClick={() => {
+            onOpenChange(!open);
+          }}
           className={cn(
             "flex h-8 items-center gap-0.5 rounded-md px-1.5 text-text outline-none transition-colors",
             "hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring",
-            (open || textColor || highlightColor || underlineColor) && "bg-hover"
+            (open || textColor || highlightColor || underlineColor) &&
+              "bg-hover",
           )}
         >
           {/* The "A" previews all three: tinted by the active text color, sitting
@@ -101,12 +110,17 @@ export function ColorPopover({
       </Tooltip>
 
       {open && (
+        // Container only swallows mousedown to keep the editor selection;
+        // focusable controls live inside it, not on the panel itself.
+        // eslint-disable-next-line jsx-a11y/interactive-supports-focus
         <div
           role="menu"
-          onMouseDown={(e) => e.preventDefault()}
+          onMouseDown={(e) => {
+            e.preventDefault();
+          }}
           className={cn(
             "absolute right-0 top-[calc(100%+8px)] z-10 w-[12rem] font-sans",
-            "rounded-xl border border-border bg-elevated p-3 shadow-popover"
+            "rounded-xl border border-border bg-elevated p-3 shadow-popover",
           )}
         >
           <Section

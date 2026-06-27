@@ -1,6 +1,10 @@
-import { Skeleton } from "../ui/Skeleton";
-import { SIDEBAR_ICON_SIZE, SIDEBAR_ROW_GAP, sidebarRowPadding } from "./SidebarRow";
 import { cn } from "../../lib/utils";
+import { Skeleton } from "../ui/Skeleton";
+import {
+  SIDEBAR_ICON_SIZE,
+  SIDEBAR_ROW_GAP,
+  sidebarRowPadding,
+} from "./SidebarRow";
 
 // Placeholder rows matching the tree's row metrics (height, icon slot, indent),
 // so the real Library tree / book Outline swap in without any layout shift.
@@ -14,10 +18,7 @@ export function TreeSkeleton({
   depths?: number[];
 }) {
   return (
-    <div
-      aria-hidden
-      className={cn("flex flex-col", SIDEBAR_ROW_GAP)}
-    >
+    <div aria-hidden className={cn("flex flex-col", SIDEBAR_ROW_GAP)}>
       {depths.map((depth, i) => (
         <div
           key={i}

@@ -1,10 +1,9 @@
-import { useEffect, useRef } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { type NodeViewProps, NodeViewWrapper } from "@tiptap/react";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
+
 import { Tooltip } from "../../components/ui/Tooltip";
-import { fetchLinkMetadata, hostLabel } from "../linkPreview";
-import { keepAsLink } from "./LinkCard";
 import {
   CopyIcon,
   ExternalLinkIcon,
@@ -12,6 +11,8 @@ import {
   RefreshIcon,
   TrashIcon,
 } from "../icons";
+import { fetchLinkMetadata, hostLabel } from "../linkPreview";
+import { keepAsLink } from "./LinkCard";
 
 type Status = "loading" | "ready" | "error";
 
@@ -42,7 +43,7 @@ export function LinkCardView({
     if (fetchedFor.current === url) return;
     fetchedFor.current = url;
     let cancelled = false;
-    fetchLinkMetadata(url).then((meta) => {
+    void fetchLinkMetadata(url).then((meta) => {
       if (cancelled) return;
       updateAttributes({
         ...meta,
@@ -104,8 +105,7 @@ export function LinkCardView({
                     alt=""
                     className="scribe-linkcard-favicon"
                     onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display =
-                        "none";
+                      e.currentTarget.style.display = "none";
                     }}
                   />
                 ) : null}
@@ -142,10 +142,20 @@ export function LinkCardView({
           <Ctrl label="Refresh preview" onClick={refresh}>
             <RefreshIcon size={14} />
           </Ctrl>
-          <Ctrl label="Convert to link" onClick={() => keepAsLink(editor, url)}>
+          <Ctrl
+            label="Convert to link"
+            onClick={() => {
+              keepAsLink(editor, url);
+            }}
+          >
             <LinkIcon size={14} />
           </Ctrl>
-          <Ctrl label="Remove" onClick={() => deleteNode()}>
+          <Ctrl
+            label="Remove"
+            onClick={() => {
+              deleteNode();
+            }}
+          >
             <TrashIcon size={14} />
           </Ctrl>
         </div>
@@ -168,7 +178,9 @@ function Ctrl({
       <button
         type="button"
         aria-label={label}
-        onMouseDown={(e) => e.preventDefault()}
+        onMouseDown={(e) => {
+          e.preventDefault();
+        }}
         onClick={onClick}
         className="scribe-block-btn"
       >

@@ -1,20 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
 import * as RPopover from "@radix-ui/react-popover";
 import { Check, ChevronsUpDown } from "lucide-react";
-import { cn } from "../../lib/utils";
-import { makeIcon } from "../../lib/makeIcon";
+import { useEffect, useMemo, useState } from "react";
+
 import {
-  ROLE_FONTS,
-  resolveFontEntry,
   type FontEntry,
   type FontRole,
+  resolveFontEntry,
+  ROLE_FONTS,
 } from "../../fonts/catalog";
 import { ensureFontLoaded } from "../../fonts/loadFont";
+import { makeIcon } from "../../lib/makeIcon";
+import { cn } from "../../lib/utils";
 
 const CheckIcon = makeIcon(Check);
 const ExpandIcon = makeIcon(ChevronsUpDown);
 
-type FontPickerProps = {
+interface FontPickerProps {
   role: FontRole;
   /** The currently effective font id (resolved: override, else inherited). */
   value: string;
@@ -28,7 +29,7 @@ type FontPickerProps = {
   overridden?: boolean;
   onInherit?: () => void;
   inheritLabel?: string;
-};
+}
 
 // A searchable, live-previewed font picker for one role. The trigger shows the
 // effective family in its own typeface; the popover lists curated options
@@ -61,7 +62,7 @@ export function FontPicker({
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase();
     const options = ROLE_FONTS[role].filter((f) =>
-      q ? f.family.toLowerCase().includes(q) : true
+      q ? f.family.toLowerCase().includes(q) : true,
     );
     return {
       system: options.filter((f) => f.system),
@@ -127,7 +128,9 @@ export function FontPicker({
           <input
             autoFocus
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+            }}
             placeholder="Search fonts…"
             className="h-8 w-full rounded-md border border-border bg-bg px-2.5 text-sm text-text outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-ring"
           />
@@ -205,14 +208,12 @@ function InheritOption({
         onClick={onSelect}
         className={cn(
           "flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left outline-none transition-colors hover:bg-hover focus-visible:bg-hover",
-          selected && "bg-selected"
+          selected && "bg-selected",
         )}
       >
         <span className="flex items-center justify-between gap-2">
           <span className="truncate text-[0.95rem] text-text">Inherit</span>
-          {selected && (
-            <CheckIcon size={15} className="shrink-0 text-accent" />
-          )}
+          {selected && <CheckIcon size={15} className="shrink-0 text-accent" />}
         </span>
         <span className="truncate text-xs text-muted">
           {inheritLabel ? `From ${inheritLabel} · ` : ""}
@@ -245,7 +246,9 @@ function FontGroup({
           key={font.id}
           font={font}
           selected={font.id === selectedId}
-          onSelect={() => onSelect(font.id)}
+          onSelect={() => {
+            onSelect(font.id);
+          }}
         />
       ))}
     </div>
@@ -274,7 +277,7 @@ function FontOption({
       style={{ fontFamily: font.stack }}
       className={cn(
         "flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left outline-none transition-colors hover:bg-hover focus-visible:bg-hover",
-        selected && "bg-selected"
+        selected && "bg-selected",
       )}
     >
       <span className="flex items-center justify-between gap-2">
@@ -282,8 +285,7 @@ function FontOption({
         {selected && <CheckIcon size={15} className="shrink-0 text-accent" />}
       </span>
       <span className="truncate text-xs text-muted">
-        The quick brown fox{" "}
-        <span style={{ fontWeight: 700 }}>jumps</span>{" "}
+        The quick brown fox <span style={{ fontWeight: 700 }}>jumps</span>{" "}
         <span style={{ fontStyle: "italic" }}>over the lazy dog</span>
       </span>
     </button>

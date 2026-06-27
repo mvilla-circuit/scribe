@@ -1,5 +1,5 @@
-import { cn } from "../lib/utils";
 import { Tooltip } from "../components/ui/Tooltip";
+import { cn } from "../lib/utils";
 import { NoColorIcon } from "./icons";
 import { type Swatch } from "./palette";
 
@@ -33,14 +33,18 @@ export function SwatchGrid({
           type="button"
           aria-label={clearLabel}
           aria-pressed={!value}
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => onChange(null)}
+          onMouseDown={(e) => {
+            e.preventDefault();
+          }}
+          onClick={() => {
+            onChange(null);
+          }}
           className={cn(
             "flex h-6 w-6 items-center justify-center rounded-full text-muted outline-none transition-all duration-150",
             "focus-visible:ring-2 focus-visible:ring-ring",
             !value
               ? "ring-2 ring-ring ring-offset-2 ring-offset-elevated"
-              : "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] hover:scale-110 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]"
+              : "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] hover:scale-110 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]",
           )}
         >
           <NoColorIcon size={16} />
@@ -54,14 +58,18 @@ export function SwatchGrid({
               type="button"
               aria-label={s.name}
               aria-pressed={active}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => onChange(s.value)}
+              onMouseDown={(e) => {
+                e.preventDefault();
+              }}
+              onClick={() => {
+                onChange(s.value);
+              }}
               className={cn(
                 "h-6 w-6 rounded-full outline-none transition-all duration-150",
                 "focus-visible:ring-2 focus-visible:ring-ring",
                 active
                   ? "ring-2 ring-ring ring-offset-2 ring-offset-elevated"
-                  : "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] hover:scale-110 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]"
+                  : "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] hover:scale-110 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]",
               )}
               style={{ background: s.value }}
             />

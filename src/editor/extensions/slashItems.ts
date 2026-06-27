@@ -1,12 +1,5 @@
 import type { Editor, Range } from "@tiptap/core";
-import { normalizeUrl } from "../linkPreview";
-import { calloutContent } from "./Callout";
-import { columnsContent } from "./Columns";
-import { essayContent } from "./Essay";
-import { quoteContent } from "./Quote";
-import { insertLinkCard } from "./LinkCard";
-import { insertPageLink } from "./PageLink";
-import { usePagePicker } from "./pagePickerStore";
+
 import type { IconProps } from "../../lib/makeIcon";
 import {
   BookmarkIcon,
@@ -28,8 +21,16 @@ import {
   TaskListIcon,
   TextIcon,
 } from "../icons";
+import { normalizeUrl } from "../linkPreview";
+import { calloutContent } from "./Callout";
+import { columnsContent } from "./Columns";
+import { essayContent } from "./Essay";
+import { insertLinkCard } from "./LinkCard";
+import { insertPageLink } from "./PageLink";
+import { usePagePicker } from "./pagePickerStore";
+import { quoteContent } from "./Quote";
 
-export type SlashItem = {
+export interface SlashItem {
   title: string;
   description: string;
   icon: (props: IconProps) => React.ReactNode;
@@ -37,7 +38,7 @@ export type SlashItem = {
   // Applies the block. By contract every run first clears the typed `/query`
   // range, so the menu never leaves stray text behind.
   run: (editor: Editor, range: Range) => void;
-};
+}
 
 // Clears the "/query" text, returning a focused chain positioned where it was.
 function at(editor: Editor, range: Range) {
@@ -57,21 +58,24 @@ export const slashItems: SlashItem[] = [
     description: "Large section heading",
     icon: Heading1Icon,
     aliases: ["h1", "title"],
-    run: (editor, range) => at(editor, range).setNode("heading", { level: 1 }).run(),
+    run: (editor, range) =>
+      at(editor, range).setNode("heading", { level: 1 }).run(),
   },
   {
     title: "Heading 2",
     description: "Medium section heading",
     icon: Heading2Icon,
     aliases: ["h2", "subtitle"],
-    run: (editor, range) => at(editor, range).setNode("heading", { level: 2 }).run(),
+    run: (editor, range) =>
+      at(editor, range).setNode("heading", { level: 2 }).run(),
   },
   {
     title: "Heading 3",
     description: "Small section heading",
     icon: Heading3Icon,
     aliases: ["h3"],
-    run: (editor, range) => at(editor, range).setNode("heading", { level: 3 }).run(),
+    run: (editor, range) =>
+      at(editor, range).setNode("heading", { level: 3 }).run(),
   },
   {
     title: "Bulleted list",
@@ -145,14 +149,16 @@ export const slashItems: SlashItem[] = [
     description: "Two equal columns",
     icon: Columns2Icon,
     aliases: ["grid", "layout", "2col"],
-    run: (editor, range) => at(editor, range).insertContent(columnsContent(2)).run(),
+    run: (editor, range) =>
+      at(editor, range).insertContent(columnsContent(2)).run(),
   },
   {
     title: "Columns (3)",
     description: "Three equal columns",
     icon: Columns3Icon,
     aliases: ["grid", "layout", "3col"],
-    run: (editor, range) => at(editor, range).insertContent(columnsContent(3)).run(),
+    run: (editor, range) =>
+      at(editor, range).insertContent(columnsContent(3)).run(),
   },
   {
     title: "Table",
@@ -183,7 +189,9 @@ export const slashItems: SlashItem[] = [
     aliases: ["page", "internal", "mention", "ref"],
     run: (editor, range) => {
       at(editor, range).run();
-      usePagePicker.getState().open((target) => insertPageLink(editor, target));
+      usePagePicker.getState().open((target) => {
+        insertPageLink(editor, target);
+      });
     },
   },
 ];

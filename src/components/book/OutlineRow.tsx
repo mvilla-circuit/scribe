@@ -1,21 +1,22 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+
 import { cn } from "../../lib/utils";
-import { InlineRename } from "../ui/InlineRename";
-import {
-  RowActionDropdown,
-  RowContextMenu,
-  type RowAction,
-} from "../ui/RowActionMenu";
 import { DuplicateIcon, PencilIcon, TrashIcon } from "../sidebar/icons";
 import {
   SIDEBAR_ICON_SIZE,
   SidebarRow,
   SidebarRowOverlay,
 } from "../sidebar/SidebarRow";
-import { ChevronRightIcon, PageIcon, PlusIcon } from "./icons";
 import { DocumentIcon } from "../ui/DocumentIcon";
+import { InlineRename } from "../ui/InlineRename";
+import {
+  type RowAction,
+  RowActionDropdown,
+  RowContextMenu,
+} from "../ui/RowActionMenu";
 import { Tooltip } from "../ui/Tooltip";
+import { ChevronRightIcon, PageIcon, PlusIcon } from "./icons";
 import { type FlatDocNode } from "./outlineDnd";
 
 // The document's icon when set, otherwise the generic page glyph. Shared by the
@@ -28,7 +29,7 @@ function DocIcon({ document }: { document: FlatDocNode["document"] }) {
   );
 }
 
-export type OutlineRowHandlers = {
+export interface OutlineRowHandlers {
   onToggleExpand: () => void;
   onSelect: () => void;
   onStartRename: () => void;
@@ -37,7 +38,7 @@ export type OutlineRowHandlers = {
   onDelete: () => void;
   onDuplicate: () => void;
   onNewChild: () => void;
-};
+}
 
 type OutlineRowProps = OutlineRowHandlers & {
   node: FlatDocNode;
@@ -63,8 +64,14 @@ export function OutlineRow({
   onDuplicate,
   onNewChild,
 }: OutlineRowProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: node.id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: node.id });
 
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
@@ -83,7 +90,7 @@ export function OutlineRow({
         className={cn(
           "flex items-center justify-center transition-opacity duration-150",
           node.hasChildren &&
-            "group-hover:opacity-0 group-focus-within:opacity-0"
+            "group-hover:opacity-0 group-focus-within:opacity-0",
         )}
       >
         <DocIcon document={node.document} />
@@ -97,14 +104,16 @@ export function OutlineRow({
             e.stopPropagation();
             onToggleExpand();
           }}
-          onPointerDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+          }}
           className="absolute inset-0 flex items-center justify-center rounded text-muted opacity-0 transition-opacity duration-150 hover:text-text group-hover:opacity-100 group-focus-within:opacity-100"
         >
           <ChevronRightIcon
             size={SIDEBAR_ICON_SIZE}
             className={cn(
               "transition-transform duration-150",
-              expanded && "rotate-90"
+              expanded && "rotate-90",
             )}
           />
         </button>
@@ -159,7 +168,9 @@ export function OutlineRow({
             e.stopPropagation();
             onNewChild();
           }}
-          onPointerDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+          }}
           className="flex h-6 w-6 items-center justify-center rounded text-muted hover:bg-hover hover:text-text"
         >
           <PlusIcon size={15} />

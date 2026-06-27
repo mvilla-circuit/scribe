@@ -1,11 +1,16 @@
-import { childrenOf, ROOT, type TreeChild, type TreeModel } from "../../data/tree";
 import {
+  childrenOf,
+  ROOT,
+  type TreeChild,
+  type TreeModel,
+} from "../../data/tree";
+import {
+  type DndNode,
   INDENT,
   neighbourPositions as genericNeighbourPositions,
   projectDrop,
-  removeDescendants as genericRemoveDescendants,
-  type DndNode,
   type Projection,
+  removeDescendants as genericRemoveDescendants,
 } from "../tree/treeDnd";
 
 export { INDENT, type Projection };
@@ -17,9 +22,16 @@ export type FlatNode = DndNode & {
 };
 
 // Depth-first flatten that only descends into expanded folders.
-export function flattenTree(model: TreeModel, expanded: Set<string>): FlatNode[] {
+export function flattenTree(
+  model: TreeModel,
+  expanded: Set<string>,
+): FlatNode[] {
   const out: FlatNode[] = [];
-  const walk = (containerId: string, depth: number, parentId: string | null) => {
+  const walk = (
+    containerId: string,
+    depth: number,
+    parentId: string | null,
+  ) => {
     for (const child of childrenOf(model, containerId)) {
       out.push({
         id: child.id,
@@ -38,7 +50,10 @@ export function flattenTree(model: TreeModel, expanded: Set<string>): FlatNode[]
   return out;
 }
 
-export function removeDescendants(nodes: FlatNode[], ids: string[]): FlatNode[] {
+export function removeDescendants(
+  nodes: FlatNode[],
+  ids: string[],
+): FlatNode[] {
   return genericRemoveDescendants(nodes, ids);
 }
 
@@ -50,7 +65,7 @@ export function getProjection(
   nodes: FlatNode[],
   activeId: string,
   overId: string,
-  dragOffsetX: number
+  dragOffsetX: number,
 ): Projection | null {
   return projectDrop(nodes, activeId, overId, dragOffsetX, {
     fixedProjection: (active) =>
@@ -65,7 +80,7 @@ export function neighbourPositions(
   nodes: FlatNode[],
   activeId: string,
   overId: string,
-  targetParentId: string | null
+  targetParentId: string | null,
 ): { prev?: number; next?: number } {
   return genericNeighbourPositions(nodes, activeId, overId, targetParentId);
 }

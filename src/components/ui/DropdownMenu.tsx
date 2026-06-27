@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import * as RDropdown from "@radix-ui/react-dropdown-menu";
 import { forwardRef } from "react";
+
 import { cn } from "../../lib/utils";
 import {
   menuContentClass,
@@ -15,7 +16,7 @@ export const DropdownMenuTrigger = RDropdown.Trigger;
 export const DropdownMenuSub = RDropdown.Sub;
 
 export const DropdownMenuContent = forwardRef<
-  React.ElementRef<typeof RDropdown.Content>,
+  React.ComponentRef<typeof RDropdown.Content>,
   React.ComponentPropsWithoutRef<typeof RDropdown.Content>
 >(({ className, sideOffset = 6, align = "start", ...props }, ref) => (
   <RDropdown.Portal>
@@ -31,7 +32,7 @@ export const DropdownMenuContent = forwardRef<
 DropdownMenuContent.displayName = "DropdownMenuContent";
 
 export const DropdownMenuItem = forwardRef<
-  React.ElementRef<typeof RDropdown.Item>,
+  React.ComponentRef<typeof RDropdown.Item>,
   React.ComponentPropsWithoutRef<typeof RDropdown.Item> & { danger?: boolean }
 >(({ className, danger, ...props }, ref) => (
   <RDropdown.Item
@@ -43,15 +44,19 @@ export const DropdownMenuItem = forwardRef<
 DropdownMenuItem.displayName = "DropdownMenuItem";
 
 export const DropdownMenuLabel = forwardRef<
-  React.ElementRef<typeof RDropdown.Label>,
+  React.ComponentRef<typeof RDropdown.Label>,
   React.ComponentPropsWithoutRef<typeof RDropdown.Label>
 >(({ className, ...props }, ref) => (
-  <RDropdown.Label ref={ref} className={cn(menuLabelClass, className)} {...props} />
+  <RDropdown.Label
+    ref={ref}
+    className={cn(menuLabelClass, className)}
+    {...props}
+  />
 ));
 DropdownMenuLabel.displayName = "DropdownMenuLabel";
 
 export const DropdownMenuSeparator = forwardRef<
-  React.ElementRef<typeof RDropdown.Separator>,
+  React.ComponentRef<typeof RDropdown.Separator>,
   React.ComponentPropsWithoutRef<typeof RDropdown.Separator>
 >(({ className, ...props }, ref) => (
   <RDropdown.Separator
@@ -63,7 +68,7 @@ export const DropdownMenuSeparator = forwardRef<
 DropdownMenuSeparator.displayName = "DropdownMenuSeparator";
 
 export const DropdownMenuSubTrigger = forwardRef<
-  React.ElementRef<typeof RDropdown.SubTrigger>,
+  React.ComponentRef<typeof RDropdown.SubTrigger>,
   React.ComponentPropsWithoutRef<typeof RDropdown.SubTrigger>
 >(({ className, ...props }, ref) => (
   <RDropdown.SubTrigger
@@ -75,7 +80,7 @@ export const DropdownMenuSubTrigger = forwardRef<
 DropdownMenuSubTrigger.displayName = "DropdownMenuSubTrigger";
 
 export const DropdownMenuSubContent = forwardRef<
-  React.ElementRef<typeof RDropdown.SubContent>,
+  React.ComponentRef<typeof RDropdown.SubContent>,
   React.ComponentPropsWithoutRef<typeof RDropdown.SubContent>
 >(({ className, ...props }, ref) => (
   <RDropdown.Portal>

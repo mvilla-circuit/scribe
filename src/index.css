@@ -5,7 +5,8 @@
 @theme inline {
   /* App-chrome UI sans — the interface (sidebar, menus, dialogs) always stays
      on this stable system stack so it never turns serif/mono. */
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
   /* Editorial serif for the reading surface (Phase 3b). */
   --font-serif: "New York", "Iowan Old Style", Georgia, serif;
   /* Phase 6 typography roles for the reading surface. These default to system
@@ -13,7 +14,8 @@
      fonts/useGlobalFonts.ts), then referenced via var() on titles, body prose,
      and code. */
   --font-display: "New York", "Iowan Old Style", Georgia, serif;
-  --font-text: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --font-text:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
   --font-code: "SF Mono", ui-monospace, Menlo, monospace;
   --color-bg: var(--bg);
   --color-surface: var(--surface);
@@ -36,16 +38,16 @@
 }
 
 :root {
-  --bg: #faf9f7;        /* warm paper */
+  --bg: #faf9f7; /* warm paper */
   --surface: #ffffff;
-  --elevated: #ffffff;  /* popover/dialog surface */
+  --elevated: #ffffff; /* popover/dialog surface */
   --text: #1c1b1a;
   --muted: #6b6a67;
   --accent: #3b6ea5;
   --selected: rgba(59, 110, 165, 0.1);
   --border: rgba(0, 0, 0, 0.08);
   --sidebar: #f3f1ee;
-  --tree-group: #eae7e1;  /* gentle card behind an open folder */
+  --tree-group: #eae7e1; /* gentle card behind an open folder */
   --hover: rgba(0, 0, 0, 0.04);
   --ring: rgba(59, 110, 165, 0.55);
   /* Table surfaces: crisp white cells framed in a rounded card, with a warm
@@ -60,8 +62,7 @@
   --inverted: #1c1b1a;
   --inverted-text: #faf9f7;
   --shadow-popover:
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    0 8px 24px rgba(0, 0, 0, 0.12);
+    0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.12);
   /* Feedback toasts. Success leans on a calm emerald that reads clearly against
      the warm paper without shouting; error mirrors it in a muted terracotta. */
   --toast-success-bg: #eef7f1;
@@ -73,9 +74,9 @@
   /* The lone theme-aware palette swatch ("Ink"). Stored on marks as a literal
      var() string so it round-trips, then resolves to the strongest ink for the
      active theme: near-black on warm paper here, near-white in .dark. */
-  --swatch-ink: #23221f;                       /* solid text/accent */
-  --swatch-ink-wash: rgba(40, 38, 34, 0.20);   /* inline highlight band */
-  --swatch-ink-fill: rgba(40, 38, 34, 0.12);   /* callout block fill */
+  --swatch-ink: #23221f; /* solid text/accent */
+  --swatch-ink-wash: rgba(40, 38, 34, 0.2); /* inline highlight band */
+  --swatch-ink-fill: rgba(40, 38, 34, 0.12); /* callout block fill */
   /* Neutral default accent for blocks (quote/essay rules) when no swatch is
      chosen. Kept a calm stone gray — not the blue UI accent — so an untinted
      block reads as quietly neutral rather than coloured. */
@@ -85,14 +86,14 @@
 .dark {
   --bg: #16171a;
   --surface: #1e2024;
-  --elevated: #25282d;  /* popover/dialog surface, above surface */
+  --elevated: #25282d; /* popover/dialog surface, above surface */
   --text: #e8e6e3;
   --muted: #9a9893;
   --accent: #6f9fd8;
   --selected: rgba(111, 159, 216, 0.16);
   --border: rgba(255, 255, 255, 0.09);
   --sidebar: #1a1c1f;
-  --tree-group: #25282d;  /* clearly lifted above the dark sidebar */
+  --tree-group: #25282d; /* clearly lifted above the dark sidebar */
   --hover: rgba(255, 255, 255, 0.06);
   --ring: rgba(111, 159, 216, 0.6);
   /* Cells lift just above the page; the header sits a step lighter still. */
@@ -103,8 +104,7 @@
   --inverted: #e8e6e3;
   --inverted-text: #16171a;
   --shadow-popover:
-    0 1px 2px rgba(0, 0, 0, 0.3),
-    0 10px 30px rgba(0, 0, 0, 0.5);
+    0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.5);
   --toast-success-bg: #15241c;
   --toast-success-border: rgba(94, 224, 162, 0.22);
   --toast-success-fg: #74e3a8;
@@ -114,12 +114,16 @@
   /* "Ink" flips to near-white so the darkest swatch stays the strongest ink. */
   --swatch-ink: #ededeb;
   --swatch-ink-wash: rgba(232, 230, 227, 0.18);
-  --swatch-ink-fill: rgba(232, 230, 227, 0.10);
+  --swatch-ink-fill: rgba(232, 230, 227, 0.1);
   /* A touch lighter on the dark surface so the neutral rule stays visible. */
   --block-accent: #9c958b;
 }
 
-html, body, #root { height: 100%; }
+html,
+body,
+#root {
+  height: 100%;
+}
 body {
   margin: 0;
   background: var(--color-bg);
@@ -129,32 +133,62 @@ body {
 
 /* --- Premium chrome motion: fast, subtle, no bounce --- */
 @keyframes scribe-pop-in {
-  from { opacity: 0; transform: scale(0.97) translateY(-2px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 @keyframes scribe-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes scribe-dialog-in {
-  from { opacity: 0; transform: scale(0.97) translateY(4px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 @keyframes scribe-icon-pop {
-  from { transform: scale(0.82); opacity: 0.6; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.82);
+    opacity: 0.6;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 .scribe-icon-pop {
   animation: scribe-icon-pop 150ms ease-out;
 }
 @media (prefers-reduced-motion: reduce) {
-  .scribe-icon-pop { animation: none; }
+  .scribe-icon-pop {
+    animation: none;
+  }
 }
 
 /* Calm cross-fade when switching between the Title Page and a document. */
 @keyframes scribe-surface-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .scribe-surface-in {
   animation: scribe-surface-in 150ms ease-out;
@@ -167,7 +201,9 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .scribe-surface-in,
-  .scribe-fade-in { animation: none; }
+  .scribe-fade-in {
+    animation: none;
+  }
 }
 
 /* --- Skeleton loaders: a calm, theme-aware shimmer used for loading states
@@ -185,14 +221,23 @@ body {
   animation: scribe-skel-shimmer 1.4s ease infinite;
 }
 @keyframes scribe-skel-shimmer {
-  from { background-position: 100% 0; }
-  to { background-position: 0 0; }
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
 }
 
 /* Gentle breathing pulse for the branded boot loader. */
 @keyframes scribe-skel-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.55; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
 }
 .scribe-skel-pulse {
   animation: scribe-skel-pulse 1.6s ease-in-out infinite;
@@ -200,12 +245,16 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .scribe-skel,
-  .scribe-skel-pulse { animation: none; }
+  .scribe-skel-pulse {
+    animation: none;
+  }
 }
 
 .scribe-pop {
-  transform-origin: var(--radix-dropdown-menu-content-transform-origin,
-    var(--radix-context-menu-content-transform-origin, center));
+  transform-origin: var(
+    --radix-dropdown-menu-content-transform-origin,
+    var(--radix-context-menu-content-transform-origin, center)
+  );
 }
 .scribe-pop[data-state="open"] {
   animation: scribe-pop-in 140ms ease-out;

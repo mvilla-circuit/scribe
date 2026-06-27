@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+
 import { Dialog, DialogContent, DialogTitle } from "../../components/ui/Dialog";
 import { DocumentIcon } from "../../components/ui/DocumentIcon";
-import { usePageIndex } from "../../data/pageIndex";
 import { useBooks } from "../../data/books";
+import { usePageIndex } from "../../data/pageIndex";
 import { cn } from "../../lib/utils";
 import { BookIcon, PageLinkIcon } from "../icons";
-import { usePagePicker, type PagePickTarget } from "./pagePickerStore";
+import { type PagePickTarget, usePagePicker } from "./pagePickerStore";
 
 type Row = PagePickTarget & {
   icon: string | null;
@@ -29,7 +30,9 @@ export function PagePicker() {
   const listRef = useRef<HTMLDivElement>(null);
 
   const rows = useMemo<Row[]>(() => {
-    const bookTitle = new Map(books.map((b) => [b.id, b.title || "Untitled book"]));
+    const bookTitle = new Map(
+      books.map((b) => [b.id, b.title || "Untitled book"]),
+    );
     const bookRows: Row[] = books.map((b) => ({
       targetType: "book",
       targetId: b.id,
@@ -55,7 +58,7 @@ export function PagePicker() {
       ? all.filter(
           (r) =>
             r.label.toLowerCase().includes(q) ||
-            r.subtitle.toLowerCase().includes(q)
+            r.subtitle.toLowerCase().includes(q),
         )
       : all;
     return filtered.slice(0, 50);
@@ -104,20 +107,27 @@ export function PagePicker() {
   // Keep the highlighted row scrolled into view.
   useEffect(() => {
     const el = listRef.current?.querySelector<HTMLElement>(
-      `[data-idx="${active}"]`
+      `[data-idx="${active}"]`,
     );
     el?.scrollIntoView({ block: "nearest" });
   }, [active, rows]);
 
   return (
-    <Dialog open={open} onOpenChange={(o) => (o ? null : close())}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) close();
+      }}
+    >
       <DialogContent className="p-0">
         <DialogTitle className="sr-only">Link to a page</DialogTitle>
         <div className="border-b border-border p-2.5">
           <input
             autoFocus
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+            }}
             onKeyDown={onKeyDown}
             placeholder="Search pages and books…"
             className="h-9 w-full rounded-md border border-border bg-bg px-3 text-sm text-text outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-ring"
@@ -134,11 +144,15 @@ export function PagePicker() {
                 key={`${row.targetType}:${row.targetId}`}
                 type="button"
                 data-idx={idx}
-                onMouseEnter={() => setActive(idx)}
-                onClick={() => choose(row)}
+                onMouseEnter={() => {
+                  setActive(idx);
+                }}
+                onClick={() => {
+                  choose(row);
+                }}
                 className={cn(
                   "flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left outline-none transition-colors",
-                  idx === active ? "bg-selected" : "hover:bg-hover"
+                  idx === active ? "bg-selected" : "hover:bg-hover",
                 )}
               >
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center text-muted">

@@ -1,5 +1,5 @@
-import type { Folder } from "./folders";
 import type { Book } from "./books";
+import type { Folder } from "./folders";
 import { byPosition } from "./ordering";
 
 export const ROOT = "__root__";
@@ -9,13 +9,25 @@ export const ROOT = "__root__";
 // position columns live in different tables but share the same numeric scale,
 // so we can interleave them freely -- position is purely a sort key here.
 export type TreeChild =
-  | { kind: "folder"; id: string; position: number; created_at: string; folder: Folder }
-  | { kind: "book"; id: string; position: number; created_at: string; book: Book };
+  | {
+      kind: "folder";
+      id: string;
+      position: number;
+      created_at: string;
+      folder: Folder;
+    }
+  | {
+      kind: "book";
+      id: string;
+      position: number;
+      created_at: string;
+      book: Book;
+    };
 
-export type TreeModel = {
+export interface TreeModel {
   // container id (folder id or ROOT) -> ordered children (folders + books)
   children: Map<string, TreeChild[]>;
-};
+}
 
 export function buildTree(folders: Folder[], books: Book[]): TreeModel {
   const children = new Map<string, TreeChild[]>();

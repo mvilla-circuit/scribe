@@ -64,7 +64,7 @@ function webFont(
   id: string,
   family: string,
   style: FontStyle,
-  load: () => Promise<unknown>
+  load: () => Promise<unknown>,
 ): FontEntry {
   return { id, family, style, stack: stackFor(style, family), load };
 }
@@ -101,7 +101,7 @@ const vollkorn = webFont("vollkorn", "Vollkorn", "serif", () =>
     import("@fontsource/vollkorn/latin-700.css"),
     import("@fontsource/vollkorn/latin-400-italic.css"),
     import("@fontsource/vollkorn/latin-700-italic.css"),
-  ])
+  ]),
 );
 
 // Ubuntu's humanist sans family reads well in both titles and body, so each
@@ -113,7 +113,7 @@ const ubuntu = webFont("ubuntu", "Ubuntu", "sans", () =>
     import("@fontsource/ubuntu/latin-700.css"),
     import("@fontsource/ubuntu/latin-400-italic.css"),
     import("@fontsource/ubuntu/latin-700-italic.css"),
-  ])
+  ]),
 );
 const ubuntuSans = webFont("ubuntu-sans", "Ubuntu Sans", "sans", () =>
   Promise.all([
@@ -121,7 +121,7 @@ const ubuntuSans = webFont("ubuntu-sans", "Ubuntu Sans", "sans", () =>
     import("@fontsource/ubuntu-sans/latin-700.css"),
     import("@fontsource/ubuntu-sans/latin-400-italic.css"),
     import("@fontsource/ubuntu-sans/latin-700-italic.css"),
-  ])
+  ]),
 );
 
 // --- Display (titles / headlines) -------------------------------------------
@@ -132,7 +132,7 @@ const DISPLAY_SERIF: FontEntry[] = [
       import("@fontsource/playfair-display/latin-700.css"),
       import("@fontsource/playfair-display/latin-400-italic.css"),
       import("@fontsource/playfair-display/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("fraunces", "Fraunces", "serif", () =>
     Promise.all([
@@ -140,7 +140,7 @@ const DISPLAY_SERIF: FontEntry[] = [
       import("@fontsource/fraunces/latin-700.css"),
       import("@fontsource/fraunces/latin-400-italic.css"),
       import("@fontsource/fraunces/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("petrona", "Petrona", "serif", () =>
     Promise.all([
@@ -148,7 +148,7 @@ const DISPLAY_SERIF: FontEntry[] = [
       import("@fontsource/petrona/latin-700.css"),
       import("@fontsource/petrona/latin-400-italic.css"),
       import("@fontsource/petrona/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("bodoni-moda", "Bodoni Moda", "serif", () =>
     Promise.all([
@@ -156,7 +156,7 @@ const DISPLAY_SERIF: FontEntry[] = [
       import("@fontsource/bodoni-moda/latin-700.css"),
       import("@fontsource/bodoni-moda/latin-400-italic.css"),
       import("@fontsource/bodoni-moda/latin-700-italic.css"),
-    ])
+    ]),
   ),
   vollkorn,
   webFont("gentium-book-plus", "Gentium Book Plus", "serif", () =>
@@ -165,7 +165,7 @@ const DISPLAY_SERIF: FontEntry[] = [
       import("@fontsource/gentium-book-plus/latin-700.css"),
       import("@fontsource/gentium-book-plus/latin-400-italic.css"),
       import("@fontsource/gentium-book-plus/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("literata", "Literata", "serif", () =>
     Promise.all([
@@ -173,7 +173,7 @@ const DISPLAY_SERIF: FontEntry[] = [
       import("@fontsource/literata/latin-700.css"),
       import("@fontsource/literata/latin-400-italic.css"),
       import("@fontsource/literata/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("crimson-pro", "Crimson Pro", "serif", () =>
     Promise.all([
@@ -181,7 +181,7 @@ const DISPLAY_SERIF: FontEntry[] = [
       import("@fontsource/crimson-pro/latin-700.css"),
       import("@fontsource/crimson-pro/latin-400-italic.css"),
       import("@fontsource/crimson-pro/latin-700-italic.css"),
-    ])
+    ]),
   ),
 ];
 
@@ -192,7 +192,7 @@ const DISPLAY_SANS: FontEntry[] = [
       import("@fontsource/montserrat/latin-700.css"),
       import("@fontsource/montserrat/latin-400-italic.css"),
       import("@fontsource/montserrat/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("raleway", "Raleway", "sans", () =>
     Promise.all([
@@ -200,7 +200,7 @@ const DISPLAY_SANS: FontEntry[] = [
       import("@fontsource/raleway/latin-700.css"),
       import("@fontsource/raleway/latin-400-italic.css"),
       import("@fontsource/raleway/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("archivo", "Archivo", "sans", () =>
     Promise.all([
@@ -208,7 +208,7 @@ const DISPLAY_SANS: FontEntry[] = [
       import("@fontsource/archivo/latin-700.css"),
       import("@fontsource/archivo/latin-400-italic.css"),
       import("@fontsource/archivo/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("libre-franklin", "Libre Franklin", "sans", () =>
     Promise.all([
@@ -216,7 +216,7 @@ const DISPLAY_SANS: FontEntry[] = [
       import("@fontsource/libre-franklin/latin-700.css"),
       import("@fontsource/libre-franklin/latin-400-italic.css"),
       import("@fontsource/libre-franklin/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("poppins", "Poppins", "sans", () =>
     Promise.all([
@@ -224,7 +224,7 @@ const DISPLAY_SANS: FontEntry[] = [
       import("@fontsource/poppins/latin-700.css"),
       import("@fontsource/poppins/latin-400-italic.css"),
       import("@fontsource/poppins/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("plus-jakarta-sans", "Plus Jakarta Sans", "sans", () =>
     Promise.all([
@@ -232,7 +232,7 @@ const DISPLAY_SANS: FontEntry[] = [
       import("@fontsource/plus-jakarta-sans/latin-700.css"),
       import("@fontsource/plus-jakarta-sans/latin-400-italic.css"),
       import("@fontsource/plus-jakarta-sans/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("albert-sans", "Albert Sans", "sans", () =>
     Promise.all([
@@ -240,7 +240,7 @@ const DISPLAY_SANS: FontEntry[] = [
       import("@fontsource/albert-sans/latin-700.css"),
       import("@fontsource/albert-sans/latin-400-italic.css"),
       import("@fontsource/albert-sans/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("hanken-grotesk", "Hanken Grotesk", "sans", () =>
     Promise.all([
@@ -248,7 +248,7 @@ const DISPLAY_SANS: FontEntry[] = [
       import("@fontsource/hanken-grotesk/latin-700.css"),
       import("@fontsource/hanken-grotesk/latin-400-italic.css"),
       import("@fontsource/hanken-grotesk/latin-700-italic.css"),
-    ])
+    ]),
   ),
   ubuntu,
   ubuntuSans,
@@ -262,7 +262,7 @@ const TEXT_SERIF: FontEntry[] = [
       import("@fontsource/lora/latin-700.css"),
       import("@fontsource/lora/latin-400-italic.css"),
       import("@fontsource/lora/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("source-serif-4", "Source Serif 4", "serif", () =>
     Promise.all([
@@ -270,7 +270,7 @@ const TEXT_SERIF: FontEntry[] = [
       import("@fontsource/source-serif-4/latin-700.css"),
       import("@fontsource/source-serif-4/latin-400-italic.css"),
       import("@fontsource/source-serif-4/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("newsreader", "Newsreader", "serif", () =>
     Promise.all([
@@ -278,7 +278,7 @@ const TEXT_SERIF: FontEntry[] = [
       import("@fontsource/newsreader/latin-700.css"),
       import("@fontsource/newsreader/latin-400-italic.css"),
       import("@fontsource/newsreader/latin-700-italic.css"),
-    ])
+    ]),
   ),
   vollkorn,
   webFont("merriweather", "Merriweather", "serif", () =>
@@ -287,7 +287,7 @@ const TEXT_SERIF: FontEntry[] = [
       import("@fontsource/merriweather/latin-700.css"),
       import("@fontsource/merriweather/latin-400-italic.css"),
       import("@fontsource/merriweather/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("pt-serif", "PT Serif", "serif", () =>
     Promise.all([
@@ -295,7 +295,7 @@ const TEXT_SERIF: FontEntry[] = [
       import("@fontsource/pt-serif/latin-700.css"),
       import("@fontsource/pt-serif/latin-400-italic.css"),
       import("@fontsource/pt-serif/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("noto-serif", "Noto Serif", "serif", () =>
     Promise.all([
@@ -303,7 +303,7 @@ const TEXT_SERIF: FontEntry[] = [
       import("@fontsource/noto-serif/latin-700.css"),
       import("@fontsource/noto-serif/latin-400-italic.css"),
       import("@fontsource/noto-serif/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("bitter", "Bitter", "serif", () =>
     Promise.all([
@@ -311,7 +311,7 @@ const TEXT_SERIF: FontEntry[] = [
       import("@fontsource/bitter/latin-700.css"),
       import("@fontsource/bitter/latin-400-italic.css"),
       import("@fontsource/bitter/latin-700-italic.css"),
-    ])
+    ]),
   ),
 ];
 
@@ -322,7 +322,7 @@ const TEXT_SANS: FontEntry[] = [
       import("@fontsource/inter/latin-700.css"),
       import("@fontsource/inter/latin-400-italic.css"),
       import("@fontsource/inter/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("work-sans", "Work Sans", "sans", () =>
     Promise.all([
@@ -330,7 +330,7 @@ const TEXT_SANS: FontEntry[] = [
       import("@fontsource/work-sans/latin-700.css"),
       import("@fontsource/work-sans/latin-400-italic.css"),
       import("@fontsource/work-sans/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("ibm-plex-sans", "IBM Plex Sans", "sans", () =>
     Promise.all([
@@ -338,7 +338,7 @@ const TEXT_SANS: FontEntry[] = [
       import("@fontsource/ibm-plex-sans/latin-700.css"),
       import("@fontsource/ibm-plex-sans/latin-400-italic.css"),
       import("@fontsource/ibm-plex-sans/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("dm-sans", "DM Sans", "sans", () =>
     Promise.all([
@@ -346,7 +346,7 @@ const TEXT_SANS: FontEntry[] = [
       import("@fontsource/dm-sans/latin-700.css"),
       import("@fontsource/dm-sans/latin-400-italic.css"),
       import("@fontsource/dm-sans/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("source-sans-3", "Source Sans 3", "sans", () =>
     Promise.all([
@@ -354,7 +354,7 @@ const TEXT_SANS: FontEntry[] = [
       import("@fontsource/source-sans-3/latin-700.css"),
       import("@fontsource/source-sans-3/latin-400-italic.css"),
       import("@fontsource/source-sans-3/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("open-sans", "Open Sans", "sans", () =>
     Promise.all([
@@ -362,7 +362,7 @@ const TEXT_SANS: FontEntry[] = [
       import("@fontsource/open-sans/latin-700.css"),
       import("@fontsource/open-sans/latin-400-italic.css"),
       import("@fontsource/open-sans/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("figtree", "Figtree", "sans", () =>
     Promise.all([
@@ -370,7 +370,7 @@ const TEXT_SANS: FontEntry[] = [
       import("@fontsource/figtree/latin-700.css"),
       import("@fontsource/figtree/latin-400-italic.css"),
       import("@fontsource/figtree/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("rubik", "Rubik", "sans", () =>
     Promise.all([
@@ -378,7 +378,7 @@ const TEXT_SANS: FontEntry[] = [
       import("@fontsource/rubik/latin-700.css"),
       import("@fontsource/rubik/latin-400-italic.css"),
       import("@fontsource/rubik/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("roboto", "Roboto", "sans", () =>
     Promise.all([
@@ -386,7 +386,7 @@ const TEXT_SANS: FontEntry[] = [
       import("@fontsource/roboto/latin-700.css"),
       import("@fontsource/roboto/latin-400-italic.css"),
       import("@fontsource/roboto/latin-700-italic.css"),
-    ])
+    ]),
   ),
   ubuntu,
   ubuntuSans,
@@ -400,7 +400,7 @@ const CODE: FontEntry[] = [
       import("@fontsource/jetbrains-mono/latin-700.css"),
       import("@fontsource/jetbrains-mono/latin-400-italic.css"),
       import("@fontsource/jetbrains-mono/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("source-code-pro", "Source Code Pro", "mono", () =>
     Promise.all([
@@ -408,7 +408,7 @@ const CODE: FontEntry[] = [
       import("@fontsource/source-code-pro/latin-700.css"),
       import("@fontsource/source-code-pro/latin-400-italic.css"),
       import("@fontsource/source-code-pro/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("ibm-plex-mono", "IBM Plex Mono", "mono", () =>
     Promise.all([
@@ -416,7 +416,7 @@ const CODE: FontEntry[] = [
       import("@fontsource/ibm-plex-mono/latin-700.css"),
       import("@fontsource/ibm-plex-mono/latin-400-italic.css"),
       import("@fontsource/ibm-plex-mono/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("roboto-mono", "Roboto Mono", "mono", () =>
     Promise.all([
@@ -424,7 +424,7 @@ const CODE: FontEntry[] = [
       import("@fontsource/roboto-mono/latin-700.css"),
       import("@fontsource/roboto-mono/latin-400-italic.css"),
       import("@fontsource/roboto-mono/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("space-mono", "Space Mono", "mono", () =>
     Promise.all([
@@ -432,7 +432,7 @@ const CODE: FontEntry[] = [
       import("@fontsource/space-mono/latin-700.css"),
       import("@fontsource/space-mono/latin-400-italic.css"),
       import("@fontsource/space-mono/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("ubuntu-mono", "Ubuntu Mono", "mono", () =>
     Promise.all([
@@ -440,7 +440,7 @@ const CODE: FontEntry[] = [
       import("@fontsource/ubuntu-mono/latin-700.css"),
       import("@fontsource/ubuntu-mono/latin-400-italic.css"),
       import("@fontsource/ubuntu-mono/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("red-hat-mono", "Red Hat Mono", "mono", () =>
     Promise.all([
@@ -448,7 +448,7 @@ const CODE: FontEntry[] = [
       import("@fontsource/red-hat-mono/latin-700.css"),
       import("@fontsource/red-hat-mono/latin-400-italic.css"),
       import("@fontsource/red-hat-mono/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("anonymous-pro", "Anonymous Pro", "mono", () =>
     Promise.all([
@@ -456,7 +456,7 @@ const CODE: FontEntry[] = [
       import("@fontsource/anonymous-pro/latin-700.css"),
       import("@fontsource/anonymous-pro/latin-400-italic.css"),
       import("@fontsource/anonymous-pro/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("cousine", "Cousine", "mono", () =>
     Promise.all([
@@ -464,7 +464,7 @@ const CODE: FontEntry[] = [
       import("@fontsource/cousine/latin-700.css"),
       import("@fontsource/cousine/latin-400-italic.css"),
       import("@fontsource/cousine/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("victor-mono", "Victor Mono", "mono", () =>
     Promise.all([
@@ -472,7 +472,7 @@ const CODE: FontEntry[] = [
       import("@fontsource/victor-mono/latin-700.css"),
       import("@fontsource/victor-mono/latin-400-italic.css"),
       import("@fontsource/victor-mono/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("spline-sans-mono", "Spline Sans Mono", "mono", () =>
     Promise.all([
@@ -480,7 +480,7 @@ const CODE: FontEntry[] = [
       import("@fontsource/spline-sans-mono/latin-700.css"),
       import("@fontsource/spline-sans-mono/latin-400-italic.css"),
       import("@fontsource/spline-sans-mono/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("azeret-mono", "Azeret Mono", "mono", () =>
     Promise.all([
@@ -488,7 +488,7 @@ const CODE: FontEntry[] = [
       import("@fontsource/azeret-mono/latin-700.css"),
       import("@fontsource/azeret-mono/latin-400-italic.css"),
       import("@fontsource/azeret-mono/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("b612-mono", "B612 Mono", "mono", () =>
     Promise.all([
@@ -496,7 +496,7 @@ const CODE: FontEntry[] = [
       import("@fontsource/b612-mono/latin-700.css"),
       import("@fontsource/b612-mono/latin-400-italic.css"),
       import("@fontsource/b612-mono/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("courier-prime", "Courier Prime", "mono", () =>
     Promise.all([
@@ -504,7 +504,7 @@ const CODE: FontEntry[] = [
       import("@fontsource/courier-prime/latin-700.css"),
       import("@fontsource/courier-prime/latin-400-italic.css"),
       import("@fontsource/courier-prime/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("sometype-mono", "Sometype Mono", "mono", () =>
     Promise.all([
@@ -512,7 +512,7 @@ const CODE: FontEntry[] = [
       import("@fontsource/sometype-mono/latin-700.css"),
       import("@fontsource/sometype-mono/latin-400-italic.css"),
       import("@fontsource/sometype-mono/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("chivo-mono", "Chivo Mono", "mono", () =>
     Promise.all([
@@ -520,7 +520,7 @@ const CODE: FontEntry[] = [
       import("@fontsource/chivo-mono/latin-700.css"),
       import("@fontsource/chivo-mono/latin-400-italic.css"),
       import("@fontsource/chivo-mono/latin-700-italic.css"),
-    ])
+    ]),
   ),
   webFont("ubuntu-sans-mono", "Ubuntu Sans Mono", "mono", () =>
     Promise.all([
@@ -528,7 +528,7 @@ const CODE: FontEntry[] = [
       import("@fontsource/ubuntu-sans-mono/latin-700.css"),
       import("@fontsource/ubuntu-sans-mono/latin-400-italic.css"),
       import("@fontsource/ubuntu-sans-mono/latin-700-italic.css"),
-    ])
+    ]),
   ),
 ];
 
@@ -542,8 +542,14 @@ export const ROLE_FONTS: Record<FontRole, FontEntry[]> = {
   code: [SYSTEM_MONO, ...CODE],
 };
 
-// The System default font id for each role, used when the profile has no
+// The System default font entry for each role, used when the profile has no
 // explicit mapping yet (preserving the pre-Phase-6 look).
+export const DEFAULT_FONT: Record<FontRole, FontEntry> = {
+  display: SYSTEM_SERIF,
+  text: SYSTEM_SANS,
+  code: SYSTEM_MONO,
+};
+
 export const DEFAULT_FONT_ID: Record<FontRole, string> = {
   display: SYSTEM_SERIF.id,
   text: SYSTEM_SANS.id,
@@ -559,7 +565,7 @@ export const FONT_REGISTRY: Record<string, FontEntry> = Object.fromEntries(
     ...ROLE_FONTS.display,
     ...ROLE_FONTS.text,
     ...ROLE_FONTS.code,
-  ].map((f) => [f.id, f])
+  ].map((f) => [f.id, f]),
 );
 
 export const FONT_ROLES: FontRole[] = ["display", "text", "code"];
@@ -572,8 +578,11 @@ export function isFontRole(value: unknown): value is FontRole {
 // when the id is unknown (e.g. a font removed from the catalog).
 export function resolveFontEntry(
   fontId: string | undefined,
-  role: FontRole
+  role: FontRole,
 ): FontEntry {
-  if (fontId && FONT_REGISTRY[fontId]) return FONT_REGISTRY[fontId];
-  return FONT_REGISTRY[DEFAULT_FONT_ID[role]];
+  if (fontId) {
+    const entry = FONT_REGISTRY[fontId];
+    if (entry) return entry;
+  }
+  return DEFAULT_FONT[role];
 }

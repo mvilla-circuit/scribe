@@ -7,14 +7,18 @@ import type { SaveState } from "./useAutosave";
 export function SaveStatus({ state }: { state: SaveState }) {
   const visible = state !== "idle";
   const label =
-    state === "saving" ? "Saving…" : state === "error" ? "Save failed" : "Saved";
+    state === "saving"
+      ? "Saving…"
+      : state === "error"
+        ? "Save failed"
+        : "Saved";
 
   return (
     <span
       aria-live="polite"
       className={cn(
         "inline-flex items-center gap-1.5 text-xs transition-opacity duration-500",
-        state === "error" ? "text-red-600 dark:text-red-400" : "text-muted"
+        state === "error" ? "text-red-600 dark:text-red-400" : "text-muted",
       )}
       style={{ opacity: visible ? 1 : 0 }}
     >
@@ -23,7 +27,7 @@ export function SaveStatus({ state }: { state: SaveState }) {
           "inline-block h-1.5 w-1.5 rounded-full transition-colors",
           state === "saved" && "bg-emerald-500",
           state === "error" && "bg-red-500",
-          state !== "saved" && state !== "error" && "bg-muted/60"
+          state !== "saved" && state !== "error" && "bg-muted/60",
         )}
       />
       {label}

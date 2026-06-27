@@ -1,15 +1,16 @@
-import { useState } from "react";
 import {
   NodeViewContent,
-  NodeViewWrapper,
   type NodeViewProps,
+  NodeViewWrapper,
 } from "@tiptap/react";
-import { Tooltip } from "../../components/ui/Tooltip";
-import { IconPicker } from "../../components/ui/IconPicker";
+import { useState } from "react";
+
 import { DocumentIcon } from "../../components/ui/DocumentIcon";
-import { CALLOUT_COLORS } from "../palette";
-import { EmojiIcon } from "../icons";
+import { IconPicker } from "../../components/ui/IconPicker";
+import { Tooltip } from "../../components/ui/Tooltip";
 import { BlockColorPopover } from "../BlockColorPopover";
+import { EmojiIcon } from "../icons";
+import { CALLOUT_COLORS } from "../palette";
 
 // The callout's writing surface: a tinted box with an optional leading icon and
 // a quiet control cluster in the top-right that fades in on hover/focus. The
@@ -37,8 +38,12 @@ export function CalloutView({ node, updateAttributes, editor }: NodeViewProps) {
           {editable ? (
             <IconPicker
               value={icon}
-              onSelect={(next) => updateAttributes({ icon: next })}
-              onRemove={() => updateAttributes({ icon: null })}
+              onSelect={(next) => {
+                updateAttributes({ icon: next });
+              }}
+              onRemove={() => {
+                updateAttributes({ icon: null });
+              }}
             >
               <Tooltip content="Change icon">
                 <button
@@ -68,8 +73,12 @@ export function CalloutView({ node, updateAttributes, editor }: NodeViewProps) {
         >
           <IconPicker
             value={icon}
-            onSelect={(next) => updateAttributes({ icon: next })}
-            onRemove={() => updateAttributes({ icon: null })}
+            onSelect={(next) => {
+              updateAttributes({ icon: next });
+            }}
+            onRemove={() => {
+              updateAttributes({ icon: null });
+            }}
             align="end"
           >
             <Tooltip content={icon ? "Change icon" : "Add icon"}>
@@ -86,7 +95,9 @@ export function CalloutView({ node, updateAttributes, editor }: NodeViewProps) {
           <BlockColorPopover
             swatches={CALLOUT_COLORS}
             value={color}
-            onChange={(value) => updateAttributes({ color: value })}
+            onChange={(value) => {
+              updateAttributes({ color: value });
+            }}
             open={colorOpen}
             onOpenChange={setColorOpen}
             label="Background"

@@ -1,15 +1,15 @@
-import { useMemo, useState, type ReactNode } from "react";
 import {
+  closestCenter,
   DndContext,
   DragOverlay,
   MeasuringStrategy,
-  closestCenter,
 } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { useUIStore } from "../../store/ui";
+import { type ReactNode, useMemo, useState } from "react";
+
 import {
   useBooks,
   useCreateBook,
@@ -31,26 +31,27 @@ import {
   countBooksInFolder,
   ROOT,
 } from "../../data/tree";
-import {
-  flattenTree,
-  getProjection,
-  neighbourPositions,
-  removeDescendants,
-  type FlatNode,
-} from "./dndTree";
+import { useUIStore } from "../../store/ui";
 import { useTreeDnd } from "../tree/useTreeDnd";
-import { DragRowOverlay, TreeRow } from "./TreeRow";
-import { TreeSkeleton } from "./TreeSkeleton";
-import { BookIcon, BookPlusIcon, FolderPlusIcon, PlusIcon } from "./icons";
 import { Button } from "../ui/Button";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
-import { Tooltip } from "../ui/Tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/DropdownMenu";
+import { Tooltip } from "../ui/Tooltip";
+import {
+  type FlatNode,
+  flattenTree,
+  getProjection,
+  neighbourPositions,
+  removeDescendants,
+} from "./dndTree";
+import { BookIcon, BookPlusIcon, FolderPlusIcon, PlusIcon } from "./icons";
+import { DragRowOverlay, TreeRow } from "./TreeRow";
+import { TreeSkeleton } from "./TreeSkeleton";
 
 type DeleteTarget =
   | { kind: "folder"; id: string; name: string; books: number }
@@ -85,7 +86,7 @@ export function SidebarTree() {
   const model = useMemo(() => buildTree(folders, books), [folders, books]);
   const flattened = useMemo(
     () => flattenTree(model, expanded),
-    [model, expanded]
+    [model, expanded],
   );
 
   const { sensors, visibleNodes, activeNode, projectionDepthFor, handlers } =
@@ -94,7 +95,9 @@ export function SidebarTree() {
       removeDescendants,
       project: getProjection,
       neighbours: neighbourPositions,
-      onDragStart: () => setEditingId(null),
+      onDragStart: () => {
+        setEditingId(null);
+      },
       onMove: ({ id, parentId, position, node }) => {
         if (node.kind === "folder") {
           moveFolder.mutate({ id, parent_folder_id: parentId, position });
@@ -124,14 +127,20 @@ export function SidebarTree() {
         position,
       });
     } else {
-      createBook.mutate({ id, title: "Untitled", folder_id: folderId, position });
+      createBook.mutate({
+        id,
+        title: "Untitled",
+        folder_id: folderId,
+        position,
+      });
     }
     setEditingId(id);
   };
 
   const commitRename = (node: FlatNode, value: string) => {
     setEditingId(null);
-    if (node.kind === "folder") renameFolder.mutate({ id: node.id, name: value });
+    if (node.kind === "folder")
+      renameFolder.mutate({ id: node.id, name: value });
     else renameBook.mutate({ id: node.id, title: value });
   };
 
@@ -174,13 +183,27 @@ export function SidebarTree() {
       editing={editingId === node.id}
       expanded={expanded.has(node.id)}
       projectionDepth={projectionDepthFor(node.id)}
-      onToggleExpand={() => toggleFolderExpanded(node.id)}
-      onSelectBook={() => setActiveBook(node.id)}
-      onStartRename={() => setEditingId(node.id)}
-      onCommitRename={(value) => commitRename(node, value)}
-      onCancelRename={() => setEditingId(null)}
-      onDelete={() => requestDelete(node)}
-      onNewBookInside={() => handleCreate("book", node.id)}
+      onToggleExpand={() => {
+        toggleFolderExpanded(node.id);
+      }}
+      onSelectBook={() => {
+        setActiveBook(node.id);
+      }}
+      onStartRename={() => {
+        setEditingId(node.id);
+      }}
+      onCommitRename={(value) => {
+        commitRename(node, value);
+      }}
+      onCancelRename={() => {
+        setEditingId(null);
+      }}
+      onDelete={() => {
+        requestDelete(node);
+      }}
+      onNewBookInside={() => {
+        handleCreate("book", node.id);
+      }}
     />
   );
 
@@ -189,12 +212,15 @@ export function SidebarTree() {
   const treeElements: ReactNode[] = [];
   for (let i = 0; i < visibleNodes.length; i++) {
     const node = visibleNodes[i];
+    if (!node) continue;
     const isOpenFolder = node.kind === "folder" && expanded.has(node.id);
     if (isOpenFolder) {
       const group = [node];
       let j = i + 1;
-      while (j < visibleNodes.length && visibleNodes[j].depth > node.depth) {
-        group.push(visibleNodes[j]);
+      while (j < visibleNodes.length) {
+        const child = visibleNodes[j];
+        if (!child || child.depth <= node.depth) break;
+        group.push(child);
         j++;
       }
       i = j - 1;
@@ -205,7 +231,7 @@ export function SidebarTree() {
           className="flex flex-col gap-1 rounded-lg bg-tree-group p-1"
         >
           {group.map(renderRow)}
-        </div>
+        </div>,
       );
     } else {
       treeElements.push(renderRow(node));
@@ -233,13 +259,23 @@ export function SidebarTree() {
           </Tooltip>
           <DropdownMenuContent
             align="end"
-            onCloseAutoFocus={(e) => e.preventDefault()}
+            onCloseAutoFocus={(e) => {
+              e.preventDefault();
+            }}
           >
-            <DropdownMenuItem onSelect={() => handleCreate("book", ROOT)}>
+            <DropdownMenuItem
+              onSelect={() => {
+                handleCreate("book", ROOT);
+              }}
+            >
               <BookPlusIcon size={15} />
               New book
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => handleCreate("folder", ROOT)}>
+            <DropdownMenuItem
+              onSelect={() => {
+                handleCreate("folder", ROOT);
+              }}
+            >
               <FolderPlusIcon size={15} />
               New folder
             </DropdownMenuItem>
@@ -266,7 +302,11 @@ export function SidebarTree() {
             </Button>
           </div>
         ) : isEmpty ? (
-          <EmptyState onCreateBook={() => handleCreate("book", ROOT)} />
+          <EmptyState
+            onCreateBook={() => {
+              handleCreate("book", ROOT);
+            }}
+          />
         ) : (
           <DndContext
             sensors={sensors}
@@ -333,7 +373,11 @@ function EmptyState({ onCreateBook }: { onCreateBook: () => void }) {
       <p className="mt-1 max-w-[15rem] text-xs leading-relaxed text-muted">
         Books hold your writing. Create one to get started.
       </p>
-      <Button variant="primary" className="mt-4 whitespace-nowrap" onClick={onCreateBook}>
+      <Button
+        variant="primary"
+        className="mt-4 whitespace-nowrap"
+        onClick={onCreateBook}
+      >
         <BookPlusIcon size={15} />
         New book
       </Button>

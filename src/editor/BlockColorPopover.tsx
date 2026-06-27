@@ -1,8 +1,9 @@
-import type { ComponentType } from "react";
 import * as RPopover from "@radix-ui/react-popover";
+import type { ComponentType } from "react";
+
 import { Tooltip } from "../components/ui/Tooltip";
-import { type Swatch } from "./palette";
 import { PaletteIcon } from "./icons";
+import { type Swatch } from "./palette";
 import { SwatchGrid } from "./SwatchGrid";
 
 // The shared accent/color control for editor block menus — the quote accent,

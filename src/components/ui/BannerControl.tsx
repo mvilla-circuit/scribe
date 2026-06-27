@@ -1,10 +1,11 @@
-import { useState } from "react";
 import * as RPopover from "@radix-ui/react-popover";
 import { RectangleHorizontal } from "lucide-react";
-import { cn } from "../../lib/utils";
-import { makeIcon } from "../../lib/makeIcon";
+import { useState } from "react";
+
 import { BANNER_COLORS } from "../../editor/palette";
 import { SwatchGrid } from "../../editor/SwatchGrid";
+import { makeIcon } from "../../lib/makeIcon";
+import { cn } from "../../lib/utils";
 import { Tooltip } from "./Tooltip";
 
 const BannerGlyph = makeIcon(RectangleHorizontal);
@@ -36,7 +37,7 @@ export function BannerControl({
               "flex h-7 w-7 items-center justify-center rounded-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
               active || open
                 ? "bg-selected text-text"
-                : "text-muted hover:bg-hover hover:text-text"
+                : "text-muted hover:bg-hover hover:text-text",
             )}
           >
             <BannerGlyph size={16} />

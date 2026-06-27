@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import { useAuth } from "../lib/auth";
 
 function GoogleIcon() {
@@ -36,7 +37,9 @@ export function AuthScreen() {
       await signInWithGoogle();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Sign-in failed. Please try again."
+        err instanceof Error
+          ? err.message
+          : "Sign-in failed. Please try again.",
       );
       setBusy(false);
     }
@@ -46,7 +49,9 @@ export function AuthScreen() {
     <main className="flex h-full items-center justify-center px-6">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-8 shadow-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-semibold tracking-tight text-text">Scribe</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-text">
+            Scribe
+          </h1>
           <p className="mt-2 text-sm text-muted">Sign in to start writing.</p>
         </div>
 
@@ -60,7 +65,9 @@ export function AuthScreen() {
           {busy ? "Opening browser…" : "Continue with Google"}
         </button>
 
-        {error && <p className="mt-4 text-center text-sm text-red-500">{error}</p>}
+        {error && (
+          <p className="mt-4 text-center text-sm text-red-500">{error}</p>
+        )}
 
         <p className="mt-6 text-center text-xs text-muted">
           A browser window will open to complete sign-in.

@@ -13,19 +13,19 @@ export const INDENT = 16;
 
 // The minimal shape the DnD maths needs from a flattened tree node. Callers
 // extend this with their own payload (the folder/book child, or the document).
-export type DndNode = {
+export interface DndNode {
   id: string;
   depth: number;
   parentId: string | null;
   position: number;
-};
+}
 
-export type Projection = {
+export interface Projection {
   depth: number;
   parentId: string | null;
-};
+}
 
-export type ProjectionConfig<T extends DndNode> = {
+export interface ProjectionConfig<T extends DndNode> {
   // Some kinds project to a fixed slot regardless of cursor (e.g. folders, which
   // only ever live at the root). Return null to fall through to depth maths.
   fixedProjection?: (active: T) => Projection | null;
@@ -33,14 +33,13 @@ export type ProjectionConfig<T extends DndNode> = {
   maxDepthForPrev: (prev: T) => number;
   // The parent id contributed when nesting one level deeper under `prev`.
   parentWhenNestedUnder: (prev: T) => string | null;
-};
+}
 
 // Drops the descendants of the given ids so a dragged node can't be dropped
 // inside its own subtree.
-export function removeDescendants<T extends { id: string; parentId: string | null }>(
-  nodes: T[],
-  ids: string[]
-): T[] {
+export function removeDescendants<
+  T extends { id: string; parentId: string | null },
+>(nodes: T[], ids: string[]): T[] {
   const exclude = new Set(ids);
   return nodes.filter((n) => {
     if (n.parentId && exclude.has(n.parentId)) {
@@ -58,13 +57,14 @@ export function projectDrop<T extends DndNode>(
   activeId: string,
   overId: string,
   dragOffsetX: number,
-  config: ProjectionConfig<T>
+  config: ProjectionConfig<T>,
 ): Projection | null {
   const overIndex = nodes.findIndex((n) => n.id === overId);
   const activeIndex = nodes.findIndex((n) => n.id === activeId);
   if (overIndex === -1 || activeIndex === -1) return null;
 
   const active = nodes[activeIndex];
+  if (!active) return null;
   const fixed = config.fixedProjection?.(active);
   if (fixed) return fixed;
 
@@ -98,11 +98,11 @@ export function projectDrop<T extends DndNode>(
 
 // Given the post-move flattened order, find the same-parent neighbours of the
 // dragged item so callers can compute a fractional position between them.
-export function neighbourPositions<T extends DndNode>(
-  nodes: T[],
+export function neighbourPositions(
+  nodes: DndNode[],
   activeId: string,
   overId: string,
-  targetParentId: string | null
+  targetParentId: string | null,
 ): { prev?: number; next?: number } {
   const overIndex = nodes.findIndex((n) => n.id === overId);
   const activeIndex = nodes.findIndex((n) => n.id === activeId);
@@ -112,15 +112,19 @@ export function neighbourPositions<T extends DndNode>(
 
   let prev: number | undefined;
   for (let i = slot - 1; i >= 0; i--) {
-    if (moved[i].parentId === targetParentId && moved[i].id !== activeId) {
-      prev = moved[i].position;
+    const n = moved[i];
+    if (!n) continue;
+    if (n.parentId === targetParentId && n.id !== activeId) {
+      prev = n.position;
       break;
     }
   }
   let next: number | undefined;
   for (let i = slot + 1; i < moved.length; i++) {
-    if (moved[i].parentId === targetParentId && moved[i].id !== activeId) {
-      next = moved[i].position;
+    const n = moved[i];
+    if (!n) continue;
+    if (n.parentId === targetParentId && n.id !== activeId) {
+      next = n.position;
       break;
     }
   }

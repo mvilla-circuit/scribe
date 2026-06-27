@@ -1,17 +1,18 @@
-import { useState, type CSSProperties } from "react";
 import {
   NodeViewContent,
-  NodeViewWrapper,
   type NodeViewProps,
+  NodeViewWrapper,
 } from "@tiptap/react";
-import { Tooltip } from "../../components/ui/Tooltip";
-import { IconPicker } from "../../components/ui/IconPicker";
-import { DocumentIcon } from "../../components/ui/DocumentIcon";
-import { SubtitleToggle } from "../../components/ui/SubtitleToggle";
+import { type CSSProperties, useState } from "react";
+
 import { EditableText } from "../../components/book/EditableText";
-import { QUOTE_ACCENTS } from "../palette";
-import { EmojiIcon } from "../icons";
+import { DocumentIcon } from "../../components/ui/DocumentIcon";
+import { IconPicker } from "../../components/ui/IconPicker";
+import { SubtitleToggle } from "../../components/ui/SubtitleToggle";
+import { Tooltip } from "../../components/ui/Tooltip";
 import { BlockColorPopover } from "../BlockColorPopover";
+import { EmojiIcon } from "../icons";
+import { QUOTE_ACCENTS } from "../palette";
 
 // The essay's writing surface: a long-form section framed top and bottom by
 // horizontal accent rules, with the whole thing (a header of optional icon +
@@ -57,8 +58,12 @@ export function EssayView({ node, updateAttributes, editor }: NodeViewProps) {
               {editable ? (
                 <IconPicker
                   value={icon}
-                  onSelect={(next) => updateAttributes({ icon: next })}
-                  onRemove={() => updateAttributes({ icon: null })}
+                  onSelect={(next) => {
+                    updateAttributes({ icon: next });
+                  }}
+                  onRemove={() => {
+                    updateAttributes({ icon: null });
+                  }}
                 >
                   <Tooltip content="Change icon">
                     <button
@@ -87,10 +92,12 @@ export function EssayView({ node, updateAttributes, editor }: NodeViewProps) {
                 ariaLabel="Essay title"
                 allowEmpty
                 style={{ fontStyle: titleItalic ? "italic" : "normal" }}
-                onToggleItalic={() =>
-                  updateAttributes({ titleItalic: !titleItalic })
-                }
-                onCommit={(value) => updateAttributes({ title: value })}
+                onToggleItalic={() => {
+                  updateAttributes({ titleItalic: !titleItalic });
+                }}
+                onCommit={(value) => {
+                  updateAttributes({ title: value });
+                }}
               />
             ) : (
               title && (
@@ -112,10 +119,12 @@ export function EssayView({ node, updateAttributes, editor }: NodeViewProps) {
                   ariaLabel="Essay subtitle"
                   allowEmpty
                   style={{ fontStyle: subtitleItalic ? "italic" : "normal" }}
-                  onToggleItalic={() =>
-                    updateAttributes({ subtitleItalic: !subtitleItalic })
-                  }
-                  onCommit={(value) => updateAttributes({ subtitle: value })}
+                  onToggleItalic={() => {
+                    updateAttributes({ subtitleItalic: !subtitleItalic });
+                  }}
+                  onCommit={(value) => {
+                    updateAttributes({ subtitle: value });
+                  }}
                 />
               ) : (
                 subtitle && (
@@ -141,14 +150,20 @@ export function EssayView({ node, updateAttributes, editor }: NodeViewProps) {
         >
           <SubtitleToggle
             active={showSubtitle}
-            onToggle={() => updateAttributes({ showSubtitle: !showSubtitle })}
+            onToggle={() => {
+              updateAttributes({ showSubtitle: !showSubtitle });
+            }}
             variant="block"
           />
 
           <IconPicker
             value={icon}
-            onSelect={(next) => updateAttributes({ icon: next })}
-            onRemove={() => updateAttributes({ icon: null })}
+            onSelect={(next) => {
+              updateAttributes({ icon: next });
+            }}
+            onRemove={() => {
+              updateAttributes({ icon: null });
+            }}
             align="end"
           >
             <Tooltip content={icon ? "Change icon" : "Add icon"}>
@@ -165,7 +180,9 @@ export function EssayView({ node, updateAttributes, editor }: NodeViewProps) {
           <BlockColorPopover
             swatches={QUOTE_ACCENTS}
             value={color}
-            onChange={(value) => updateAttributes({ color: value })}
+            onChange={(value) => {
+              updateAttributes({ color: value });
+            }}
             open={colorOpen}
             onOpenChange={setColorOpen}
             label="Accent"

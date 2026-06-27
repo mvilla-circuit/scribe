@@ -1,14 +1,15 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   NodeViewContent,
-  NodeViewWrapper,
   type NodeViewProps,
+  NodeViewWrapper,
 } from "@tiptap/react";
-import { cn } from "../../lib/utils";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
+
 import { Tooltip } from "../../components/ui/Tooltip";
-import { QUOTE_ACCENTS } from "../palette";
-import { AttributionIcon } from "../icons";
+import { cn } from "../../lib/utils";
 import { BlockColorPopover } from "../BlockColorPopover";
+import { AttributionIcon } from "../icons";
+import { QUOTE_ACCENTS } from "../palette";
 
 // The quote's writing surface: a tinted/ruled/pull-quote block (driven by the
 // `variant` class) whose accent color flows through the `--quote-accent` CSS
@@ -66,11 +67,15 @@ export function QuoteView({ node, updateAttributes, editor }: NodeViewProps) {
                 size={1}
                 value={attribution}
                 placeholder="Add a citation…"
-                onChange={(e) =>
-                  updateAttributes({ attribution: e.target.value })
-                }
-                onKeyDown={(e) => e.stopPropagation()}
-                onMouseDown={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  updateAttributes({ attribution: e.target.value });
+                }}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                }}
                 className="scribe-quote-cite-input"
                 aria-label="Quote attribution"
               />
@@ -109,7 +114,9 @@ export function QuoteView({ node, updateAttributes, editor }: NodeViewProps) {
           <BlockColorPopover
             swatches={QUOTE_ACCENTS}
             value={color}
-            onChange={(value) => updateAttributes({ color: value })}
+            onChange={(value) => {
+              updateAttributes({ color: value });
+            }}
             open={colorOpen}
             onOpenChange={setColorOpen}
             label="Accent"
