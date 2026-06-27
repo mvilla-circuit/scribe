@@ -10,16 +10,16 @@ import { Placeholder } from "@tiptap/extensions";
 import type { Extensions } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
-import { Callout } from "./extensions/Callout";
-import { Column, Columns } from "./extensions/Columns";
-import { Essay } from "./extensions/Essay";
-import { Indent } from "./extensions/Indent";
-import { LinkCard } from "./extensions/LinkCard";
-import { PageLink } from "./extensions/PageLink";
-import { Quote } from "./extensions/Quote";
-import { SlashCommand } from "./extensions/SlashCommand";
-import { Table, TableCell, TableHeader } from "./extensions/Table";
-import { Typography } from "./extensions/Typography";
+import { Callout } from "./extensions/callout";
+import { Column, Columns } from "./extensions/columns";
+import { Essay } from "./extensions/essay";
+import { Indent } from "./extensions/indent";
+import { LinkCard } from "./extensions/link-card";
+import { PageLink } from "./extensions/page-link";
+import { Quote } from "./extensions/quote";
+import { SlashCommand } from "./extensions/slash-command";
+import { Table, TableCell, TableHeader } from "./extensions/table";
+import { Typography } from "./extensions/typography";
 
 /**
  * The editor's extension set. StarterKit v3 already brings paragraphs,

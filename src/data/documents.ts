@@ -7,9 +7,9 @@ import { useAuth } from "@/lib/auth";
 import type { Json, Tables } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
 
-import { optimisticListHandlers } from "./optimisticList";
+import { optimisticListHandlers } from "./optimistic-list";
 import { byPosition, getPositionBetween } from "./ordering";
-import { pageIndexKey } from "./pageIndex";
+import { pageIndexKey } from "./page-index";
 import { collectSubtree } from "./subtree";
 
 /** A single page row from the `documents` table. */

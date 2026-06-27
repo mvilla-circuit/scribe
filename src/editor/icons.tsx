@@ -56,7 +56,7 @@ import {
   X,
 } from "lucide-react";
 
-import { makeIcon } from "@/lib/makeIcon";
+import { makeIcon } from "@/lib/make-icon";
 
 export const BoldIcon = makeIcon(Bold);
 export const ItalicIcon = makeIcon(Italic);

@@ -187,10 +187,11 @@ export default defineConfig([
     },
   },
 
-  // File and folder naming. Default convention: PascalCase for `.tsx`
-  // (React components) and camelCase for `.ts` (modules); folders are
-  // lowercase. `.d.ts` files are exempt (their names follow tooling
-  // conventions, e.g. `vite-env.d.ts`).
+  // File and folder naming. Everything under `src/` is kebab-case - both files
+  // and folders - regardless of what the module exports (a `BookView` component
+  // still lives in `book-view.tsx`). `ignoreMiddleExtensions` validates the
+  // base name only, so suffixes like `.test.tsx`, `.module.css`, and `.d.ts`
+  // pass on their stem (e.g. `vite-env.d.ts`, `database.types.ts`).
   {
     files: ["src/**/*.{ts,tsx}"],
     ignores: ["src/**/*.d.ts"],
@@ -198,47 +199,11 @@ export default defineConfig([
     rules: {
       "check-file/folder-naming-convention": [
         "error",
-        { "src/**/": "CAMEL_CASE" },
+        { "src/**/": "KEBAB_CASE" },
       ],
       "check-file/filename-naming-convention": [
         "error",
-        {
-          "src/**/*.tsx": "PASCAL_CASE",
-          "src/**/*.ts": "CAMEL_CASE",
-        },
-        { ignoreMiddleExtensions: true },
-      ],
-    },
-  },
-  // Exception: a handful of `.tsx` files are intentionally camelCase because
-  // they are entrypoints (`main.tsx`) or modules whose primary export is not a
-  // single component (icon sets, the theme/auth provider+hook pairs).
-  {
-    files: [
-      "src/main.tsx",
-      "src/**/icons.tsx",
-      "src/lib/makeIcon.tsx",
-      "src/theme/theme.tsx",
-      "src/lib/auth.tsx",
-    ],
-    plugins: { "check-file": checkFile },
-    rules: {
-      "check-file/filename-naming-convention": [
-        "error",
-        { "src/**/*.tsx": "CAMEL_CASE" },
-        { ignoreMiddleExtensions: true },
-      ],
-    },
-  },
-  // Exception: Tiptap extension definitions are PascalCase `.ts` files, named
-  // for the node/extension they declare (mirrors a class-style module export).
-  {
-    files: ["src/editor/extensions/{Indent,SlashCommand,Table,Typography}.ts"],
-    plugins: { "check-file": checkFile },
-    rules: {
-      "check-file/filename-naming-convention": [
-        "error",
-        { "src/**/*.ts": "PASCAL_CASE" },
+        { "src/**/*.{ts,tsx}": "KEBAB_CASE" },
         { ignoreMiddleExtensions: true },
       ],
     },

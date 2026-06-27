@@ -110,7 +110,6 @@ src-tauri/         Tauri (Rust) shell, config, and capabilities
   - File naming conventions
   - Variable naming conventions
   - Strict types
-- Want file naming conventions to change to "file-name.type.ext"
 - Review code (refactor as necessary)
   - SOLID and DRY principles
 - Web bundle needs optimization (`manualChunks`/lazy-loading)

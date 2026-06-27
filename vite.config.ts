@@ -8,7 +8,7 @@ import { defineConfig } from "vite";
 // Yjs-origin transactions. This app has no collaboration, so alias those peers
 // to a lightweight no-op shim instead of bundling the whole Yjs stack.
 const collabShim = fileURLToPath(
-  new URL("./src/editor/shims/tiptapCollab.ts", import.meta.url),
+  new URL("./src/editor/shims/tiptap-collab.ts", import.meta.url),
 );
 
 // https://vite.dev/config/

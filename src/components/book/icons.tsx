@@ -12,7 +12,7 @@ import {
   Plus,
 } from "lucide-react";
 
-import { makeIcon } from "@/lib/makeIcon";
+import { makeIcon } from "@/lib/make-icon";
 
 export const ChevronRightIcon = makeIcon(ChevronRight);
 export const ChevronLeftIcon = makeIcon(ChevronLeft);
