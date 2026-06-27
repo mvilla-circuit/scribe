@@ -97,10 +97,17 @@ src-tauri/         Tauri (Rust) shell, config, and capabilities
 
 - Table menu might need to be reorganized
 - Sidebar collapsed state
-- Fix column blocks
+- Review fonts again
 
 - Add sane linting rules
-- Commit changes
+- Pin package versions and env
 - Fix all lint warnings and errors
+- Add circular dependency and package version checks
+- Revisit the relaxed linting rules
+- Fix build failures
 - Review code (refactor as necessary)
+  - SOLID and DRY principles
+  - Accessibility
 - Add tests
+- Prep version 1
+- Install Scribe
