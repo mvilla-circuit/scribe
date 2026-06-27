@@ -1,0 +1,7 @@
+# Pin the Rust toolchain so local and CI builds are reproducible. rustup reads
+# this file for any cargo command run in the repo and auto-installs the version
+# plus the listed components.
+[toolchain]
+channel = "1.96.0"
+components = ["rustfmt", "clippy"]
+profile = "minimal"
