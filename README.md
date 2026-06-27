@@ -99,15 +99,14 @@ src-tauri/         Tauri (Rust) shell, config, and capabilities
 - Sidebar collapsed state
 - Review fonts again
 
-- Add sane linting rules
-- Pin package versions and env
-- Fix all lint warnings and errors
 - Add circular dependency and package version checks
+- Setup path aliasing
 - Revisit the relaxed linting rules
-- Fix build failures
 - Review code (refactor as necessary)
   - SOLID and DRY principles
   - Accessibility
 - Add tests
-- Prep version 1
+- Prep version 1 (package name and app icon)
 - Install Scribe
+- Setup CI on repo
+- Update README

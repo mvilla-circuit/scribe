@@ -171,12 +171,3 @@ export const CALLOUT_DEFAULT: CalloutVariant = {
   icon: "ℹ️",
   color: "rgba(120, 178, 210, 0.16)",
 };
-
-export const CALLOUT_VARIANTS: CalloutVariant[] = [
-  CALLOUT_DEFAULT,
-  { name: "Tip", icon: "💡", color: "rgba(214, 178, 110, 0.17)" },
-  { name: "Warning", icon: "⚠️", color: "rgba(212, 160, 120, 0.16)" },
-  { name: "Danger", icon: "🔥", color: "rgba(200, 142, 134, 0.16)" },
-  { name: "Success", icon: "✅", color: "rgba(140, 178, 160, 0.16)" },
-  { name: "Note", icon: "📝", color: "rgba(150, 158, 150, 0.15)" },
-];

@@ -3,17 +3,10 @@ import { Plugin } from "@tiptap/pm/state";
 import { type Editor, ReactNodeViewRenderer } from "@tiptap/react";
 
 import { PageLinkView } from "./PageLinkView";
-
-export type PageTargetType = "document" | "book";
+import { pageRef, type PageTargetType } from "./pageRef";
 
 // Matches an internal page reference like `scribe://page/<uuid>` (or `book/`).
 const PAGE_REF = /^scribe:\/\/(page|book)\/([0-9a-fA-F-]{36})$/;
-
-// Builds the canonical internal ref stored as the card's href (degrades to this
-// link in exported HTML).
-export function pageRef(targetType: PageTargetType, targetId: string): string {
-  return `scribe://${targetType === "book" ? "book" : "page"}/${targetId}`;
-}
 
 // An internal page link card. Unlike LinkCard it caches no title as source of
 // truth — only a stale `label` fallback — and always live-resolves the current

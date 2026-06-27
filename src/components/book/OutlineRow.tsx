@@ -29,7 +29,7 @@ function DocIcon({ document }: { document: FlatDocNode["document"] }) {
   );
 }
 
-export interface OutlineRowHandlers {
+interface OutlineRowHandlers {
   onToggleExpand: () => void;
   onSelect: () => void;
   onStartRename: () => void;

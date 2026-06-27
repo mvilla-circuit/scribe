@@ -9,7 +9,6 @@ import {
   Folder,
   FolderOpen,
   FolderPlus,
-  MoreHorizontal,
   Pencil,
   Plus,
   Trash2,
@@ -21,7 +20,6 @@ export const FolderIcon = makeIcon(Folder);
 export const FolderOpenIcon = makeIcon(FolderOpen);
 export const BookIcon = makeIcon(Book);
 export const PlusIcon = makeIcon(Plus);
-export const MoreIcon = makeIcon(MoreHorizontal);
 export const PencilIcon = makeIcon(Pencil);
 export const TrashIcon = makeIcon(Trash2);
 export const DuplicateIcon = makeIcon(Copy);

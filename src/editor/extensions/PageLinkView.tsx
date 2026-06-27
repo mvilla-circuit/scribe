@@ -14,7 +14,7 @@ import {
   PageLinkIcon,
   TrashIcon,
 } from "../icons";
-import { pageRef, type PageTargetType } from "./PageLink";
+import { pageRef, type PageTargetType } from "./pageRef";
 
 // Live-resolving internal page card. It reads the current title/icon and the
 // owning book + ancestor path from the page index on every render, so a rename

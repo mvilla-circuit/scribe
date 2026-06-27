@@ -14,13 +14,9 @@ export interface ListMutationContext<T> {
   previous: T[] | undefined;
 }
 
-// Low-level snapshot/apply/rollback pair, bound to one query key + sort. Exposed
-// for the rare caller that needs to run an optimistic update by hand.
-export function listOptimism<T>(
-  qc: QueryClient,
-  key: QueryKey,
-  sort: Sorter<T>,
-) {
+// Low-level snapshot/apply/rollback pair, bound to one query key + sort. Backs
+// `optimisticListHandlers` below.
+function listOptimism<T>(qc: QueryClient, key: QueryKey, sort: Sorter<T>) {
   async function optimistic(
     update: (prev: T[]) => T[],
   ): Promise<ListMutationContext<T>> {

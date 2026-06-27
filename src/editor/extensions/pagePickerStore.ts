@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import type { PageTargetType } from "./PageLink";
+import type { PageTargetType } from "./pageRef";
 
 export interface PagePickTarget {
   targetType: PageTargetType;

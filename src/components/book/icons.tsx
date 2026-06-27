@@ -7,12 +7,9 @@ import {
   ChevronRight,
   ChevronsDownUp,
   ChevronsUpDown,
-  Eye,
   FileText,
   List,
-  MoreHorizontal,
   Plus,
-  Subtitles,
 } from "lucide-react";
 
 import { makeIcon } from "../../lib/makeIcon";
@@ -23,7 +20,4 @@ export const ChevronsDownUpIcon = makeIcon(ChevronsDownUp);
 export const ChevronsUpDownIcon = makeIcon(ChevronsUpDown);
 export const PageIcon = makeIcon(FileText);
 export const PlusIcon = makeIcon(Plus);
-export const MoreIcon = makeIcon(MoreHorizontal);
 export const ListIcon = makeIcon(List);
-export const EyeIcon = makeIcon(Eye);
-export const SubtitleIcon = makeIcon(Subtitles);

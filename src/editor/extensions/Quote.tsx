@@ -5,8 +5,6 @@ import { QuoteView } from "./QuoteView";
 
 export type QuoteVariant = "pullquote" | "accentquote";
 
-export const QUOTE_VARIANTS: QuoteVariant[] = ["pullquote", "accentquote"];
-
 const DEFAULT_VARIANT: QuoteVariant = "accentquote";
 
 // A quotation block with two visual treatments (pullquote / accentquote). The

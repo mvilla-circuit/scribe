@@ -9,7 +9,7 @@ import { collectSubtree } from "./subtree";
 
 export type Folder = Tables<"folders">;
 
-export const foldersKey = ["folders"] as const;
+const foldersKey = ["folders"] as const;
 
 export function useFolders() {
   return useQuery({
@@ -151,10 +151,7 @@ export function useMoveFolder() {
 // Collects a folder plus all of its descendant folder ids (the set the DB will
 // cascade-delete). Books reference folders with ON DELETE SET NULL, so they are
 // not deleted -- they fall back to the root level.
-export function collectFolderSubtree(
-  folders: Folder[],
-  rootId: string,
-): Set<string> {
+function collectFolderSubtree(folders: Folder[], rootId: string): Set<string> {
   return collectSubtree(folders, rootId, (f) => f.parent_folder_id);
 }
 

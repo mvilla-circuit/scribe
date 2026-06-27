@@ -20,7 +20,7 @@ import {
 } from "./icons";
 import { SIDEBAR_ICON_SIZE, SidebarRow, SidebarRowOverlay } from "./SidebarRow";
 
-export interface TreeRowHandlers {
+interface TreeRowHandlers {
   onToggleExpand: () => void;
   onSelectBook: () => void;
   onStartRename: () => void;

@@ -40,7 +40,7 @@ export function bookShowSubtitle(book: Book): boolean {
   return Boolean(book.subtitle && book.subtitle.trim().length > 0);
 }
 
-export const booksKey = ["books"] as const;
+const booksKey = ["books"] as const;
 
 export function useBooks() {
   return useQuery({

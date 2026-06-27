@@ -13,7 +13,7 @@ export type Profile = Tables<"profiles">;
 // picks fonts in Settings.
 export type ProfileFonts = FontMap;
 
-export const profileKey = ["profile"] as const;
+const profileKey = ["profile"] as const;
 
 export function useProfile() {
   const { session } = useAuth();

@@ -23,7 +23,7 @@
 //           Nunito Sans       → Figtree
 
 export type FontRole = "display" | "text" | "code";
-export type FontStyle = "serif" | "sans" | "mono";
+type FontStyle = "serif" | "sans" | "mono";
 
 // A (partial) role -> fontId map. Stored at each level of the cascade
 // (global / book / page); unset roles inherit from the level above.
@@ -70,14 +70,14 @@ function webFont(
 }
 
 // --- System defaults (no web font) ------------------------------------------
-export const SYSTEM_SERIF: FontEntry = {
+const SYSTEM_SERIF: FontEntry = {
   id: "system-serif",
   family: "System (New York)",
   style: "serif",
   stack: '"New York", "Iowan Old Style", Georgia, serif',
   system: true,
 };
-export const SYSTEM_SANS: FontEntry = {
+const SYSTEM_SANS: FontEntry = {
   id: "system-sans",
   family: "System",
   style: "sans",
@@ -85,7 +85,7 @@ export const SYSTEM_SANS: FontEntry = {
     '-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif',
   system: true,
 };
-export const SYSTEM_MONO: FontEntry = {
+const SYSTEM_MONO: FontEntry = {
   id: "system-mono",
   family: "System",
   style: "mono",
@@ -544,7 +544,7 @@ export const ROLE_FONTS: Record<FontRole, FontEntry[]> = {
 
 // The System default font entry for each role, used when the profile has no
 // explicit mapping yet (preserving the pre-Phase-6 look).
-export const DEFAULT_FONT: Record<FontRole, FontEntry> = {
+const DEFAULT_FONT: Record<FontRole, FontEntry> = {
   display: SYSTEM_SERIF,
   text: SYSTEM_SANS,
   code: SYSTEM_MONO,
@@ -569,10 +569,6 @@ export const FONT_REGISTRY: Record<string, FontEntry> = Object.fromEntries(
 );
 
 export const FONT_ROLES: FontRole[] = ["display", "text", "code"];
-
-export function isFontRole(value: unknown): value is FontRole {
-  return value === "display" || value === "text" || value === "code";
-}
 
 // Resolves a font id to its entry, falling back to the role's System default
 // when the id is unknown (e.g. a font removed from the catalog).

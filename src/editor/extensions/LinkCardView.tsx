@@ -12,7 +12,7 @@ import {
   TrashIcon,
 } from "../icons";
 import { fetchLinkMetadata, hostLabel } from "../linkPreview";
-import { keepAsLink } from "./LinkCard";
+import { keepAsLink } from "./linkCardCommands";
 
 type Status = "loading" | "ready" | "error";
 

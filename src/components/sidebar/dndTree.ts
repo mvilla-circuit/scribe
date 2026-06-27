@@ -6,14 +6,13 @@ import {
 } from "../../data/tree";
 import {
   type DndNode,
-  INDENT,
   neighbourPositions as genericNeighbourPositions,
   projectDrop,
   type Projection,
   removeDescendants as genericRemoveDescendants,
 } from "../tree/treeDnd";
 
-export { INDENT, type Projection };
+export { type Projection };
 
 export type FlatNode = DndNode & {
   // entity UUID (unique across folders + books); inherited `id` from DndNode.

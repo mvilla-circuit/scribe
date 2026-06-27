@@ -26,11 +26,20 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Circular dependency check
+        run: npm run lint:circular
+
+      - name: Dead code & unused deps (knip)
+        run: npm run lint:deadcode
+
       - name: Format check
         run: npm run format:check
 
       - name: Build (web)
         run: npm run build
+
+      - name: Audit dependencies
+        run: npm run audit:deps
 
   rust:
     name: Rust fmt & clippy

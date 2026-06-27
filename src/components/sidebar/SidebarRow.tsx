@@ -6,7 +6,7 @@ import { cn } from "../../lib/utils";
 // Shared layout tokens for every sidebar tree row (the Library tree and the
 // in-book Outline). Keeping these in one place guarantees the two trees share
 // identical row height, icon sizing, indentation, and spacing.
-export const SIDEBAR_INDENT = 16;
+const SIDEBAR_INDENT = 16;
 export const SIDEBAR_ICON_SIZE = 19;
 /** Vertical gap between sibling rows. */
 export const SIDEBAR_ROW_GAP = "gap-1.5";

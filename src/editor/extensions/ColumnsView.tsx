@@ -6,7 +6,7 @@ import {
 
 import { Tooltip } from "../../components/ui/Tooltip";
 import { CloseIcon } from "../icons";
-import { MIN_COLUMNS } from "./Columns";
+import { MIN_COLUMNS } from "./columnsConstants";
 
 // The grid wrapper. The visible column count is the number of children, so the
 // template re-derives whenever a column is added or removed. The count itself is

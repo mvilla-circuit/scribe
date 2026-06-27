@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 
 export const SIDEBAR_MIN_WIDTH = 200;
 export const SIDEBAR_MAX_WIDTH = 420;
-export const SIDEBAR_DEFAULT_WIDTH = 260;
+const SIDEBAR_DEFAULT_WIDTH = 260;
 
 interface UIState {
   sidebarCollapsed: boolean;

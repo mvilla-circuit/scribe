@@ -1,15 +1,13 @@
 import { mergeAttributes, Node } from "@tiptap/core";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 
+import { MAX_COLUMNS, MIN_COLUMNS } from "./columnsConstants";
 import { ColumnsView, ColumnView } from "./ColumnsView";
 
 // A simple equal-width layout primitive: `columns` holds 2-3 `column` children,
 // each of which holds any blocks. The visible column count is derived from the
 // number of children (no separate attr to drift out of sync), so add/remove is
 // just an insert/delete of a `column` node and the grid re-derives.
-
-export const MIN_COLUMNS = 2;
-export const MAX_COLUMNS = 3;
 
 export const Columns = Node.create({
   name: "columns",

@@ -25,7 +25,7 @@ import { normalizeUrl } from "../linkPreview";
 import { calloutContent } from "./Callout";
 import { columnsContent } from "./Columns";
 import { essayContent } from "./Essay";
-import { insertLinkCard } from "./LinkCard";
+import { insertLinkCard } from "./linkCardCommands";
 import { insertPageLink } from "./PageLink";
 import { usePagePicker } from "./pagePickerStore";
 import { quoteContent } from "./Quote";
@@ -45,7 +45,7 @@ function at(editor: Editor, range: Range) {
   return editor.chain().focus().deleteRange(range);
 }
 
-export const slashItems: SlashItem[] = [
+const slashItems: SlashItem[] = [
   {
     title: "Text",
     description: "Plain paragraph",
