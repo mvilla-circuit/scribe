@@ -91,6 +91,8 @@ export type Database = {
       }
       documents: {
         Row: {
+          banner_color: string | null
+          banner_text: string | null
           book_id: string
           content: Json
           created_at: string
@@ -100,7 +102,6 @@ export type Database = {
           is_title_page: boolean
           parent_document_id: string | null
           position: number
-          read_mode: boolean
           show_outline: boolean
           show_subtitle: boolean
           subtitle: string | null
@@ -109,6 +110,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          banner_color?: string | null
+          banner_text?: string | null
           book_id: string
           content?: Json
           created_at?: string
@@ -118,7 +121,6 @@ export type Database = {
           is_title_page?: boolean
           parent_document_id?: string | null
           position?: number
-          read_mode?: boolean
           show_outline?: boolean
           show_subtitle?: boolean
           subtitle?: string | null
@@ -127,6 +129,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          banner_color?: string | null
+          banner_text?: string | null
           book_id?: string
           content?: Json
           created_at?: string
@@ -136,7 +140,6 @@ export type Database = {
           is_title_page?: boolean
           parent_document_id?: string | null
           position?: number
-          read_mode?: boolean
           show_outline?: boolean
           show_subtitle?: boolean
           subtitle?: string | null

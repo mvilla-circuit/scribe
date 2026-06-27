@@ -173,9 +173,10 @@ export function useCreateDocument(bookId: string) {
             title: input.title,
             icon: null,
             subtitle: null,
+            banner_color: null,
+            banner_text: null,
             show_outline: false,
             show_subtitle: false,
-            read_mode: false,
             is_title_page: input.is_title_page ?? false,
             position: input.position,
             content: {} as Json,
@@ -211,9 +212,10 @@ export function useDuplicateDocument(bookId: string) {
           title: r.title,
           icon: r.icon,
           subtitle: r.subtitle,
+          banner_color: r.banner_color,
+          banner_text: r.banner_text,
           show_outline: r.show_outline,
           show_subtitle: r.show_subtitle,
-          read_mode: r.read_mode,
           is_title_page: r.is_title_page,
           position: r.position,
           content: r.content,
@@ -258,8 +260,8 @@ export function useRenameDocument(bookId: string) {
   });
 }
 
-// Generic patch for a document's page-level settings (icon, subtitle, outline
-// visibility, read mode). Kept separate from rename/move/content so each call
+// Generic patch for a document's page-level settings (icon, subtitle, banner,
+// outline visibility). Kept separate from rename/move/content so each call
 // site stays explicit about what it touches.
 export function useUpdateDocument(bookId: string) {
   const qc = useQueryClient();
@@ -272,9 +274,10 @@ export function useUpdateDocument(bookId: string) {
           | "title"
           | "icon"
           | "subtitle"
+          | "banner_color"
+          | "banner_text"
           | "show_outline"
           | "show_subtitle"
-          | "read_mode"
         >
       >
     ) => {
@@ -292,9 +295,10 @@ export function useUpdateDocument(bookId: string) {
           | "title"
           | "icon"
           | "subtitle"
+          | "banner_color"
+          | "banner_text"
           | "show_outline"
           | "show_subtitle"
-          | "read_mode"
         >
       >
     >(
