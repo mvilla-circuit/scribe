@@ -15,6 +15,7 @@ import {
 } from "../sidebar/SidebarRow";
 import { ChevronRightIcon, PageIcon, PlusIcon } from "./icons";
 import { DocumentIcon } from "../ui/DocumentIcon";
+import { Tooltip } from "../ui/Tooltip";
 import { type FlatDocNode } from "./outlineDnd";
 
 // The document's icon when set, otherwise the generic page glyph. Shared by the
@@ -149,19 +150,21 @@ export function OutlineRow({
 
   const actions = (
     <>
-      <button
-        type="button"
-        tabIndex={-1}
-        aria-label="Add page inside"
-        onClick={(e) => {
-          e.stopPropagation();
-          onNewChild();
-        }}
-        onPointerDown={(e) => e.stopPropagation()}
-        className="flex h-6 w-6 items-center justify-center rounded text-muted hover:bg-hover hover:text-text"
-      >
-        <PlusIcon size={15} />
-      </button>
+      <Tooltip content="Add page inside">
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label="Add page inside"
+          onClick={(e) => {
+            e.stopPropagation();
+            onNewChild();
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="flex h-6 w-6 items-center justify-center rounded text-muted hover:bg-hover hover:text-text"
+        >
+          <PlusIcon size={15} />
+        </button>
+      </Tooltip>
       <RowActionDropdown actions={menuActions} />
     </>
   );

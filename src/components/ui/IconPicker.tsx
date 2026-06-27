@@ -3,6 +3,7 @@ import * as RPopover from "@radix-ui/react-popover";
 import { EmojiPicker } from "frimousse";
 import { DynamicIcon, iconNames, type IconName } from "lucide-react/dynamic";
 import { cn } from "../../lib/utils";
+import { Tooltip } from "./Tooltip";
 import { parseIcon, serializeIcon, type IconValue } from "../../data/icon";
 import { useUploadIcon } from "../../data/documents";
 import { TEXT_COLORS } from "../../editor/palette";
@@ -121,10 +122,10 @@ function TabButton({
   );
 }
 
-// Glyph grid with a color footer. The footer color tints both the grid preview
-// and the value stored on select (null = inherit the page's text color). When a
-// glyph is already chosen, picking a color recolors it in place without forcing
-// the user to re-select the glyph.
+// Glyph grid with a color footer. The grid previews always render in the
+// default text color; the footer color only sets the tint stored on select
+// (null = inherit the page's text color). When a glyph is already chosen,
+// picking a color recolors it in place without forcing a re-select.
 function GlyphSection({
   current,
   onSelect,
@@ -197,10 +198,7 @@ function GlyphSection({
         />
       </div>
 
-      <div
-        className="grid flex-1 auto-rows-min grid-cols-8 gap-0.5 overflow-y-auto p-1.5"
-        style={{ color: color ?? "var(--color-text)" }}
-      >
+      <div className="grid flex-1 auto-rows-min grid-cols-8 gap-0.5 overflow-y-auto p-1.5 text-text">
         {results.length === 0 ? (
           <p className="col-span-8 mt-8 text-center text-sm text-muted">
             No icons found.
@@ -234,7 +232,7 @@ function GlyphSection({
         )}
       </div>
 
-      <div className="flex items-center justify-between border-t border-border px-3 py-2.5">
+      <div className="grid grid-cols-8 place-items-center gap-y-2 border-t border-border px-3 py-2.5">
         <ColorSwatch
           active={color === null}
           color={null}
@@ -270,41 +268,43 @@ function ColorSwatch({
   // tint instead of a black color.
   if (color === null) {
     return (
-      <button
-        type="button"
-        title="No color"
-        aria-label="No color"
-        aria-pressed={active}
-        onClick={onClick}
-        className={cn(
-          "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted outline-none transition-all",
-          "focus-visible:ring-2 focus-visible:ring-ring",
-          active
-            ? "ring-2 ring-ring ring-offset-1 ring-offset-elevated"
-            : "hover:scale-110 hover:text-text"
-        )}
-      >
-        <NoColorIcon size={18} />
-      </button>
+      <Tooltip content="No color">
+        <button
+          type="button"
+          aria-label="No color"
+          aria-pressed={active}
+          onClick={onClick}
+          className={cn(
+            "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted outline-none transition-all",
+            "focus-visible:ring-2 focus-visible:ring-ring",
+            active
+              ? "ring-2 ring-ring ring-offset-1 ring-offset-elevated"
+              : "hover:scale-110 hover:text-text"
+          )}
+        >
+          <NoColorIcon size={18} />
+        </button>
+      </Tooltip>
     );
   }
 
   return (
-    <button
-      type="button"
-      title={title ?? "Color"}
-      aria-label={title ?? "Color"}
-      aria-pressed={active}
-      onClick={onClick}
-      className={cn(
-        "h-5 w-5 shrink-0 rounded-full outline-none transition-all",
-        "focus-visible:ring-2 focus-visible:ring-ring",
-        active
-          ? "ring-2 ring-ring ring-offset-1 ring-offset-elevated"
-          : "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] hover:scale-110 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]"
-      )}
-      style={{ background: color }}
-    />
+    <Tooltip content={title ?? "Color"}>
+      <button
+        type="button"
+        aria-label={title ?? "Color"}
+        aria-pressed={active}
+        onClick={onClick}
+        className={cn(
+          "h-5 w-5 shrink-0 rounded-full outline-none transition-all",
+          "focus-visible:ring-2 focus-visible:ring-ring",
+          active
+            ? "ring-2 ring-ring ring-offset-1 ring-offset-elevated"
+            : "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] hover:scale-110 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]"
+        )}
+        style={{ background: color }}
+      />
+    </Tooltip>
   );
 }
 

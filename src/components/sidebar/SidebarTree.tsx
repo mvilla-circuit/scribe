@@ -40,9 +40,11 @@ import {
 } from "./dndTree";
 import { useTreeDnd } from "../tree/useTreeDnd";
 import { DragRowOverlay, TreeRow } from "./TreeRow";
+import { TreeSkeleton } from "./TreeSkeleton";
 import { BookIcon, BookPlusIcon, FolderPlusIcon, PlusIcon } from "./icons";
 import { Button } from "../ui/Button";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
+import { Tooltip } from "../ui/Tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -218,16 +220,17 @@ export function SidebarTree() {
           Library
         </span>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              aria-label="Create"
-              title="New book or folder"
-              className="flex h-6 w-6 items-center justify-center rounded-md text-muted transition-colors hover:bg-hover hover:text-text"
-            >
-              <PlusIcon size={16} />
-            </button>
-          </DropdownMenuTrigger>
+          <Tooltip content="New book or folder">
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="Create"
+                className="flex h-6 w-6 items-center justify-center rounded-md text-muted transition-colors hover:bg-hover hover:text-text"
+              >
+                <PlusIcon size={16} />
+              </button>
+            </DropdownMenuTrigger>
+          </Tooltip>
           <DropdownMenuContent
             align="end"
             onCloseAutoFocus={(e) => e.preventDefault()}
@@ -247,7 +250,7 @@ export function SidebarTree() {
       {/* Tree / states */}
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
         {isLoading ? (
-          <p className="px-2 py-6 text-center text-xs text-muted">Loading…</p>
+          <TreeSkeleton />
         ) : isError ? (
           <div className="px-2 py-6 text-center">
             <p className="text-xs text-muted">Couldn't load your library.</p>

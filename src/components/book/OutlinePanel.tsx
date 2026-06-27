@@ -31,6 +31,7 @@ import {
   type FlatDocNode,
 } from "./outlineDnd";
 import { useTreeDnd } from "../tree/useTreeDnd";
+import { TreeSkeleton } from "../sidebar/TreeSkeleton";
 import { OutlineDragOverlay, OutlineRow } from "./OutlineRow";
 import { PlusIcon } from "./icons";
 import { BookIcon } from "../sidebar/icons";
@@ -41,6 +42,7 @@ import {
 } from "../sidebar/SidebarRow";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { DocumentIcon } from "../ui/DocumentIcon";
+import { Tooltip } from "../ui/Tooltip";
 import { cn } from "../../lib/utils";
 
 type DeleteTarget = { id: string; title: string; descendants: number };
@@ -179,20 +181,23 @@ export function OutlinePanel({ book }: { book: Book }) {
           <span className="select-none text-xs font-medium uppercase tracking-wide text-muted">
             Pages
           </span>
-          <button
-            type="button"
-            onClick={() => handleCreate(null)}
-            aria-label="New page"
-            title="New page"
-            className="flex h-6 w-6 items-center justify-center rounded-md text-muted transition-colors hover:bg-hover hover:text-text"
-          >
-            <PlusIcon size={16} />
-          </button>
+          <Tooltip content="New page">
+            <button
+              type="button"
+              onClick={() => handleCreate(null)}
+              aria-label="New page"
+              className="flex h-6 w-6 items-center justify-center rounded-md text-muted transition-colors hover:bg-hover hover:text-text"
+            >
+              <PlusIcon size={16} />
+            </button>
+          </Tooltip>
         </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2 pt-1">
-        {flattened.length === 0 ? (
+        {documentsQuery.isLoading ? (
+          <TreeSkeleton depths={[0, 1, 0, 0, 1]} />
+        ) : flattened.length === 0 ? (
           <button
             type="button"
             onClick={() => handleCreate(null)}

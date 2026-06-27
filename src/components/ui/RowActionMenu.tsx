@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./DropdownMenu";
+import { Tooltip } from "./Tooltip";
 
 const MoreIcon = makeIcon(MoreHorizontal);
 
@@ -100,18 +101,20 @@ export function RowActionDropdown({
 }) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-label={label}
-          onClick={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="flex h-6 w-6 items-center justify-center rounded text-muted hover:bg-hover hover:text-text"
-        >
-          <MoreIcon size={15} />
-        </button>
-      </DropdownMenuTrigger>
+      <Tooltip content={label}>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label={label}
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="flex h-6 w-6 items-center justify-center rounded text-muted hover:bg-hover hover:text-text"
+          >
+            <MoreIcon size={15} />
+          </button>
+        </DropdownMenuTrigger>
+      </Tooltip>
       <DropdownMenuContent
         align="end"
         onClick={stopRowClick}

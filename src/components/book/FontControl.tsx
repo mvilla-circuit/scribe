@@ -9,6 +9,7 @@ import {
   type ResolvedFonts,
 } from "../../fonts/catalog";
 import { FontPicker } from "../settings/FontPicker";
+import { Tooltip } from "../ui/Tooltip";
 
 const ResetIcon = makeIcon(RotateCcw);
 
@@ -52,21 +53,22 @@ export function FontControl({
 
   return (
     <RPopover.Root>
-      <RPopover.Trigger asChild>
-        <button
-          type="button"
-          aria-label="Fonts"
-          title="Fonts"
-          className={cn(
-            "flex h-7 items-center justify-center rounded-md px-1.5 text-sm text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-hover data-[state=open]:text-text",
-            triggerClassName
-          )}
-        >
-          <span className="leading-none">
-            A<span className="text-[0.8em]">a</span>
-          </span>
-        </button>
-      </RPopover.Trigger>
+      <Tooltip content="Fonts">
+        <RPopover.Trigger asChild>
+          <button
+            type="button"
+            aria-label="Fonts"
+            className={cn(
+              "flex h-7 items-center justify-center rounded-md px-1.5 text-sm text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-hover data-[state=open]:text-text",
+              triggerClassName
+            )}
+          >
+            <span className="leading-none">
+              A<span className="text-[0.8em]">a</span>
+            </span>
+          </button>
+        </RPopover.Trigger>
+      </Tooltip>
       <RPopover.Portal>
         <RPopover.Content
           align="end"
