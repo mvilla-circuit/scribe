@@ -5,6 +5,7 @@ import { makeIcon } from "../lib/makeIcon";
 import { cn } from "../lib/utils";
 import { Button } from "./ui/Button";
 import { DocumentIcon } from "./ui/DocumentIcon";
+import { Skeleton } from "./ui/Skeleton";
 import { BookIcon, BookPlusIcon, FolderPlusIcon } from "./sidebar/icons";
 import { useBooks, useCreateBook, type Book } from "../data/books";
 import { useCreateFolder, useFolders } from "../data/folders";
@@ -41,7 +42,7 @@ function formatUpdatedAt(iso: string | null): string {
 
 export function MainEmptyState() {
   const { session } = useAuth();
-  const { data: books } = useBooks();
+  const { data: books, isLoading: booksLoading } = useBooks();
   const { data: folders } = useFolders();
   const createBook = useCreateBook();
   const createFolder = useCreateFolder();
@@ -130,7 +131,18 @@ export function MainEmptyState() {
             </Button>
           </div>
 
-          {hasBooks ? (
+          {booksLoading ? (
+            <section className="mt-10">
+              <h3 className="text-xs font-medium uppercase tracking-wide text-muted">
+                Recent
+              </h3>
+              <div className="mt-3 flex flex-col gap-1.5">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <RecentBookCardSkeleton key={i} />
+                ))}
+              </div>
+            </section>
+          ) : hasBooks ? (
             <section className="mt-10">
               <h3 className="text-xs font-medium uppercase tracking-wide text-muted">
                 Recent
@@ -194,5 +206,21 @@ function RecentBookCard({
         </span>
       )}
     </button>
+  );
+}
+
+// Matches RecentBookCard's footprint so the recents list loads without a jump.
+function RecentBookCardSkeleton() {
+  return (
+    <div
+      aria-hidden
+      className="flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2.5"
+    >
+      <Skeleton width={36} height={36} radius={6} />
+      <div className="min-w-0 flex-1">
+        <Skeleton width="45%" height="0.85rem" />
+        <Skeleton width="30%" height="0.7rem" className="mt-1.5" />
+      </div>
+    </div>
   );
 }

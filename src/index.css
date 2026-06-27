@@ -27,6 +27,8 @@
   --color-tree-group: var(--tree-group);
   --color-hover: var(--hover);
   --color-ring: var(--ring);
+  --color-inverted: var(--inverted);
+  --color-inverted-text: var(--inverted-text);
   --shadow-popover: var(--shadow-popover);
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -46,9 +48,38 @@
   --tree-group: #eae7e1;  /* gentle card behind an open folder */
   --hover: rgba(0, 0, 0, 0.04);
   --ring: rgba(59, 110, 165, 0.55);
+  /* Table surfaces: crisp white cells framed in a rounded card, with a warm
+     header strip that's distinct from both the cells and the paper page. */
+  --table-cell: #ffffff;
+  --table-header: #f3f1ec;
+  /* Edge shadow shown when a wide table can scroll horizontally. */
+  --table-fade: rgba(0, 0, 0, 0.13);
+  /* High-contrast "inverse" surface for tooltips: a near-black chip with light
+     text in light mode. The pair flips in dark mode (see .dark) so the tooltip
+     always contrasts against the page rather than blending into it. */
+  --inverted: #1c1b1a;
+  --inverted-text: #faf9f7;
   --shadow-popover:
     0 1px 2px rgba(0, 0, 0, 0.04),
     0 8px 24px rgba(0, 0, 0, 0.12);
+  /* Feedback toasts. Success leans on a calm emerald that reads clearly against
+     the warm paper without shouting; error mirrors it in a muted terracotta. */
+  --toast-success-bg: #eef7f1;
+  --toast-success-border: rgba(13, 122, 77, 0.26);
+  --toast-success-fg: #0b6e46;
+  --toast-error-bg: #fbeeec;
+  --toast-error-border: rgba(178, 47, 38, 0.24);
+  --toast-error-fg: #a8281f;
+  /* The lone theme-aware palette swatch ("Ink"). Stored on marks as a literal
+     var() string so it round-trips, then resolves to the strongest ink for the
+     active theme: near-black on warm paper here, near-white in .dark. */
+  --swatch-ink: #23221f;                       /* solid text/accent */
+  --swatch-ink-wash: rgba(40, 38, 34, 0.20);   /* inline highlight band */
+  --swatch-ink-fill: rgba(40, 38, 34, 0.12);   /* callout block fill */
+  /* Neutral default accent for blocks (quote/essay rules) when no swatch is
+     chosen. Kept a calm stone gray — not the blue UI accent — so an untinted
+     block reads as quietly neutral rather than coloured. */
+  --block-accent: #8c857c;
 }
 
 .dark {
@@ -64,9 +95,28 @@
   --tree-group: #25282d;  /* clearly lifted above the dark sidebar */
   --hover: rgba(255, 255, 255, 0.06);
   --ring: rgba(111, 159, 216, 0.6);
+  /* Cells lift just above the page; the header sits a step lighter still. */
+  --table-cell: #1e2024;
+  --table-header: #2b2e35;
+  --table-fade: rgba(0, 0, 0, 0.45);
+  /* Inverse surface flips in dark mode: a light chip with near-black text. */
+  --inverted: #e8e6e3;
+  --inverted-text: #16171a;
   --shadow-popover:
     0 1px 2px rgba(0, 0, 0, 0.3),
     0 10px 30px rgba(0, 0, 0, 0.5);
+  --toast-success-bg: #15241c;
+  --toast-success-border: rgba(94, 224, 162, 0.22);
+  --toast-success-fg: #74e3a8;
+  --toast-error-bg: #271715;
+  --toast-error-border: rgba(242, 163, 155, 0.22);
+  --toast-error-fg: #f0a39b;
+  /* "Ink" flips to near-white so the darkest swatch stays the strongest ink. */
+  --swatch-ink: #ededeb;
+  --swatch-ink-wash: rgba(232, 230, 227, 0.18);
+  --swatch-ink-fill: rgba(232, 230, 227, 0.10);
+  /* A touch lighter on the dark surface so the neutral rule stays visible. */
+  --block-accent: #9c958b;
 }
 
 html, body, #root { height: 100%; }
@@ -120,6 +170,39 @@ body {
   .scribe-fade-in { animation: none; }
 }
 
+/* --- Skeleton loaders: a calm, theme-aware shimmer used for loading states
+   across the app chrome (sidebar tree, outline, contents, recents). --- */
+.scribe-skel {
+  display: block;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--color-hover) 25%,
+    color-mix(in srgb, var(--color-text) 7%, transparent) 37%,
+    var(--color-hover) 63%
+  );
+  background-size: 400% 100%;
+  animation: scribe-skel-shimmer 1.4s ease infinite;
+}
+@keyframes scribe-skel-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+
+/* Gentle breathing pulse for the branded boot loader. */
+@keyframes scribe-skel-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.scribe-skel-pulse {
+  animation: scribe-skel-pulse 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scribe-skel,
+  .scribe-skel-pulse { animation: none; }
+}
+
 .scribe-pop {
   transform-origin: var(--radix-dropdown-menu-content-transform-origin,
     var(--radix-context-menu-content-transform-origin, center));
@@ -140,4 +223,66 @@ body {
   .scribe-dialog[data-state="open"] {
     animation: none;
   }
+}
+
+/* --- Feedback toasts (Sonner) ---
+   The compound `[data-sonner-toast]` selector outweighs Sonner's own
+   single-attribute defaults, so our chrome wins without resorting to
+   !important. Success/error variants tint the whole surface (background,
+   border, text, and icon) so the status reads at a glance while staying
+   in the same elegant card language as the rest of the app. */
+[data-sonner-toast].scribe-toast {
+  background: var(--color-elevated);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-popover);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  padding: 12px 14px;
+  gap: 10px;
+}
+[data-sonner-toast].scribe-toast [data-icon] {
+  margin-right: 2px;
+}
+[data-sonner-toast].scribe-toast [data-title] {
+  font-weight: 550;
+  letter-spacing: -0.005em;
+}
+[data-sonner-toast].scribe-toast [data-description] {
+  color: var(--color-muted);
+}
+
+[data-sonner-toast].scribe-toast[data-type="success"] {
+  background: var(--toast-success-bg);
+  border-color: var(--toast-success-border);
+  color: var(--toast-success-fg);
+}
+[data-sonner-toast].scribe-toast[data-type="success"] [data-icon],
+[data-sonner-toast].scribe-toast[data-type="success"] [data-title] {
+  color: var(--toast-success-fg);
+}
+
+[data-sonner-toast].scribe-toast[data-type="error"] {
+  background: var(--toast-error-bg);
+  border-color: var(--toast-error-border);
+  color: var(--toast-error-fg);
+}
+[data-sonner-toast].scribe-toast[data-type="error"] [data-icon],
+[data-sonner-toast].scribe-toast[data-type="error"] [data-title] {
+  color: var(--toast-error-fg);
+}
+
+/* Inline action button (e.g. "Keep as link") kept legible on the tinted
+   surfaces by borrowing the toast's own foreground tone. */
+[data-sonner-toast].scribe-toast [data-button] {
+  background: transparent;
+  border: 1px solid currentColor;
+  color: inherit;
+  border-radius: var(--radius-sm);
+  font-weight: 550;
+  opacity: 0.9;
+}
+[data-sonner-toast].scribe-toast [data-button]:hover {
+  opacity: 1;
 }
