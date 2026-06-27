@@ -111,7 +111,7 @@ export const LinkCard = Node.create({
               })
               .run();
 
-            toast("Added bookmark", {
+            toast.success("Added bookmark", {
               action: {
                 label: "Keep as link",
                 onClick: () => keepAsLink(editor, url),

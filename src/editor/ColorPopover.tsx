@@ -3,7 +3,8 @@ import { useEditorState, type Editor } from "@tiptap/react";
 import { cn } from "../lib/utils";
 import { Tooltip } from "../components/ui/Tooltip";
 import { TEXT_COLORS, HIGHLIGHT_COLORS, type Swatch } from "./palette";
-import { ChevronDownIcon, NoColorIcon } from "./icons";
+import { ChevronDownIcon } from "./icons";
+import { SwatchGrid } from "./SwatchGrid";
 
 // A single combined color control: one trigger opens a flyout holding both the
 // text-color and highlight palettes. It lives *inside* the bubble toolbar (no
@@ -104,34 +105,31 @@ export function ColorPopover({
           role="menu"
           onMouseDown={(e) => e.preventDefault()}
           className={cn(
-            "absolute right-0 top-[calc(100%+8px)] z-10 w-fit font-sans",
-            "rounded-xl border border-border bg-elevated p-3.5 shadow-popover"
+            "absolute right-0 top-[calc(100%+8px)] z-10 w-[12rem] font-sans",
+            "rounded-xl border border-border bg-elevated p-3 shadow-popover"
           )}
         >
           <Section
             label="Text"
             swatches={TEXT_COLORS}
             active={textColor}
-            onPick={(v) => setText(v)}
-            onClear={() => setText(null)}
+            onChange={setText}
             clearLabel="Default color"
           />
-          <div className="my-3.5 h-px bg-border" />
+          <div className="my-3 h-px bg-border" />
           <Section
             label="Highlight"
             swatches={HIGHLIGHT_COLORS}
             active={highlightColor}
-            onPick={(v) => setHighlight(v)}
-            onClear={() => setHighlight(null)}
+            onChange={setHighlight}
             clearLabel="No highlight"
           />
-          <div className="my-3.5 h-px bg-border" />
+          <div className="my-3 h-px bg-border" />
           <Section
             label="Underline"
             swatches={TEXT_COLORS}
             active={underlineColor}
-            onPick={(v) => setUnderline(v)}
-            onClear={() => setUnderline(null)}
+            onChange={setUnderline}
             clearLabel="No underline"
           />
         </div>
@@ -144,58 +142,26 @@ function Section({
   label,
   swatches,
   active,
-  onPick,
-  onClear,
+  onChange,
   clearLabel,
 }: {
   label: string;
   swatches: Swatch[];
   active: string | null;
-  onPick: (value: string) => void;
-  onClear: () => void;
+  onChange: (value: string | null) => void;
   clearLabel: string;
 }) {
   return (
     <div>
-      <div className="mb-2.5 text-[11px] font-medium uppercase tracking-[0.07em] text-muted">
+      <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.07em] text-muted">
         {label}
       </div>
-      <div className="grid grid-cols-[repeat(4,2rem)] gap-2">
-        {swatches.map((s) => {
-          const isActive = active === s.value;
-          return (
-            <Tooltip key={s.value} content={s.name}>
-              <button
-                type="button"
-                aria-label={s.name}
-                aria-pressed={isActive}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => onPick(s.value)}
-                className={cn(
-                  "h-8 w-8 rounded-full outline-none transition-all duration-150",
-                  "focus-visible:ring-2 focus-visible:ring-ring",
-                  isActive
-                    ? "ring-2 ring-ring ring-offset-2 ring-offset-elevated"
-                    : "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)] hover:scale-110 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]"
-                )}
-                style={{ background: s.value }}
-              />
-            </Tooltip>
-          );
-        })}
-      </div>
-      <button
-        type="button"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={onClear}
-        className={cn(
-          "mt-3.5 flex w-full items-center gap-2 rounded-md px-1 py-1 text-xs text-muted outline-none transition-colors",
-          "hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
-        )}
-      >
-        <NoColorIcon size={13} className="opacity-70" />
-        {clearLabel}
-      </button>
+      <SwatchGrid
+        swatches={swatches}
+        value={active}
+        onChange={onChange}
+        clearLabel={clearLabel}
+      />
     </div>
   );
 }

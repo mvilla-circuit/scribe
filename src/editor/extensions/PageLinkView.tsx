@@ -95,7 +95,7 @@ export function PageLinkView({
   const copyRef = () => {
     if (!targetId) return;
     void navigator.clipboard.writeText(pageRef(targetType, targetId));
-    toast("Page link copied");
+    toast.success("Page link copied");
   };
 
   const notFound = !loading && !resolved;

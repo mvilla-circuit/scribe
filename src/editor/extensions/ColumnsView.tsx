@@ -4,31 +4,15 @@ import {
   type NodeViewProps,
 } from "@tiptap/react";
 import { Tooltip } from "../../components/ui/Tooltip";
-import { CloseIcon, PlusIcon } from "../icons";
-import { MAX_COLUMNS, MIN_COLUMNS } from "./Columns";
+import { CloseIcon } from "../icons";
+import { MIN_COLUMNS } from "./Columns";
 
 // The grid wrapper. The visible column count is the number of children, so the
-// template re-derives whenever a column is added or removed. A single quiet "+"
-// affordance sits on the right edge (revealed on hover/focus) to append a
-// column, capped at MAX_COLUMNS.
-export function ColumnsView({ node, editor, getPos }: NodeViewProps) {
+// template re-derives whenever a column is added or removed. The count itself is
+// changed from the block handle menu (see BlockHandle), so there is no inline
+// add affordance here.
+export function ColumnsView({ node }: NodeViewProps) {
   const count = node.childCount;
-  const editable = editor.isEditable;
-  const canAdd = count < MAX_COLUMNS;
-
-  const addColumn = () => {
-    const pos = getPos();
-    if (pos == null || !canAdd) return;
-    const insertAt = pos + node.nodeSize - 1;
-    editor
-      .chain()
-      .focus()
-      .insertContentAt(insertAt, {
-        type: "column",
-        content: [{ type: "paragraph" }],
-      })
-      .run();
-  };
 
   return (
     <NodeViewWrapper className="scribe-columns group/columns">
@@ -36,23 +20,6 @@ export function ColumnsView({ node, editor, getPos }: NodeViewProps) {
         className="scribe-columns-grid"
         style={{ gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))` }}
       />
-      {editable && canAdd && (
-        <div
-          className="scribe-block-controls scribe-columns-add"
-          contentEditable={false}
-        >
-          <Tooltip content="Add column" side="right">
-            <button
-              type="button"
-              aria-label="Add column"
-              onClick={addColumn}
-              className="scribe-block-btn"
-            >
-              <PlusIcon size={15} />
-            </button>
-          </Tooltip>
-        </div>
-      )}
     </NodeViewWrapper>
   );
 }
@@ -62,6 +29,13 @@ export function ColumnsView({ node, editor, getPos }: NodeViewProps) {
 // remain (the layout never collapses below two columns).
 export function ColumnView({ node, editor, getPos }: NodeViewProps) {
   const editable = editor.isEditable;
+
+  // A pristine column holds a single empty paragraph. Surface a quiet hint so an
+  // empty column reads as a real, fillable region rather than blank space.
+  const isEmpty =
+    node.childCount === 1 &&
+    node.firstChild?.type.name === "paragraph" &&
+    node.firstChild.content.size === 0;
 
   const parentCount = (() => {
     const pos = getPos();
@@ -100,6 +74,11 @@ export function ColumnView({ node, editor, getPos }: NodeViewProps) {
               <CloseIcon size={14} />
             </button>
           </Tooltip>
+        </div>
+      )}
+      {editable && isEmpty && (
+        <div className="scribe-column-placeholder" contentEditable={false}>
+          Empty column
         </div>
       )}
       <NodeViewContent className="scribe-column-body" />

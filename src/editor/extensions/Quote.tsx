@@ -2,18 +2,14 @@ import { Node, mergeAttributes, wrappingInputRule } from "@tiptap/core";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import { QuoteView } from "./QuoteView";
 
-export type QuoteVariant = "pullquote" | "blockquote" | "accentquote";
+export type QuoteVariant = "pullquote" | "accentquote";
 
-export const QUOTE_VARIANTS: QuoteVariant[] = [
-  "pullquote",
-  "blockquote",
-  "accentquote",
-];
+export const QUOTE_VARIANTS: QuoteVariant[] = ["pullquote", "accentquote"];
 
-const DEFAULT_VARIANT: QuoteVariant = "blockquote";
+const DEFAULT_VARIANT: QuoteVariant = "accentquote";
 
-// A quotation block with three visual treatments (pullquote / blockquote /
-// accentquote). The variant, an optional accent color, and a plain-text
+// A quotation block with two visual treatments (pullquote / accentquote). The
+// variant, an optional accent color, and a plain-text
 // attribution line all live as node attributes so the quote round-trips through
 // `documents.content` and the clipboard; the controls in `QuoteView` only ever
 // call updateAttributes. A single solid `color` drives every variant — CSS
@@ -21,7 +17,10 @@ const DEFAULT_VARIANT: QuoteVariant = "blockquote";
 export const Quote = Node.create({
   name: "quote",
   group: "block",
-  content: "paragraph+",
+  // Paragraphs plus the list family, so quotes can hold bulleted / numbered /
+  // task lists (and the `- `, `1. `, `[] ` input rules have somewhere to wrap
+  // into) without opening the door to headings or nested blocks.
+  content: "(paragraph | bulletList | orderedList | taskList)+",
   // Keep the quote intact when the selection is lifted/replaced, so backspacing
   // at the start of its first paragraph doesn't dissolve the block.
   defining: true,
@@ -65,7 +64,7 @@ export const Quote = Node.create({
 
   addInputRules() {
     // Typing "> " at the start of a paragraph wraps it into the default
-    // (blockquote) variant, preserving the familiar markdown shortcut.
+    // (accent quote) variant, preserving the familiar markdown shortcut.
     return [
       wrappingInputRule({
         find: /^\s*>\s$/,

@@ -3,18 +3,21 @@ import Highlight from "@tiptap/extension-highlight";
 import Underline from "@tiptap/extension-underline";
 import Code from "@tiptap/extension-code";
 import { TextStyle, Color } from "@tiptap/extension-text-style";
+import TextAlign from "@tiptap/extension-text-align";
 import { Placeholder } from "@tiptap/extensions";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
-import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
+import { TableRow } from "@tiptap/extension-table";
 import type { Extensions } from "@tiptap/react";
 import { Callout } from "./extensions/Callout";
 import { Column, Columns } from "./extensions/Columns";
+import { Essay } from "./extensions/Essay";
 import { Indent } from "./extensions/Indent";
 import { LinkCard } from "./extensions/LinkCard";
 import { PageLink } from "./extensions/PageLink";
 import { Quote } from "./extensions/Quote";
 import { SlashCommand } from "./extensions/SlashCommand";
+import { Table, TableCell, TableHeader } from "./extensions/Table";
 import { Typography } from "./extensions/Typography";
 
 // The editor's extension set. StarterKit v3 already brings paragraphs,
@@ -80,6 +83,12 @@ export function buildExtensions(): Extensions {
     Code.extend({ excludes: "" }),
     TextStyle,
     Color,
+    // Horizontal text alignment, scoped to the block types that appear inside
+    // table cells. The table controls expose left/center/right for the selected
+    // cells; the command also works on a plain caret elsewhere, it just has no
+    // UI outside the table toolbar. Alignment renders as an inline `text-align`
+    // style on the paragraph/heading, overriding the cell's left default.
+    TextAlign.configure({ types: ["paragraph", "heading"] }),
     // The prompt is scoped to the empty-editor state via the `.is-editor-empty`
     // class in editor.css, so it only whispers on the first line of a blank doc.
     Placeholder.configure({ placeholder: "Start writing…" }),
@@ -89,9 +98,10 @@ export function buildExtensions(): Extensions {
     TaskList,
     TaskItem.configure({ nested: true }),
 
-    // Table family: resizable columns with a header row. The inline add/remove
-    // controls live in `TableControls`, driven by these extensions' commands.
-    Table.configure({ resizable: true }),
+    // Table family: resizable columns with a header row, plus a per-table header
+    // color (see ./extensions/Table). The inline add/remove/color controls live
+    // in `TableControls`, driven by these extensions' commands.
+    Table,
     TableRow,
     TableHeader,
     TableCell,
@@ -100,6 +110,7 @@ export function buildExtensions(): Extensions {
     Callout,
     Columns,
     Column,
+    Essay,
     LinkCard,
     PageLink,
     Quote,

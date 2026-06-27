@@ -65,7 +65,7 @@ export function LinkCardView({
 
   const copy = () => {
     void navigator.clipboard.writeText(url);
-    toast("Link copied");
+    toast.success("Link copied");
   };
 
   return (

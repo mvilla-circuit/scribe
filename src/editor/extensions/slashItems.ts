@@ -2,6 +2,7 @@ import type { Editor, Range } from "@tiptap/core";
 import { normalizeUrl } from "../linkPreview";
 import { calloutContent } from "./Callout";
 import { columnsContent } from "./Columns";
+import { essayContent } from "./Essay";
 import { quoteContent } from "./Quote";
 import { insertLinkCard } from "./LinkCard";
 import { insertPageLink } from "./PageLink";
@@ -15,6 +16,7 @@ import {
   Columns2Icon,
   Columns3Icon,
   DividerIcon,
+  EssayIcon,
   Heading1Icon,
   Heading2Icon,
   Heading3Icon,
@@ -101,14 +103,6 @@ export const slashItems: SlashItem[] = [
       at(editor, range).insertContent(quoteContent("pullquote")).run(),
   },
   {
-    title: "Block quote",
-    description: "A soft, tinted quotation panel",
-    icon: QuoteIcon,
-    aliases: ["blockquote", "quote", "citation", "panel"],
-    run: (editor, range) =>
-      at(editor, range).insertContent(quoteContent("blockquote")).run(),
-  },
-  {
     title: "Accent quote",
     description: "A quotation with a colored side rule",
     icon: QuoteIcon,
@@ -137,6 +131,14 @@ export const slashItems: SlashItem[] = [
     aliases: ["note", "info", "tip", "warning", "aside"],
     run: (editor, range) =>
       at(editor, range).insertContent(calloutContent()).run(),
+  },
+  {
+    title: "Essay",
+    description: "A long-form titled essay section",
+    icon: EssayIcon,
+    aliases: ["article", "longform", "story", "title", "section"],
+    run: (editor, range) =>
+      at(editor, range).insertContent(essayContent()).run(),
   },
   {
     title: "Columns (2)",

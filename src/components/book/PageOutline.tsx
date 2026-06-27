@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import type { OutlineHeading } from "../../editor/outline";
+import { EssayIcon } from "../../editor/icons";
+import { DocumentIcon } from "../ui/DocumentIcon";
 import { cn } from "../../lib/utils";
 
 type PageOutlineProps = {
@@ -23,9 +25,18 @@ export function PageOutline({
   useEffect(() => {
     const root = containerRef.current;
     if (!root || headings.length === 0) return;
+    // Track real headings plus essay titles. An essay title renders as an
+    // `h1.scribe-essay-title` when not editable and a `textarea.scribe-essay-title`
+    // while editing; either way we only keep titled ones so the element order
+    // stays aligned with `headings` (which skips untitled essays).
     const els = Array.from(
-      root.querySelectorAll<HTMLElement>("h1, h2, h3")
-    );
+      root.querySelectorAll<HTMLElement>("h1, h2, h3, .scribe-essay-title")
+    ).filter((el) => {
+      if (!el.classList.contains("scribe-essay-title")) return true;
+      const text =
+        el instanceof HTMLTextAreaElement ? el.value : el.textContent ?? "";
+      return text.trim().length > 0;
+    });
     if (els.length === 0) return;
 
     const visible = new Set<number>();
@@ -61,16 +72,32 @@ export function PageOutline({
             <button
               type="button"
               onClick={() => onSelect(heading.pos)}
+              aria-label={
+                heading.essay
+                  ? `Essay: ${heading.text || "Untitled essay"}`
+                  : undefined
+              }
               style={{ paddingLeft: 12 + (heading.level - 1) * 12 }}
               className={cn(
-                "-ml-px block w-full truncate border-l py-1 pr-2 text-left text-[13px] leading-snug outline-none transition-colors",
+                "-ml-px flex w-full items-center gap-1.5 border-l py-1 pr-2 text-left text-[13px] leading-snug outline-none transition-colors",
                 "focus-visible:text-text",
                 index === activeIndex
                   ? "border-accent font-medium text-text"
                   : "border-transparent text-muted hover:text-text"
               )}
             >
-              {heading.text || "Untitled heading"}
+              {heading.essay &&
+                (heading.icon ? (
+                  <span className="flex h-[13px] w-[13px] shrink-0 items-center justify-center">
+                    <DocumentIcon icon={heading.icon} size={13} />
+                  </span>
+                ) : (
+                  <EssayIcon size={13} className="shrink-0 opacity-60" />
+                ))}
+              <span className="min-w-0 flex-1 truncate">
+                {heading.text ||
+                  (heading.essay ? "Untitled essay" : "Untitled heading")}
+              </span>
             </button>
           </li>
         ))}

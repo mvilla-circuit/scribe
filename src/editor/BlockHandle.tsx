@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { ChainedCommands, Editor } from "@tiptap/react";
+import type { JSONContent } from "@tiptap/core";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
 import { DragHandle } from "@tiptap/extension-drag-handle-react";
@@ -14,10 +15,15 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "../components/ui/DropdownMenu";
+import { toast } from "sonner";
 import {
   BulletListIcon,
+  CheckIcon,
   CodeBlockIcon,
+  Columns2Icon,
+  Columns3Icon,
   CopyIcon,
+  CopyToClipboardIcon,
   DragHandleIcon,
   Heading1Icon,
   Heading2Icon,
@@ -29,6 +35,18 @@ import {
   TrashIcon,
 } from "./icons";
 import type { IconProps } from "../lib/makeIcon";
+
+// Column-count choices offered for a `columns` block. "1" flattens the block
+// back to normal top-level blocks; 2-3 set the number of side-by-side columns.
+const COLUMN_OPTIONS: {
+  count: number;
+  label: string;
+  icon: (props: IconProps) => React.ReactNode;
+}[] = [
+  { count: 1, label: "1 column", icon: TextIcon },
+  { count: 2, label: "2 columns", icon: Columns2Icon },
+  { count: 3, label: "3 columns", icon: Columns3Icon },
+];
 
 // A single block target: the ProseMirror node currently under the gutter handle
 // and the absolute position right before it.
@@ -107,6 +125,41 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       .run();
   }, [editor, menuTarget]);
 
+  // Copy the whole block to the system clipboard so it can be pasted back into
+  // this document or any other one (each document is its own editor instance,
+  // so an in-memory buffer wouldn't survive the hop). We reuse ProseMirror's own
+  // clipboard serialization: a NodeSelection's slice carries the `data-pm-slice`
+  // metadata that makes a later Cmd/Ctrl+V reconstruct the block losslessly,
+  // while the plain-text alternative keeps it pasteable into other apps.
+  const copy = useCallback(async () => {
+    const t = menuTarget;
+    if (!t) return;
+    const node = editor.state.doc.nodeAt(t.pos);
+    if (!node) return;
+    let selection: NodeSelection;
+    try {
+      selection = NodeSelection.create(editor.state.doc, t.pos);
+    } catch {
+      return;
+    }
+    const { dom, text } = editor.view.serializeForClipboard(selection.content());
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "text/html": new Blob([dom.innerHTML], { type: "text/html" }),
+          "text/plain": new Blob([text], { type: "text/plain" }),
+        }),
+      ]);
+      toast.success("Block copied");
+    } catch {
+      // Clipboard API can be blocked (permissions, insecure context). Fall back
+      // to selecting the node and letting the browser's native copy command run
+      // through ProseMirror's own copy handler.
+      editor.chain().focus().setNodeSelection(t.pos).run();
+      if (document.execCommand("copy")) toast.success("Block copied");
+    }
+  }, [editor, menuTarget]);
+
   const remove = useCallback(() => {
     const t = menuTarget;
     if (!t) return;
@@ -124,6 +177,54 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       const t = menuTarget;
       if (!t) return;
       option.apply(editor.chain().focus().setTextSelection(t.pos + 1)).run();
+    },
+    [editor, menuTarget]
+  );
+
+  // Re-shape a `columns` block to `count` columns, preserving content. Reducing
+  // the count folds the trailing column(s) into the last one kept; increasing it
+  // appends empty columns; `count <= 1` flattens the block back to plain blocks.
+  const setColumnCount = useCallback(
+    (count: number) => {
+      const t = menuTarget;
+      if (!t) return;
+      const node = editor.state.doc.nodeAt(t.pos);
+      if (!node || node.type.name !== "columns") return;
+
+      const columns: JSONContent[][] = [];
+      node.forEach((col) => {
+        const blocks: JSONContent[] = [];
+        col.forEach((child) => blocks.push(child.toJSON()));
+        columns.push(blocks);
+      });
+
+      const range = { from: t.pos, to: t.pos + node.nodeSize };
+
+      if (count <= 1) {
+        const blocks = columns.flat();
+        const allEmpty = blocks.every(
+          (b) => b.type === "paragraph" && !(b.content && b.content.length)
+        );
+        const content =
+          blocks.length === 0 || allEmpty ? [{ type: "paragraph" }] : blocks;
+        editor.chain().focus().insertContentAt(range, content).run();
+        return;
+      }
+
+      const newColumns: JSONContent[] = [];
+      for (let i = 0; i < count; i++) {
+        const blocks =
+          i < count - 1 ? columns[i] ?? [] : columns.slice(i).flat();
+        newColumns.push({
+          type: "column",
+          content: blocks.length ? blocks : [{ type: "paragraph" }],
+        });
+      }
+      editor
+        .chain()
+        .focus()
+        .insertContentAt(range, { type: "columns", content: newColumns })
+        .run();
     },
     [editor, menuTarget]
   );
@@ -234,6 +335,10 @@ export function BlockHandle({ editor }: { editor: Editor }) {
   // reorder/duplicate/delete actions.
   const canTurnInto = menuTarget?.node.type.isTextblock ?? false;
 
+  // A `columns` block gets a persistent column-count control (1/2/3).
+  const isColumns = menuTarget?.node.type.name === "columns";
+  const columnCount = isColumns ? menuTarget?.node.childCount ?? 0 : 0;
+
   return (
     <DragHandle
       editor={editor}
@@ -286,6 +391,35 @@ export function BlockHandle({ editor }: { editor: Editor }) {
               <DropdownMenuSeparator />
             </>
           )}
+          {isColumns && (
+            <>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <Columns2Icon size={15} />
+                  Columns
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {COLUMN_OPTIONS.map((option) => (
+                    <DropdownMenuItem
+                      key={option.count}
+                      onSelect={() => setColumnCount(option.count)}
+                    >
+                      <option.icon size={15} />
+                      {option.label}
+                      {columnCount === option.count && (
+                        <CheckIcon size={15} className="ml-auto" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              <DropdownMenuSeparator />
+            </>
+          )}
+          <DropdownMenuItem onSelect={copy}>
+            <CopyToClipboardIcon size={15} />
+            Copy
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={duplicate}>
             <CopyIcon size={15} />
             Duplicate
