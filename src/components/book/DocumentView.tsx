@@ -15,13 +15,14 @@ import { cn, formatDateTime, formatRelativeTime } from "../../lib/utils";
 import { resolveFonts } from "../../fonts/resolve";
 import { useScopedFonts } from "../../fonts/useScopedFonts";
 import type { FontMap, FontRole } from "../../fonts/catalog";
-import { EditableText } from "./EditableText";
+import { EditableText, type EditableTextHandle } from "./EditableText";
 import { FontControl } from "./FontControl";
+import { Masthead } from "./Masthead";
 import { PageOutline } from "./PageOutline";
-import { IconPicker } from "../ui/IconPicker";
-import { DocumentIcon } from "../ui/DocumentIcon";
-import { ListIcon, SubtitleIcon } from "./icons";
+import { ListIcon } from "./icons";
 import { Tooltip } from "../ui/Tooltip";
+import { SubtitleToggle } from "../ui/SubtitleToggle";
+import { BannerControl } from "../ui/BannerControl";
 import { Editor, type EditorHandle } from "../../editor/Editor";
 import { SaveStatus } from "../../editor/SaveStatus";
 import type { SaveState } from "../../editor/useAutosave";
@@ -46,6 +47,7 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
   const [headings, setHeadings] = useState<OutlineHeading[]>([]);
 
   const editorRef = useRef<EditorHandle>(null);
+  const titleRef = useRef<EditableTextHandle>(null);
   const proseContainerRef = useRef<HTMLDivElement>(null);
 
   const ancestors = useMemo(() => {
@@ -84,6 +86,40 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
     const { [role]: _removed, ...rest } = overrides;
     writePageFonts(Object.keys(rest).length > 0 ? rest : null);
   };
+
+  const titleBlock = (
+    <>
+      <EditableText
+        ref={titleRef}
+        value={document.title}
+        ariaLabel="Document title"
+        placeholder="Untitled"
+        onCommit={(title) => renameDocument.mutate({ id: document.id, title })}
+        onEnter={() => editorRef.current?.focusStart()}
+        className="text-[2.6rem] font-semibold leading-tight tracking-tight text-text"
+        style={{ fontFamily: titleFont }}
+      />
+
+      {document.show_subtitle && (
+        <EditableText
+          value={document.subtitle ?? ""}
+          ariaLabel="Document subtitle"
+          placeholder="Add a subtitle"
+          allowEmpty
+          onCommit={(subtitle) =>
+            updateDocument.mutate({
+              id: document.id,
+              subtitle: subtitle || null,
+            })
+          }
+          className="mt-2 text-xl leading-snug text-muted"
+          style={{ fontFamily: bodyFont }}
+        />
+      )}
+
+      <PageMeta document={document} />
+    </>
+  );
 
   return (
     <div style={fontVars} className="flex min-h-full flex-col">
@@ -139,28 +175,27 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
               <ListIcon size={16} />
             </button>
           </Tooltip>
-          <Tooltip
-            content={document.show_subtitle ? "Hide subtitle" : "Show subtitle"}
-          >
-            <button
-              type="button"
-              onClick={() =>
-                updateDocument.mutate({
-                  id: document.id,
-                  show_subtitle: !document.show_subtitle,
-                })
-              }
-              aria-pressed={document.show_subtitle}
-              className={cn(
-                "flex h-7 w-7 items-center justify-center rounded-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
-                document.show_subtitle
-                  ? "bg-selected text-text"
-                  : "text-muted hover:bg-hover hover:text-text"
-              )}
-            >
-              <SubtitleIcon size={16} />
-            </button>
-          </Tooltip>
+          <SubtitleToggle
+            active={document.show_subtitle}
+            onToggle={() =>
+              updateDocument.mutate({
+                id: document.id,
+                show_subtitle: !document.show_subtitle,
+              })
+            }
+          />
+          <BannerControl
+            value={document.banner_color}
+            onChange={(banner_color) =>
+              updateDocument.mutate({
+                id: document.id,
+                banner_color,
+                // Clear any caption when the banner is removed so a re-added
+                // banner starts fresh instead of resurfacing old text.
+                ...(banner_color === null ? { banner_text: null } : {}),
+              })
+            }
+          />
           <FontControl
             heading="Page fonts"
             inheritLabel="book"
@@ -173,43 +208,33 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
         </span>
       </nav>
 
+      <PageBanner
+        color={document.banner_color}
+        text={document.banner_text}
+        bodyFont={bodyFont}
+        reserveOutline={showOutline}
+        onCommitText={(banner_text) =>
+          updateDocument.mutate({
+            id: document.id,
+            banner_text: banner_text || null,
+          })
+        }
+      />
+
       <div className="mx-auto flex w-full max-w-[1120px] justify-center gap-12 px-8 py-12 sm:py-16">
         <article className="w-full min-w-0 max-w-[68ch]">
-          <header className="group/page">
-            <PageIconControl
-              icon={document.icon}
-              onSelect={(icon) => updateDocument.mutate({ id: document.id, icon })}
-              onRemove={() => updateDocument.mutate({ id: document.id, icon: null })}
-            />
-
-            <EditableText
-              value={document.title}
-              ariaLabel="Document title"
-              placeholder="Untitled"
-              onCommit={(title) => renameDocument.mutate({ id: document.id, title })}
-              className="text-[2.6rem] font-semibold leading-tight tracking-tight text-text"
-              style={{ fontFamily: titleFont }}
-            />
-
-            {document.show_subtitle && (
-              <EditableText
-                value={document.subtitle ?? ""}
-                ariaLabel="Document subtitle"
-                placeholder="Add a subtitle"
-                allowEmpty
-                onCommit={(subtitle) =>
-                  updateDocument.mutate({
-                    id: document.id,
-                    subtitle: subtitle || null,
-                  })
-                }
-                className="mt-2 text-xl leading-snug text-muted"
-                style={{ fontFamily: bodyFont }}
-              />
-            )}
-
-            <PageMeta document={document} />
-          </header>
+          <Masthead
+            icon={document.icon}
+            onSelectIcon={(icon) =>
+              updateDocument.mutate({ id: document.id, icon })
+            }
+            onRemoveIcon={() =>
+              updateDocument.mutate({ id: document.id, icon: null })
+            }
+            changeIconLabel="Change page icon"
+          >
+            {titleBlock}
+          </Masthead>
 
           <div
             ref={proseContainerRef}
@@ -223,6 +248,10 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
               initialContent={document.content}
               editable
               onOutlineChange={setHeadings}
+              onLeaveStart={() => {
+                titleRef.current?.focus();
+                return true;
+              }}
               onPersist={(content) =>
                 updateContent.mutateAsync({ id: document.id, content })
               }
@@ -245,39 +274,51 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
   );
 }
 
-function PageIconControl({
-  icon,
-  onSelect,
-  onRemove,
+// The full-width banner band shown directly below the breadcrumbs when a page
+// has a `banner_color`. It bleeds to the section edges; an inner wrapper matches
+// the content column so the optional caption settles into the band's bottom-left
+// corner, aligned with the page title below. The band is a bold solid color
+// carrying light text, and the
+// caption shows no placeholder (text is optional) — the writer clicks the band
+// to add a line, which EditableText commits on Enter/blur so it stays one line.
+function PageBanner({
+  color,
+  text,
+  bodyFont,
+  reserveOutline,
+  onCommitText,
 }: {
-  icon: string | null;
-  onSelect: (icon: string) => void;
-  onRemove: () => void;
+  color: string | null;
+  text: string | null;
+  bodyFont: string;
+  reserveOutline: boolean;
+  onCommitText: (text: string) => void;
 }) {
-  if (icon) {
-    return (
-      <IconPicker value={icon} onSelect={onSelect} onRemove={onRemove}>
-        <button
-          type="button"
-          aria-label="Change page icon"
-          className="mb-3 rounded-md leading-none outline-none transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <DocumentIcon icon={icon} size={48} />
-        </button>
-      </IconPicker>
-    );
-  }
-
+  if (!color) return null;
   return (
-    <IconPicker value={icon} onSelect={onSelect} onRemove={onRemove}>
-      <button
-        type="button"
-        className="mb-2 inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm text-muted opacity-0 outline-none transition-opacity hover:bg-hover hover:text-text focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring group-hover/page:opacity-100"
-      >
-        <span className="text-base leading-none">☺</span>
-        Add icon
-      </button>
-    </IconPicker>
+    <div
+      className="flex w-full items-end"
+      style={{ background: color, minHeight: "7rem" }}
+    >
+      {/* Mirror the content row exactly (same centred article + optional outline
+          spacer) so the caption's left edge lands flush with the page title and
+          body below, regardless of whether the outline is showing. */}
+      <div className="mx-auto flex w-full max-w-[1120px] justify-center gap-12 px-8">
+        <div className="w-full min-w-0 max-w-[68ch] pb-3">
+          <EditableText
+            value={text ?? ""}
+            ariaLabel="Banner caption"
+            allowEmpty
+            onCommit={onCommitText}
+            className="text-sm font-medium tracking-[0.08em]"
+            style={{ color: "rgba(255, 255, 255, 0.95)", fontFamily: bodyFont }}
+          />
+        </div>
+        {reserveOutline && (
+          <div className="hidden w-52 shrink-0 md:block" aria-hidden />
+        )}
+      </div>
+    </div>
   );
 }
 

@@ -1,5 +1,17 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "../../lib/utils";
+
+export type EditableTextHandle = {
+  /** Focus the field and place the caret at the end of its text. */
+  focus: () => void;
+};
 
 type EditableTextProps = {
   value: string;
@@ -10,23 +22,51 @@ type EditableTextProps = {
   style?: React.CSSProperties;
   // Subtitles may be cleared; titles fall back to their previous value.
   allowEmpty?: boolean;
+  // When provided, Cmd/Ctrl+I toggles italic for the whole field via this
+  // callback (the field is plain text, so italic is an all-or-nothing flag the
+  // caller stores and reflects through `style`). Opt-in so plain title fields
+  // that can't be italicized are unaffected.
+  onToggleItalic?: () => void;
+  // When provided, Enter commits (via blur) and then hands off — e.g. to move
+  // the caret into the document body. Without it, Enter just commits and blurs.
+  onEnter?: () => void;
 };
 
 // An always-editable, auto-growing text field that reads as display text until
 // focused. Commits the trimmed value on blur or Enter and reverts on Escape.
 // Reused for the book title/subtitle and document titles on the reading surface.
-export function EditableText({
-  value,
-  onCommit,
-  ariaLabel,
-  placeholder,
-  className,
-  style,
-  allowEmpty = false,
-}: EditableTextProps) {
+export const EditableText = forwardRef<EditableTextHandle, EditableTextProps>(
+  function EditableText(
+    {
+      value,
+      onCommit,
+      ariaLabel,
+      placeholder,
+      className,
+      style,
+      allowEmpty = false,
+      onToggleItalic,
+      onEnter,
+    },
+    handleRef
+  ) {
   const [draft, setDraft] = useState(value);
   const ref = useRef<HTMLTextAreaElement>(null);
   const focused = useRef(false);
+
+  useImperativeHandle(
+    handleRef,
+    () => ({
+      focus: () => {
+        const el = ref.current;
+        if (!el) return;
+        el.focus();
+        const end = el.value.length;
+        el.setSelectionRange(end, end);
+      },
+    }),
+    []
+  );
   // Caret position to restore after a typographic substitution shortens the
   // draft; applied in the layout effect so the cursor never jumps to the end.
   const pendingCaret = useRef<number | null>(null);
@@ -89,9 +129,22 @@ export function EditableText({
         commit();
       }}
       onKeyDown={(e) => {
+        if (
+          onToggleItalic &&
+          (e.metaKey || e.ctrlKey) &&
+          (e.key === "i" || e.key === "I")
+        ) {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggleItalic();
+          return;
+        }
         if (e.key === "Enter") {
           e.preventDefault();
+          // Blur commits the draft synchronously; then hand off (if asked) so
+          // the caret can continue into the document body.
           ref.current?.blur();
+          onEnter?.();
         } else if (e.key === "Escape") {
           e.preventDefault();
           setDraft(value);
@@ -111,4 +164,5 @@ export function EditableText({
       )}
     />
   );
-}
+  }
+);

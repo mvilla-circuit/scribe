@@ -5,6 +5,8 @@
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
   Eye,
   FileText,
   List,
@@ -16,6 +18,8 @@ import { makeIcon } from "../../lib/makeIcon";
 
 export const ChevronRightIcon = makeIcon(ChevronRight);
 export const ChevronLeftIcon = makeIcon(ChevronLeft);
+export const ChevronsDownUpIcon = makeIcon(ChevronsDownUp);
+export const ChevronsUpDownIcon = makeIcon(ChevronsUpDown);
 export const PageIcon = makeIcon(FileText);
 export const PlusIcon = makeIcon(Plus);
 export const MoreIcon = makeIcon(MoreHorizontal);

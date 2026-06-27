@@ -36,20 +36,48 @@ export function buildDocTree(documents: Document[]): DocTreeNode[] {
   return build(null);
 }
 
-export type TocEntry = { document: Document; depth: number };
+export type TocEntry = {
+  document: Document;
+  depth: number;
+  hasChildren: boolean;
+};
 
-// Depth-first, in-order flatten with each entry tagged by its nesting depth --
-// the shape both the Table of Contents and the Outline render from.
-export function flattenForToc(tree: DocTreeNode[]): TocEntry[] {
+// Depth-first, in-order flatten with each entry tagged by its nesting depth and
+// whether it has children. Only descends into nodes whose id is in `expanded`,
+// so a collapsed parent hides its subtree -- the shape the title page's
+// collapsible Table of Contents renders from.
+export function flattenTocExpanded(
+  tree: DocTreeNode[],
+  expanded: Set<string>
+): TocEntry[] {
   const out: TocEntry[] = [];
   const walk = (nodes: DocTreeNode[], depth: number) => {
     for (const node of nodes) {
-      out.push({ document: node.document, depth });
-      walk(node.children, depth + 1);
+      const hasChildren = node.children.length > 0;
+      out.push({ document: node.document, depth, hasChildren });
+      if (hasChildren && expanded.has(node.document.id)) {
+        walk(node.children, depth + 1);
+      }
     }
   };
   walk(tree, 0);
   return out;
+}
+
+// All ids in the tree that have children -- the full set of expandable nodes,
+// used to drive the "expand all" toggle and to know when everything is open.
+export function expandableDocIds(tree: DocTreeNode[]): string[] {
+  const ids: string[] = [];
+  const walk = (nodes: DocTreeNode[]) => {
+    for (const node of nodes) {
+      if (node.children.length > 0) {
+        ids.push(node.document.id);
+        walk(node.children);
+      }
+    }
+  };
+  walk(tree);
+  return ids;
 }
 
 // Number of descendants a document has (used to warn before a cascade delete).

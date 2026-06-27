@@ -13,16 +13,17 @@ import {
 } from "../../data/documents";
 import { profileFonts, useProfile } from "../../data/profile";
 import { useUIStore } from "../../store/ui";
-import { cn } from "../../lib/utils";
 import { resolveFonts } from "../../fonts/resolve";
 import { useScopedFonts } from "../../fonts/useScopedFonts";
 import type { FontMap, FontRole } from "../../fonts/catalog";
-import { DocumentIcon } from "../ui/DocumentIcon";
-import { IconPicker } from "../ui/IconPicker";
+import { buildDocTree, expandableDocIds } from "../../data/docTree";
+import { useMemo, useState } from "react";
 import { Tooltip } from "../ui/Tooltip";
+import { SubtitleToggle } from "../ui/SubtitleToggle";
+import { ChevronsDownUpIcon, ChevronsUpDownIcon } from "./icons";
 import { EditableText } from "./EditableText";
 import { FontControl } from "./FontControl";
-import { SubtitleIcon } from "./icons";
+import { Masthead } from "./Masthead";
 import { TableOfContents } from "./TableOfContents";
 
 type TitlePageProps = {
@@ -54,6 +55,29 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
       theme: { ...bookTheme(book), showSubtitle: !showSubtitle },
     });
 
+  // Contents expansion is local + session-scoped: the cover always opens
+  // collapsed (only first-level pages visible). State lives here so the
+  // page-level toolbar can drive "expand/collapse all" alongside per-row toggles
+  // in the Table of Contents.
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const expandable = useMemo(
+    () => expandableDocIds(buildDocTree(documents)),
+    [documents]
+  );
+  const allExpanded =
+    expandable.length > 0 && expandable.every((id) => expandedIds.has(id));
+
+  const toggleDoc = (id: string) =>
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const toggleAll = () =>
+    setExpandedIds(allExpanded ? new Set() : new Set(expandable));
+
   const writeBookFonts = (fonts: FontMap) =>
     updateBook.mutate({ id: book.id, theme: { ...bookTheme(book), fonts } });
   const setBookFont = (role: FontRole, fontId: string) =>
@@ -78,6 +102,32 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
     setActiveDoc(id);
   };
 
+  const titleBlock = (
+    <>
+      <EditableText
+        value={book.title}
+        ariaLabel="Book title"
+        placeholder="Untitled"
+        onCommit={(title) => renameBook.mutate({ id: book.id, title })}
+        className="text-[2.75rem] font-semibold leading-tight tracking-tight text-text"
+        style={{ fontFamily: titleFont }}
+      />
+      {showSubtitle && (
+        <EditableText
+          value={book.subtitle ?? ""}
+          ariaLabel="Book subtitle"
+          placeholder="Add a subtitle"
+          allowEmpty
+          onCommit={(subtitle) =>
+            updateBook.mutate({ id: book.id, subtitle: subtitle || null })
+          }
+          className="mt-3 text-xl leading-snug text-muted"
+          style={{ fontFamily: "var(--font-text)" }}
+        />
+      )}
+    </>
+  );
+
   return (
     <div style={fontVars} className="flex min-h-full flex-col">
       {/* The title page has no breadcrumb, but mirrors the document view's sticky
@@ -89,21 +139,24 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
         className="sticky top-0 z-20 flex items-center bg-bg px-8 py-3"
       >
         <span className="ml-auto flex items-center gap-1">
-          <Tooltip content={showSubtitle ? "Hide subtitle" : "Show subtitle"}>
-            <button
-              type="button"
-              onClick={toggleSubtitle}
-              aria-pressed={showSubtitle}
-              className={cn(
-                "flex h-7 w-7 items-center justify-center rounded-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
-                showSubtitle
-                  ? "bg-selected text-text"
-                  : "text-muted hover:bg-hover hover:text-text"
-              )}
-            >
-              <SubtitleIcon size={16} />
-            </button>
-          </Tooltip>
+          {expandable.length > 0 && (
+            <Tooltip content={allExpanded ? "Collapse all" : "Expand all"}>
+              <button
+                type="button"
+                onClick={toggleAll}
+                aria-pressed={allExpanded}
+                aria-label={allExpanded ? "Collapse all" : "Expand all"}
+                className="flex h-7 w-7 items-center justify-center rounded-md text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {allExpanded ? (
+                  <ChevronsDownUpIcon size={16} />
+                ) : (
+                  <ChevronsUpDownIcon size={16} />
+                )}
+              </button>
+            </Tooltip>
+          )}
+          <SubtitleToggle active={showSubtitle} onToggle={toggleSubtitle} />
           <FontControl
             heading="Book fonts"
             inheritLabel="global"
@@ -117,79 +170,24 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
       </nav>
 
       <article className="mx-auto w-full max-w-[68ch] px-8 pb-16 pt-8 sm:pb-24 sm:pt-12">
-        <header className="group/header">
-          <BookIconControl
-            icon={book.icon}
-            onSelect={(icon) => updateBook.mutate({ id: book.id, icon })}
-            onRemove={() => updateBook.mutate({ id: book.id, icon: null })}
-          />
-
-          <EditableText
-            value={book.title}
-            ariaLabel="Book title"
-            placeholder="Untitled"
-            onCommit={(title) => renameBook.mutate({ id: book.id, title })}
-            className="text-[2.75rem] font-semibold leading-tight tracking-tight text-text"
-            style={{ fontFamily: titleFont }}
-          />
-          {showSubtitle && (
-            <EditableText
-              value={book.subtitle ?? ""}
-              ariaLabel="Book subtitle"
-              placeholder="Add a subtitle"
-              allowEmpty
-              onCommit={(subtitle) =>
-                updateBook.mutate({ id: book.id, subtitle: subtitle || null })
-              }
-              className="mt-3 text-xl leading-snug text-muted"
-              style={{ fontFamily: "var(--font-text)" }}
-            />
-          )}
-        </header>
+        <Masthead
+          icon={book.icon}
+          onSelectIcon={(icon) => updateBook.mutate({ id: book.id, icon })}
+          onRemoveIcon={() => updateBook.mutate({ id: book.id, icon: null })}
+          changeIconLabel="Change book icon"
+        >
+          {titleBlock}
+        </Masthead>
 
         <TableOfContents
           documents={documents}
           loading={loading}
           onCreateFirst={createFirstPage}
           titleFont={titleFont}
+          expandedIds={expandedIds}
+          onToggle={toggleDoc}
         />
       </article>
     </div>
-  );
-}
-
-function BookIconControl({
-  icon,
-  onSelect,
-  onRemove,
-}: {
-  icon: string | null;
-  onSelect: (icon: string) => void;
-  onRemove: () => void;
-}) {
-  if (icon) {
-    return (
-      <IconPicker value={icon} onSelect={onSelect} onRemove={onRemove}>
-        <button
-          type="button"
-          aria-label="Change book icon"
-          className="mb-3 rounded-md leading-none outline-none transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <DocumentIcon icon={icon} size={48} />
-        </button>
-      </IconPicker>
-    );
-  }
-
-  return (
-    <IconPicker value={icon} onSelect={onSelect} onRemove={onRemove}>
-      <button
-        type="button"
-        className="mb-2 inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm text-muted opacity-0 outline-none transition-opacity hover:bg-hover hover:text-text focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring group-hover/header:opacity-100"
-      >
-        <span className="text-base leading-none">☺</span>
-        Add icon
-      </button>
-    </IconPicker>
   );
 }
