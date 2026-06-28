@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { SIDEBAR_MAX_WIDTH, SIDEBAR_MIN_WIDTH, useUIStore } from "./ui";
+import {
+  migrateUIState,
+  SIDEBAR_MAX_WIDTH,
+  SIDEBAR_MIN_WIDTH,
+  useUIStore,
+} from "./ui";
+
+const SIDEBAR_DEFAULT_WIDTH = 260;
 
 const reset = () =>
   useUIStore.setState({
@@ -84,5 +91,57 @@ describe("expanded folder/doc sets", () => {
     expect(useUIStore.getState().expandedDocIds).toEqual(["d1", "d2"]);
     toggleDocExpanded("d1");
     expect(useUIStore.getState().expandedDocIds).toEqual(["d2"]);
+  });
+});
+
+describe("migrateUIState", () => {
+  it("passes a well-formed persisted blob through unchanged", () => {
+    const blob = {
+      sidebarCollapsed: true,
+      sidebarWidth: 300,
+      expandedFolderIds: ["f1", "f2"],
+      expandedDocIds: ["d1"],
+    };
+    expect(migrateUIState(blob)).toEqual(blob);
+  });
+
+  it("sanitizes wrong-typed fields back to valid values", () => {
+    const result = migrateUIState({
+      // sidebarCollapsed missing entirely
+      sidebarWidth: "300",
+      expandedFolderIds: ["f1", 2, null, "f2"],
+      expandedDocIds: [null, 7],
+    });
+    expect(result).toEqual({
+      sidebarCollapsed: false,
+      sidebarWidth: SIDEBAR_DEFAULT_WIDTH,
+      expandedFolderIds: ["f1", "f2"],
+      expandedDocIds: [],
+    });
+  });
+
+  it("clamps an out-of-range sidebar width", () => {
+    expect(migrateUIState({ sidebarWidth: 10 }).sidebarWidth).toBe(
+      SIDEBAR_MIN_WIDTH,
+    );
+    expect(migrateUIState({ sidebarWidth: 9999 }).sidebarWidth).toBe(
+      SIDEBAR_MAX_WIDTH,
+    );
+    expect(migrateUIState({ sidebarWidth: Infinity }).sidebarWidth).toBe(
+      SIDEBAR_DEFAULT_WIDTH,
+    );
+  });
+
+  it("returns safe defaults for junk input", () => {
+    const defaults = {
+      sidebarCollapsed: false,
+      sidebarWidth: SIDEBAR_DEFAULT_WIDTH,
+      expandedFolderIds: [],
+      expandedDocIds: [],
+    };
+    expect(migrateUIState(null)).toEqual(defaults);
+    expect(migrateUIState(42)).toEqual(defaults);
+    expect(migrateUIState("x")).toEqual(defaults);
+    expect(migrateUIState([])).toEqual(defaults);
   });
 });
