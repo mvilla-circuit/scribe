@@ -5,10 +5,15 @@ import type { FontMap } from "@/fonts/catalog";
 import { useAuth } from "@/lib/auth";
 import type { Tables, TablesUpdate } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
+import { asJsonObject } from "@/lib/utils";
 
-import { optimisticListHandlers } from "./optimistic-list";
+import {
+  optimisticListHandlers,
+  patchById,
+  removeById,
+} from "./optimistic-list";
 import { byPosition } from "./ordering";
-import { pageIndexKey } from "./page-index";
+import { booksKey, pageIndexKey } from "./query-keys";
 
 /** A single book row from the `books` table. */
 export type Book = Tables<"books">;
@@ -49,16 +54,12 @@ export interface BookTheme {
 
 /** Typed view of the books.theme jsonb column. */
 export function bookTheme(book: Book): BookTheme {
-  const theme = book.theme;
-  if (!theme || typeof theme !== "object" || Array.isArray(theme)) return {};
-  return theme;
+  return asJsonObject(book.theme);
 }
 
 /** The book's per-role font overrides (a partial role -> fontId map). */
 export function bookFontOverrides(book: Book): FontMap {
-  const fonts = bookTheme(book).fonts;
-  if (!fonts || typeof fonts !== "object" || Array.isArray(fonts)) return {};
-  return fonts;
+  return asJsonObject(bookTheme(book).fonts);
 }
 
 /**
@@ -70,8 +71,6 @@ export function bookShowSubtitle(book: Book): boolean {
   if (typeof flag === "boolean") return flag;
   return Boolean(book.subtitle && book.subtitle.trim().length > 0);
 }
-
-const booksKey = ["books"] as const;
 
 /** Query hook for all of the signed-in user's books, ordered by position. */
 export function useBooks() {
@@ -164,8 +163,7 @@ export function useRenameBook() {
       updateBookRow(input.id, { title: input.title }),
     ...bookHandlers<RenameBookInput>(
       qc,
-      (prev, input) =>
-        prev.map((b) => (b.id === input.id ? { ...b, title: input.title } : b)),
+      (prev, input) => patchById(prev, input.id, { title: input.title }),
       "Couldn't rename book",
     ),
   });
@@ -184,8 +182,7 @@ export function useUpdateBook() {
     },
     ...bookHandlers<UpdateBookInput>(
       qc,
-      (prev, input) =>
-        prev.map((b) => (b.id === input.id ? { ...b, ...input } : b)),
+      (prev, input) => patchById(prev, input.id, input),
       "Couldn't update book",
     ),
   });
@@ -203,11 +200,10 @@ export function useMoveBook() {
     ...bookHandlers<MoveBookInput>(
       qc,
       (prev, input) =>
-        prev.map((b) =>
-          b.id === input.id
-            ? { ...b, folder_id: input.folder_id, position: input.position }
-            : b,
-        ),
+        patchById(prev, input.id, {
+          folder_id: input.folder_id,
+          position: input.position,
+        }),
       "Couldn't move book",
     ),
   });
@@ -229,7 +225,7 @@ export function useDeleteBook() {
     // mutations) or page link cards keep resolving to the now-deleted pages.
     ...bookHandlers<DeleteBookInput>(
       qc,
-      (prev, input) => prev.filter((b) => b.id !== input.id),
+      (prev, input) => removeById(prev, input.id),
       "Couldn't delete book",
       [booksKey, pageIndexKey],
     ),

@@ -4,8 +4,10 @@ import type { FontMap } from "@/fonts/catalog";
 import { useAuth } from "@/lib/auth";
 import type { Json, Tables } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
+import { asJsonObject } from "@/lib/utils";
 
 import { optimisticObjectHandlers } from "./optimistic-list";
+import { profileKey } from "./query-keys";
 
 /** A single row from the `profiles` table. */
 export type Profile = Tables<"profiles">;
@@ -16,8 +18,6 @@ export type Profile = Tables<"profiles">;
  * picks fonts in Settings.
  */
 export type ProfileFonts = FontMap;
-
-const profileKey = ["profile"] as const;
 
 /** Query hook for the signed-in user's profile row. */
 export function useProfile() {
@@ -43,8 +43,7 @@ export function useProfile() {
 export function profileFonts(
   profile: Profile | null | undefined,
 ): ProfileFonts {
-  const fonts = profile?.fonts;
-  if (!fonts || typeof fonts !== "object" || Array.isArray(fonts)) return {};
+  const fonts = asJsonObject(profile?.fonts);
   // The jsonb column is untrusted: keep only entries whose value is a string
   // (a fontId), never leaking non-string values to consumers.
   const result: Record<string, string> = {};

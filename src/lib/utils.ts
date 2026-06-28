@@ -1,6 +1,21 @@
+import type { Json } from "@/lib/database.types";
+
 /** Tiny class-name joiner: filters falsy values and joins with spaces. */
 export function cn(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(" ");
+}
+
+/**
+ * Narrows an untrusted jsonb value to a plain object, returning an empty object
+ * for null, arrays, and primitives. Centralizes the "is this a usable jsonb
+ * object?" guard the typed column views (book theme, font overrides, profile
+ * fonts) share before reading their fields.
+ */
+export function asJsonObject(
+  value: Json | undefined,
+): Record<string, Json | undefined> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value;
 }
 
 const RELATIVE_THRESHOLDS: [Intl.RelativeTimeFormatUnit, number][] = [

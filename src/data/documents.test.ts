@@ -13,13 +13,12 @@ import {
   buildDocumentDuplicate,
   collectDocumentSubtree,
   docFontOverrides,
-  documentsKey,
   useDeleteDocument,
   useDocuments,
   useEnsureTitlePage,
   useMoveDocument,
 } from "./documents";
-import { pageIndexKey } from "./page-index";
+import { documentsKey, pageIndexKey } from "./query-keys";
 
 // The data hooks read the session for the user id; stub auth so we don't pull
 // auth.tsx (and its Tauri plugin imports) into the test runtime.

@@ -5,8 +5,13 @@ import { useAuth } from "@/lib/auth";
 import type { Tables, TablesUpdate } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
 
-import { optimisticListHandlers } from "./optimistic-list";
+import {
+  optimisticListHandlers,
+  patchById,
+  removeBySet,
+} from "./optimistic-list";
 import { byPosition } from "./ordering";
+import { booksKey, foldersKey } from "./query-keys";
 import { collectSubtree } from "./subtree";
 
 /** A single folder row from the `folders` table. */
@@ -31,9 +36,6 @@ interface MoveFolderInput {
 interface DeleteFolderInput {
   id: string;
 }
-
-const foldersKey = ["folders"] as const;
-const booksKey = ["books"] as const;
 
 /** Query hook for all of the signed-in user's folders, ordered by position. */
 export function useFolders() {
@@ -122,8 +124,7 @@ export function useRenameFolder() {
       updateFolderRow(input.id, { name: input.name }),
     ...folderHandlers<RenameFolderInput>(
       qc,
-      (prev, input) =>
-        prev.map((f) => (f.id === input.id ? { ...f, name: input.name } : f)),
+      (prev, input) => patchById(prev, input.id, { name: input.name }),
       "Couldn't rename folder",
     ),
   });
@@ -141,15 +142,10 @@ export function useMoveFolder() {
     ...folderHandlers<MoveFolderInput>(
       qc,
       (prev, input) =>
-        prev.map((f) =>
-          f.id === input.id
-            ? {
-                ...f,
-                parent_folder_id: input.parent_folder_id,
-                position: input.position,
-              }
-            : f,
-        ),
+        patchById(prev, input.id, {
+          parent_folder_id: input.parent_folder_id,
+          position: input.position,
+        }),
       "Couldn't move folder",
     ),
   });
@@ -177,10 +173,7 @@ export function useDeleteFolder() {
     // root (folder_id -> null). We invalidate books on settle to reconcile.
     ...folderHandlers<DeleteFolderInput>(
       qc,
-      (prev, input) => {
-        const removed = collectFolderSubtree(prev, input.id);
-        return prev.filter((f) => !removed.has(f.id));
-      },
+      (prev, input) => removeBySet(prev, collectFolderSubtree(prev, input.id)),
       "Couldn't delete folder",
       [foldersKey, booksKey],
     ),

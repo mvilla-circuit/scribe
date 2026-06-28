@@ -9,6 +9,7 @@ import {
 export type ThemeMode = "light" | "dark" | "system";
 
 const STORAGE_KEY = "scribe-theme";
+const COLOR_SCHEME_QUERY = "(prefers-color-scheme: dark)";
 
 interface ThemeContextValue {
   mode: ThemeMode;
@@ -26,7 +27,7 @@ function readStoredMode(): ThemeMode {
 }
 
 function prefersDark(): boolean {
-  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  return window.matchMedia(COLOR_SCHEME_QUERY).matches;
 }
 
 function resolveMode(mode: ThemeMode): "light" | "dark" {
@@ -49,14 +50,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     resolveMode(readStoredMode()),
   );
 
-  // While in `system`, follow OS changes.
+  // Reflect the resolved theme to the DOM whenever it changes — the single place
+  // that mutates the root class, so every path (initial mount, setMode, and OS
+  // changes) goes through one apply.
+  useEffect(() => {
+    applyResolved(resolved);
+  }, [resolved]);
+
+  // While in `system`, follow OS changes by updating `resolved` (the effect
+  // above applies it to the DOM).
   useEffect(() => {
     if (mode !== "system") return;
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const media = window.matchMedia(COLOR_SCHEME_QUERY);
     const onChange = () => {
-      const next = media.matches ? "dark" : "light";
-      setResolved(next);
-      applyResolved(next);
+      setResolved(media.matches ? "dark" : "light");
     };
     media.addEventListener("change", onChange);
     return () => {
@@ -67,9 +74,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const setMode = (next: ThemeMode) => {
     localStorage.setItem(STORAGE_KEY, next);
     setModeState(next);
-    const nextResolved = resolveMode(next);
-    setResolved(nextResolved);
-    applyResolved(nextResolved);
+    setResolved(resolveMode(next));
   };
 
   return (

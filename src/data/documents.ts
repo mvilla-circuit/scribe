@@ -6,10 +6,15 @@ import type { FontMap } from "@/fonts/catalog";
 import { useAuth } from "@/lib/auth";
 import type { Json, Tables, TablesUpdate } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
+import { asJsonObject } from "@/lib/utils";
 
-import { optimisticListHandlers } from "./optimistic-list";
+import {
+  optimisticListHandlers,
+  patchById,
+  removeBySet,
+} from "./optimistic-list";
 import { byPosition, getPositionBetween } from "./ordering";
-import { pageIndexKey } from "./page-index";
+import { documentsKey, pageIndexKey } from "./query-keys";
 import { collectSubtree } from "./subtree";
 
 /** A single page row from the `documents` table. */
@@ -67,16 +72,8 @@ export type DocFontOverrides = FontMap;
 
 /** Typed view of the documents.font_overrides jsonb column. */
 export function docFontOverrides(doc: Document): DocFontOverrides {
-  const overrides = doc.font_overrides;
-  if (!overrides || typeof overrides !== "object" || Array.isArray(overrides)) {
-    return {};
-  }
-  return overrides;
+  return asJsonObject(doc.font_overrides);
 }
-
-// Documents are keyed per book so opening a book loads only its own pages and
-// optimistic mutations touch a single, well-scoped cache entry.
-export const documentsKey = (bookId: string) => ["documents", bookId] as const;
 
 /** Query hook for one book's pages, ordered by position. */
 export function useDocuments(bookId: string | null) {
@@ -303,8 +300,7 @@ export function useRenameDocument(bookId: string) {
     ...documentHandlers<RenameDocumentInput>(
       qc,
       key,
-      (prev, input) =>
-        prev.map((d) => (d.id === input.id ? { ...d, title: input.title } : d)),
+      (prev, input) => patchById(prev, input.id, { title: input.title }),
       "Couldn't rename page",
     ),
   });
@@ -326,8 +322,7 @@ export function useUpdateDocument(bookId: string) {
     ...documentHandlers<UpdateDocumentInput>(
       qc,
       key,
-      (prev, input) =>
-        prev.map((d) => (d.id === input.id ? { ...d, ...input } : d)),
+      (prev, input) => patchById(prev, input.id, input),
       "Couldn't update page",
     ),
   });
@@ -347,15 +342,10 @@ export function useMoveDocument(bookId: string) {
       qc,
       key,
       (prev, input) =>
-        prev.map((d) =>
-          d.id === input.id
-            ? {
-                ...d,
-                parent_document_id: input.parent_document_id,
-                position: input.position,
-              }
-            : d,
-        ),
+        patchById(prev, input.id, {
+          parent_document_id: input.parent_document_id,
+          position: input.position,
+        }),
       "Couldn't move page",
     ),
   });
@@ -378,10 +368,8 @@ export function useDeleteDocument(bookId: string) {
     ...documentHandlers<DeleteDocumentInput>(
       qc,
       key,
-      (prev, input) => {
-        const removed = collectDocumentSubtree(prev, input.id);
-        return prev.filter((d) => !removed.has(d.id));
-      },
+      (prev, input) =>
+        removeBySet(prev, collectDocumentSubtree(prev, input.id)),
       "Couldn't delete page",
     ),
   });
@@ -400,10 +388,7 @@ export function useUpdateDocumentContent(bookId: string) {
     ...documentHandlers<UpdateContentInput>(
       qc,
       key,
-      (prev, input) =>
-        prev.map((d) =>
-          d.id === input.id ? { ...d, content: input.content } : d,
-        ),
+      (prev, input) => patchById(prev, input.id, { content: input.content }),
       "Couldn't save changes",
     ),
   });
@@ -423,11 +408,7 @@ export function useUpdateDocumentFontOverrides(bookId: string) {
       qc,
       key,
       (prev, input) =>
-        prev.map((d) =>
-          d.id === input.id
-            ? { ...d, font_overrides: input.font_overrides }
-            : d,
-        ),
+        patchById(prev, input.id, { font_overrides: input.font_overrides }),
       "Couldn't update page fonts",
     ),
   });

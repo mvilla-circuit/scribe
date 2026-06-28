@@ -10,6 +10,31 @@ import { toast } from "sonner";
 /** Comparator used to keep an optimistically-updated cached list sorted. */
 export type Sorter<T> = (a: T, b: T) => number;
 
+/** Returns a new list with the row matching `id` shallow-merged with `patch`. */
+export function patchById<T extends { id: string }>(
+  rows: T[],
+  id: string,
+  patch: Partial<T>,
+): T[] {
+  return rows.map((row) => (row.id === id ? { ...row, ...patch } : row));
+}
+
+/** Returns a new list with the row matching `id` removed. */
+export function removeById<T extends { id: string }>(
+  rows: T[],
+  id: string,
+): T[] {
+  return rows.filter((row) => row.id !== id);
+}
+
+/** Returns a new list with every row whose id is in `ids` removed. */
+export function removeBySet<T extends { id: string }>(
+  rows: T[],
+  ids: Set<string>,
+): T[] {
+  return rows.filter((row) => !ids.has(row.id));
+}
+
 /** The snapshot captured in `onMutate` so `onError` can roll the cache back. */
 export interface ListMutationContext<T> {
   previous: T[] | undefined;

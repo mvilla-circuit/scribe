@@ -17,7 +17,7 @@ import {
   useDeleteBook,
   useRenameBook,
 } from "./books";
-import { pageIndexKey } from "./page-index";
+import { pageIndexKey } from "./query-keys";
 
 // Avoid pulling auth.tsx (and its Tauri plugin imports) into the test runtime;
 // the hooks under test don't depend on the session.
