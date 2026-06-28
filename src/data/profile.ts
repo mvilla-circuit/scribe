@@ -4,8 +4,9 @@ import type { FontMap } from "@/fonts/catalog";
 import { useAuth } from "@/lib/auth";
 import type { Json, Tables } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
-import { asJsonObject } from "@/lib/utils";
 
+import { execWrite, requireUserId } from "./crud";
+import { coerceFontMap } from "./font-map";
 import { optimisticObjectHandlers } from "./optimistic-list";
 import { profileKey } from "./query-keys";
 
@@ -46,14 +47,7 @@ export function useProfile() {
 export function profileFonts(
   profile: Profile | null | undefined,
 ): ProfileFonts {
-  const fonts = asJsonObject(profile?.fonts);
-  // The jsonb column is untrusted: keep only entries whose value is a string
-  // (a fontId), never leaking non-string values to consumers.
-  const result: Record<string, string> = {};
-  for (const [role, value] of Object.entries(fonts)) {
-    if (typeof value === "string") result[role] = value;
-  }
-  return result;
+  return coerceFontMap(profile?.fonts);
 }
 
 /**
@@ -65,13 +59,10 @@ export function useUpdateProfileFonts() {
   const { session } = useAuth();
   return useMutation({
     mutationFn: async (fonts: ProfileFonts) => {
-      const userId = session?.user.id;
-      if (!userId) throw new Error("Not authenticated");
-      const { error } = await supabase
-        .from("profiles")
-        .update({ fonts: fonts })
-        .eq("id", userId);
-      if (error) throw error;
+      const userId = requireUserId(session);
+      await execWrite(
+        supabase.from("profiles").update({ fonts: fonts }).eq("id", userId),
+      );
     },
     ...optimisticObjectHandlers<Profile, ProfileFonts>({
       qc,

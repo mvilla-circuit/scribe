@@ -5,16 +5,13 @@ import type { FontMap } from "@/fonts/catalog";
 import { useAuth } from "@/lib/auth";
 import type { Json, Tables, TablesUpdate } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
-import { asJsonObject } from "@/lib/utils";
 
+import { execWrite, requireUserId } from "./crud";
 import { collectDocumentSubtree } from "./document-duplicate";
-import {
-  optimisticListHandlers,
-  patchById,
-  removeBySet,
-} from "./optimistic-list";
+import { coerceFontMap } from "./font-map";
+import { listHandlers, patchById, removeBySet } from "./optimistic-list";
 import { byPosition } from "./ordering";
-import { documentsKey, pageIndexKey } from "./query-keys";
+import { documentsKey, NO_BOOK, pageIndexKey } from "./query-keys";
 
 /** A single page row from the `documents` table. */
 export type Document = Tables<"documents">;
@@ -71,13 +68,13 @@ export type DocFontOverrides = FontMap;
 
 /** Typed view of the documents.font_overrides jsonb column. */
 export function docFontOverrides(doc: Document): DocFontOverrides {
-  return asJsonObject(doc.font_overrides);
+  return coerceFontMap(doc.font_overrides);
 }
 
 /** Query hook for one book's pages, ordered by position. */
 export function useDocuments(bookId: string | null) {
   return useQuery({
-    queryKey: documentsKey(bookId ?? "__none__"),
+    queryKey: documentsKey(bookId ?? NO_BOOK),
     enabled: bookId !== null,
     queryFn: async (): Promise<Document[]> => {
       if (bookId === null) return [];
@@ -93,30 +90,27 @@ export function useDocuments(bookId: string | null) {
 }
 
 // Shared config for every optimistic documents mutation, scoped to one book's
-// per-book cache entry.
+// per-book cache entry. Always refreshes the cross-book page index too, so page
+// link cards re-resolve their title/icon/breadcrumb when a document changes.
 function documentHandlers<V>(
   qc: ReturnType<typeof useQueryClient>,
   key: ReturnType<typeof documentsKey>,
   update: (prev: Document[], variables: V) => Document[],
   errorMessage: string,
 ) {
-  return optimisticListHandlers<Document, V>({
+  return listHandlers<Document, V>({
     qc,
     key,
-    sort: byPosition,
     update,
     errorMessage,
-    // Keep the cross-book page index fresh too, so page link cards re-resolve
-    // their title/icon/breadcrumb when a document is renamed, moved, or deleted.
-    invalidateKeys: [key, pageIndexKey],
+    alsoInvalidate: [pageIndexKey],
   });
 }
 
 // Patches a single document by id. Backs rename/update/move/content/font hooks
 // so their mutationFns stay one-liners over a single typed Supabase call.
 async function updateDocumentRow(id: string, patch: TablesUpdate<"documents">) {
-  const { error } = await supabase.from("documents").update(patch).eq("id", id);
-  if (error) throw error;
+  await execWrite(supabase.from("documents").update(patch).eq("id", id));
 }
 
 /**
@@ -160,16 +154,14 @@ export function useCreateDocument(bookId: string) {
 
   return useMutation({
     mutationFn: async (input: CreateDocumentInput) => {
-      const userId = session?.user.id;
-      if (!userId) throw new Error("Not authenticated");
+      const userId = requireUserId(session);
       // Drop the DB-managed timestamps so Postgres defaults them on insert.
       const {
         created_at: _created,
         updated_at: _updated,
         ...row
       } = newDocumentRow(input, bookId, userId);
-      const { error } = await supabase.from("documents").insert(row);
-      if (error) throw error;
+      await execWrite(supabase.from("documents").insert(row));
     },
     ...documentHandlers<CreateDocumentInput>(
       qc,
@@ -195,8 +187,7 @@ export function useDuplicateDocument(bookId: string) {
 
   return useMutation({
     mutationFn: async (input: DuplicateDocumentInput) => {
-      const userId = session?.user.id;
-      if (!userId) throw new Error("Not authenticated");
+      const userId = requireUserId(session);
       // Stamp the owner and let Postgres default the timestamps; every other
       // column carries over verbatim from the pre-built duplicate rows.
       const rows = input.rows.map(
@@ -205,8 +196,7 @@ export function useDuplicateDocument(bookId: string) {
           user_id: userId,
         }),
       );
-      const { error } = await supabase.from("documents").insert(rows);
-      if (error) throw error;
+      await execWrite(supabase.from("documents").insert(rows));
     },
     ...documentHandlers<DuplicateDocumentInput>(
       qc,
@@ -290,11 +280,7 @@ export function useDeleteDocument(bookId: string) {
   const key = documentsKey(bookId);
   return useMutation({
     mutationFn: async (input: DeleteDocumentInput) => {
-      const { error } = await supabase
-        .from("documents")
-        .delete()
-        .eq("id", input.id);
-      if (error) throw error;
+      await execWrite(supabase.from("documents").delete().eq("id", input.id));
     },
     // The page and its descendants cascade away in the DB; remove the same set
     // optimistically so the outline and TOC update instantly.
@@ -348,13 +334,22 @@ export function useUpdateDocumentFontOverrides(bookId: string) {
 }
 
 /**
+ * Whether a loaded page list still needs its single Title Page created. Pure so
+ * the policy ("every book has exactly one Title Page") is testable in isolation
+ * from the effect that acts on it.
+ */
+export function needsTitlePage(documents: Document[]): boolean {
+  return !documents.some((d) => d.is_title_page);
+}
+
+/**
  * Ensures every book has exactly one Title Page. Called when a book opens: once
  * its documents have loaded and none is flagged is_title_page, it creates one.
  * The optimistic insert flips the guard immediately, so it never double-creates.
  */
 export function useEnsureTitlePage(bookId: string | null) {
   const query = useDocuments(bookId);
-  const createDocument = useCreateDocument(bookId ?? "__none__");
+  const createDocument = useCreateDocument(bookId ?? NO_BOOK);
   const create = createDocument.mutate;
 
   const documents = query.data;
@@ -366,7 +361,7 @@ export function useEnsureTitlePage(bookId: string | null) {
 
   useEffect(() => {
     if (!bookId || !ready || !documents) return;
-    if (documents.some((d) => d.is_title_page)) return;
+    if (!needsTitlePage(documents)) return;
     if (attempted.current.has(bookId)) return;
     attempted.current.add(bookId);
     create(

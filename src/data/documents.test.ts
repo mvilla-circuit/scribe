@@ -15,6 +15,7 @@ import {
 } from "./document-duplicate";
 import {
   docFontOverrides,
+  needsTitlePage,
   useDeleteDocument,
   useDocuments,
   useEnsureTitlePage,
@@ -129,6 +130,24 @@ describe("buildDocumentDuplicate", () => {
     const docs = [makeDocument({ id: "a", title: "" })];
     const { rows, rootId } = buildDocumentDuplicate(docs, "a")!;
     expect(rows.find((r) => r.id === rootId)!.title).toBe("Untitled copy");
+  });
+});
+
+describe("needsTitlePage", () => {
+  it("is true when no page is flagged as the title page", () => {
+    expect(needsTitlePage([])).toBe(true);
+    expect(
+      needsTitlePage([makeDocument({ id: "a", is_title_page: false })]),
+    ).toBe(true);
+  });
+
+  it("is false once a title page exists", () => {
+    expect(
+      needsTitlePage([
+        makeDocument({ id: "a", is_title_page: false }),
+        makeDocument({ id: "title", is_title_page: true }),
+      ]),
+    ).toBe(false);
   });
 });
 

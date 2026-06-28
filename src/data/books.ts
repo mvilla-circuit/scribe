@@ -1,4 +1,3 @@
-import type { QueryKey } from "@tanstack/react-query";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { FontMap } from "@/fonts/catalog";
@@ -7,11 +6,9 @@ import type { Tables, TablesUpdate } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
 import { asJsonObject } from "@/lib/utils";
 
-import {
-  optimisticListHandlers,
-  patchById,
-  removeById,
-} from "./optimistic-list";
+import { execWrite, requireUserId } from "./crud";
+import { coerceFontMap } from "./font-map";
+import { listHandlers, patchById, removeById } from "./optimistic-list";
 import { byPosition } from "./ordering";
 import { booksKey, pageIndexKey } from "./query-keys";
 
@@ -59,7 +56,7 @@ export function bookTheme(book: Book): BookTheme {
 
 /** The book's per-role font overrides (a partial role -> fontId map). */
 export function bookFontOverrides(book: Book): FontMap {
-  return asJsonObject(bookTheme(book).fonts);
+  return coerceFontMap(bookTheme(book).fonts);
 }
 
 /**
@@ -87,28 +84,33 @@ export function useBooks() {
   });
 }
 
-// Shared config for every optimistic books mutation: same cache key + sort.
-function bookHandlers<V>(
-  qc: ReturnType<typeof useQueryClient>,
-  update: (prev: Book[], variables: V) => Book[],
-  errorMessage: string,
-  invalidateKeys?: QueryKey[],
-) {
-  return optimisticListHandlers<Book, V>({
-    qc,
-    key: booksKey,
-    sort: byPosition,
-    update,
-    errorMessage,
-    invalidateKeys,
-  });
-}
-
 // Patches a single book by id. Backs rename/update/move so their mutationFns
 // stay one-liners over a single typed Supabase call.
 async function updateBookRow(id: string, patch: TablesUpdate<"books">) {
-  const { error } = await supabase.from("books").update(patch).eq("id", id);
-  if (error) throw error;
+  await execWrite(supabase.from("books").update(patch).eq("id", id));
+}
+
+/**
+ * Builds the full books row for a freshly created book. Both the Supabase
+ * insert and the optimistic cache entry derive from this one place so the
+ * column set can't drift (the insert drops the DB-managed timestamps and lets
+ * Postgres default them), mirroring `newDocumentRow`.
+ */
+function newBookRow(input: CreateBookInput, userId: string): Book {
+  const now = new Date().toISOString();
+  return {
+    id: input.id,
+    user_id: userId,
+    title: input.title,
+    subtitle: null,
+    cover_url: null,
+    icon: null,
+    theme: {},
+    folder_id: input.folder_id,
+    position: input.position,
+    created_at: now,
+    updated_at: now,
+  };
 }
 
 /** Mutation hook that creates a book (optimistically appended to the cache). */
@@ -118,40 +120,24 @@ export function useCreateBook() {
 
   return useMutation({
     mutationFn: async (input: CreateBookInput) => {
-      const userId = session?.user.id;
-      if (!userId) throw new Error("Not authenticated");
-      const { error } = await supabase.from("books").insert({
-        id: input.id,
-        user_id: userId,
-        title: input.title,
-        folder_id: input.folder_id,
-        position: input.position,
-      });
-      if (error) throw error;
+      const userId = requireUserId(session);
+      // Drop the DB-managed timestamps so Postgres defaults them on insert.
+      const {
+        created_at: _created,
+        updated_at: _updated,
+        ...row
+      } = newBookRow(input, userId);
+      await execWrite(supabase.from("books").insert(row));
     },
-    ...bookHandlers<CreateBookInput>(
+    ...listHandlers<Book, CreateBookInput>({
       qc,
-      (prev, input) => {
-        const now = new Date().toISOString();
-        return [
-          ...prev,
-          {
-            id: input.id,
-            user_id: session?.user.id ?? "",
-            title: input.title,
-            subtitle: null,
-            cover_url: null,
-            icon: null,
-            theme: {},
-            folder_id: input.folder_id,
-            position: input.position,
-            created_at: now,
-            updated_at: now,
-          },
-        ];
-      },
-      "Couldn't create book",
-    ),
+      key: booksKey,
+      update: (prev, input) => [
+        ...prev,
+        newBookRow(input, session?.user.id ?? ""),
+      ],
+      errorMessage: "Couldn't create book",
+    }),
   });
 }
 
@@ -161,11 +147,13 @@ export function useRenameBook() {
   return useMutation({
     mutationFn: (input: RenameBookInput) =>
       updateBookRow(input.id, { title: input.title }),
-    ...bookHandlers<RenameBookInput>(
+    ...listHandlers<Book, RenameBookInput>({
       qc,
-      (prev, input) => patchById(prev, input.id, { title: input.title }),
-      "Couldn't rename book",
-    ),
+      key: booksKey,
+      update: (prev, input) =>
+        patchById(prev, input.id, { title: input.title }),
+      errorMessage: "Couldn't rename book",
+    }),
   });
 }
 
@@ -180,11 +168,12 @@ export function useUpdateBook() {
       const { id, ...patch } = input;
       return updateBookRow(id, patch);
     },
-    ...bookHandlers<UpdateBookInput>(
+    ...listHandlers<Book, UpdateBookInput>({
       qc,
-      (prev, input) => patchById(prev, input.id, input),
-      "Couldn't update book",
-    ),
+      key: booksKey,
+      update: (prev, input) => patchById(prev, input.id, input),
+      errorMessage: "Couldn't update book",
+    }),
   });
 }
 
@@ -197,15 +186,16 @@ export function useMoveBook() {
         folder_id: input.folder_id,
         position: input.position,
       }),
-    ...bookHandlers<MoveBookInput>(
+    ...listHandlers<Book, MoveBookInput>({
       qc,
-      (prev, input) =>
+      key: booksKey,
+      update: (prev, input) =>
         patchById(prev, input.id, {
           folder_id: input.folder_id,
           position: input.position,
         }),
-      "Couldn't move book",
-    ),
+      errorMessage: "Couldn't move book",
+    }),
   });
 }
 
@@ -214,20 +204,17 @@ export function useDeleteBook() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: DeleteBookInput) => {
-      const { error } = await supabase
-        .from("books")
-        .delete()
-        .eq("id", input.id);
-      if (error) throw error;
+      await execWrite(supabase.from("books").delete().eq("id", input.id));
     },
     // Deleting a book cascade-deletes its documents in the DB. The cross-book
     // page index spans every book, so invalidate it too (mirroring the document
     // mutations) or page link cards keep resolving to the now-deleted pages.
-    ...bookHandlers<DeleteBookInput>(
+    ...listHandlers<Book, DeleteBookInput>({
       qc,
-      (prev, input) => removeById(prev, input.id),
-      "Couldn't delete book",
-      [booksKey, pageIndexKey],
-    ),
+      key: booksKey,
+      update: (prev, input) => removeById(prev, input.id),
+      errorMessage: "Couldn't delete book",
+      alsoInvalidate: [pageIndexKey],
+    }),
   });
 }

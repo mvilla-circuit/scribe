@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
+import { requireUserId } from "./crud";
+
 // Allowed image types and max size for a user-uploaded page icon. Kept small:
 // icons render at tiny sizes, so there's no reason to accept large files.
 const ICON_UPLOAD_MAX_BYTES = 1024 * 1024; // 1 MB
@@ -24,8 +26,7 @@ export function useUploadIcon() {
   const { session } = useAuth();
   return useMutation({
     mutationFn: async (file: File): Promise<string> => {
-      const userId = session?.user.id;
-      if (!userId) throw new Error("Not authenticated");
+      const userId = requireUserId(session);
 
       const ext = ICON_UPLOAD_TYPES[file.type];
       if (!ext) throw new Error("Unsupported image type");

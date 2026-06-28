@@ -1,6 +1,8 @@
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { byPosition } from "./ordering";
+
 // Shared optimistic-update plumbing for the cached entities (books, folders,
 // documents, profile). Every mutation follows the same recipe: snapshot the
 // cache, apply an optimistic update, roll back + toast on error, and invalidate
@@ -116,6 +118,36 @@ export function optimisticListHandlers<T, V>(opts: {
       invalidateOnSettle(opts.qc, opts.invalidateKeys ?? [opts.key]);
     },
   };
+}
+
+/**
+ * Position-sorted preset over {@link optimisticListHandlers} for the by-id
+ * entity lists (books, folders, documents). Defaults the sort to
+ * {@link byPosition} and, when `alsoInvalidate` is given, settles by
+ * invalidating this list's key plus those extra derived keys — so each entity
+ * file only declares its key, optimistic updater, and message.
+ */
+export function listHandlers<
+  T extends { id: string; position: number; created_at: string },
+  V,
+>(opts: {
+  qc: QueryClient;
+  key: QueryKey;
+  update: (prev: T[], variables: V) => T[];
+  errorMessage: string;
+  // Extra caches to refresh on settle alongside this list's own key.
+  alsoInvalidate?: QueryKey[];
+}) {
+  return optimisticListHandlers<T, V>({
+    qc: opts.qc,
+    key: opts.key,
+    sort: byPosition,
+    update: opts.update,
+    errorMessage: opts.errorMessage,
+    invalidateKeys: opts.alsoInvalidate
+      ? [opts.key, ...opts.alsoInvalidate]
+      : undefined,
+  });
 }
 
 /**

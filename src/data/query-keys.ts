@@ -16,6 +16,12 @@ export const profileKey = ["profile"] as const;
 export const pageIndexKey = ["page-index"] as const;
 
 /**
+ * Sentinel bookId used to key the documents query when no book is selected, so
+ * the (disabled) query still has a stable key instead of a hand-typed literal.
+ */
+export const NO_BOOK = "__none__";
+
+/**
  * Cache key for one book's pages. Documents are keyed per book so opening a book
  * loads only its own pages and optimistic mutations touch a single cache entry.
  */
