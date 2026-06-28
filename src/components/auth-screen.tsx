@@ -66,7 +66,7 @@ export function AuthScreen() {
         </button>
 
         {error && (
-          <p className="mt-4 text-center text-sm text-red-500">{error}</p>
+          <p className="mt-4 text-center text-sm text-danger">{error}</p>
         )}
 
         <p className="mt-6 text-center text-xs text-muted">

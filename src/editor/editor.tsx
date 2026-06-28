@@ -14,6 +14,7 @@ import type { Json } from "@/lib/database.types";
 import { BlockHandle } from "./block-handle";
 import { BubbleToolbar } from "./bubble-toolbar";
 import { buildExtensions } from "./extensions";
+import { LinkPrompt } from "./extensions/link-prompt";
 import { PagePicker } from "./extensions/page-picker";
 import { TableControls } from "./extensions/table-controls";
 import { HEADING_SELECTOR } from "./headings";
@@ -251,6 +252,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           <BlockHandle editor={editor} />
           <TableControls editor={editor} />
           <PagePicker />
+          <LinkPrompt />
         </>
       )}
       <EditorContent editor={editor} />

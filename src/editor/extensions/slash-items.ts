@@ -21,6 +21,7 @@ import { calloutContent } from "./callout";
 import { columnsContent } from "./columns";
 import { essayContent } from "./essay";
 import { insertLinkCard } from "./link-card-commands";
+import { useLinkPrompt } from "./link-prompt-store";
 import { insertPageLink } from "./page-link";
 import { usePagePicker } from "./page-picker-store";
 import { quoteContent } from "./quote";
@@ -130,9 +131,10 @@ const slashItems: SlashItem[] = [
     aliases: ["link", "url", "embed", "web"],
     run: (editor, range) => {
       at(editor, range).run();
-      const input = window.prompt("Paste a link URL");
-      const url = input ? normalizeUrl(input) : null;
-      if (url) insertLinkCard(editor, url);
+      useLinkPrompt.getState().open((input) => {
+        const url = normalizeUrl(input);
+        if (url) insertLinkCard(editor, url);
+      });
     },
   },
   {

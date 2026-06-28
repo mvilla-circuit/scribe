@@ -163,7 +163,21 @@ export default defineConfig([
           message:
             "Avoid `as unknown` double-casts; model the type or use a type guard instead.",
         },
+        {
+          // Enforce the "Tokens, never raw values" design rule for `className`
+          // string literals: a raw Tailwind palette color (e.g. `text-red-600`,
+          // `bg-emerald-500`) has no light/dark pair and bypasses the theme.
+          // Use a theme token (`text-danger`, `bg-success`, `text-muted`, ...).
+          // Only catches literals (colors composed via variables slip through).
+          selector:
+            "JSXAttribute[name.name='className'] Literal[value=/\\b(?:text|bg|border|ring|fill|stroke|from|via|to|divide|outline|decoration|accent|caret|shadow)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\\d{2,3}\\b/]",
+          message:
+            "Use a theme token (bg-surface, text-muted, text-danger, bg-success) instead of a raw Tailwind palette color; every color needs a light/dark pair.",
+        },
       ],
+      // Native dialogs (`window.alert`/`confirm`/`prompt`) are jarring and
+      // unstyled inside the desktop shell; use an in-app dialog/popover instead.
+      "no-alert": "error",
       "no-console": ["warn", { allow: ["warn", "error"] }],
       eqeqeq: ["error", "always", { null: "ignore" }],
       // Non-sibling imports go through the `@/` alias; only same-directory

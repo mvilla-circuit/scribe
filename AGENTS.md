@@ -42,6 +42,7 @@ All of these are enforced by ESLint/Prettier — follow them so `verify` stays g
 - **Suppressions**: every `eslint-disable` needs an inline `-- reason`. Unused disable directives are an error.
 - **JSDoc**: the exported API of the `data/`, `lib/`, `fonts/`, `store/`, and `editor/` layers requires a description block (no `{type}` tags — TypeScript carries the types).
 - **Logging**: `console` is limited to `warn` and `error`.
+- **No native dialogs**: `window.alert`/`confirm`/`prompt` are banned (`no-alert`); use an in-app dialog or popover (e.g. the store-driven `LinkDialog`/`PagePicker`).
 - **Formatting**: Prettier — 2-space indent, double quotes, semicolons, trailing commas, 80-col width. Don't hand-format; run `npm run format`.
 
 ## Design guidelines
@@ -55,9 +56,11 @@ adding or changing UI, hold to the direction inferred from the existing styles
   heavy borders, drop shadows for their own sake, or loud color. If an element
   doesn't earn its place, leave it out. Whitespace is a feature.
 - **Tokens, never raw values**: style through the theme tokens (CSS variables /
-  Tailwind theme colors like `bg-surface`, `text-muted`, `border-border`), never
-  hardcoded hex or ad-hoc `rgba()` in components. Every color must have a
-  light/dark pair — both themes are first-class, so verify both.
+  Tailwind theme colors like `bg-surface`, `text-muted`, `border-border`,
+  `text-danger`, `bg-success`), never hardcoded hex or ad-hoc `rgba()` in
+  components. Every color must have a light/dark pair — both themes are
+  first-class, so verify both. Lint blocks raw Tailwind palette colors
+  (`text-red-600`, `bg-emerald-500`) in `className` string literals.
 - **Color**: warm and quiet, not stark. The page is warm paper (`--bg`), not pure
   white; ink is a warm near-black (`--text`); secondary text is a muted stone
   gray (`--muted`). There is a single restrained blue `--accent` — use it
