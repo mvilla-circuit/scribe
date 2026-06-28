@@ -1,4 +1,4 @@
-import type { ChainedCommands } from "@tiptap/core";
+import { type ChainedCommands, posToDOMRect } from "@tiptap/core";
 import { type Editor, useEditorState } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { memo, type ReactNode, useCallback, useState } from "react";
@@ -16,7 +16,7 @@ import {
   StrikeIcon,
   UnderlineIcon,
 } from "./icons";
-import { LinkDialog } from "./link-dialog";
+import { LinkPopover } from "./link-popover";
 import { normalizeHref } from "./normalize-href";
 import { preserveSelection } from "./preserve-selection";
 import { hasFormattableSelection } from "./selection";
@@ -87,13 +87,15 @@ export const BubbleToolbar = memo(function BubbleToolbar({
 }) {
   const [colorOpen, setColorOpen] = useState(false);
   // Snapshot of the selection (and any existing link) taken when the link
-  // editor opens. The dialog steals focus from the editor — collapsing the DOM
-  // selection — so we restore this exact range before applying the mark.
-  const [linkDialog, setLinkDialog] = useState<{
+  // editor opens. The popover steals focus from the editor — collapsing the DOM
+  // selection — so we restore this exact range before applying the mark, and we
+  // anchor the popover to the selection's rect captured at the same moment.
+  const [linkEditor, setLinkEditor] = useState<{
     href: string;
     hasLink: boolean;
     from: number;
     to: number;
+    rect: DOMRect;
   } | null>(null);
 
   // Stable so `BubbleMenu` doesn't reconfigure its plugin on unrelated re-renders.
@@ -125,33 +127,34 @@ export const BubbleToolbar = memo(function BubbleToolbar({
     const { from, to } = editor.state.selection;
     const attrs = editor.getAttributes("link");
     const href = typeof attrs.href === "string" ? attrs.href : "";
-    setLinkDialog({ href, hasLink: editor.isActive("link"), from, to });
+    const rect = posToDOMRect(editor.view, from, to);
+    setLinkEditor({ href, hasLink: editor.isActive("link"), from, to, rect });
   };
 
   const applyLink = (href: string) => {
-    if (!linkDialog) return;
+    if (!linkEditor) return;
     const normalized = normalizeHref(href);
     if (!normalized) return;
     editor
       .chain()
       .focus()
-      .setTextSelection({ from: linkDialog.from, to: linkDialog.to })
+      .setTextSelection({ from: linkEditor.from, to: linkEditor.to })
       .extendMarkRange("link")
       .setLink({ href: normalized })
       .run();
-    setLinkDialog(null);
+    setLinkEditor(null);
   };
 
   const removeLink = () => {
-    if (!linkDialog) return;
+    if (!linkEditor) return;
     editor
       .chain()
       .focus()
-      .setTextSelection({ from: linkDialog.from, to: linkDialog.to })
+      .setTextSelection({ from: linkEditor.from, to: linkEditor.to })
       .extendMarkRange("link")
       .unsetLink()
       .run();
-    setLinkDialog(null);
+    setLinkEditor(null);
   };
 
   return (
@@ -197,13 +200,20 @@ export const BubbleToolbar = memo(function BubbleToolbar({
       </BubbleMenu>
       {/* Rendered as a sibling of the bubble menu (not a child): opening it
           blurs the editor, which hides the menu and would unmount any nested
-          dialog mid-interaction. */}
-      <LinkDialog
-        open={linkDialog !== null}
-        initialHref={linkDialog?.href ?? ""}
-        hasLink={linkDialog?.hasLink ?? false}
+          popover mid-interaction. The same unified popover backs hover/edit
+          (see LinkHoverLayer); here it opens in "add" mode over the selection. */}
+      <LinkPopover
+        open={linkEditor !== null}
         onOpenChange={(open) => {
-          if (!open) setLinkDialog(null);
+          if (!open) setLinkEditor(null);
+        }}
+        mode="add"
+        href={linkEditor?.href ?? ""}
+        hasLink={linkEditor?.hasLink ?? false}
+        editable
+        anchorRect={linkEditor?.rect ?? null}
+        onOpenUrl={() => {
+          // No-op: add mode never shows the Open action (no link exists yet).
         }}
         onSubmit={applyLink}
         onRemove={removeLink}

@@ -1,5 +1,6 @@
 import "./editor.css";
 
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { EditorContent, type JSONContent, useEditor } from "@tiptap/react";
 import {
   forwardRef,
@@ -18,6 +19,8 @@ import { LinkPrompt } from "./extensions/link-prompt";
 import { PagePicker } from "./extensions/page-picker";
 import { TableControls } from "./extensions/table-controls";
 import { HEADING_SELECTOR } from "./headings";
+import { LinkHoverLayer } from "./link-hover-layer";
+import { openLinkFromEvent } from "./link-interaction";
 import { extractHeadings, type OutlineHeading } from "./outline";
 import { CALLOUT_DEFAULT } from "./palette";
 import { type PersistFn, type SaveState, useAutosave } from "./use-autosave";
@@ -173,6 +176,17 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         // the last lines actually have room to lift off the bottom.
         scrollThreshold: { top: 80, bottom: 160, left: 0, right: 0 },
         scrollMargin: { top: 80, bottom: 160, left: 0, right: 0 },
+        // A plain click on a link opens it in the OS browser (via the Tauri
+        // opener) instead of just placing the caret, so readers can follow a
+        // link they've previewed in the hover card. Returning true suppresses
+        // ProseMirror's default selection handling for that click.
+        handleClick: (view, _pos, event) =>
+          openLinkFromEvent(event, {
+            openUrl: (url) => {
+              void openUrl(url);
+            },
+            hasTextSelection: !view.state.selection.empty,
+          }),
         // Backspace on an empty first row hands focus back to the page title
         // (the inverse of Enter-from-title). Only fires when the caret sits at
         // the very start of an empty leading paragraph.
@@ -263,6 +277,9 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           <LinkPrompt />
         </>
       )}
+      {/* Outside the editable gate so the URL preview (and open/copy) also work
+          while reading; edit/remove controls self-gate on editor.isEditable. */}
+      {editor && <LinkHoverLayer editor={editor} />}
       <EditorContent editor={editor} />
     </div>
   );

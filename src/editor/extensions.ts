@@ -50,6 +50,10 @@ export function buildExtensions(): Extensions {
       blockquote: false,
       // Disabled in favour of the combinable inline Code added below.
       code: false,
+      // We handle link clicks ourselves (open in the OS browser via the Tauri
+      // opener) and show an inline link popover, so disable StarterKit's built-in
+      // open-on-click.
+      link: { openOnClick: false },
     }),
     // Raise the highlight's priority so its <mark> wraps bold/italic/etc.
     // (everything except the underline, which sits one level further out at

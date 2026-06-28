@@ -39,6 +39,7 @@ import {
   Palette,
   PanelLeft,
   PanelTop,
+  Pencil,
   Plus,
   Quote,
   RefreshCw,
@@ -100,6 +101,7 @@ export const ExternalLinkIcon = makeIcon(ExternalLink);
 export const CopyIcon = makeIcon(Copy);
 export const CopyToClipboardIcon = makeIcon(ClipboardCopy);
 export const RefreshIcon = makeIcon(RefreshCw);
+export const PencilIcon = makeIcon(Pencil);
 export const TrashIcon = makeIcon(Trash2);
 export const PlusIcon = makeIcon(Plus);
 export const MinusIcon = makeIcon(Minus);

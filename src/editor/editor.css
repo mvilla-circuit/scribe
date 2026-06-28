@@ -297,6 +297,15 @@
   text-decoration-color: var(--color-accent);
 }
 
+/* --- Inline link popover URL --- */
+.scribe-linkpop-url {
+  font-family: var(--font-code);
+  font-size: 0.8rem;
+  color: var(--color-text);
+  word-break: break-all;
+  line-height: 1.5;
+}
+
 /* --- Marks --- */
 .scribe-prose strong {
   font-weight: 700;
