@@ -3,7 +3,11 @@ import { describe, expect, it } from "vitest";
 import type { PageIndexEntry } from "@/data/page-index";
 import { makeBook } from "@/test/fixtures";
 
-import { buildPageLinkOptions, resolvePageTarget } from "./page-link-resolve";
+import {
+  buildPageLinkOptions,
+  indexById,
+  resolvePageTarget,
+} from "./page-link-resolve";
 
 function entry(overrides: Partial<PageIndexEntry> = {}): PageIndexEntry {
   return {
@@ -19,13 +23,13 @@ function entry(overrides: Partial<PageIndexEntry> = {}): PageIndexEntry {
 
 describe("resolvePageTarget", () => {
   it("returns null for a null target id", () => {
-    expect(resolvePageTarget([], [], "document", null)).toBeNull();
+    expect(resolvePageTarget([], indexById([]), "document", null)).toBeNull();
   });
 
   it("resolves a book target to its title, icon, and a 'Book' breadcrumb", () => {
     const books = [makeBook({ id: "b1", title: "My Book", icon: "📕" })];
 
-    const resolved = resolvePageTarget(books, [], "book", "b1");
+    const resolved = resolvePageTarget(books, indexById([]), "book", "b1");
 
     expect(resolved).toEqual({
       title: "My Book",
@@ -38,14 +42,19 @@ describe("resolvePageTarget", () => {
   });
 
   it("returns null when the book target is missing", () => {
-    expect(resolvePageTarget([], [], "book", "missing")).toBeNull();
+    expect(resolvePageTarget([], indexById([]), "book", "missing")).toBeNull();
   });
 
   it("resolves a top-level document with a book-only breadcrumb", () => {
     const books = [makeBook({ id: "b1", title: "My Book" })];
     const index = [entry({ id: "d1", title: "Intro", book_id: "b1" })];
 
-    const resolved = resolvePageTarget(books, index, "document", "d1");
+    const resolved = resolvePageTarget(
+      books,
+      indexById(index),
+      "document",
+      "d1",
+    );
 
     expect(resolved).toMatchObject({
       title: "Intro",
@@ -74,7 +83,12 @@ describe("resolvePageTarget", () => {
       }),
     ];
 
-    const resolved = resolvePageTarget(books, index, "document", "child");
+    const resolved = resolvePageTarget(
+      books,
+      indexById(index),
+      "document",
+      "child",
+    );
 
     expect(resolved?.breadcrumb).toBe("Book / Parent");
     expect(resolved?.docId).toBe("child");
@@ -86,14 +100,19 @@ describe("resolvePageTarget", () => {
       entry({ id: "title", title: "", book_id: "b1", is_title_page: true }),
     ];
 
-    const resolved = resolvePageTarget(books, index, "document", "title");
+    const resolved = resolvePageTarget(
+      books,
+      indexById(index),
+      "document",
+      "title",
+    );
 
     expect(resolved?.title).toBe("Book Title");
     expect(resolved?.docId).toBeNull();
   });
 
   it("returns null when the document target is missing from the index", () => {
-    expect(resolvePageTarget([], [], "document", "nope")).toBeNull();
+    expect(resolvePageTarget([], indexById([]), "document", "nope")).toBeNull();
   });
 
   it("does not loop on a cyclic parent chain", () => {
@@ -104,7 +123,12 @@ describe("resolvePageTarget", () => {
     ];
 
     // Should terminate (guard against cycles) rather than hang.
-    const resolved = resolvePageTarget(books, index, "document", "a");
+    const resolved = resolvePageTarget(
+      books,
+      indexById(index),
+      "document",
+      "a",
+    );
     expect(resolved?.docId).toBe("a");
   });
 });

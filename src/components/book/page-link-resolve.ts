@@ -7,17 +7,29 @@ import type {
 import type { PageTargetType } from "@/editor/extensions/page-ref";
 
 /**
+ * Index the page entries by id for O(1) target + ancestor lookups. Build this
+ * once per index (the host memoizes it) and hand it to {@link resolvePageTarget}
+ * so the map isn't rebuilt on every card's every render.
+ */
+export function indexById(
+  index: PageIndexEntry[],
+): Map<string, PageIndexEntry> {
+  return new Map(index.map((e) => [e.id, e]));
+}
+
+/**
  * Resolve a page-link target to the live title/icon/breadcrumb shown on its
- * card. Pure over the current books + page index so a rename elsewhere flows
- * straight through on the next render. Returns null when the target can't be
- * found (it may be loading, deleted, or in a book the user can no longer see).
+ * card. Pure over the current books + page index (passed as a prebuilt id map)
+ * so a rename elsewhere flows straight through on the next render. Returns null
+ * when the target can't be found (it may be loading, deleted, or in a book the
+ * user can no longer see).
  *
  * Previously inlined in the page-link node view; lifted here so the editor
  * depends only on the resolved shape, not on how pages are stored.
  */
 export function resolvePageTarget(
   books: Book[],
-  index: PageIndexEntry[],
+  byId: Map<string, PageIndexEntry>,
   targetType: PageTargetType,
   targetId: string | null,
 ): ResolvedPageTarget | null {
@@ -36,10 +48,9 @@ export function resolvePageTarget(
     };
   }
 
-  const target = index.find((e) => e.id === targetId);
+  const target = byId.get(targetId);
   if (!target) return null;
   const book = books.find((b) => b.id === target.book_id);
-  const byId = new Map(index.map((e) => [e.id, e]));
 
   // Walk the ancestor chain up to (but not including) the book's title page,
   // guarding against cycles, to build the "Book / Parent / …" trail.

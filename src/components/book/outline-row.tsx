@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 import {
   DuplicateIcon,
   PencilIcon,
@@ -26,15 +28,19 @@ function DocIcon({ document }: { document: FlatDocNode["document"] }) {
   );
 }
 
+// Handlers take the row's id/node so the parent can pass one stable set of
+// callbacks for the whole outline (rather than a fresh closure per row per
+// render), which is what lets `OutlineRow` actually skip re-rendering under
+// `memo`.
 interface OutlineRowHandlers {
-  onToggleExpand: () => void;
-  onSelect: () => void;
-  onStartRename: () => void;
-  onCommitRename: (value: string) => void;
+  onToggleExpand: (id: string) => void;
+  onSelect: (id: string) => void;
+  onStartRename: (id: string) => void;
+  onCommitRename: (node: FlatDocNode, value: string) => void;
   onCancelRename: () => void;
-  onDelete: () => void;
-  onDuplicate: () => void;
-  onNewChild: () => void;
+  onDelete: (node: FlatDocNode) => void;
+  onDuplicate: (node: FlatDocNode) => void;
+  onNewChild: (id: string) => void;
 }
 
 type OutlineRowProps = OutlineRowHandlers & {
@@ -46,7 +52,7 @@ type OutlineRowProps = OutlineRowHandlers & {
   projectionDepth: number | null;
 };
 
-export function OutlineRow({
+export const OutlineRow = memo(function OutlineRow({
   node,
   selected,
   editing,
@@ -85,7 +91,7 @@ export function OutlineRow({
           aria-label={expanded ? "Collapse" : "Expand"}
           onClick={(e) => {
             e.stopPropagation();
-            onToggleExpand();
+            onToggleExpand(node.id);
           }}
           onPointerDown={(e) => {
             e.stopPropagation();
@@ -108,22 +114,30 @@ export function OutlineRow({
     {
       icon: <PlusIcon size={15} />,
       label: "Add page inside",
-      onSelect: onNewChild,
+      onSelect: () => {
+        onNewChild(node.id);
+      },
     },
     {
       icon: <PencilIcon size={15} />,
       label: "Rename",
-      onSelect: onStartRename,
+      onSelect: () => {
+        onStartRename(node.id);
+      },
     },
     {
       icon: <DuplicateIcon size={15} />,
       label: "Duplicate",
-      onSelect: onDuplicate,
+      onSelect: () => {
+        onDuplicate(node);
+      },
     },
     {
       icon: <TrashIcon size={15} />,
       label: "Delete",
-      onSelect: onDelete,
+      onSelect: () => {
+        onDelete(node);
+      },
       danger: true,
       separatorBefore: true,
     },
@@ -137,7 +151,7 @@ export function OutlineRow({
         aria-label="Add page inside"
         onClick={(e) => {
           e.stopPropagation();
-          onNewChild();
+          onNewChild(node.id);
         }}
         onPointerDown={(e) => {
           e.stopPropagation();
@@ -163,13 +177,19 @@ export function OutlineRow({
       renamePlaceholder="Untitled"
       menuActions={menuActions}
       leadingActions={leadingActions}
-      onActivate={onSelect}
-      onStartRename={onStartRename}
-      onCommitRename={onCommitRename}
+      onActivate={() => {
+        onSelect(node.id);
+      }}
+      onStartRename={() => {
+        onStartRename(node.id);
+      }}
+      onCommitRename={(value) => {
+        onCommitRename(node, value);
+      }}
       onCancelRename={onCancelRename}
     />
   );
-}
+});
 
 // Clean single-line chip rendered in the DragOverlay so the lifted row follows
 // the cursor without its controls.

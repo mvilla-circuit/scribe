@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
 import { BookIcon } from "@/components/sidebar/icons";
 import {
@@ -73,6 +73,14 @@ export function OutlinePanel({ book }: { book: Book }) {
   const deleteDocument = useDeleteDocument(book.id);
 
   const panel = useTreePanel<DeleteTarget>();
+  // Pull out the stable members (react-query's `mutate`, the panel's
+  // `useCallback`s) so the memoized row callbacks below can depend on them
+  // without listing the whole per-render mutation/panel objects — which would
+  // rebuild the callbacks every render and defeat the row memoization.
+  const { mutate: createDocumentMutate } = createDocument;
+  const { mutate: duplicateDocumentMutate } = duplicateDocument;
+  const { mutate: renameDocumentMutate } = renameDocument;
+  const { startRename, cancelRename, requestDelete } = panel;
 
   const expanded = useMemo(() => new Set(expandedArr), [expandedArr]);
   const tree = useMemo(() => buildDocTree(documents), [documents]);
@@ -88,7 +96,7 @@ export function OutlinePanel({ book }: { book: Book }) {
       project: getDocProjection,
       neighbours: neighbourPositions,
       onDragStart: () => {
-        panel.cancelRename();
+        cancelRename();
       },
       onMove: ({ id, parentId, position }) => {
         moveDocument.mutate({
@@ -100,48 +108,66 @@ export function OutlinePanel({ book }: { book: Book }) {
       },
     });
 
-  const endPosition = (parentId: string | null) =>
-    endPositionFor(
-      documents.filter(
-        (d) => !d.is_title_page && d.parent_document_id === parentId,
-      ),
-    );
+  // Stable across renders (deps are store actions, stable mutate fns, and the
+  // documents list) so the memoized rows only re-render when their own data
+  // changes — not on every selection, rename, or drag-move tick.
+  const handleCreate = useCallback(
+    (parentId: string | null) => {
+      const id = crypto.randomUUID();
+      if (parentId) setDocExpanded(parentId, true);
+      createDocumentMutate({
+        id,
+        title: "Untitled",
+        parent_document_id: parentId,
+        position: endPositionFor(
+          documents.filter(
+            (d) => !d.is_title_page && d.parent_document_id === parentId,
+          ),
+        ),
+      });
+      setActiveDoc(id);
+      startRename(id);
+    },
+    [
+      setDocExpanded,
+      createDocumentMutate,
+      documents,
+      setActiveDoc,
+      startRename,
+    ],
+  );
 
-  const handleCreate = (parentId: string | null) => {
-    const id = crypto.randomUUID();
-    if (parentId) setDocExpanded(parentId, true);
-    createDocument.mutate({
-      id,
-      title: "Untitled",
-      parent_document_id: parentId,
-      position: endPosition(parentId),
-    });
-    setActiveDoc(id);
-    panel.startRename(id);
-  };
+  const onDuplicate = useCallback(
+    (node: FlatDocNode) => {
+      const plan = buildDocumentDuplicate(documents, node.id);
+      if (!plan) return;
+      duplicateDocumentMutate({
+        rows: plan.rows,
+        sourceByNewId: plan.sourceByNewId,
+      });
+      setActiveDoc(plan.rootId);
+    },
+    [documents, duplicateDocumentMutate, setActiveDoc],
+  );
 
-  const handleDuplicate = (node: FlatDocNode) => {
-    const plan = buildDocumentDuplicate(documents, node.id);
-    if (!plan) return;
-    duplicateDocument.mutate({
-      rows: plan.rows,
-      sourceByNewId: plan.sourceByNewId,
-    });
-    setActiveDoc(plan.rootId);
-  };
+  const onCommitRename = useCallback(
+    (node: FlatDocNode, value: string) => {
+      cancelRename();
+      renameDocumentMutate({ id: node.id, title: value });
+    },
+    [cancelRename, renameDocumentMutate],
+  );
 
-  const commitRename = (node: FlatDocNode, value: string) => {
-    panel.cancelRename();
-    renameDocument.mutate({ id: node.id, title: value });
-  };
-
-  const requestDelete = (node: FlatDocNode) => {
-    panel.requestDelete({
-      id: node.id,
-      title: node.document.title || "Untitled",
-      descendants: descendantCount(documents, node.id),
-    });
-  };
+  const onDelete = useCallback(
+    (node: FlatDocNode) => {
+      requestDelete({
+        id: node.id,
+        title: node.document.title || "Untitled",
+        descendants: descendantCount(documents, node.id),
+      });
+    },
+    [requestDelete, documents],
+  );
 
   const confirmDelete = () => {
     const target = panel.deleteTarget;
@@ -240,30 +266,14 @@ export function OutlinePanel({ book }: { book: Book }) {
                 editing={panel.editingId === node.id}
                 expanded={expanded.has(node.id)}
                 projectionDepth={projectionDepthFor(node.id)}
-                onToggleExpand={() => {
-                  toggleDocExpanded(node.id);
-                }}
-                onSelect={() => {
-                  setActiveDoc(node.id);
-                }}
-                onStartRename={() => {
-                  panel.startRename(node.id);
-                }}
-                onCommitRename={(value) => {
-                  commitRename(node, value);
-                }}
-                onCancelRename={() => {
-                  panel.cancelRename();
-                }}
-                onDelete={() => {
-                  requestDelete(node);
-                }}
-                onDuplicate={() => {
-                  handleDuplicate(node);
-                }}
-                onNewChild={() => {
-                  handleCreate(node.id);
-                }}
+                onToggleExpand={toggleDocExpanded}
+                onSelect={setActiveDoc}
+                onStartRename={startRename}
+                onCommitRename={onCommitRename}
+                onCancelRename={cancelRename}
+                onDelete={onDelete}
+                onDuplicate={onDuplicate}
+                onNewChild={handleCreate}
               />
             ))}
           </TreeDndContainer>

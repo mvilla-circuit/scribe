@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import type { FontMap, FontRole } from "./catalog";
 import { clearFontOverride, setFontOverride } from "./overrides";
@@ -32,18 +32,26 @@ export function useFontOverrides({
   onChange,
   collapseEmpty = false,
 }: UseFontOverridesOptions): FontOverrideHandlers {
+  // Keep `onChange` in a ref so callers can pass an inline closure without
+  // busting the memo below: the handlers stay referentially stable across
+  // renders and only change when the override map (or collapse rule) does.
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
   return useMemo(
     () => ({
       setFont: (role, fontId) => {
-        onChange(setFontOverride(overrides, role, fontId));
+        onChangeRef.current(setFontOverride(overrides, role, fontId));
       },
       clearFont: (role) => {
-        onChange(clearFontOverride(overrides, role, collapseEmpty));
+        onChangeRef.current(clearFontOverride(overrides, role, collapseEmpty));
       },
       clearAll: () => {
-        onChange(collapseEmpty ? null : {});
+        onChangeRef.current(collapseEmpty ? null : {});
       },
     }),
-    [overrides, onChange, collapseEmpty],
+    [overrides, collapseEmpty],
   );
 }

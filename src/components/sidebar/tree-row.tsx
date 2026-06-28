@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 import { TreeRowShell } from "@/components/tree/tree-row-shell";
 import { DocumentIcon } from "@/components/ui/document-icon";
 import { type RowAction } from "@/components/ui/row-action-menu";
@@ -14,14 +16,17 @@ import {
 } from "./icons";
 import { SIDEBAR_ICON_SIZE, SidebarRowOverlay } from "./sidebar-row";
 
+// Handlers take the row's id/node so the parent can pass one stable set of
+// callbacks for the whole tree (rather than a fresh closure per row per render),
+// which is what lets `TreeRow` actually skip re-rendering under `memo`.
 interface TreeRowHandlers {
-  onToggleExpand: () => void;
-  onSelectBook: () => void;
-  onStartRename: () => void;
-  onCommitRename: (value: string) => void;
+  onToggleExpand: (id: string) => void;
+  onSelectBook: (id: string) => void;
+  onStartRename: (id: string) => void;
+  onCommitRename: (node: FlatNode, value: string) => void;
   onCancelRename: () => void;
-  onDelete: () => void;
-  onNewBookInside: () => void;
+  onDelete: (node: FlatNode) => void;
+  onNewBookInside: (id: string) => void;
 }
 
 type TreeRowProps = TreeRowHandlers & {
@@ -33,7 +38,7 @@ type TreeRowProps = TreeRowHandlers & {
   projectionDepth: number | null;
 };
 
-export function TreeRow({
+export const TreeRow = memo(function TreeRow({
   node,
   selected,
   editing,
@@ -80,20 +85,26 @@ export function TreeRow({
           {
             icon: <BookPlusIcon size={15} />,
             label: "New book",
-            onSelect: onNewBookInside,
+            onSelect: () => {
+              onNewBookInside(node.id);
+            },
           },
         ]
       : []),
     {
       icon: <PencilIcon size={15} />,
       label: "Rename",
-      onSelect: onStartRename,
+      onSelect: () => {
+        onStartRename(node.id);
+      },
       separatorBefore: isFolder,
     },
     {
       icon: <TrashIcon size={15} />,
       label: "Delete",
-      onSelect: onDelete,
+      onSelect: () => {
+        onDelete(node);
+      },
       danger: true,
       separatorBefore: true,
     },
@@ -112,13 +123,20 @@ export function TreeRow({
       label={label}
       renamePlaceholder={isFolder ? "Folder name" : "Untitled"}
       menuActions={menuActions}
-      onActivate={isFolder ? onToggleExpand : onSelectBook}
-      onStartRename={onStartRename}
-      onCommitRename={onCommitRename}
+      onActivate={() => {
+        if (isFolder) onToggleExpand(node.id);
+        else onSelectBook(node.id);
+      }}
+      onStartRename={() => {
+        onStartRename(node.id);
+      }}
+      onCommitRename={(value) => {
+        onCommitRename(node, value);
+      }}
       onCancelRename={onCancelRename}
     />
   );
-}
+});
 
 // A lightweight, non-interactive copy of a row rendered inside the DragOverlay
 // so the lifted item reads as a single clean chip following the cursor.

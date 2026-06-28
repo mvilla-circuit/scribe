@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo } from "react";
+import { type ReactNode, useCallback, useMemo } from "react";
 
 import {
   neighbourPositions,
@@ -63,6 +63,14 @@ export function SidebarTree() {
   const createRootItem = useCreateRootItem();
 
   const panel = useTreePanel<DeleteTarget>();
+  // Pull out the stable members (react-query's `mutate`, the panel's
+  // `useCallback`s) so the memoized row callbacks below can depend on them
+  // without listing the whole per-render mutation/panel objects — which would
+  // rebuild the callbacks every render and defeat the row memoization.
+  const { mutate: createBookMutate } = createBook;
+  const { mutate: renameFolderMutate } = renameFolder;
+  const { mutate: renameBookMutate } = renameBook;
+  const { startRename, cancelRename, requestDelete } = panel;
 
   const folders = useMemo(() => foldersQuery.data ?? [], [foldersQuery.data]);
   const books = useMemo(() => booksQuery.data ?? [], [booksQuery.data]);
@@ -81,7 +89,7 @@ export function SidebarTree() {
       project: getProjection,
       neighbours: neighbourPositions,
       onDragStart: () => {
-        panel.cancelRename();
+        cancelRename();
       },
       onMove: ({ id, parentId, position, node }) => {
         if (node.kind === "folder") {
@@ -94,50 +102,61 @@ export function SidebarTree() {
     });
 
   // Books may be created inside a folder; folders only ever live at the root, so
-  // top-level creation goes through the shared root-item policy.
-  const newBookInside = (folderId: string) => {
-    setFolderExpanded(folderId, true);
-    const id = crypto.randomUUID();
-    createBook.mutate({
-      id,
-      title: "Untitled",
-      folder_id: folderId,
-      position: endPositionFor(childrenOf(model, folderId)),
-    });
-    panel.startRename(id);
-  };
+  // top-level creation goes through the shared root-item policy. Stable across
+  // renders (deps are store actions, stable mutate fns, and the tree model) so
+  // the memoized rows only re-render when their own data changes.
+  const onNewBookInside = useCallback(
+    (folderId: string) => {
+      setFolderExpanded(folderId, true);
+      const id = crypto.randomUUID();
+      createBookMutate({
+        id,
+        title: "Untitled",
+        folder_id: folderId,
+        position: endPositionFor(childrenOf(model, folderId)),
+      });
+      startRename(id);
+    },
+    [setFolderExpanded, createBookMutate, model, startRename],
+  );
 
   const createRootBook = () => {
-    panel.startRename(createRootItem.createBook());
+    startRename(createRootItem.createBook());
   };
 
   const createRootFolder = () => {
-    panel.startRename(createRootItem.createFolder());
+    startRename(createRootItem.createFolder());
   };
 
-  const commitRename = (node: FlatNode, value: string) => {
-    panel.cancelRename();
-    if (node.kind === "folder")
-      renameFolder.mutate({ id: node.id, name: value });
-    else renameBook.mutate({ id: node.id, title: value });
-  };
+  const onCommitRename = useCallback(
+    (node: FlatNode, value: string) => {
+      cancelRename();
+      if (node.kind === "folder")
+        renameFolderMutate({ id: node.id, name: value });
+      else renameBookMutate({ id: node.id, title: value });
+    },
+    [cancelRename, renameFolderMutate, renameBookMutate],
+  );
 
-  const requestDelete = (node: FlatNode) => {
-    if (node.child.kind === "folder") {
-      panel.requestDelete({
-        kind: "folder",
-        id: node.id,
-        name: node.child.folder.name,
-        books: countBooksInFolder(model, node.id),
-      });
-    } else {
-      panel.requestDelete({
-        kind: "book",
-        id: node.id,
-        title: node.child.book.title,
-      });
-    }
-  };
+  const onDelete = useCallback(
+    (node: FlatNode) => {
+      if (node.child.kind === "folder") {
+        requestDelete({
+          kind: "folder",
+          id: node.id,
+          name: node.child.folder.name,
+          books: countBooksInFolder(model, node.id),
+        });
+      } else {
+        requestDelete({
+          kind: "book",
+          id: node.id,
+          title: node.child.book.title,
+        });
+      }
+    },
+    [requestDelete, model],
+  );
 
   const confirmDelete = () => {
     const target = panel.deleteTarget;
@@ -162,27 +181,13 @@ export function SidebarTree() {
       editing={panel.editingId === node.id}
       expanded={expanded.has(node.id)}
       projectionDepth={projectionDepthFor(node.id)}
-      onToggleExpand={() => {
-        toggleFolderExpanded(node.id);
-      }}
-      onSelectBook={() => {
-        setActiveBook(node.id);
-      }}
-      onStartRename={() => {
-        panel.startRename(node.id);
-      }}
-      onCommitRename={(value) => {
-        commitRename(node, value);
-      }}
-      onCancelRename={() => {
-        panel.cancelRename();
-      }}
-      onDelete={() => {
-        requestDelete(node);
-      }}
-      onNewBookInside={() => {
-        newBookInside(node.id);
-      }}
+      onToggleExpand={toggleFolderExpanded}
+      onSelectBook={setActiveBook}
+      onStartRename={startRename}
+      onCommitRename={onCommitRename}
+      onCancelRename={cancelRename}
+      onDelete={onDelete}
+      onNewBookInside={onNewBookInside}
     />
   );
 

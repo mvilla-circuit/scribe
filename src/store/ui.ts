@@ -1,5 +1,9 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import {
+  createJSONStorage,
+  persist,
+  type StateStorage,
+} from "zustand/middleware";
 
 export const SIDEBAR_MIN_WIDTH = 200;
 export const SIDEBAR_MAX_WIDTH = 420;
@@ -81,6 +85,25 @@ export function migrateUIState(state: unknown): PersistedUIState {
   };
 }
 
+// `persist` fires `setItem` on *every* store change, including per-session
+// selection (`activeBookId`/`activeDocId`), which `partialize` deliberately
+// drops. Re-serializing and writing the same layout/expansion JSON back to
+// localStorage on each page navigation is wasted work on a hot path, so this
+// wrapper skips writes whose payload matches what was last written for the key.
+const lastWritten = new Map<string, string>();
+const dedupedStorage: StateStorage = {
+  getItem: (name) => localStorage.getItem(name),
+  setItem: (name, value) => {
+    if (lastWritten.get(name) === value) return;
+    lastWritten.set(name, value);
+    localStorage.setItem(name, value);
+  },
+  removeItem: (name) => {
+    lastWritten.delete(name);
+    localStorage.removeItem(name);
+  },
+};
+
 export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
@@ -119,6 +142,7 @@ export const useUIStore = create<UIState>()(
     {
       name: "scribe-ui",
       version: 1,
+      storage: createJSONStorage(() => dedupedStorage),
       // Persist layout prefs + which folders/docs are open; selection is
       // per-session.
       partialize: (s): PersistedUIState => ({

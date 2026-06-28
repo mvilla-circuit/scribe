@@ -5,7 +5,11 @@ import { usePageIndex } from "@/data/page-index";
 import { type EditorBridge, EditorBridgeContext } from "@/editor/editor-bridge";
 import { useUIStore } from "@/store/ui";
 
-import { buildPageLinkOptions, resolvePageTarget } from "./page-link-resolve";
+import {
+  buildPageLinkOptions,
+  indexById,
+  resolvePageTarget,
+} from "./page-link-resolve";
 
 /**
  * Supplies the editor's {@link EditorBridge} from the app's data layer and UI
@@ -19,10 +23,13 @@ export function EditorBridgeHost({ children }: { children: ReactNode }) {
   const setActiveBook = useUIStore((s) => s.setActiveBook);
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
 
+  // Build the id map once per index, not inside every card's resolve call.
+  const byId = useMemo(() => indexById(index), [index]);
+
   const resolve = useCallback<EditorBridge["resolvePageTarget"]>(
     (targetType, targetId) =>
-      resolvePageTarget(books, index, targetType, targetId),
-    [books, index],
+      resolvePageTarget(books, byId, targetType, targetId),
+    [books, byId],
   );
 
   const pageLinkOptions = useMemo(

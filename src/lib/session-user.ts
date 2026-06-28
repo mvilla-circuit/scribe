@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+
 import { useAuth } from "./auth";
 
 /** A signed-in user's display details derived from the Supabase session. */
@@ -19,17 +21,24 @@ export interface SessionUser {
  */
 export function useSessionUser(): SessionUser {
   const { session } = useAuth();
-  const meta = session?.user.user_metadata ?? {};
-  const fullName =
-    (meta.full_name as string | undefined) ?? (meta.name as string | undefined);
-  const email = session?.user.email ?? session?.user.id;
-  return {
-    name: fullName ?? email,
-    firstName: fullName ? (fullName.trim().split(/\s+/)[0] ?? null) : null,
-    email,
-    avatarUrl:
-      (meta.avatar_url as string | undefined) ??
-      (meta.picture as string | undefined) ??
-      null,
-  };
+  const user = session?.user;
+  // Re-derive only when the underlying user changes, so consumers get a stable
+  // object reference across unrelated re-renders rather than a fresh one each
+  // time (which would defeat any downstream memoization).
+  return useMemo<SessionUser>(() => {
+    const meta = user?.user_metadata ?? {};
+    const fullName =
+      (meta.full_name as string | undefined) ??
+      (meta.name as string | undefined);
+    const email = user?.email ?? user?.id;
+    return {
+      name: fullName ?? email,
+      firstName: fullName ? (fullName.trim().split(/\s+/)[0] ?? null) : null,
+      email,
+      avatarUrl:
+        (meta.avatar_url as string | undefined) ??
+        (meta.picture as string | undefined) ??
+        null,
+    };
+  }, [user]);
 }

@@ -44,12 +44,25 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
   const { mode, setMode } = useTheme();
   const collapsed = useUIStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
-  const width = useUIStore((s) => s.sidebarWidth);
+  const storedWidth = useUIStore((s) => s.sidebarWidth);
   const setSidebarWidth = useUIStore((s) => s.setSidebarWidth);
   const setActiveBook = useUIStore((s) => s.setActiveBook);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const { onMouseDown } = useDragResize({ onResize: setSidebarWidth });
+  // During a drag the width is driven locally (one update per frame) so the
+  // persisted store — and thus localStorage — isn't written on every mousemove;
+  // the final width is committed once on release.
+  const [dragWidth, setDragWidth] = useState<number | null>(null);
+  const width = dragWidth ?? storedWidth;
+  const { onMouseDown } = useDragResize({
+    onResize: (x) => {
+      setDragWidth(Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, x)));
+    },
+    onCommit: (x) => {
+      setSidebarWidth(x);
+      setDragWidth(null);
+    },
+  });
 
   return (
     <aside
