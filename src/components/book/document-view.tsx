@@ -18,8 +18,8 @@ import { Editor, type EditorHandle } from "@/editor/editor";
 import type { OutlineHeading } from "@/editor/outline";
 import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";
-import type { FontMap, FontRole } from "@/fonts/catalog";
 import { resolveFonts } from "@/fonts/resolve";
+import { useFontOverrides } from "@/fonts/use-font-overrides";
 import { useScopedFonts } from "@/fonts/use-scoped-fonts";
 import { cn, formatDateTime, formatRelativeTime } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
@@ -81,16 +81,13 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
   const titleFont = "var(--font-display)";
   const bodyFont = "var(--font-text)";
 
-  const writePageFonts = (fonts: FontMap | null) => {
-    updateFontOverrides.mutate({ id: document.id, font_overrides: fonts });
-  };
-  const setPageFont = (role: FontRole, fontId: string) => {
-    writePageFonts({ ...overrides, [role]: fontId });
-  };
-  const clearPageFont = (role: FontRole) => {
-    const { [role]: _removed, ...rest } = overrides;
-    writePageFonts(Object.keys(rest).length > 0 ? rest : null);
-  };
+  const pageFonts = useFontOverrides({
+    overrides,
+    collapseEmpty: true,
+    onChange: (fonts) => {
+      updateFontOverrides.mutate({ id: document.id, font_overrides: fonts });
+    },
+  });
 
   const titleBlock = (
     <>
@@ -214,11 +211,9 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
             inheritLabel="book"
             overrides={overrides}
             inherited={resolveFonts(globalFonts, bookOverrides)}
-            onSet={setPageFont}
-            onClear={clearPageFont}
-            onClearAll={() => {
-              writePageFonts(null);
-            }}
+            onSet={pageFonts.setFont}
+            onClear={pageFonts.clearFont}
+            onClearAll={pageFonts.clearAll}
           />
         </span>
       </nav>

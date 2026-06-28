@@ -14,8 +14,8 @@ import { buildDocTree, expandableDocIds } from "@/data/doc-tree";
 import { type Document, useCreateDocument } from "@/data/documents";
 import { getPositionBetween } from "@/data/ordering";
 import { profileFonts, useProfile } from "@/data/profile";
-import type { FontMap, FontRole } from "@/fonts/catalog";
 import { resolveFonts } from "@/fonts/resolve";
+import { useFontOverrides } from "@/fonts/use-font-overrides";
 import { useScopedFonts } from "@/fonts/use-scoped-fonts";
 import { useUIStore } from "@/store/ui";
 
@@ -80,16 +80,15 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
     setExpandedIds(allExpanded ? new Set() : new Set(expandable));
   };
 
-  const writeBookFonts = (fonts: FontMap) => {
-    updateBook.mutate({ id: book.id, theme: { ...bookTheme(book), fonts } });
-  };
-  const setBookFont = (role: FontRole, fontId: string) => {
-    writeBookFonts({ ...bookOverrides, [role]: fontId });
-  };
-  const clearBookFont = (role: FontRole) => {
-    const { [role]: _removed, ...rest } = bookOverrides;
-    writeBookFonts(rest);
-  };
+  const bookFonts = useFontOverrides({
+    overrides: bookOverrides,
+    onChange: (fonts) => {
+      updateBook.mutate({
+        id: book.id,
+        theme: { ...bookTheme(book), fonts: fonts ?? {} },
+      });
+    },
+  });
 
   const createFirstPage = () => {
     const id = crypto.randomUUID();
@@ -168,11 +167,9 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
             inheritLabel="global"
             overrides={bookOverrides}
             inherited={resolveFonts(globalFonts)}
-            onSet={setBookFont}
-            onClear={clearBookFont}
-            onClearAll={() => {
-              writeBookFonts({});
-            }}
+            onSet={bookFonts.setFont}
+            onClear={bookFonts.clearFont}
+            onClearAll={bookFonts.clearAll}
           />
         </span>
       </nav>
