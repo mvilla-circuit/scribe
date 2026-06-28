@@ -5,7 +5,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 
 import { PaletteIcon } from "./icons";
 import { type Swatch } from "./palette";
-import { SwatchGrid } from "./swatch-grid";
+import { SwatchSection } from "./swatch-grid";
 
 // The shared accent/color control for editor block menus — the quote accent,
 // the essay accent, and the callout background all render through this. A
@@ -70,10 +70,8 @@ export function BlockColorPopover({
           sideOffset={6}
           className="scribe-pop z-50 w-[12rem] rounded-lg border border-border bg-elevated p-3 text-text shadow-popover outline-none"
         >
-          <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.07em] text-muted">
-            {label}
-          </div>
-          <SwatchGrid
+          <SwatchSection
+            label={label}
             swatches={swatches}
             value={value}
             onChange={onChange}

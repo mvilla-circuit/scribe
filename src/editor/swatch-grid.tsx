@@ -80,3 +80,39 @@ export function SwatchGrid({
     </div>
   );
 }
+
+// A labelled swatch grid: an uppercase section header above a `SwatchGrid`.
+// Shared by the bubble toolbar's combined color flyout (Text / Highlight /
+// Underline sections) and the block accent/background popover, so the header +
+// grid pairing stays identical across both.
+export function SwatchSection({
+  label,
+  swatches,
+  value,
+  onChange,
+  clearLabel,
+}: {
+  /** Uppercase section header, e.g. "Text" or "Accent". */
+  label: string;
+  swatches: Swatch[];
+  /** The active value (a swatch `value`, or null when cleared). */
+  value: string | null;
+  /** Receives the picked swatch value, or null to clear. */
+  onChange: (value: string | null) => void;
+  /** Tooltip + label for the clear (slashed-circle) chip. */
+  clearLabel: string;
+}) {
+  return (
+    <div>
+      <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.07em] text-muted">
+        {label}
+      </div>
+      <SwatchGrid
+        swatches={swatches}
+        value={value}
+        onChange={onChange}
+        clearLabel={clearLabel}
+      />
+    </div>
+  );
+}

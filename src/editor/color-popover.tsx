@@ -5,8 +5,8 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 import { ChevronDownIcon } from "./icons";
-import { HIGHLIGHT_COLORS, type Swatch, TEXT_COLORS } from "./palette";
-import { SwatchGrid } from "./swatch-grid";
+import { HIGHLIGHT_COLORS, TEXT_COLORS } from "./palette";
+import { SwatchSection } from "./swatch-grid";
 
 // A single combined color control: one trigger opens a flyout holding both the
 // text-color and highlight palettes. It lives *inside* the bubble toolbar (no
@@ -134,59 +134,31 @@ export function ColorPopover({
             "rounded-xl border border-border bg-elevated p-3 shadow-popover",
           )}
         >
-          <Section
+          <SwatchSection
             label="Text"
             swatches={TEXT_COLORS}
-            active={textColor}
+            value={textColor}
             onChange={setText}
             clearLabel="Default color"
           />
           <div className="my-3 h-px bg-border" />
-          <Section
+          <SwatchSection
             label="Highlight"
             swatches={HIGHLIGHT_COLORS}
-            active={highlightColor}
+            value={highlightColor}
             onChange={setHighlight}
             clearLabel="No highlight"
           />
           <div className="my-3 h-px bg-border" />
-          <Section
+          <SwatchSection
             label="Underline"
             swatches={TEXT_COLORS}
-            active={underlineColor}
+            value={underlineColor}
             onChange={setUnderline}
             clearLabel="No underline"
           />
         </div>
       )}
-    </div>
-  );
-}
-
-function Section({
-  label,
-  swatches,
-  active,
-  onChange,
-  clearLabel,
-}: {
-  label: string;
-  swatches: Swatch[];
-  active: string | null;
-  onChange: (value: string | null) => void;
-  clearLabel: string;
-}) {
-  return (
-    <div>
-      <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.07em] text-muted">
-        {label}
-      </div>
-      <SwatchGrid
-        swatches={swatches}
-        value={active}
-        onChange={onChange}
-        clearLabel={clearLabel}
-      />
     </div>
   );
 }
