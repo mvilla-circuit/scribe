@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { cn } from "@/lib/utils";
+import { cn, resolveEditedValue } from "@/lib/utils";
 
 interface InlineRenameProps {
   initialValue: string;
@@ -34,9 +34,10 @@ export function InlineRename({
   const commit = () => {
     if (settled.current) return;
     settled.current = true;
-    const trimmed = value.trim();
-    if (trimmed.length === 0) onCancel();
-    else onCommit(trimmed);
+    // A blank or unchanged name closes the field without a redundant rename.
+    const outcome = resolveEditedValue(value, { previous: initialValue });
+    if (outcome.commit) onCommit(outcome.value);
+    else onCancel();
   };
 
   const cancel = () => {

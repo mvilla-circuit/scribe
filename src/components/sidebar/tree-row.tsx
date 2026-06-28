@@ -1,14 +1,6 @@
-import {
-  rowActivationHandlers,
-  useSortableRow,
-} from "@/components/tree/row-interactions";
+import { TreeRowShell } from "@/components/tree/tree-row-shell";
 import { DocumentIcon } from "@/components/ui/document-icon";
-import { InlineRename } from "@/components/ui/inline-rename";
-import {
-  type RowAction,
-  RowActionDropdown,
-  RowContextMenu,
-} from "@/components/ui/row-action-menu";
+import { type RowAction } from "@/components/ui/row-action-menu";
 import { cn } from "@/lib/utils";
 
 import { type FlatNode } from "./dnd-tree";
@@ -20,11 +12,7 @@ import {
   PencilIcon,
   TrashIcon,
 } from "./icons";
-import {
-  SIDEBAR_ICON_SIZE,
-  SidebarRow,
-  SidebarRowOverlay,
-} from "./sidebar-row";
+import { SIDEBAR_ICON_SIZE, SidebarRowOverlay } from "./sidebar-row";
 
 interface TreeRowHandlers {
   onToggleExpand: () => void;
@@ -59,19 +47,9 @@ export function TreeRow({
   onDelete,
   onNewBookInside,
 }: TreeRowProps) {
-  const { setNodeRef, style, dragHandleProps, isDragging } = useSortableRow(
-    node.id,
-  );
-
   const child = node.child;
   const isFolder = child.kind === "folder";
   const label = child.kind === "folder" ? child.folder.name : child.book.title;
-
-  const activation = rowActivationHandlers({
-    editing,
-    onActivate: isFolder ? onToggleExpand : onSelectBook,
-    onStartRename,
-  });
 
   const icon = (
     <span
@@ -94,17 +72,6 @@ export function TreeRow({
         <BookIcon size={SIDEBAR_ICON_SIZE} />
       )}
     </span>
-  );
-
-  const labelNode = editing ? (
-    <InlineRename
-      initialValue={label}
-      onCommit={onCommitRename}
-      onCancel={onCancelRename}
-      placeholder={isFolder ? "Folder name" : "Untitled"}
-    />
-  ) : (
-    label
   );
 
   const menuActions: RowAction[] = [
@@ -132,14 +99,9 @@ export function TreeRow({
     },
   ];
 
-  const actions = <RowActionDropdown actions={menuActions} />;
-
-  const rowInner = (
-    <SidebarRow
-      setNodeRef={setNodeRef}
-      style={style}
-      dragHandleProps={dragHandleProps}
-      isDragging={isDragging}
+  return (
+    <TreeRowShell
+      id={node.id}
       depth={node.depth}
       projectionDepth={projectionDepth}
       selected={selected}
@@ -147,14 +109,15 @@ export function TreeRow({
       ariaExpanded={isFolder ? expanded : undefined}
       ariaSelected={!isFolder ? selected : undefined}
       icon={icon}
-      actions={actions}
-      {...activation}
-    >
-      {labelNode}
-    </SidebarRow>
+      label={label}
+      renamePlaceholder={isFolder ? "Folder name" : "Untitled"}
+      menuActions={menuActions}
+      onActivate={isFolder ? onToggleExpand : onSelectBook}
+      onStartRename={onStartRename}
+      onCommitRename={onCommitRename}
+      onCancelRename={onCancelRename}
+    />
   );
-
-  return <RowContextMenu actions={menuActions}>{rowInner}</RowContextMenu>;
 }
 
 // A lightweight, non-interactive copy of a row rendered inside the DragOverlay

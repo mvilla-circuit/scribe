@@ -5,20 +5,11 @@ import {
 } from "@/components/sidebar/icons";
 import {
   SIDEBAR_ICON_SIZE,
-  SidebarRow,
   SidebarRowOverlay,
 } from "@/components/sidebar/sidebar-row";
-import {
-  rowActivationHandlers,
-  useSortableRow,
-} from "@/components/tree/row-interactions";
+import { TreeRowShell } from "@/components/tree/tree-row-shell";
 import { DocumentIcon } from "@/components/ui/document-icon";
-import { InlineRename } from "@/components/ui/inline-rename";
-import {
-  type RowAction,
-  RowActionDropdown,
-  RowContextMenu,
-} from "@/components/ui/row-action-menu";
+import { type RowAction } from "@/components/ui/row-action-menu";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
@@ -70,17 +61,7 @@ export function OutlineRow({
   onDuplicate,
   onNewChild,
 }: OutlineRowProps) {
-  const { setNodeRef, style, dragHandleProps, isDragging } = useSortableRow(
-    node.id,
-  );
-
   const label = node.document.title || "Untitled";
-
-  const activation = rowActivationHandlers({
-    editing,
-    onActivate: onSelect,
-    onStartRename,
-  });
 
   // Always show the page's icon; for rows with children, reveal the
   // expand/collapse chevron over it on hover or focus (the icon fades out so the
@@ -123,17 +104,6 @@ export function OutlineRow({
     </span>
   );
 
-  const labelNode = editing ? (
-    <InlineRename
-      initialValue={label}
-      onCommit={onCommitRename}
-      onCancel={onCancelRename}
-      placeholder="Untitled"
-    />
-  ) : (
-    label
-  );
-
   const menuActions: RowAction[] = [
     {
       icon: <PlusIcon size={15} />,
@@ -159,35 +129,29 @@ export function OutlineRow({
     },
   ];
 
-  const actions = (
-    <>
-      <Tooltip content="Add page inside">
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-label="Add page inside"
-          onClick={(e) => {
-            e.stopPropagation();
-            onNewChild();
-          }}
-          onPointerDown={(e) => {
-            e.stopPropagation();
-          }}
-          className="flex h-6 w-6 items-center justify-center rounded text-muted hover:bg-hover hover:text-text"
-        >
-          <PlusIcon size={15} />
-        </button>
-      </Tooltip>
-      <RowActionDropdown actions={menuActions} />
-    </>
+  const leadingActions = (
+    <Tooltip content="Add page inside">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label="Add page inside"
+        onClick={(e) => {
+          e.stopPropagation();
+          onNewChild();
+        }}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+        }}
+        className="flex h-6 w-6 items-center justify-center rounded text-muted hover:bg-hover hover:text-text"
+      >
+        <PlusIcon size={15} />
+      </button>
+    </Tooltip>
   );
 
-  const rowInner = (
-    <SidebarRow
-      setNodeRef={setNodeRef}
-      style={style}
-      dragHandleProps={dragHandleProps}
-      isDragging={isDragging}
+  return (
+    <TreeRowShell
+      id={node.id}
       depth={node.depth}
       projectionDepth={projectionDepth}
       selected={selected}
@@ -195,14 +159,16 @@ export function OutlineRow({
       ariaExpanded={node.hasChildren ? expanded : undefined}
       ariaSelected={selected}
       icon={icon}
-      actions={actions}
-      {...activation}
-    >
-      {labelNode}
-    </SidebarRow>
+      label={label}
+      renamePlaceholder="Untitled"
+      menuActions={menuActions}
+      leadingActions={leadingActions}
+      onActivate={onSelect}
+      onStartRename={onStartRename}
+      onCommitRename={onCommitRename}
+      onCancelRename={onCancelRename}
+    />
   );
-
-  return <RowContextMenu actions={menuActions}>{rowInner}</RowContextMenu>;
 }
 
 // Clean single-line chip rendered in the DragOverlay so the lifted row follows

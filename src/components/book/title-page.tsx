@@ -11,7 +11,7 @@ import {
 } from "@/data/books";
 import { buildDocTree, expandableDocIds } from "@/data/doc-tree";
 import { type Document, useCreateDocument } from "@/data/documents";
-import { getPositionBetween } from "@/data/ordering";
+import { endPositionFor } from "@/data/ordering";
 import { useCascadedFonts } from "@/fonts/use-cascaded-fonts";
 import { useUIStore } from "@/store/ui";
 
@@ -90,12 +90,11 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
     const siblings = documents.filter(
       (d) => !d.is_title_page && d.parent_document_id === null,
     );
-    const last = siblings[siblings.length - 1];
     createDocument.mutate({
       id,
       title: "Untitled",
       parent_document_id: null,
-      position: getPositionBetween(last?.position, undefined),
+      position: endPositionFor(siblings),
     });
     setActiveDoc(id);
   };

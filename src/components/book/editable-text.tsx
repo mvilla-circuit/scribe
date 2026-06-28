@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 
-import { cn } from "@/lib/utils";
+import { cn, resolveEditedValue } from "@/lib/utils";
 
 export interface EditableTextHandle {
   /** Focus the field and place the caret at the end of its text. */
@@ -90,13 +90,14 @@ export const EditableText = forwardRef<EditableTextHandle, EditableTextProps>(
     }, [draft]);
 
     const commit = () => {
-      const trimmed = draft.trim();
-      if (!trimmed && !allowEmpty) {
-        setDraft(value);
-        return;
-      }
-      if (trimmed !== value) onCommit(trimmed);
-      else setDraft(trimmed);
+      const outcome = resolveEditedValue(draft, {
+        previous: value,
+        allowEmpty,
+      });
+      // Anything we don't commit (blank-and-disallowed, or unchanged) reverts the
+      // draft to the canonical value so the field never shows untrimmed text.
+      if (outcome.commit) onCommit(outcome.value);
+      else setDraft(value);
     };
 
     return (

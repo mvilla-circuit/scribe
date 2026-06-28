@@ -1,9 +1,10 @@
 import { Check, LogOut, PanelLeft, Settings, Type } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import type { Book } from "@/data/books";
 import { useAuth } from "@/lib/auth";
 import { makeIcon } from "@/lib/make-icon";
+import { useSessionUser } from "@/lib/session-user";
 import { SIDEBAR_MAX_WIDTH, SIDEBAR_MIN_WIDTH, useUIStore } from "@/store/ui";
 import { type ThemeMode, useTheme } from "@/theme/theme";
 
@@ -21,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Tooltip } from "./ui/tooltip";
+import { useDragResize } from "./ui/use-drag-resize";
 
 const COLLAPSED_WIDTH = 56;
 
@@ -37,7 +39,8 @@ const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
 ];
 
 export function Sidebar({ activeBook }: { activeBook: Book | null }) {
-  const { session, signOut } = useAuth();
+  const { signOut } = useAuth();
+  const { name, email, avatarUrl } = useSessionUser();
   const { mode, setMode } = useTheme();
   const collapsed = useUIStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
@@ -46,43 +49,7 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
   const setActiveBook = useUIStore((s) => s.setActiveBook);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const dragging = useRef(false);
-
-  const onMouseDown = useCallback(() => {
-    dragging.current = true;
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-  }, []);
-
-  useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      if (!dragging.current) return;
-      setSidebarWidth(e.clientX);
-    };
-    const onUp = () => {
-      if (!dragging.current) return;
-      dragging.current = false;
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-    };
-  }, [setSidebarWidth]);
-
-  const meta = session?.user.user_metadata ?? {};
-  const email = session?.user.email ?? session?.user.id;
-  const name =
-    (meta.full_name as string | undefined) ??
-    (meta.name as string | undefined) ??
-    email;
-  const avatarUrl =
-    (meta.avatar_url as string | undefined) ??
-    (meta.picture as string | undefined) ??
-    null;
+  const { onMouseDown } = useDragResize({ onResize: setSidebarWidth });
 
   return (
     <aside

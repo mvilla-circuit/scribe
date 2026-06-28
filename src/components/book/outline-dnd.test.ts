@@ -1,14 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { INDENT } from "@/components/tree/tree-dnd";
+import { INDENT, removeDescendants } from "@/components/tree/tree-dnd";
 import { buildDocTree } from "@/data/doc-tree";
 import { makeDocument } from "@/test/fixtures";
 
-import {
-  flattenDocTree,
-  getDocProjection,
-  removeDocDescendants,
-} from "./outline-dnd";
+import { flattenDocTree, getDocProjection } from "./outline-dnd";
 
 const docs = [
   makeDocument({ id: "ch1", position: 1024 }),
@@ -47,10 +43,10 @@ describe("getDocProjection", () => {
   });
 });
 
-describe("removeDocDescendants", () => {
+describe("removeDescendants", () => {
   it("drops the subtree of the dragged document", () => {
     const nodes = flattenDocTree(buildDocTree(docs), new Set(["ch1"]));
-    expect(removeDocDescendants(nodes, ["ch1"]).map((n) => n.id)).toEqual([
+    expect(removeDescendants(nodes, ["ch1"]).map((n) => n.id)).toEqual([
       "ch1",
       "ch2",
     ]);

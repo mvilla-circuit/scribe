@@ -1,12 +1,10 @@
 import { PenLine } from "lucide-react";
 import { useMemo } from "react";
 
-import { type Book, useBooks, useCreateBook } from "@/data/books";
-import { useCreateFolder, useFolders } from "@/data/folders";
-import { getPositionBetween } from "@/data/ordering";
-import { buildTree, childrenOf, ROOT } from "@/data/tree";
-import { useAuth } from "@/lib/auth";
+import { type Book, useBooks } from "@/data/books";
+import { useCreateRootItem } from "@/data/use-create-root-item";
 import { makeIcon } from "@/lib/make-icon";
+import { useSessionUser } from "@/lib/session-user";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
 
@@ -27,17 +25,11 @@ function greetingFor(date: Date): string {
 }
 
 export function MainEmptyState() {
-  const { session } = useAuth();
+  const { firstName } = useSessionUser();
   const { data: books, isLoading: booksLoading } = useBooks();
-  const { data: folders } = useFolders();
-  const createBook = useCreateBook();
-  const createFolder = useCreateFolder();
+  const createRootItem = useCreateRootItem();
   const setActiveBook = useUIStore((s) => s.setActiveBook);
 
-  const meta = session?.user.user_metadata ?? {};
-  const fullName =
-    (meta.full_name as string | undefined) ?? (meta.name as string | undefined);
-  const firstName = fullName?.trim().split(/\s+/)[0] ?? null;
   const greeting = greetingFor(new Date());
 
   const recent = useMemo(() => {
@@ -50,33 +42,12 @@ export function MainEmptyState() {
 
   const hasBooks = (books?.length ?? 0) > 0;
 
-  // Append a new root-level item, mirroring SidebarTree's ordering so books and
-  // folders interleave correctly even when folders are present at the root.
-  const rootEndPosition = () => {
-    const model = buildTree(folders ?? [], books ?? []);
-    const siblings = childrenOf(model, ROOT);
-    const last = siblings[siblings.length - 1];
-    return getPositionBetween(last?.position, undefined);
-  };
-
   const handleNewBook = () => {
-    const id = crypto.randomUUID();
-    createBook.mutate({
-      id,
-      title: "Untitled",
-      folder_id: null,
-      position: rootEndPosition(),
-    });
-    setActiveBook(id);
+    setActiveBook(createRootItem.createBook());
   };
 
   const handleNewFolder = () => {
-    createFolder.mutate({
-      id: crypto.randomUUID(),
-      name: "New folder",
-      parent_folder_id: null,
-      position: rootEndPosition(),
-    });
+    createRootItem.createFolder();
   };
 
   return (

@@ -1,7 +1,12 @@
-import { type ReactNode, useMemo, useState } from "react";
+import { type ReactNode, useMemo } from "react";
 
+import {
+  neighbourPositions,
+  removeDescendants,
+} from "@/components/tree/tree-dnd";
 import { TreeDndContainer } from "@/components/tree/tree-dnd-container";
 import { useTreeDnd } from "@/components/tree/use-tree-dnd";
+import { useTreePanel } from "@/components/tree/use-tree-panel";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -19,23 +24,17 @@ import {
   useRenameBook,
 } from "@/data/books";
 import {
-  useCreateFolder,
   useDeleteFolder,
   useFolders,
   useMoveFolder,
   useRenameFolder,
 } from "@/data/folders";
-import { getPositionBetween } from "@/data/ordering";
-import { buildTree, childrenOf, countBooksInFolder, ROOT } from "@/data/tree";
+import { endPositionFor } from "@/data/ordering";
+import { buildTree, childrenOf, countBooksInFolder } from "@/data/tree";
+import { useCreateRootItem } from "@/data/use-create-root-item";
 import { useUIStore } from "@/store/ui";
 
-import {
-  type FlatNode,
-  flattenTree,
-  getProjection,
-  neighbourPositions,
-  removeDescendants,
-} from "./dnd-tree";
+import { type FlatNode, flattenTree, getProjection } from "./dnd-tree";
 import { BookIcon, BookPlusIcon, FolderPlusIcon, PlusIcon } from "./icons";
 import { DragRowOverlay, TreeRow } from "./tree-row";
 import { TreeSkeleton } from "./tree-skeleton";
@@ -54,7 +53,6 @@ export function SidebarTree() {
   const activeBookId = useUIStore((s) => s.activeBookId);
   const setActiveBook = useUIStore((s) => s.setActiveBook);
 
-  const createFolder = useCreateFolder();
   const renameFolder = useRenameFolder();
   const moveFolder = useMoveFolder();
   const deleteFolder = useDeleteFolder();
@@ -62,9 +60,9 @@ export function SidebarTree() {
   const renameBook = useRenameBook();
   const moveBook = useMoveBook();
   const deleteBook = useDeleteBook();
+  const createRootItem = useCreateRootItem();
 
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const panel = useTreePanel<DeleteTarget>();
 
   const folders = useMemo(() => foldersQuery.data ?? [], [foldersQuery.data]);
   const books = useMemo(() => booksQuery.data ?? [], [booksQuery.data]);
@@ -83,7 +81,7 @@ export function SidebarTree() {
       project: getProjection,
       neighbours: neighbourPositions,
       onDragStart: () => {
-        setEditingId(null);
+        panel.cancelRename();
       },
       onMove: ({ id, parentId, position, node }) => {
         if (node.kind === "folder") {
@@ -95,37 +93,30 @@ export function SidebarTree() {
       },
     });
 
-  const endPosition = (containerId: string) => {
-    const siblings = childrenOf(model, containerId);
-    const last = siblings[siblings.length - 1];
-    return getPositionBetween(last?.position, undefined);
+  // Books may be created inside a folder; folders only ever live at the root, so
+  // top-level creation goes through the shared root-item policy.
+  const newBookInside = (folderId: string) => {
+    setFolderExpanded(folderId, true);
+    const id = crypto.randomUUID();
+    createBook.mutate({
+      id,
+      title: "Untitled",
+      folder_id: folderId,
+      position: endPositionFor(childrenOf(model, folderId)),
+    });
+    panel.startRename(id);
   };
 
-  const handleCreate = (kind: "book" | "folder", containerId: string) => {
-    const id = crypto.randomUUID();
-    const position = endPosition(containerId);
-    const folderId = containerId === ROOT ? null : containerId;
-    if (containerId !== ROOT) setFolderExpanded(containerId, true);
-    if (kind === "folder") {
-      createFolder.mutate({
-        id,
-        name: "New folder",
-        parent_folder_id: folderId,
-        position,
-      });
-    } else {
-      createBook.mutate({
-        id,
-        title: "Untitled",
-        folder_id: folderId,
-        position,
-      });
-    }
-    setEditingId(id);
+  const createRootBook = () => {
+    panel.startRename(createRootItem.createBook());
+  };
+
+  const createRootFolder = () => {
+    panel.startRename(createRootItem.createFolder());
   };
 
   const commitRename = (node: FlatNode, value: string) => {
-    setEditingId(null);
+    panel.cancelRename();
     if (node.kind === "folder")
       renameFolder.mutate({ id: node.id, name: value });
     else renameBook.mutate({ id: node.id, title: value });
@@ -133,14 +124,14 @@ export function SidebarTree() {
 
   const requestDelete = (node: FlatNode) => {
     if (node.child.kind === "folder") {
-      setDeleteTarget({
+      panel.requestDelete({
         kind: "folder",
         id: node.id,
         name: node.child.folder.name,
         books: countBooksInFolder(model, node.id),
       });
     } else {
-      setDeleteTarget({
+      panel.requestDelete({
         kind: "book",
         id: node.id,
         title: node.child.book.title,
@@ -149,12 +140,13 @@ export function SidebarTree() {
   };
 
   const confirmDelete = () => {
-    if (!deleteTarget) return;
-    if (deleteTarget.kind === "folder") {
-      deleteFolder.mutate({ id: deleteTarget.id });
+    const target = panel.deleteTarget;
+    if (!target) return;
+    if (target.kind === "folder") {
+      deleteFolder.mutate({ id: target.id });
     } else {
-      if (activeBookId === deleteTarget.id) setActiveBook(null);
-      deleteBook.mutate({ id: deleteTarget.id });
+      if (activeBookId === target.id) setActiveBook(null);
+      deleteBook.mutate({ id: target.id });
     }
   };
 
@@ -167,7 +159,7 @@ export function SidebarTree() {
       key={node.id}
       node={node}
       selected={node.kind === "book" && node.id === activeBookId}
-      editing={editingId === node.id}
+      editing={panel.editingId === node.id}
       expanded={expanded.has(node.id)}
       projectionDepth={projectionDepthFor(node.id)}
       onToggleExpand={() => {
@@ -177,19 +169,19 @@ export function SidebarTree() {
         setActiveBook(node.id);
       }}
       onStartRename={() => {
-        setEditingId(node.id);
+        panel.startRename(node.id);
       }}
       onCommitRename={(value) => {
         commitRename(node, value);
       }}
       onCancelRename={() => {
-        setEditingId(null);
+        panel.cancelRename();
       }}
       onDelete={() => {
         requestDelete(node);
       }}
       onNewBookInside={() => {
-        handleCreate("book", node.id);
+        newBookInside(node.id);
       }}
     />
   );
@@ -250,19 +242,11 @@ export function SidebarTree() {
               e.preventDefault();
             }}
           >
-            <DropdownMenuItem
-              onSelect={() => {
-                handleCreate("book", ROOT);
-              }}
-            >
+            <DropdownMenuItem onSelect={createRootBook}>
               <BookPlusIcon size={15} />
               New book
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() => {
-                handleCreate("folder", ROOT);
-              }}
-            >
+            <DropdownMenuItem onSelect={createRootFolder}>
               <FolderPlusIcon size={15} />
               New folder
             </DropdownMenuItem>
@@ -289,11 +273,7 @@ export function SidebarTree() {
             </Button>
           </div>
         ) : isEmpty ? (
-          <EmptyState
-            onCreateBook={() => {
-              handleCreate("book", ROOT);
-            }}
-          />
+          <EmptyState onCreateBook={createRootBook} />
         ) : (
           <TreeDndContainer
             sensors={sensors}
@@ -309,20 +289,20 @@ export function SidebarTree() {
       </div>
 
       <ConfirmDialog
-        open={deleteTarget !== null}
+        open={panel.deleteTarget !== null}
         onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
+          if (!open) panel.clearDelete();
         }}
         title={
-          deleteTarget?.kind === "folder"
-            ? `Delete "${deleteTarget.name}"?`
-            : deleteTarget
-              ? `Delete "${deleteTarget.title}"?`
+          panel.deleteTarget?.kind === "folder"
+            ? `Delete "${panel.deleteTarget.name}"?`
+            : panel.deleteTarget
+              ? `Delete "${panel.deleteTarget.title}"?`
               : ""
         }
         description={
-          deleteTarget?.kind === "folder"
-            ? describeFolderDelete(deleteTarget.books)
+          panel.deleteTarget?.kind === "folder"
+            ? describeFolderDelete(panel.deleteTarget.books)
             : "This permanently deletes the book and everything inside it."
         }
         confirmLabel="Delete"

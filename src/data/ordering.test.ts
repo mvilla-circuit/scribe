@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { byPosition, getPositionBetween } from "./ordering";
+import { byPosition, endPositionFor, getPositionBetween } from "./ordering";
 
 describe("getPositionBetween", () => {
   it("returns the step when the list is empty (no neighbours)", () => {
@@ -25,6 +25,24 @@ describe("getPositionBetween", () => {
     const mid = getPositionBetween(512, 513);
     expect(mid).toBeGreaterThan(512);
     expect(mid).toBeLessThan(513);
+  });
+});
+
+describe("endPositionFor", () => {
+  it("returns the first slot for an empty container", () => {
+    expect(endPositionFor([])).toBe(1024);
+  });
+
+  it("steps past the largest existing position", () => {
+    expect(endPositionFor([{ position: 1024 }, { position: 2048 }])).toBe(
+      2048 + 1024,
+    );
+  });
+
+  it("ignores the order of the siblings", () => {
+    expect(endPositionFor([{ position: 3072 }, { position: 1024 }])).toBe(
+      3072 + 1024,
+    );
   });
 });
 

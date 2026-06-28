@@ -20,6 +20,20 @@ export function getPositionBetween(prev?: number, next?: number): number {
   return (prev + next) / 2;
 }
 
+/**
+ * The position for a new item appended after `siblings`. Takes the largest
+ * existing position (so order of the input doesn't matter) and steps past it;
+ * an empty list yields the first slot. Centralizes the "add to the end of this
+ * container" policy shared by every create flow.
+ */
+export function endPositionFor(siblings: { position: number }[]): number {
+  let max: number | undefined;
+  for (const s of siblings) {
+    if (max === undefined || s.position > max) max = s.position;
+  }
+  return getPositionBetween(max, undefined);
+}
+
 /** Sort comparator by position then created_at as a stable tiebreaker. */
 export function byPosition<T extends { position: number; created_at: string }>(
   a: T,

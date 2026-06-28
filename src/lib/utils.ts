@@ -84,6 +84,29 @@ export function formatRelativeTime(
   return "just now";
 }
 
+/** The decision an inline editor makes when it settles a draft. */
+export type EditedValue =
+  | { readonly commit: true; readonly value: string }
+  | { readonly commit: false };
+
+/**
+ * Trims an edited draft and decides whether it should be persisted. A blank
+ * draft (unless `allowEmpty`) or one that matches the previous value yields
+ * `{ commit: false }` so the caller can revert/close without a redundant write;
+ * otherwise it returns the trimmed value to commit. Shared by the inline rename
+ * field and the reading-surface title/subtitle editors so both settle the same
+ * way on blur/Enter.
+ */
+export function resolveEditedValue(
+  draft: string,
+  { previous, allowEmpty = false }: { previous: string; allowEmpty?: boolean },
+): EditedValue {
+  const trimmed = draft.trim();
+  if (!trimmed && !allowEmpty) return { commit: false };
+  if (trimmed === previous) return { commit: false };
+  return { commit: true, value: trimmed };
+}
+
 /** Absolute timestamp for tooltips, e.g. "Jan 5, 2026, 3:42 PM". */
 export function formatDateTime(iso: string): string {
   const date = new Date(iso);

@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { cn, formatDateTime, formatRelativeTime } from "./utils";
+import {
+  cn,
+  formatDateTime,
+  formatRelativeTime,
+  resolveEditedValue,
+} from "./utils";
 
 describe("cn", () => {
   it("joins truthy class names and drops falsy ones", () => {
@@ -51,6 +56,33 @@ describe("formatRelativeTime", () => {
     it("returns an empty string for an invalid timestamp", () => {
       expect(compact("not-a-date")).toBe("");
     });
+  });
+});
+
+describe("resolveEditedValue", () => {
+  it("commits a trimmed value that changed", () => {
+    expect(resolveEditedValue("  Hello  ", { previous: "Old" })).toEqual({
+      commit: true,
+      value: "Hello",
+    });
+  });
+
+  it("does not commit when the trimmed value is unchanged", () => {
+    expect(resolveEditedValue("  Same ", { previous: "Same" })).toEqual({
+      commit: false,
+    });
+  });
+
+  it("rejects a blank draft by default", () => {
+    expect(resolveEditedValue("   ", { previous: "Old" })).toEqual({
+      commit: false,
+    });
+  });
+
+  it("commits a cleared value when empty is allowed", () => {
+    expect(
+      resolveEditedValue("   ", { previous: "Old", allowEmpty: true }),
+    ).toEqual({ commit: true, value: "" });
   });
 });
 

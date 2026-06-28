@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { BookIcon } from "@/components/sidebar/icons";
 import {
@@ -7,8 +7,13 @@ import {
   sidebarRowPadding,
 } from "@/components/sidebar/sidebar-row";
 import { TreeSkeleton } from "@/components/sidebar/tree-skeleton";
+import {
+  neighbourPositions,
+  removeDescendants,
+} from "@/components/tree/tree-dnd";
 import { TreeDndContainer } from "@/components/tree/tree-dnd-container";
 import { useTreeDnd } from "@/components/tree/use-tree-dnd";
+import { useTreePanel } from "@/components/tree/use-tree-panel";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DocumentIcon } from "@/components/ui/document-icon";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -26,17 +31,15 @@ import {
   useMoveDocument,
   useRenameDocument,
 } from "@/data/documents";
-import { getPositionBetween } from "@/data/ordering";
+import { endPositionFor } from "@/data/ordering";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
 
 import { PlusIcon } from "./icons";
 import {
-  docNeighbourPositions,
   type FlatDocNode,
   flattenDocTree,
   getDocProjection,
-  removeDocDescendants,
 } from "./outline-dnd";
 import { OutlineDragOverlay, OutlineRow } from "./outline-row";
 
@@ -69,8 +72,7 @@ export function OutlinePanel({ book }: { book: Book }) {
   const moveDocument = useMoveDocument(book.id);
   const deleteDocument = useDeleteDocument(book.id);
 
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const panel = useTreePanel<DeleteTarget>();
 
   const expanded = useMemo(() => new Set(expandedArr), [expandedArr]);
   const tree = useMemo(() => buildDocTree(documents), [documents]);
@@ -82,11 +84,11 @@ export function OutlinePanel({ book }: { book: Book }) {
   const { sensors, visibleNodes, activeNode, projectionDepthFor, handlers } =
     useTreeDnd<FlatDocNode>({
       flattened,
-      removeDescendants: removeDocDescendants,
+      removeDescendants,
       project: getDocProjection,
-      neighbours: docNeighbourPositions,
+      neighbours: neighbourPositions,
       onDragStart: () => {
-        setEditingId(null);
+        panel.cancelRename();
       },
       onMove: ({ id, parentId, position }) => {
         moveDocument.mutate({
@@ -98,13 +100,12 @@ export function OutlinePanel({ book }: { book: Book }) {
       },
     });
 
-  const endPosition = (parentId: string | null) => {
-    const siblings = documents
-      .filter((d) => !d.is_title_page && d.parent_document_id === parentId)
-      .sort((a, b) => a.position - b.position);
-    const last = siblings[siblings.length - 1];
-    return getPositionBetween(last?.position, undefined);
-  };
+  const endPosition = (parentId: string | null) =>
+    endPositionFor(
+      documents.filter(
+        (d) => !d.is_title_page && d.parent_document_id === parentId,
+      ),
+    );
 
   const handleCreate = (parentId: string | null) => {
     const id = crypto.randomUUID();
@@ -116,7 +117,7 @@ export function OutlinePanel({ book }: { book: Book }) {
       position: endPosition(parentId),
     });
     setActiveDoc(id);
-    setEditingId(id);
+    panel.startRename(id);
   };
 
   const handleDuplicate = (node: FlatDocNode) => {
@@ -127,12 +128,12 @@ export function OutlinePanel({ book }: { book: Book }) {
   };
 
   const commitRename = (node: FlatDocNode, value: string) => {
-    setEditingId(null);
+    panel.cancelRename();
     renameDocument.mutate({ id: node.id, title: value });
   };
 
   const requestDelete = (node: FlatDocNode) => {
-    setDeleteTarget({
+    panel.requestDelete({
       id: node.id,
       title: node.document.title || "Untitled",
       descendants: descendantCount(documents, node.id),
@@ -140,10 +141,11 @@ export function OutlinePanel({ book }: { book: Book }) {
   };
 
   const confirmDelete = () => {
-    if (!deleteTarget) return;
-    const subtree = collectDocumentSubtree(documents, deleteTarget.id);
+    const target = panel.deleteTarget;
+    if (!target) return;
+    const subtree = collectDocumentSubtree(documents, target.id);
     if (activeDocId && subtree.has(activeDocId)) setActiveDoc(null);
-    deleteDocument.mutate({ id: deleteTarget.id });
+    deleteDocument.mutate({ id: target.id });
   };
 
   const titlePageSelected =
@@ -232,7 +234,7 @@ export function OutlinePanel({ book }: { book: Book }) {
                 key={node.id}
                 node={node}
                 selected={node.id === activeDocId}
-                editing={editingId === node.id}
+                editing={panel.editingId === node.id}
                 expanded={expanded.has(node.id)}
                 projectionDepth={projectionDepthFor(node.id)}
                 onToggleExpand={() => {
@@ -242,13 +244,13 @@ export function OutlinePanel({ book }: { book: Book }) {
                   setActiveDoc(node.id);
                 }}
                 onStartRename={() => {
-                  setEditingId(node.id);
+                  panel.startRename(node.id);
                 }}
                 onCommitRename={(value) => {
                   commitRename(node, value);
                 }}
                 onCancelRename={() => {
-                  setEditingId(null);
+                  panel.cancelRename();
                 }}
                 onDelete={() => {
                   requestDelete(node);
@@ -266,12 +268,14 @@ export function OutlinePanel({ book }: { book: Book }) {
       </div>
 
       <ConfirmDialog
-        open={deleteTarget !== null}
+        open={panel.deleteTarget !== null}
         onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
+          if (!open) panel.clearDelete();
         }}
-        title={deleteTarget ? `Delete "${deleteTarget.title}"?` : ""}
-        description={describeDelete(deleteTarget?.descendants ?? 0)}
+        title={
+          panel.deleteTarget ? `Delete "${panel.deleteTarget.title}"?` : ""
+        }
+        description={describeDelete(panel.deleteTarget?.descendants ?? 0)}
         confirmLabel="Delete"
         danger
         onConfirm={confirmDelete}

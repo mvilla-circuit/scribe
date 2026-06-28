@@ -1,9 +1,7 @@
 import {
   type DndNode,
-  neighbourPositions as genericNeighbourPositions,
   projectDrop,
   type Projection,
-  removeDescendants as genericRemoveDescendants,
 } from "@/components/tree/tree-dnd";
 import { childrenOf, ROOT, type TreeChild, type TreeModel } from "@/data/tree";
 
@@ -44,13 +42,6 @@ export function flattenTree(
   return out;
 }
 
-export function removeDescendants(
-  nodes: FlatNode[],
-  ids: string[],
-): FlatNode[] {
-  return genericRemoveDescendants(nodes, ids);
-}
-
 // Folders may only live at the root level (no nested folders), so a dragged
 // folder always reorders among the root and never gains a parent. Books may sit
 // at the root or one level inside a folder, so only a preceding folder raises
@@ -68,13 +59,4 @@ export function getProjection(
     parentWhenNestedUnder: (prev) =>
       prev.kind === "folder" ? prev.id : prev.parentId,
   });
-}
-
-export function neighbourPositions(
-  nodes: FlatNode[],
-  activeId: string,
-  overId: string,
-  targetParentId: string | null,
-): { prev?: number; next?: number } {
-  return genericNeighbourPositions(nodes, activeId, overId, targetParentId);
 }

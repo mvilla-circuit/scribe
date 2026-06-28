@@ -1,5 +1,5 @@
 import { MoreHorizontal } from "lucide-react";
-import { Fragment, type ReactNode } from "react";
+import { type ComponentType, Fragment, type ReactNode } from "react";
 
 import { makeIcon } from "@/lib/make-icon";
 
@@ -42,46 +42,34 @@ export interface RowAction {
   separatorBefore?: boolean;
 }
 
-function ContextItems({ actions }: { actions: RowAction[] }) {
-  return (
-    <>
-      {actions.map((action, i) => (
-        <Fragment key={action.label}>
-          {action.separatorBefore && i > 0 && <ContextMenuSeparator />}
-          <ContextMenuItem
-            danger={action.danger}
-            onSelect={() => {
-              action.onSelect();
-            }}
-          >
-            {action.icon}
-            {action.label}
-          </ContextMenuItem>
-        </Fragment>
-      ))}
-    </>
-  );
+interface MenuItemComponentProps {
+  danger?: boolean;
+  onSelect?: (event: Event) => void;
+  children?: ReactNode;
 }
 
-function DropdownItems({ actions }: { actions: RowAction[] }) {
-  return (
-    <>
-      {actions.map((action, i) => (
-        <Fragment key={action.label}>
-          {action.separatorBefore && i > 0 && <DropdownMenuSeparator />}
-          <DropdownMenuItem
-            danger={action.danger}
-            onSelect={() => {
-              action.onSelect();
-            }}
-          >
-            {action.icon}
-            {action.label}
-          </DropdownMenuItem>
-        </Fragment>
-      ))}
-    </>
-  );
+// Renders an action list against either the context-menu or dropdown-menu item
+// primitives so each surface declares its items once. A leading separator is
+// suppressed so a section break never opens the menu.
+function renderActions(
+  actions: RowAction[],
+  Item: ComponentType<MenuItemComponentProps>,
+  Separator: ComponentType,
+) {
+  return actions.map((action, i) => (
+    <Fragment key={action.label}>
+      {action.separatorBefore && i > 0 && <Separator />}
+      <Item
+        danger={action.danger}
+        onSelect={() => {
+          action.onSelect();
+        }}
+      >
+        {action.icon}
+        {action.label}
+      </Item>
+    </Fragment>
+  ));
 }
 
 // Wraps a row so right-clicking it opens a context menu of the given actions.
@@ -101,7 +89,7 @@ export function RowContextMenu({
           e.preventDefault();
         }}
       >
-        <ContextItems actions={actions} />
+        {renderActions(actions, ContextMenuItem, ContextMenuSeparator)}
       </ContextMenuContent>
     </ContextMenu>
   );
@@ -142,7 +130,7 @@ export function RowActionDropdown({
           e.preventDefault();
         }}
       >
-        <DropdownItems actions={actions} />
+        {renderActions(actions, DropdownMenuItem, DropdownMenuSeparator)}
       </DropdownMenuContent>
     </DropdownMenu>
   );

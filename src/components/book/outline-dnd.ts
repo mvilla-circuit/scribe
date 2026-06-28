@@ -1,10 +1,8 @@
 import {
   type DndNode,
   INDENT,
-  neighbourPositions as genericNeighbourPositions,
   projectDrop,
   type Projection,
-  removeDescendants as genericRemoveDescendants,
 } from "@/components/tree/tree-dnd";
 import type { DocTreeNode } from "@/data/doc-tree";
 import type { Document } from "@/data/documents";
@@ -48,13 +46,6 @@ export function flattenDocTree(
   return out;
 }
 
-export function removeDocDescendants(
-  nodes: FlatDocNode[],
-  ids: string[],
-): FlatDocNode[] {
-  return genericRemoveDescendants(nodes, ids);
-}
-
 // Any document may be a parent, so the max depth is simply one level deeper than
 // the row above.
 export function getDocProjection(
@@ -67,13 +58,4 @@ export function getDocProjection(
     maxDepthForPrev: (prev) => prev.depth + 1,
     parentWhenNestedUnder: (prev) => prev.id,
   });
-}
-
-export function docNeighbourPositions(
-  nodes: FlatDocNode[],
-  activeId: string,
-  overId: string,
-  targetParentId: string | null,
-): { prev?: number; next?: number } {
-  return genericNeighbourPositions(nodes, activeId, overId, targetParentId);
 }
