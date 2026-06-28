@@ -24,5 +24,15 @@ export const NO_BOOK = "__none__";
 /**
  * Cache key for one book's pages. Documents are keyed per book so opening a book
  * loads only its own pages and optimistic mutations touch a single cache entry.
+ * This list holds page *metadata* only (no editor body) so writing to a page
+ * never churns the structural cache the tree, outline, and TOC derive from.
  */
 export const documentsKey = (bookId: string) => ["documents", bookId] as const;
+
+/**
+ * Cache key for a single page's editor body, kept separate from the metadata
+ * list above so a content autosave only touches this one entry — never the list
+ * (and never the cross-book page index).
+ */
+export const documentContentKey = (documentId: string) =>
+  ["document-content", documentId] as const;

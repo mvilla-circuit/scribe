@@ -5,13 +5,13 @@ import {
   type Projection,
 } from "@/components/tree/tree-dnd";
 import type { DocTreeNode } from "@/data/doc-tree";
-import type { Document } from "@/data/documents";
+import type { DocumentMeta } from "@/data/documents";
 
 export { INDENT, type Projection };
 
 export type FlatDocNode = DndNode & {
   hasChildren: boolean;
-  document: Document;
+  document: DocumentMeta;
 };
 
 // Depth-first flatten that only descends into expanded nodes. Unlike the

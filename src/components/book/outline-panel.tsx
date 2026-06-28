@@ -123,7 +123,10 @@ export function OutlinePanel({ book }: { book: Book }) {
   const handleDuplicate = (node: FlatDocNode) => {
     const plan = buildDocumentDuplicate(documents, node.id);
     if (!plan) return;
-    duplicateDocument.mutate({ rows: plan.rows });
+    duplicateDocument.mutate({
+      rows: plan.rows,
+      sourceByNewId: plan.sourceByNewId,
+    });
     setActiveDoc(plan.rootId);
   };
 

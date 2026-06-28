@@ -49,12 +49,19 @@ export interface ObjectMutationContext<T> {
 
 /**
  * Invalidates `keys` once the mutation settles — but only when this is the last
- * in-flight mutation (`isMutating() <= 1`, which counts the settling mutation
- * itself). Skipping while others are pending stops a refetch from clobbering
- * their not-yet-confirmed optimistic state.
+ * in-flight mutation *for the same list* (`selfKey`). Scoping to `selfKey`
+ * (rather than a global `isMutating()`) means an unrelated mutation on another
+ * entity can't suppress this invalidation, while two mutations racing on the
+ * same list still defer the refetch until the last one settles so it can't
+ * clobber their not-yet-confirmed optimistic state. Relies on every list/object
+ * mutation carrying `mutationKey: key` (see the handler factories below).
  */
-function invalidateOnSettle(qc: QueryClient, keys: QueryKey[]) {
-  if (qc.isMutating() > 1) return;
+function invalidateOnSettle(
+  qc: QueryClient,
+  keys: QueryKey[],
+  selfKey: QueryKey,
+) {
+  if (qc.isMutating({ mutationKey: selfKey }) > 1) return;
   for (const queryKey of keys) {
     void qc.invalidateQueries({ queryKey });
   }
@@ -104,6 +111,9 @@ export function optimisticListHandlers<T, V>(opts: {
     opts.sort,
   );
   return {
+    // Tag the mutation with its list key so `invalidateOnSettle` can scope the
+    // "is anything else in flight?" check to this list rather than all mutations.
+    mutationKey: opts.key,
     onMutate: (variables: V) =>
       optimistic((prev) => opts.update(prev, variables)),
     onError: (
@@ -115,7 +125,7 @@ export function optimisticListHandlers<T, V>(opts: {
       toast.error(opts.errorMessage);
     },
     onSettled: () => {
-      invalidateOnSettle(opts.qc, opts.invalidateKeys ?? [opts.key]);
+      invalidateOnSettle(opts.qc, opts.invalidateKeys ?? [opts.key], opts.key);
     },
   };
 }
@@ -164,6 +174,7 @@ export function optimisticObjectHandlers<T, V>(opts: {
   invalidateKeys?: QueryKey[];
 }) {
   return {
+    mutationKey: opts.key,
     onMutate: async (variables: V): Promise<ObjectMutationContext<T>> => {
       await opts.qc.cancelQueries({ queryKey: opts.key });
       const previous = opts.qc.getQueryData<T | null>(opts.key);
@@ -181,7 +192,7 @@ export function optimisticObjectHandlers<T, V>(opts: {
       toast.error(opts.errorMessage);
     },
     onSettled: () => {
-      invalidateOnSettle(opts.qc, opts.invalidateKeys ?? [opts.key]);
+      invalidateOnSettle(opts.qc, opts.invalidateKeys ?? [opts.key], opts.key);
     },
   };
 }

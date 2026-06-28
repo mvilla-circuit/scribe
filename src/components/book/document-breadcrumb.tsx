@@ -2,7 +2,7 @@ import { useMemo } from "react";
 
 import type { Book } from "@/data/books";
 import { documentAncestors } from "@/data/doc-tree";
-import type { Document } from "@/data/documents";
+import type { DocumentMeta } from "@/data/documents";
 
 // The page breadcrumb trail: the book (jumps to the title page), each ancestor
 // document, then the current page. Rendered as a fragment so it drops straight
@@ -14,8 +14,8 @@ export function DocumentBreadcrumb({
   onNavigate,
 }: {
   book: Book;
-  document: Document;
-  documents: Document[];
+  document: DocumentMeta;
+  documents: DocumentMeta[];
   /** Navigate to an ancestor document, or to the book's title page (null). */
   onNavigate: (documentId: string | null) => void;
 }) {

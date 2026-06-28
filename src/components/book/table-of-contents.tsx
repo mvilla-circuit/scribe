@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import { DocumentIcon } from "@/components/ui/document-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buildDocTree, flattenTocExpanded } from "@/data/doc-tree";
-import type { Document } from "@/data/documents";
+import type { DocumentMeta } from "@/data/documents";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
 
@@ -11,7 +11,7 @@ import { ChevronRightIcon, PlusIcon } from "./icons";
 import { INDENT } from "./outline-dnd";
 
 interface TableOfContentsProps {
-  documents: Document[];
+  documents: DocumentMeta[];
   loading: boolean;
   onCreateFirst: () => void;
   /** The book's resolved title-role font, so the contents echo the cover. */

@@ -17,11 +17,13 @@ import {
   docFontOverrides,
   needsTitlePage,
   useDeleteDocument,
+  useDocumentContent,
   useDocuments,
   useEnsureTitlePage,
   useMoveDocument,
+  useUpdateDocumentContent,
 } from "./documents";
-import { documentsKey, pageIndexKey } from "./query-keys";
+import { documentContentKey, documentsKey, pageIndexKey } from "./query-keys";
 
 // The data hooks read the session for the user id; stub auth so we don't pull
 // auth.tsx (and its Tauri plugin imports) into the test runtime.
@@ -176,6 +178,79 @@ describe("useDocuments", () => {
     // fetch status rather than loading.
     expect(result.current.fetchStatus).toBe("idle");
     expect(result.current.isPending).toBe(true);
+  });
+});
+
+describe("useDocumentContent", () => {
+  it("fetches a single page's editor body", async () => {
+    server.use(
+      http.get(DOCUMENTS_URL, () =>
+        HttpResponse.json({ content: { type: "doc" } }),
+      ),
+    );
+
+    const { result } = renderHookWithQuery(() => useDocumentContent("d1"));
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(result.current.data).toEqual({ type: "doc" });
+  });
+
+  it("stays disabled (and does not fetch) when no document is selected", () => {
+    const { result } = renderHookWithQuery(() => useDocumentContent(null));
+    expect(result.current.fetchStatus).toBe("idle");
+  });
+});
+
+describe("useUpdateDocumentContent", () => {
+  it("patches only the content cache, leaving the metadata list and page index untouched", async () => {
+    server.use(
+      http.patch(DOCUMENTS_URL, () => new HttpResponse(null, { status: 204 })),
+    );
+
+    const client = createTestQueryClient();
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+    client.setQueryData(documentContentKey("d1"), { type: "doc", stale: true });
+
+    const { result } = renderHookWithQuery(() => useUpdateDocumentContent(), {
+      client,
+    });
+    const next = { type: "doc", content: [{ type: "paragraph" }] };
+    result.current.mutate({ id: "d1", content: next });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    // The optimistic write lands in the dedicated content entry...
+    expect(client.getQueryData(documentContentKey("d1"))).toEqual(next);
+    // ...and the structural list / cross-book page index are never invalidated,
+    // so a keystroke-batch never triggers a full refetch or outline rebuild.
+    expect(invalidateSpy).not.toHaveBeenCalledWith({
+      queryKey: documentsKey("book-1"),
+    });
+    expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: pageIndexKey });
+  });
+
+  it("rolls the content cache back when the server rejects the save", async () => {
+    server.use(
+      http.patch(DOCUMENTS_URL, () => new HttpResponse(null, { status: 500 })),
+    );
+
+    const client = createTestQueryClient();
+    const previous = { type: "doc", content: [] };
+    client.setQueryData(documentContentKey("d1"), previous);
+
+    const { result } = renderHookWithQuery(() => useUpdateDocumentContent(), {
+      client,
+    });
+    result.current.mutate({ id: "d1", content: { type: "doc", content: [] } });
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+    expect(client.getQueryData(documentContentKey("d1"))).toEqual(previous);
   });
 });
 

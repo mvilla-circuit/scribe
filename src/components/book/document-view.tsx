@@ -1,9 +1,11 @@
 import { useRef, useState } from "react";
 
+import { SkeletonText } from "@/components/ui/skeleton";
 import { Tooltip } from "@/components/ui/tooltip";
 import type { Book } from "@/data/books";
 import {
-  type Document,
+  type DocumentMeta,
+  useDocumentContent,
   useRenameDocument,
   useUpdateDocument,
   useUpdateDocumentContent,
@@ -26,8 +28,8 @@ import { PageSettingsToolbar } from "./page-settings-toolbar";
 
 interface DocumentViewProps {
   book: Book;
-  document: Document;
-  documents: Document[];
+  document: DocumentMeta;
+  documents: DocumentMeta[];
 }
 
 // A single document page: breadcrumb trail, page settings (icon, subtitle and
@@ -35,8 +37,9 @@ interface DocumentViewProps {
 export function DocumentView({ book, document, documents }: DocumentViewProps) {
   const renameDocument = useRenameDocument(book.id);
   const updateDocument = useUpdateDocument(book.id);
-  const updateContent = useUpdateDocumentContent(book.id);
+  const updateContent = useUpdateDocumentContent();
   const updateFontOverrides = useUpdateDocumentFontOverrides(book.id);
+  const contentQuery = useDocumentContent(document.id);
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [headings, setHeadings] = useState<OutlineHeading[]>([]);
@@ -177,24 +180,34 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
             className="mt-8"
             style={{ fontFamily: bodyFont }}
           >
-            <EditorBridgeHost>
-              <Editor
-                ref={editorRef}
-                key={document.id}
-                documentId={document.id}
-                initialContent={document.content}
-                editable
-                onOutlineChange={setHeadings}
-                onLeaveStart={() => {
-                  titleRef.current?.focus();
-                  return true;
-                }}
-                onPersist={(content) =>
-                  updateContent.mutateAsync({ id: document.id, content })
-                }
-                onSaveStateChange={setSaveState}
-              />
-            </EditorBridgeHost>
+            {contentQuery.isSuccess ? (
+              <EditorBridgeHost>
+                <Editor
+                  ref={editorRef}
+                  key={document.id}
+                  documentId={document.id}
+                  initialContent={contentQuery.data}
+                  editable
+                  onOutlineChange={setHeadings}
+                  onLeaveStart={() => {
+                    titleRef.current?.focus();
+                    return true;
+                  }}
+                  onPersist={(content) =>
+                    updateContent.mutateAsync({ id: document.id, content })
+                  }
+                  onSaveStateChange={setSaveState}
+                />
+              </EditorBridgeHost>
+            ) : (
+              // The editor is keyed by document id and reads its body once at
+              // mount, so hold it back until the content query resolves rather
+              // than mounting it empty and never picking the body up.
+              <div className="flex flex-col gap-6" aria-hidden>
+                <SkeletonText lines={3} lineHeight="0.85rem" />
+                <SkeletonText lines={4} lineHeight="0.85rem" />
+              </div>
+            )}
           </div>
         </article>
 
@@ -212,7 +225,7 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
   );
 }
 
-function PageMeta({ document }: { document: Document }) {
+function PageMeta({ document }: { document: DocumentMeta }) {
   const updated = formatRelativeTime(document.updated_at);
   if (!updated) return null;
   return (

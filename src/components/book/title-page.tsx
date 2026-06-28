@@ -10,7 +10,7 @@ import {
   useUpdateBook,
 } from "@/data/books";
 import { buildDocTree, expandableDocIds } from "@/data/doc-tree";
-import { type Document, useCreateDocument } from "@/data/documents";
+import { type DocumentMeta, useCreateDocument } from "@/data/documents";
 import { endPositionFor } from "@/data/ordering";
 import { useCascadedFonts } from "@/fonts/use-cascaded-fonts";
 import { useUIStore } from "@/store/ui";
@@ -23,7 +23,7 @@ import { TableOfContents } from "./table-of-contents";
 
 interface TitlePageProps {
   book: Book;
-  documents: Document[];
+  documents: DocumentMeta[];
   loading: boolean;
 }
 

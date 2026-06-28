@@ -2,7 +2,7 @@ import { type CSSProperties } from "react";
 
 import type { Book } from "@/data/books";
 import { bookFontOverrides } from "@/data/books";
-import type { Document } from "@/data/documents";
+import type { DocumentMeta } from "@/data/documents";
 import { docFontOverrides } from "@/data/documents";
 import { profileFonts, useProfile } from "@/data/profile";
 
@@ -22,7 +22,7 @@ interface UseCascadedFontsOptions {
    * (inheriting global + book); omit it to edit the book scope (inheriting
    * global), as the Title Page does.
    */
-  document?: Document | null;
+  document?: DocumentMeta | null;
   /** Persist the editable scope's next override map (null clears it). */
   onChangeOverrides: (fonts: FontMap | null) => void;
 }

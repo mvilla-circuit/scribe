@@ -1,7 +1,7 @@
 import { BannerControl } from "@/components/ui/banner-control";
 import { SubtitleToggle } from "@/components/ui/subtitle-toggle";
 import { Tooltip } from "@/components/ui/tooltip";
-import type { Document } from "@/data/documents";
+import type { DocumentMeta } from "@/data/documents";
 import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";
 import type { FontMap, ResolvedFonts } from "@/fonts/catalog";
@@ -24,7 +24,7 @@ export function PageSettingsToolbar({
   onToggleSubtitle,
   onBannerChange,
 }: {
-  document: Document;
+  document: DocumentMeta;
   saveState: SaveState;
   fontOverrides: FontMap;
   inheritedFonts: ResolvedFonts;

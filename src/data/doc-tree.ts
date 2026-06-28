@@ -1,4 +1,4 @@
-import type { Document } from "./documents";
+import type { DocumentMeta } from "./documents";
 import { byPosition } from "./ordering";
 import { collectSubtree } from "./subtree";
 
@@ -8,18 +8,18 @@ import { collectSubtree } from "./subtree";
  * readable outline/TOC structure.
  */
 export interface DocTreeNode {
-  document: Document;
+  document: DocumentMeta;
   children: DocTreeNode[];
 }
 
 /** Builds the nested document tree for a book from its flat document list. */
-export function buildDocTree(documents: Document[]): DocTreeNode[] {
+export function buildDocTree(documents: DocumentMeta[]): DocTreeNode[] {
   const hierarchy = documents.filter((d) => !d.is_title_page);
   const validIds = new Set(hierarchy.map((d) => d.id));
 
   // Group by parent. A parent that points at a missing or title-page document
   // is treated as a root so an orphan can never disappear from the tree.
-  const childrenByParent = new Map<string | null, Document[]>();
+  const childrenByParent = new Map<string | null, DocumentMeta[]>();
   for (const doc of hierarchy) {
     const parentId =
       doc.parent_document_id && validIds.has(doc.parent_document_id)
@@ -41,7 +41,7 @@ export function buildDocTree(documents: Document[]): DocTreeNode[] {
 
 /** A flattened table-of-contents row: a document tagged with its nesting depth. */
 export interface TocEntry {
-  document: Document;
+  document: DocumentMeta;
   depth: number;
   hasChildren: boolean;
 }
@@ -92,7 +92,7 @@ export function expandableDocIds(tree: DocTreeNode[]): string[] {
  * Number of descendants a document has (used to warn before a cascade delete).
  * collectSubtree includes the root itself, so subtract it.
  */
-export function descendantCount(documents: Document[], id: string): number {
+export function descendantCount(documents: DocumentMeta[], id: string): number {
   return collectSubtree(documents, id, (d) => d.parent_document_id).size - 1;
 }
 
@@ -102,11 +102,11 @@ export function descendantCount(documents: Document[], id: string): number {
  * parent, and guards against cycles so a corrupt parent link can't loop.
  */
 export function documentAncestors(
-  documents: Document[],
-  document: Document,
-): Document[] {
+  documents: DocumentMeta[],
+  document: DocumentMeta,
+): DocumentMeta[] {
   const byId = new Map(documents.map((d) => [d.id, d]));
-  const chain: Document[] = [];
+  const chain: DocumentMeta[] = [];
   let parentId = document.parent_document_id;
   const guard = new Set<string>();
   while (parentId && !guard.has(parentId)) {
