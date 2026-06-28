@@ -1,1 +1,10 @@
-npx lint-staged
+# Lint + format the staged files (auto-fixing in place).
+npx lint-staged || exit 1
+
+# Project-wide static analysis that can't be scoped to staged files: type
+# errors, circular imports, and dead code (e.g. an unused export) only surface
+# against the full module graph, so run them here to match the CI gate and stop
+# these from slipping through to CI. Tests and the production build stay in CI.
+npm run typecheck || exit 1
+npm run lint:circular || exit 1
+npm run lint:deadcode || exit 1

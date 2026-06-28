@@ -3,7 +3,7 @@ import { create } from "zustand";
 import type { PageTargetType } from "./page-ref";
 
 /** A page (document or book) chosen in the "Link to page" picker. */
-export interface PagePickTarget {
+interface PagePickTarget {
   targetType: PageTargetType;
   targetId: string;
   label: string;
