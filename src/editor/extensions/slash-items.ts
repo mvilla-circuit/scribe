@@ -2,27 +2,21 @@ import type { Editor, Range } from "@tiptap/core";
 
 import {
   BookmarkIcon,
-  BulletListIcon,
   CalloutIcon,
   CodeBlockIcon,
   Columns2Icon,
   Columns3Icon,
   DividerIcon,
   EssayIcon,
-  Heading1Icon,
-  Heading2Icon,
-  Heading3Icon,
-  OrderedListIcon,
   PageLinkIcon,
   PullQuoteIcon,
   QuoteIcon,
   TableIcon,
-  TaskListIcon,
-  TextIcon,
 } from "@/editor/icons";
 import { normalizeUrl } from "@/editor/link-preview";
 import type { IconProps } from "@/lib/make-icon";
 
+import { BASIC_BLOCK_TYPES } from "./block-types";
 import { calloutContent } from "./callout";
 import { columnsContent } from "./columns";
 import { essayContent } from "./essay";
@@ -48,58 +42,15 @@ function at(editor: Editor, range: Range) {
 }
 
 const slashItems: SlashItem[] = [
-  {
-    title: "Text",
-    description: "Plain paragraph",
-    icon: TextIcon,
-    aliases: ["paragraph", "p", "body"],
-    run: (editor, range) => at(editor, range).setParagraph().run(),
-  },
-  {
-    title: "Heading 1",
-    description: "Large section heading",
-    icon: Heading1Icon,
-    aliases: ["h1", "title"],
-    run: (editor, range) =>
-      at(editor, range).setNode("heading", { level: 1 }).run(),
-  },
-  {
-    title: "Heading 2",
-    description: "Medium section heading",
-    icon: Heading2Icon,
-    aliases: ["h2", "subtitle"],
-    run: (editor, range) =>
-      at(editor, range).setNode("heading", { level: 2 }).run(),
-  },
-  {
-    title: "Heading 3",
-    description: "Small section heading",
-    icon: Heading3Icon,
-    aliases: ["h3"],
-    run: (editor, range) =>
-      at(editor, range).setNode("heading", { level: 3 }).run(),
-  },
-  {
-    title: "Bulleted list",
-    description: "A simple bulleted list",
-    icon: BulletListIcon,
-    aliases: ["ul", "unordered", "bullet"],
-    run: (editor, range) => at(editor, range).toggleBulletList().run(),
-  },
-  {
-    title: "Numbered list",
-    description: "A list with ordering",
-    icon: OrderedListIcon,
-    aliases: ["ol", "ordered", "number"],
-    run: (editor, range) => at(editor, range).toggleOrderedList().run(),
-  },
-  {
-    title: "To-do list",
-    description: "Track tasks with checkboxes",
-    icon: TaskListIcon,
-    aliases: ["todo", "task", "checkbox", "checklist"],
-    run: (editor, range) => at(editor, range).toggleTaskList().run(),
-  },
+  // The basic textblock conversions, shared verbatim with the block handle's
+  // "Turn into" submenu. Slash runs them after clearing the typed "/query".
+  ...BASIC_BLOCK_TYPES.map((block): SlashItem => ({
+    title: block.title,
+    description: block.description,
+    icon: block.icon,
+    aliases: block.aliases,
+    run: (editor, range) => block.command(at(editor, range)).run(),
+  })),
   {
     title: "Pull quote",
     description: "A bold statement with a large quote mark",

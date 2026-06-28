@@ -25,8 +25,8 @@ import {
   setColumnCount,
   turnIntoBlock,
 } from "./block-actions";
+import { BASIC_BLOCK_TYPES } from "./extensions/block-types";
 import {
-  BulletListIcon,
   CheckIcon,
   CodeBlockIcon,
   Columns2Icon,
@@ -34,12 +34,7 @@ import {
   CopyIcon,
   CopyToClipboardIcon,
   DragHandleIcon,
-  Heading1Icon,
-  Heading2Icon,
-  Heading3Icon,
-  OrderedListIcon,
   QuoteIcon,
-  TaskListIcon,
   TextIcon,
   TrashIcon,
 } from "./icons";
@@ -72,33 +67,15 @@ interface TurnInto {
 }
 
 const TURN_INTO: TurnInto[] = [
-  { label: "Text", icon: TextIcon, apply: (c) => c.setParagraph() },
-  {
-    label: "Heading 1",
-    icon: Heading1Icon,
-    apply: (c) => c.setNode("heading", { level: 1 }),
-  },
-  {
-    label: "Heading 2",
-    icon: Heading2Icon,
-    apply: (c) => c.setNode("heading", { level: 2 }),
-  },
-  {
-    label: "Heading 3",
-    icon: Heading3Icon,
-    apply: (c) => c.setNode("heading", { level: 3 }),
-  },
-  {
-    label: "Bulleted list",
-    icon: BulletListIcon,
-    apply: (c) => c.toggleBulletList(),
-  },
-  {
-    label: "Numbered list",
-    icon: OrderedListIcon,
-    apply: (c) => c.toggleOrderedList(),
-  },
-  { label: "To-do list", icon: TaskListIcon, apply: (c) => c.toggleTaskList() },
+  // The basic textblock conversions, shared verbatim with the slash menu.
+  ...BASIC_BLOCK_TYPES.map((block): TurnInto => ({
+    label: block.title,
+    icon: block.icon,
+    apply: block.command,
+  })),
+  // Conversions unique to the handle: Quote wraps the block in place (the slash
+  // menu instead inserts fresh pull/accent quotes), and Code keeps its short
+  // label here.
   { label: "Quote", icon: QuoteIcon, apply: (c) => c.wrapIn("quote") },
   { label: "Code", icon: CodeBlockIcon, apply: (c) => c.toggleCodeBlock() },
 ];
