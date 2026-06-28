@@ -9,6 +9,7 @@ import { DocumentIcon } from "@/components/ui/document-icon";
 import { IconPicker } from "@/components/ui/icon-picker";
 import { Tooltip } from "@/components/ui/tooltip";
 import { BlockColorPopover } from "@/editor/block-color-popover";
+import { BlockControls } from "@/editor/block-controls";
 import { EmojiIcon } from "@/editor/icons";
 import { CALLOUT_COLORS } from "@/editor/palette";
 
@@ -66,11 +67,7 @@ export function CalloutView({ node, updateAttributes, editor }: NodeViewProps) {
       <NodeViewContent className="scribe-callout-body" />
 
       {editable && (
-        <div
-          className="scribe-block-controls scribe-callout-controls"
-          contentEditable={false}
-          data-open={colorOpen || undefined}
-        >
+        <BlockControls className="scribe-callout-controls" open={colorOpen}>
           <IconPicker
             value={icon}
             onSelect={(next) => {
@@ -105,7 +102,7 @@ export function CalloutView({ node, updateAttributes, editor }: NodeViewProps) {
             triggerLabel="Background color"
             triggerAriaLabel="Callout background color"
           />
-        </div>
+        </BlockControls>
       )}
     </NodeViewWrapper>
   );

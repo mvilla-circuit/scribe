@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { DocumentIcon } from "@/components/ui/document-icon";
 import { type PageLinkOption, useEditorBridge } from "@/editor/editor-bridge";
-import { BookIcon, PageLinkIcon } from "@/editor/icons";
 import { nextActiveIndex } from "@/editor/list-navigation";
 import { cn } from "@/lib/utils";
 
 import { usePagePicker } from "./page-picker-store";
+import { PageTargetIcon } from "./page-target-icon";
 
 type Row = PageLinkOption;
 
@@ -126,13 +125,7 @@ export function PagePicker() {
                 )}
               >
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center text-muted">
-                  {row.icon ? (
-                    <DocumentIcon icon={row.icon} size={18} />
-                  ) : row.glyph === "book" ? (
-                    <BookIcon size={16} />
-                  ) : (
-                    <PageLinkIcon size={16} />
-                  )}
+                  <PageTargetIcon icon={row.icon} glyph={row.glyph} />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm text-text">

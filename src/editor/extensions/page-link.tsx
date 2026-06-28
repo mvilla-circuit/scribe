@@ -1,10 +1,10 @@
 import { mergeAttributes, Node } from "@tiptap/core";
-import { Plugin } from "@tiptap/pm/state";
 import { type Editor, ReactNodeViewRenderer } from "@tiptap/react";
 
 import { stringAttr } from "./data-attr";
 import { PageLinkView } from "./page-link-view";
 import { pageRef, type PageTargetType } from "./page-ref";
+import { pastePlugin } from "./paste-plugin";
 
 // Matches an internal page reference like `scribe://page/<uuid>` (or `book/`).
 const PAGE_REF = /^scribe:\/\/(page|book)\/([0-9a-fA-F-]{36})$/;
@@ -54,24 +54,16 @@ export const PageLink = Node.create({
 
   // Pasting a `scribe://page/<id>` ref inserts a page card.
   addProseMirrorPlugins() {
-    const editor = this.editor;
     return [
-      new Plugin({
-        props: {
-          handlePaste: (_view, event) => {
-            const text = (
-              event.clipboardData?.getData("text/plain") ?? ""
-            ).trim();
-            const match = PAGE_REF.exec(text);
-            if (!match) return false;
-            const targetId = match[2];
-            if (!targetId) return false;
-            const targetType: PageTargetType =
-              match[1] === "book" ? "book" : "document";
-            insertPageLink(editor, { targetType, targetId });
-            return true;
-          },
-        },
+      pastePlugin(this.editor, (text, editor) => {
+        const match = PAGE_REF.exec(text.trim());
+        if (!match) return false;
+        const targetId = match[2];
+        if (!targetId) return false;
+        const targetType: PageTargetType =
+          match[1] === "book" ? "book" : "document";
+        insertPageLink(editor, { targetType, targetId });
+        return true;
       }),
     ];
   },

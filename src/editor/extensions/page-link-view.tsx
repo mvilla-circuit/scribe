@@ -2,11 +2,10 @@ import { type NodeViewProps, NodeViewWrapper } from "@tiptap/react";
 import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
 
-import { DocumentIcon } from "@/components/ui/document-icon";
+import { BlockControls } from "@/editor/block-controls";
 import { useEditorBridge } from "@/editor/editor-bridge";
 import { EditorIconButton } from "@/editor/editor-icon-button";
 import {
-  BookIcon,
   CopyIcon,
   ExternalLinkIcon,
   PageLinkIcon,
@@ -15,6 +14,7 @@ import {
 import { SKIP_AUTOSAVE_META } from "@/editor/use-autosave";
 
 import { pageRef, type PageTargetType } from "./page-ref";
+import { PageTargetIcon } from "./page-target-icon";
 
 // Live-resolving internal page card. It reads the current title/icon and the
 // owning book + ancestor path from the page index on every render, so a rename
@@ -92,12 +92,11 @@ export function PageLinkView({
         <span className="scribe-pagelink-icon" aria-hidden>
           {notFound ? (
             <PageLinkIcon size={16} />
-          ) : resolved?.icon ? (
-            <DocumentIcon icon={resolved.icon} size={18} />
-          ) : resolved?.fallbackGlyph === "book" ? (
-            <BookIcon size={16} />
           ) : (
-            <PageLinkIcon size={16} />
+            <PageTargetIcon
+              icon={resolved?.icon ?? null}
+              glyph={resolved?.fallbackGlyph ?? "page"}
+            />
           )}
         </span>
         <span className="scribe-pagelink-text">
@@ -113,7 +112,7 @@ export function PageLinkView({
       </div>
 
       {editable && (
-        <div className="scribe-block-controls scribe-pagelink-controls">
+        <BlockControls className="scribe-pagelink-controls">
           {!notFound && (
             <>
               <EditorIconButton label="Open page" onClick={navigate}>
@@ -132,7 +131,7 @@ export function PageLinkView({
           >
             <TrashIcon size={14} />
           </EditorIconButton>
-        </div>
+        </BlockControls>
       )}
     </NodeViewWrapper>
   );

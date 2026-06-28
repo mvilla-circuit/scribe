@@ -7,6 +7,7 @@ import { type CSSProperties, useEffect, useRef, useState } from "react";
 
 import { Tooltip } from "@/components/ui/tooltip";
 import { BlockColorPopover } from "@/editor/block-color-popover";
+import { BlockControls } from "@/editor/block-controls";
 import { AttributionIcon } from "@/editor/icons";
 import { QUOTE_ACCENTS } from "@/editor/palette";
 import { cn } from "@/lib/utils";
@@ -87,11 +88,7 @@ export function QuoteView({ node, updateAttributes, editor }: NodeViewProps) {
       )}
 
       {editable && (
-        <div
-          className="scribe-block-controls scribe-quote-controls"
-          contentEditable={false}
-          data-open={colorOpen || undefined}
-        >
+        <BlockControls className="scribe-quote-controls" open={colorOpen}>
           <Tooltip
             content={showAttribution ? "Hide attribution" : "Show attribution"}
           >
@@ -124,7 +121,7 @@ export function QuoteView({ node, updateAttributes, editor }: NodeViewProps) {
             triggerLabel="Style"
             triggerAriaLabel="Quote style"
           />
-        </div>
+        </BlockControls>
       )}
     </NodeViewWrapper>
   );

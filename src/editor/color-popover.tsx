@@ -1,3 +1,4 @@
+import type { ChainedCommands } from "@tiptap/core";
 import { type Editor, useEditorState } from "@tiptap/react";
 import { useEffect, useRef } from "react";
 
@@ -5,8 +6,21 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 import { ChevronDownIcon } from "./icons";
-import { HIGHLIGHT_COLORS, TEXT_COLORS } from "./palette";
+import { HIGHLIGHT_COLORS, type Swatch, TEXT_COLORS } from "./palette";
 import { SwatchSection } from "./swatch-grid";
+
+// The active swatch value for a `{ color }`-keyed mark, or null when none of the
+// palette's swatches is the one currently applied to the selection.
+function activeSwatch(
+  editor: Editor,
+  swatches: readonly Swatch[],
+  mark: string,
+): string | null {
+  return (
+    swatches.find((s) => editor.isActive(mark, { color: s.value }))?.value ??
+    null
+  );
+}
 
 // A single combined color control: one trigger opens a flyout holding both the
 // text-color and highlight palettes. It lives *inside* the bubble toolbar (no
@@ -36,16 +50,9 @@ export function ColorPopover({
         return { textColor: null, highlightColor: null, underlineColor: null };
       }
       return {
-        textColor:
-          TEXT_COLORS.find((s) => e.isActive("textStyle", { color: s.value }))
-            ?.value ?? null,
-        highlightColor:
-          HIGHLIGHT_COLORS.find((s) =>
-            e.isActive("highlight", { color: s.value }),
-          )?.value ?? null,
-        underlineColor:
-          TEXT_COLORS.find((s) => e.isActive("underline", { color: s.value }))
-            ?.value ?? null,
+        textColor: activeSwatch(e, TEXT_COLORS, "textStyle"),
+        highlightColor: activeSwatch(e, HIGHLIGHT_COLORS, "highlight"),
+        underlineColor: activeSwatch(e, TEXT_COLORS, "underline"),
       };
     },
   });
@@ -62,23 +69,30 @@ export function ColorPopover({
     };
   }, [open, onOpenChange]);
 
-  const setText = (value: string | null) => {
-    const chain = editor.chain().focus();
-    if (value) chain.setColor(value).run();
-    else chain.unsetColor().run();
-  };
+  // Each setter applies its mark for a chosen swatch or clears it for null,
+  // sharing the focus-chain-run plumbing through one helper.
+  const markSetter =
+    (
+      apply: (chain: ChainedCommands, value: string) => ChainedCommands,
+      clear: (chain: ChainedCommands) => ChainedCommands,
+    ) =>
+    (value: string | null) => {
+      const chain = editor.chain().focus();
+      (value ? apply(chain, value) : clear(chain)).run();
+    };
 
-  const setHighlight = (value: string | null) => {
-    const chain = editor.chain().focus();
-    if (value) chain.setHighlight({ color: value }).run();
-    else chain.unsetHighlight().run();
-  };
-
-  const setUnderline = (value: string | null) => {
-    const chain = editor.chain().focus();
-    if (value) chain.setMark("underline", { color: value }).run();
-    else chain.unsetMark("underline").run();
-  };
+  const setText = markSetter(
+    (c, v) => c.setColor(v),
+    (c) => c.unsetColor(),
+  );
+  const setHighlight = markSetter(
+    (c, v) => c.setHighlight({ color: v }),
+    (c) => c.unsetHighlight(),
+  );
+  const setUnderline = markSetter(
+    (c, v) => c.setMark("underline", { color: v }),
+    (c) => c.unsetMark("underline"),
+  );
 
   return (
     <div ref={wrapRef} className="relative">

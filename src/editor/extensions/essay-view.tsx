@@ -11,6 +11,7 @@ import { IconPicker } from "@/components/ui/icon-picker";
 import { SubtitleToggle } from "@/components/ui/subtitle-toggle";
 import { Tooltip } from "@/components/ui/tooltip";
 import { BlockColorPopover } from "@/editor/block-color-popover";
+import { BlockControls } from "@/editor/block-controls";
 import { EmojiIcon } from "@/editor/icons";
 import { QUOTE_ACCENTS } from "@/editor/palette";
 
@@ -143,11 +144,7 @@ export function EssayView({ node, updateAttributes, editor }: NodeViewProps) {
       <NodeViewContent className="scribe-essay-body" />
 
       {editable && (
-        <div
-          className="scribe-block-controls scribe-essay-controls"
-          contentEditable={false}
-          data-open={colorOpen || undefined}
-        >
+        <BlockControls className="scribe-essay-controls" open={colorOpen}>
           <SubtitleToggle
             active={showSubtitle}
             onToggle={() => {
@@ -190,7 +187,7 @@ export function EssayView({ node, updateAttributes, editor }: NodeViewProps) {
             triggerLabel="Accent color"
             triggerAriaLabel="Essay accent color"
           />
-        </div>
+        </BlockControls>
       )}
     </NodeViewWrapper>
   );

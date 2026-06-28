@@ -3,6 +3,7 @@ import { type NodeViewProps, NodeViewWrapper } from "@tiptap/react";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
+import { BlockControls } from "@/editor/block-controls";
 import { EditorIconButton } from "@/editor/editor-icon-button";
 import {
   CopyIcon,
@@ -133,7 +134,7 @@ export function LinkCardView({
       </div>
 
       {editable && (
-        <div className="scribe-block-controls scribe-linkcard-controls">
+        <BlockControls className="scribe-linkcard-controls">
           <EditorIconButton label="Open in browser" onClick={open}>
             <ExternalLinkIcon size={14} />
           </EditorIconButton>
@@ -159,7 +160,7 @@ export function LinkCardView({
           >
             <TrashIcon size={14} />
           </EditorIconButton>
-        </div>
+        </BlockControls>
       )}
     </NodeViewWrapper>
   );

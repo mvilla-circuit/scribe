@@ -1,7 +1,7 @@
-import { mergeAttributes, Node, wrappingInputRule } from "@tiptap/core";
-import { ReactNodeViewRenderer } from "@tiptap/react";
+import { wrappingInputRule } from "@tiptap/core";
 
 import { boolAttr, stringAttr } from "./data-attr";
+import { dataDivBlock } from "./data-block";
 import { QuoteView } from "./quote-view";
 
 export type QuoteVariant = "pullquote" | "accentquote";
@@ -14,8 +14,9 @@ const DEFAULT_VARIANT: QuoteVariant = "accentquote";
 // `documents.content` and the clipboard; the controls in `QuoteView` only ever
 // call updateAttributes. A single solid `color` drives every variant — CSS
 // derives each variant's intensity from it via color-mix.
-export const Quote = Node.create({
+export const Quote = dataDivBlock({
   name: "quote",
+  marker: "quote",
   group: "block",
   // Paragraphs plus the list family, so quotes can hold bulleted / numbered /
   // task lists (and the `- `, `1. `, `[] ` input rules have somewhere to wrap
@@ -24,43 +25,24 @@ export const Quote = Node.create({
   // Keep the quote intact when the selection is lifted/replaced, so backspacing
   // at the start of its first paragraph doesn't dissolve the block.
   defining: true,
-
-  addAttributes() {
-    return {
-      variant: stringAttr("variant", {
-        default: DEFAULT_VARIANT,
-        always: true,
-      }),
-      color: stringAttr("color"),
-      attribution: stringAttr("attribution", { default: "" }),
-      showAttribution: boolAttr("showAttribution"),
-    };
-  },
-
-  parseHTML() {
-    // `blockquote` is parsed too so pasted HTML and legacy markup land as quotes.
-    return [{ tag: "div[data-quote]" }, { tag: "blockquote" }];
-  },
-
-  renderHTML({ HTMLAttributes }) {
-    return ["div", mergeAttributes(HTMLAttributes, { "data-quote": "" }), 0];
-  },
-
-  addInputRules() {
-    // Typing "> " at the start of a paragraph wraps it into the default
-    // (accent quote) variant, preserving the familiar markdown shortcut.
-    return [
-      wrappingInputRule({
-        find: /^\s*>\s$/,
-        type: this.type,
-        getAttributes: () => ({ variant: DEFAULT_VARIANT }),
-      }),
-    ];
-  },
-
-  addNodeView() {
-    return ReactNodeViewRenderer(QuoteView);
-  },
+  // `blockquote` is parsed too so pasted HTML and legacy markup land as quotes.
+  extraParseRules: [{ tag: "blockquote" }],
+  attributes: () => ({
+    variant: stringAttr("variant", { default: DEFAULT_VARIANT, always: true }),
+    color: stringAttr("color"),
+    attribution: stringAttr("attribution", { default: "" }),
+    showAttribution: boolAttr("showAttribution"),
+  }),
+  // Typing "> " at the start of a paragraph wraps it into the default (accent
+  // quote) variant, preserving the familiar markdown shortcut.
+  inputRules: (type) => [
+    wrappingInputRule({
+      find: /^\s*>\s$/,
+      type,
+      getAttributes: () => ({ variant: DEFAULT_VARIANT }),
+    }),
+  ],
+  view: QuoteView,
 });
 
 // Starter content for a fresh quote: the chosen variant wrapping one empty

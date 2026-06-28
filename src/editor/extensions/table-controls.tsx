@@ -1,5 +1,12 @@
+import type { ChainedCommands } from "@tiptap/core";
 import type { Editor } from "@tiptap/react";
-import { type ReactNode, useRef, useState } from "react";
+import {
+  type ComponentType,
+  Fragment,
+  type ReactNode,
+  useRef,
+  useState,
+} from "react";
 
 import { Tooltip } from "@/components/ui/tooltip";
 import { BlockColorPopover } from "@/editor/block-color-popover";
@@ -23,6 +30,7 @@ import {
   TrashIcon,
 } from "@/editor/icons";
 import { TABLE_CELL_COLORS, TABLE_HEADER_COLORS } from "@/editor/palette";
+import type { IconProps } from "@/lib/make-icon";
 
 import {
   resetTableWidth,
@@ -33,6 +41,31 @@ import {
 } from "./table-commands";
 import { useTableAnchor } from "./use-table-anchor";
 import { useTableState } from "./use-table-state";
+
+// The two symmetrical add/remove groups (rows, columns) differ only in the
+// table commands they call, so they render from one descriptor.
+const AXIS_GROUPS = [
+  {
+    noun: "Row",
+    remove: (c: ChainedCommands) => c.deleteRow(),
+    add: (c: ChainedCommands) => c.addRowAfter(),
+  },
+  {
+    noun: "Column",
+    remove: (c: ChainedCommands) => c.deleteColumn(),
+    add: (c: ChainedCommands) => c.addColumnAfter(),
+  },
+] as const;
+
+// One horizontal/vertical alignment button: a toggle with an icon and its
+// active flag. The arrays are built in the component so each row can read its
+// live `active` state.
+interface AlignButton {
+  label: string;
+  active: boolean;
+  Icon: ComponentType<IconProps>;
+  onClick: () => void;
+}
 
 // Inline-on-focus table controls. Rather than a persistent toolbar, a compact
 // control cluster floats just above the table the caret is in (and only then),
@@ -84,6 +117,54 @@ export function TableControls({ editor }: { editor: Editor }) {
     resetTableWidth(editor, tablePos);
   };
 
+  const hAlignButtons: AlignButton[] = [
+    {
+      label: "Align left",
+      active: alignLeft,
+      Icon: AlignLeftIcon,
+      onClick: () => chain().setTextAlign("left").run(),
+    },
+    {
+      label: "Align center",
+      active: alignCenter,
+      Icon: AlignCenterIcon,
+      onClick: () => chain().setTextAlign("center").run(),
+    },
+    {
+      label: "Align right",
+      active: alignRight,
+      Icon: AlignRightIcon,
+      onClick: () => chain().setTextAlign("right").run(),
+    },
+  ];
+
+  const vAlignButtons: AlignButton[] = [
+    {
+      label: "Align top",
+      active: vAlignTop,
+      Icon: AlignTopIcon,
+      onClick: () => {
+        setVerticalAlign("top");
+      },
+    },
+    {
+      label: "Align middle",
+      active: vAlignMiddle,
+      Icon: AlignMiddleIcon,
+      onClick: () => {
+        setVerticalAlign("middle");
+      },
+    },
+    {
+      label: "Align bottom",
+      active: vAlignBottom,
+      Icon: AlignBottomIcon,
+      onClick: () => {
+        setVerticalAlign("bottom");
+      },
+    },
+  ];
+
   return (
     <div
       ref={floatingRef}
@@ -96,35 +177,26 @@ export function TableControls({ editor }: { editor: Editor }) {
         e.preventDefault();
       }}
     >
-      <div className="scribe-table-ctrl-group">
-        <CtrlButton
-          label="Remove row"
-          onClick={() => chain().deleteRow().run()}
-        >
-          <MinusIcon size={14} />
-        </CtrlButton>
-        <span className="scribe-table-ctrl-label">Row</span>
-        <CtrlButton label="Add row" onClick={() => chain().addRowAfter().run()}>
-          <PlusIcon size={14} />
-        </CtrlButton>
-      </div>
-      <Divider />
-      <div className="scribe-table-ctrl-group">
-        <CtrlButton
-          label="Remove column"
-          onClick={() => chain().deleteColumn().run()}
-        >
-          <MinusIcon size={14} />
-        </CtrlButton>
-        <span className="scribe-table-ctrl-label">Column</span>
-        <CtrlButton
-          label="Add column"
-          onClick={() => chain().addColumnAfter().run()}
-        >
-          <PlusIcon size={14} />
-        </CtrlButton>
-      </div>
-      <Divider />
+      {AXIS_GROUPS.map(({ noun, remove, add }) => (
+        <Fragment key={noun}>
+          <div className="scribe-table-ctrl-group">
+            <CtrlButton
+              label={`Remove ${noun.toLowerCase()}`}
+              onClick={() => remove(chain()).run()}
+            >
+              <MinusIcon size={14} />
+            </CtrlButton>
+            <span className="scribe-table-ctrl-label">{noun}</span>
+            <CtrlButton
+              label={`Add ${noun.toLowerCase()}`}
+              onClick={() => add(chain()).run()}
+            >
+              <PlusIcon size={14} />
+            </CtrlButton>
+          </div>
+          <Divider />
+        </Fragment>
+      ))}
       <CtrlButton
         label="Merge cells"
         disabled={!canMerge}
@@ -140,55 +212,17 @@ export function TableControls({ editor }: { editor: Editor }) {
         <SplitCellIcon size={15} />
       </CtrlButton>
       <Divider />
-      <CtrlButton
-        label="Align left"
-        active={alignLeft}
-        onClick={() => chain().setTextAlign("left").run()}
-      >
-        <AlignLeftIcon size={15} />
-      </CtrlButton>
-      <CtrlButton
-        label="Align center"
-        active={alignCenter}
-        onClick={() => chain().setTextAlign("center").run()}
-      >
-        <AlignCenterIcon size={15} />
-      </CtrlButton>
-      <CtrlButton
-        label="Align right"
-        active={alignRight}
-        onClick={() => chain().setTextAlign("right").run()}
-      >
-        <AlignRightIcon size={15} />
-      </CtrlButton>
+      {hAlignButtons.map(({ label, active, Icon, onClick }) => (
+        <CtrlButton key={label} label={label} active={active} onClick={onClick}>
+          <Icon size={15} />
+        </CtrlButton>
+      ))}
       <Divider />
-      <CtrlButton
-        label="Align top"
-        active={vAlignTop}
-        onClick={() => {
-          setVerticalAlign("top");
-        }}
-      >
-        <AlignTopIcon size={15} />
-      </CtrlButton>
-      <CtrlButton
-        label="Align middle"
-        active={vAlignMiddle}
-        onClick={() => {
-          setVerticalAlign("middle");
-        }}
-      >
-        <AlignMiddleIcon size={15} />
-      </CtrlButton>
-      <CtrlButton
-        label="Align bottom"
-        active={vAlignBottom}
-        onClick={() => {
-          setVerticalAlign("bottom");
-        }}
-      >
-        <AlignBottomIcon size={15} />
-      </CtrlButton>
+      {vAlignButtons.map(({ label, active, Icon, onClick }) => (
+        <CtrlButton key={label} label={label} active={active} onClick={onClick}>
+          <Icon size={15} />
+        </CtrlButton>
+      ))}
       <Divider />
       <CtrlButton
         label="Header row"
