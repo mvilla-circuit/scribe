@@ -4,8 +4,10 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   createContext,
   type ReactNode,
+  useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
@@ -29,10 +31,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    void supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        setSession(data.session);
+      })
+      .catch((err: unknown) => {
+        // A failed session fetch must not leave the app stuck on the boot
+        // loader; treat it as "signed out" and let the user retry sign-in.
+        console.error("Failed to restore Supabase session", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
 
     const {
       data: { subscription },
@@ -51,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Resolves only once the redirect has been received and the code exchanged;
   // rejects (so the caller can surface a message) when the redirect carries no
   // code or the exchange fails, instead of silently leaving the user stranded.
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = useCallback(async () => {
     const port = await start({
       ports: [OAUTH_PORT],
       response:
@@ -109,20 +120,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       await cleanup();
     }
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
-  };
+  }, []);
 
-  return (
-    <AuthContext.Provider
-      value={{ session, loading, signInWithGoogle, signOut }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo<AuthContextValue>(
+    () => ({ session, loading, signInWithGoogle, signOut }),
+    [session, loading, signInWithGoogle, signOut],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components -- The auth context hook intentionally ships alongside its AuthProvider component.

@@ -1,8 +1,10 @@
 import {
   createContext,
   type ReactNode,
+  useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
@@ -46,41 +48,43 @@ export function initTheme() {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>(readStoredMode);
-  const [resolved, setResolved] = useState<"light" | "dark">(() =>
-    resolveMode(readStoredMode()),
-  );
+  const [systemDark, setSystemDark] = useState(prefersDark);
 
-  // Reflect the resolved theme to the DOM whenever it changes — the single place
-  // that mutates the root class, so every path (initial mount, setMode, and OS
-  // changes) goes through one apply.
+  // Track the OS color scheme so `resolved` can be derived from `mode` alone —
+  // a single source of truth instead of separately-synced state.
   useEffect(() => {
-    applyResolved(resolved);
-  }, [resolved]);
-
-  // While in `system`, follow OS changes by updating `resolved` (the effect
-  // above applies it to the DOM).
-  useEffect(() => {
-    if (mode !== "system") return;
     const media = window.matchMedia(COLOR_SCHEME_QUERY);
     const onChange = () => {
-      setResolved(media.matches ? "dark" : "light");
+      setSystemDark(media.matches);
     };
     media.addEventListener("change", onChange);
     return () => {
       media.removeEventListener("change", onChange);
     };
-  }, [mode]);
+  }, []);
 
-  const setMode = (next: ThemeMode) => {
+  const resolved: "light" | "dark" =
+    mode === "system" ? (systemDark ? "dark" : "light") : mode;
+
+  // Reflect the resolved theme to the DOM — the single place that mutates the
+  // root class, so every path (initial mount, setMode, OS changes) goes through
+  // one apply.
+  useEffect(() => {
+    applyResolved(resolved);
+  }, [resolved]);
+
+  const setMode = useCallback((next: ThemeMode) => {
     localStorage.setItem(STORAGE_KEY, next);
     setModeState(next);
-    setResolved(resolveMode(next));
-  };
+  }, []);
+
+  const value = useMemo<ThemeContextValue>(
+    () => ({ mode, resolved, setMode }),
+    [mode, resolved, setMode],
+  );
 
   return (
-    <ThemeContext.Provider value={{ mode, resolved, setMode }}>
-      {children}
-    </ThemeContext.Provider>
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
   );
 }
 

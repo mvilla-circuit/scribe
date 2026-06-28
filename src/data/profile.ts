@@ -28,13 +28,16 @@ export function useProfile() {
     enabled: !!userId,
     queryFn: async (): Promise<Profile | null> => {
       if (userId === undefined) return null;
+      // `maybeSingle` returns null (not a thrown PGRST116 error) when the
+      // profile row hasn't been created yet, so consumers can fall back to
+      // defaults gracefully.
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", userId)
-        .single();
+        .maybeSingle();
       if (error) throw error;
-      return data;
+      return data ?? null;
     },
   });
 }
