@@ -2,22 +2,17 @@ import { useRef, useState } from "react";
 
 import { Tooltip } from "@/components/ui/tooltip";
 import type { Book } from "@/data/books";
-import { bookFontOverrides } from "@/data/books";
 import {
-  docFontOverrides,
   type Document,
   useRenameDocument,
   useUpdateDocument,
   useUpdateDocumentContent,
   useUpdateDocumentFontOverrides,
 } from "@/data/documents";
-import { profileFonts, useProfile } from "@/data/profile";
 import { Editor, type EditorHandle } from "@/editor/lazy-editor";
 import type { OutlineHeading } from "@/editor/outline";
 import type { SaveState } from "@/editor/use-autosave";
-import { resolveFonts } from "@/fonts/resolve";
-import { useFontOverrides } from "@/fonts/use-font-overrides";
-import { useScopedFonts } from "@/fonts/use-scoped-fonts";
+import { useCascadedFonts } from "@/fonts/use-cascaded-fonts";
 import { formatDateTime, formatRelativeTime } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
 
@@ -42,7 +37,6 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
   const updateDocument = useUpdateDocument(book.id);
   const updateContent = useUpdateDocumentContent(book.id);
   const updateFontOverrides = useUpdateDocumentFontOverrides(book.id);
-  const { data: profile } = useProfile();
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [headings, setHeadings] = useState<OutlineHeading[]>([]);
@@ -56,21 +50,20 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
   // Fonts cascade global -> book -> page, resolved live so changes apply without
   // a reload. Title uses the Display role, body prose the Text role, code the
   // Code role; the resolved stacks are scoped onto this view via CSS variables.
-  const globalFonts = profileFonts(profile);
-  const bookOverrides = bookFontOverrides(book);
-  const overrides = docFontOverrides(document);
-  const resolved = resolveFonts(globalFonts, bookOverrides, overrides);
-  const fontVars = useScopedFonts(resolved);
-  const titleFont = "var(--font-display)";
-  const bodyFont = "var(--font-text)";
-
-  const pageFonts = useFontOverrides({
+  const {
+    fontVars,
     overrides,
-    collapseEmpty: true,
-    onChange: (fonts) => {
+    inherited,
+    handlers: pageFonts,
+  } = useCascadedFonts({
+    book,
+    document,
+    onChangeOverrides: (fonts) => {
       updateFontOverrides.mutate({ id: document.id, font_overrides: fonts });
     },
   });
+  const titleFont = "var(--font-display)";
+  const bodyFont = "var(--font-text)";
 
   const titleBlock = (
     <>
@@ -125,7 +118,7 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
           document={document}
           saveState={saveState}
           fontOverrides={overrides}
-          inheritedFonts={resolveFonts(globalFonts, bookOverrides)}
+          inheritedFonts={inherited}
           fontHandlers={pageFonts}
           onToggleOutline={() => {
             updateDocument.mutate({

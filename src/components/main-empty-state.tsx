@@ -7,7 +7,7 @@ import { getPositionBetween } from "@/data/ordering";
 import { buildTree, childrenOf, ROOT } from "@/data/tree";
 import { useAuth } from "@/lib/auth";
 import { makeIcon } from "@/lib/make-icon";
-import { cn } from "@/lib/utils";
+import { cn, formatRelativeTime } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
 
 import { BookIcon, BookPlusIcon, FolderPlusIcon } from "./sidebar/icons";
@@ -24,22 +24,6 @@ function greetingFor(date: Date): string {
   if (hour < 12) return "Good morning";
   if (hour < 18) return "Good afternoon";
   return "Good evening";
-}
-
-// A compact "last edited" label: relative for recent edits, otherwise a date.
-function formatUpdatedAt(iso: string | null): string {
-  if (!iso) return "";
-  const then = new Date(iso);
-  const diffMs = Date.now() - then.getTime();
-  if (Number.isNaN(diffMs)) return "";
-  const minute = 60_000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
-  if (diffMs < minute) return "Just now";
-  if (diffMs < hour) return `${Math.floor(diffMs / minute)}m ago`;
-  if (diffMs < day) return `${Math.floor(diffMs / hour)}h ago`;
-  if (diffMs < 7 * day) return `${Math.floor(diffMs / day)}d ago`;
-  return then.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 export function MainEmptyState() {
@@ -206,7 +190,7 @@ function RecentBookCard({
       </div>
       {book.updated_at && (
         <span className="shrink-0 text-xs text-muted tabular-nums">
-          {formatUpdatedAt(book.updated_at)}
+          {formatRelativeTime(book.updated_at, { compact: true })}
         </span>
       )}
     </button>

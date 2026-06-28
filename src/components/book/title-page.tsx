@@ -4,7 +4,6 @@ import { SubtitleToggle } from "@/components/ui/subtitle-toggle";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
   type Book,
-  bookFontOverrides,
   bookShowSubtitle,
   bookTheme,
   useRenameBook,
@@ -13,10 +12,7 @@ import {
 import { buildDocTree, expandableDocIds } from "@/data/doc-tree";
 import { type Document, useCreateDocument } from "@/data/documents";
 import { getPositionBetween } from "@/data/ordering";
-import { profileFonts, useProfile } from "@/data/profile";
-import { resolveFonts } from "@/fonts/resolve";
-import { useFontOverrides } from "@/fonts/use-font-overrides";
-import { useScopedFonts } from "@/fonts/use-scoped-fonts";
+import { useCascadedFonts } from "@/fonts/use-cascaded-fonts";
 import { useUIStore } from "@/store/ui";
 
 import { EditableText } from "./editable-text";
@@ -38,13 +34,22 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
   const updateBook = useUpdateBook();
   const createDocument = useCreateDocument(book.id);
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
-  const { data: profile } = useProfile();
 
   // Fonts cascade global -> book; the Title Page has no page-level layer.
-  const globalFonts = profileFonts(profile);
-  const bookOverrides = bookFontOverrides(book);
-  const resolved = resolveFonts(globalFonts, bookOverrides);
-  const fontVars = useScopedFonts(resolved);
+  const {
+    fontVars,
+    overrides: bookOverrides,
+    inherited,
+    handlers: bookFonts,
+  } = useCascadedFonts({
+    book,
+    onChangeOverrides: (fonts) => {
+      updateBook.mutate({
+        id: book.id,
+        theme: { ...bookTheme(book), fonts: fonts ?? {} },
+      });
+    },
+  });
   const titleFont = "var(--font-display)";
 
   const showSubtitle = bookShowSubtitle(book);
@@ -79,16 +84,6 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
   const toggleAll = () => {
     setExpandedIds(allExpanded ? new Set() : new Set(expandable));
   };
-
-  const bookFonts = useFontOverrides({
-    overrides: bookOverrides,
-    onChange: (fonts) => {
-      updateBook.mutate({
-        id: book.id,
-        theme: { ...bookTheme(book), fonts: fonts ?? {} },
-      });
-    },
-  });
 
   const createFirstPage = () => {
     const id = crypto.randomUUID();
@@ -166,7 +161,7 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
             heading="Book fonts"
             inheritLabel="global"
             overrides={bookOverrides}
-            inherited={resolveFonts(globalFonts)}
+            inherited={inherited}
             onSet={bookFonts.setFont}
             onClear={bookFonts.clearFont}
             onClearAll={bookFonts.clearAll}

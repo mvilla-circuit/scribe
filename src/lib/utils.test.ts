@@ -33,6 +33,25 @@ describe("formatRelativeTime", () => {
   it("returns an empty string for an invalid timestamp", () => {
     expect(formatRelativeTime("not-a-date")).toBe("");
   });
+
+  describe("compact", () => {
+    const compact = (iso: string) => formatRelativeTime(iso, { compact: true });
+
+    it("uses the terse m/h/d ago style for recent instants", () => {
+      expect(compact("2026-06-27T11:59:30.000Z")).toBe("Just now");
+      expect(compact("2026-06-27T11:30:00.000Z")).toBe("30m ago");
+      expect(compact("2026-06-27T10:00:00.000Z")).toBe("2h ago");
+      expect(compact("2026-06-24T12:00:00.000Z")).toBe("3d ago");
+    });
+
+    it("falls back to an absolute month/day after a week", () => {
+      expect(compact("2026-06-13T12:00:00.000Z")).toMatch(/Jun/);
+    });
+
+    it("returns an empty string for an invalid timestamp", () => {
+      expect(compact("not-a-date")).toBe("");
+    });
+  });
 });
 
 describe("formatDateTime", () => {
