@@ -12,7 +12,7 @@ import {
   useUpdateDocumentFontOverrides,
 } from "@/data/documents";
 import { profileFonts, useProfile } from "@/data/profile";
-import { Editor, type EditorHandle } from "@/editor/editor";
+import { Editor, type EditorHandle } from "@/editor/lazy-editor";
 import type { OutlineHeading } from "@/editor/outline";
 import type { SaveState } from "@/editor/use-autosave";
 import { resolveFonts } from "@/fonts/resolve";
