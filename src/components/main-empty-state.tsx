@@ -1,4 +1,4 @@
-import { PenLine } from "lucide-react";
+import { Feather } from "lucide-react";
 import { useMemo } from "react";
 
 import { type Book, useBooks } from "@/data/books";
@@ -13,17 +13,11 @@ import { Button } from "./ui/button";
 import { DocumentIcon } from "./ui/document-icon";
 import { Skeleton } from "./ui/skeleton";
 import { Tooltip } from "./ui/tooltip";
+import { useGreeting } from "./use-greeting";
 
-const BrandIcon = makeIcon(PenLine);
+const BrandIcon = makeIcon(Feather);
 
 const MAX_RECENT = 6;
-
-function greetingFor(date: Date): string {
-  const hour = date.getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
-}
 
 export function MainEmptyState() {
   const { firstName } = useSessionUser();
@@ -31,7 +25,7 @@ export function MainEmptyState() {
   const createRootItem = useCreateRootItem();
   const setActiveBook = useUIStore((s) => s.setActiveBook);
 
-  const greeting = greetingFor(new Date());
+  const greeting = useGreeting();
 
   const recent = useMemo(() => {
     const list = books ?? [];
@@ -61,10 +55,7 @@ export function MainEmptyState() {
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-selected text-accent">
                 <BrandIcon size={20} />
               </span>
-              <span
-                className="text-3xl font-semibold tracking-tight text-text"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
+              <span className="font-serif text-3xl font-semibold italic tracking-tight text-text">
                 Scribe
               </span>
             </div>

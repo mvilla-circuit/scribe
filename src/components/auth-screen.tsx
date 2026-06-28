@@ -49,7 +49,7 @@ export function AuthScreen() {
     <main className="flex h-full items-center justify-center px-6">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-8 shadow-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-semibold tracking-tight text-text">
+          <h1 className="font-serif text-3xl font-semibold italic tracking-tight text-text">
             Scribe
           </h1>
           <p className="mt-2 text-sm text-muted">Sign in to start writing.</p>

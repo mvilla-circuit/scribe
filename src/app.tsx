@@ -1,4 +1,4 @@
-import { PenLine } from "lucide-react";
+import { Feather } from "lucide-react";
 
 import { AppShell } from "./components/app-shell";
 import { AuthScreen } from "./components/auth-screen";
@@ -6,7 +6,7 @@ import { Toaster } from "./components/ui/toaster";
 import { useAuth } from "./lib/auth";
 import { makeIcon } from "./lib/make-icon";
 
-const BrandIcon = makeIcon(PenLine);
+const BrandIcon = makeIcon(Feather);
 
 // Calm, on-brand boot screen shown while we resolve whether there's a session.
 // A quiet pulse keeps the wordmark feeling alive without a spinner.
@@ -17,10 +17,7 @@ function BootLoader() {
         <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-selected text-accent">
           <BrandIcon size={24} />
         </span>
-        <span
-          className="text-lg font-semibold tracking-tight text-text"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
+        <span className="font-serif text-lg font-semibold italic tracking-tight text-text">
           Scribe
         </span>
       </div>

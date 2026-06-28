@@ -10,6 +10,7 @@ import { type ThemeMode, useTheme } from "@/theme/theme";
 
 import { ChevronLeftIcon } from "./book/icons";
 import { OutlinePanel } from "./book/outline-panel";
+import { ScribeLogo } from "./scribe-logo";
 import { SettingsDialog } from "./settings/settings-dialog";
 import { CollapsedSidebarNav } from "./sidebar/collapsed-sidebar-nav";
 import { SidebarTree } from "./sidebar/sidebar-tree";
@@ -92,9 +93,7 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
               </button>
             </Tooltip>
           ) : (
-            <span className="select-none text-sm font-semibold tracking-tight text-text">
-              Scribe
-            </span>
+            <ScribeLogo iconSize={16} textClassName="text-sm" />
           ))}
         <Tooltip
           content={collapsed ? "Expand sidebar" : "Collapse sidebar"}
