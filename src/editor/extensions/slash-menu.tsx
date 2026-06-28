@@ -6,6 +6,7 @@ import {
   useState,
 } from "react";
 
+import { nextActiveIndex } from "@/editor/list-navigation";
 import { cn } from "@/lib/utils";
 
 import type { SlashItem } from "./slash-items";
@@ -49,12 +50,10 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
           // Still swallow nav keys so they don't move the caret behind the menu.
           return ["ArrowUp", "ArrowDown", "Enter"].includes(event.key);
         }
-        if (event.key === "ArrowUp") {
-          setSelected((i) => (i + items.length - 1) % items.length);
-          return true;
-        }
-        if (event.key === "ArrowDown") {
-          setSelected((i) => (i + 1) % items.length);
+        if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+          setSelected((i) =>
+            nextActiveIndex(i, event.key, { length: items.length, wrap: true }),
+          );
           return true;
         }
         if (event.key === "Enter" || event.key === "Tab") {

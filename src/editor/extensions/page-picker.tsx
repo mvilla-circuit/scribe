@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { DocumentIcon } from "@/components/ui/document-icon";
 import { type PageLinkOption, useEditorBridge } from "@/editor/editor-bridge";
 import { BookIcon, PageLinkIcon } from "@/editor/icons";
+import { nextActiveIndex } from "@/editor/list-navigation";
 import { cn } from "@/lib/utils";
 
 import { usePagePicker } from "./page-picker-store";
@@ -63,12 +64,9 @@ export function PagePicker() {
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowDown") {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
-      setActive((i) => Math.min(rows.length - 1, i + 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setActive((i) => Math.max(0, i - 1));
+      setActive((i) => nextActiveIndex(i, e.key, { length: rows.length }));
     } else if (e.key === "Enter") {
       e.preventDefault();
       const row = rows[active];
