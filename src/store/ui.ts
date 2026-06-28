@@ -26,6 +26,51 @@ interface UIState {
 const clampWidth = (width: number) =>
   Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, width));
 
+// The slice of UIState persisted under `scribe-ui` (see `partialize` below).
+interface PersistedUIState {
+  sidebarCollapsed: boolean;
+  sidebarWidth: number;
+  expandedFolderIds: string[];
+  expandedDocIds: string[];
+}
+
+const PERSISTED_DEFAULTS: PersistedUIState = {
+  sidebarCollapsed: false,
+  sidebarWidth: SIDEBAR_DEFAULT_WIDTH,
+  expandedFolderIds: [],
+  expandedDocIds: [],
+};
+
+const toStringArray = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === "string")
+    : [];
+
+/**
+ * Coerces an unknown persisted blob into a valid {@link PersistedUIState} so a
+ * corrupted or out-of-date payload can never crash hydration. Wrongly-typed or
+ * missing fields fall back to the store defaults; the sidebar width is clamped.
+ */
+export function migrateUIState(state: unknown): PersistedUIState {
+  if (typeof state !== "object" || state === null) {
+    return { ...PERSISTED_DEFAULTS };
+  }
+  const raw = state as Record<string, unknown>;
+  const width = raw.sidebarWidth;
+  return {
+    sidebarCollapsed:
+      typeof raw.sidebarCollapsed === "boolean"
+        ? raw.sidebarCollapsed
+        : PERSISTED_DEFAULTS.sidebarCollapsed,
+    sidebarWidth:
+      typeof width === "number" && Number.isFinite(width)
+        ? clampWidth(width)
+        : PERSISTED_DEFAULTS.sidebarWidth,
+    expandedFolderIds: toStringArray(raw.expandedFolderIds),
+    expandedDocIds: toStringArray(raw.expandedDocIds),
+  };
+}
+
 export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
@@ -79,14 +124,18 @@ export const useUIStore = create<UIState>()(
     }),
     {
       name: "scribe-ui",
+      version: 1,
       // Persist layout prefs + which folders/docs are open; selection is
       // per-session.
-      partialize: (s) => ({
+      partialize: (s): PersistedUIState => ({
         sidebarCollapsed: s.sidebarCollapsed,
         sidebarWidth: s.sidebarWidth,
         expandedFolderIds: s.expandedFolderIds,
         expandedDocIds: s.expandedDocIds,
       }),
+      // Defensively sanitize any previously-stored blob so a corrupted or
+      // pre-v1 payload can never crash hydration.
+      migrate: (persistedState) => migrateUIState(persistedState),
     },
   ),
 );

@@ -45,7 +45,13 @@ export function profileFonts(
 ): ProfileFonts {
   const fonts = profile?.fonts;
   if (!fonts || typeof fonts !== "object" || Array.isArray(fonts)) return {};
-  return fonts;
+  // The jsonb column is untrusted: keep only entries whose value is a string
+  // (a fontId), never leaking non-string values to consumers.
+  const result: Record<string, string> = {};
+  for (const [role, value] of Object.entries(fonts)) {
+    if (typeof value === "string") result[role] = value;
+  }
+  return result;
 }
 
 /**

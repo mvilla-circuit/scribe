@@ -53,6 +53,29 @@ describe("profileFonts", () => {
     expect(profileFonts(undefined)).toEqual({});
     expect(profileFonts(makeProfile({ fonts: ["lora"] }))).toEqual({});
   });
+
+  it("falls back to an empty map when fonts is a primitive", () => {
+    expect(profileFonts(makeProfile({ fonts: 5 }))).toEqual({});
+    expect(profileFonts(makeProfile({ fonts: "lora" }))).toEqual({});
+  });
+
+  it("passes a clean string-valued map through unchanged", () => {
+    expect(
+      profileFonts(
+        makeProfile({ fonts: { display: "lora", text: "inter", code: "" } }),
+      ),
+    ).toEqual({ display: "lora", text: "inter", code: "" });
+  });
+
+  it("keeps only the string-valued entries from a mixed map", () => {
+    expect(
+      profileFonts(
+        makeProfile({
+          fonts: { text: "lora", code: 42, display: null },
+        }),
+      ),
+    ).toEqual({ text: "lora" });
+  });
 });
 
 describe("useProfile", () => {
