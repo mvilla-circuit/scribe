@@ -3,6 +3,7 @@ import type { Editor } from "@tiptap/react";
 import {
   type ComponentType,
   Fragment,
+  memo,
   type ReactNode,
   useRef,
   useState,
@@ -72,7 +73,11 @@ interface AlignButton {
 // control cluster floats just above the table the caret is in (and only then),
 // driven by the built-in table commands. It anchors to the table's DOM via
 // Floating UI's autoUpdate, so it tracks scroll, resize, and column drags.
-export function TableControls({ editor }: { editor: Editor }) {
+export const TableControls = memo(function TableControls({
+  editor,
+}: {
+  editor: Editor;
+}) {
   const {
     tablePos,
     headerRow,
@@ -294,7 +299,7 @@ export function TableControls({ editor }: { editor: Editor }) {
       </CtrlButton>
     </div>
   );
-}
+});
 
 function CtrlButton({
   label,

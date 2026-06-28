@@ -1,7 +1,7 @@
 import type { ChainedCommands } from "@tiptap/core";
 import { type Editor, useEditorState } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
-import { type ReactNode, useState } from "react";
+import { memo, type ReactNode, useCallback, useState } from "react";
 
 import { Tooltip } from "@/components/ui/tooltip";
 import type { IconProps } from "@/lib/make-icon";
@@ -70,12 +70,29 @@ const MARKS: MarkSpec[] = [
 // the separate link button.
 const TRACKED = [...MARKS.map((m) => m.name), "link"];
 
+// Hoisted so it isn't a fresh object each render — `BubbleMenu` reconfigures its
+// floating-ui plugin (an extra transaction) whenever `options` changes identity.
+const BUBBLE_MENU_OPTIONS = { placement: "top", offset: 8 } as const;
+
 // The selection toolbar: a floating, segmented bar of inline-formatting
 // controls. It appears only over a real text selection, mirrors the active
 // marks live (via useEditorState), and never steals the selection — every
 // button cancels its mousedown so the highlight stays put while you format.
-export function BubbleToolbar({ editor }: { editor: Editor }) {
+export const BubbleToolbar = memo(function BubbleToolbar({
+  editor,
+}: {
+  editor: Editor;
+}) {
   const [colorOpen, setColorOpen] = useState(false);
+
+  // Stable so `BubbleMenu` doesn't reconfigure its plugin on unrelated re-renders.
+  const shouldShow = useCallback(
+    ({ editor: e }: { editor: Editor }) =>
+      // Only over genuine text runs — skip node selections (hr/image) and
+      // code blocks (which carry their own editing affordances later).
+      e.isEditable && hasFormattableSelection(e),
+    [],
+  );
 
   // The toolbar is always mounted, so this selector runs on every editor
   // transaction — including plain typing. Its mark states only matter while the
@@ -108,12 +125,8 @@ export function BubbleToolbar({ editor }: { editor: Editor }) {
   return (
     <BubbleMenu
       editor={editor}
-      options={{ placement: "top", offset: 8 }}
-      shouldShow={({ editor: e }) =>
-        // Only over genuine text runs — skip node selections (hr/image) and
-        // code blocks (which carry their own editing affordances later).
-        e.isEditable && hasFormattableSelection(e)
-      }
+      options={BUBBLE_MENU_OPTIONS}
+      shouldShow={shouldShow}
       className="flex items-center gap-0.5 rounded-xl border border-border bg-elevated p-1 shadow-popover"
     >
       {MARKS.map((mark) => {
@@ -150,7 +163,7 @@ export function BubbleToolbar({ editor }: { editor: Editor }) {
       />
     </BubbleMenu>
   );
-}
+});
 
 function ToggleButton({
   label,

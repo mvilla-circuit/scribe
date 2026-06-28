@@ -1,7 +1,13 @@
 import "./editor.css";
 
 import { EditorContent, type JSONContent, useEditor } from "@tiptap/react";
-import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+} from "react";
 
 import type { Json } from "@/lib/database.types";
 
@@ -66,10 +72,16 @@ function migrateLegacyQuotes(node: JSONContent): JSONContent {
         attrs: { color: CALLOUT_DEFAULT.color, icon: null },
       }
     : node;
-  if (Array.isArray(migrated.content)) {
-    return { ...migrated, content: migrated.content.map(migrateLegacyQuotes) };
-  }
-  return migrated;
+  if (!Array.isArray(migrated.content)) return migrated;
+  // Recurse, but return the original node reference when nothing in the subtree
+  // changed so a modern document isn't deep-cloned on every editor mount.
+  let changed = migrated !== node;
+  const content = migrated.content.map((child) => {
+    const next = migrateLegacyQuotes(child);
+    if (next !== child) changed = true;
+    return next;
+  });
+  return changed ? { ...migrated, content } : migrated;
 }
 
 // Stored documents start life as an empty `{}` placeholder; only a real
@@ -126,10 +138,21 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     };
   }, [documentId]);
 
+  // Build the extension set and normalize the body once per editor instance
+  // rather than on every render. `useEditor` only consumes these when its dep
+  // array (`[documentId]`) changes, so recomputing them each render — e.g. on a
+  // save-state transition — just allocated ~25 extensions and re-walked the
+  // whole document for nothing.
+  const extensions = useMemo(() => buildExtensions(), []);
+  const content = useMemo(
+    () => normalizeContent(initialContent),
+    [initialContent],
+  );
+
   const editor = useEditor(
     {
-      extensions: buildExtensions(),
-      content: normalizeContent(initialContent),
+      extensions,
+      content,
       editable,
       shouldRerenderOnTransaction: false,
       editorProps: {

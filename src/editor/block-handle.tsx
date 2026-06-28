@@ -1,7 +1,7 @@
 import { DragHandle } from "@tiptap/extension-drag-handle-react";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import type { ChainedCommands, Editor } from "@tiptap/react";
-import { useCallback, useRef, useState } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -31,7 +31,11 @@ import { useBlockHandlePosition } from "./use-block-handle-position";
 // dropdown is fully controlled and anchored to a hidden element; the visible
 // button only opens the menu on a real `click` (which a drag suppresses). While
 // the menu is open we lock the drag-handle plugin so it stays put and visible.
-export function BlockHandle({ editor }: { editor: Editor }) {
+export const BlockHandle = memo(function BlockHandle({
+  editor,
+}: {
+  editor: Editor;
+}) {
   // The block currently under the gutter handle; a ref so the stable drag and
   // position callbacks can read it without re-registering the plugin.
   const target = useRef<BlockTarget | null>(null);
@@ -151,4 +155,4 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       </DropdownMenu>
     </DragHandle>
   );
-}
+});

@@ -54,6 +54,15 @@ export function useAutosave(
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // A save kicked off just before unmount can still resolve afterwards; guard
+  // the post-await `setState` so it doesn't fire on a torn-down component.
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   // Whether there are unsaved edits to serialize on the next flush. We hold a
   // dirty flag rather than a serialized snapshot so the expensive `getJSON()`
   // runs once at flush time, not on every keystroke.
@@ -94,12 +103,14 @@ export function useAutosave(
       }
       promise.then(
         () => {
+          if (!mounted.current) return;
           setState("saved");
           idleTimer.current = setTimeout(() => {
             setState("idle");
           }, SAVED_LINGER);
         },
         () => {
+          if (!mounted.current) return;
           setState("error");
         }, // stays red until the next edit/save
       );

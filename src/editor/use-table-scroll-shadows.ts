@@ -60,6 +60,18 @@ export function useTableScrollShadows(editor: Editor | null) {
       });
     };
 
+    // Coalesce a burst of mutations into a single re-observe + measure on the
+    // next frame, so a run of structural edits doesn't force layout repeatedly.
+    let frame = 0;
+    const scheduleSync = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        observeTargets();
+        syncAll();
+      });
+    };
+
     // Scroll events don't bubble, so catch each scroller in the capture phase.
     const onScroll = (e: Event) => {
       const target = e.target;
@@ -85,10 +97,12 @@ export function useTableScrollShadows(editor: Editor | null) {
         }
         return true;
       });
-      if (relevant) {
-        observeTargets();
-        syncAll();
-      }
+      if (!relevant) return;
+      // Common case: the document has no tables. Skip the re-observe + measure
+      // entirely — inserting a table is itself a mutation that re-triggers this,
+      // so we never miss one.
+      if (!root.querySelector(".tableWrapper")) return;
+      scheduleSync();
     });
     mo.observe(root, {
       childList: true,
@@ -101,6 +115,7 @@ export function useTableScrollShadows(editor: Editor | null) {
     syncAll();
 
     return () => {
+      if (frame) cancelAnimationFrame(frame);
       root.removeEventListener("scroll", onScroll, true);
       ro.disconnect();
       mo.disconnect();

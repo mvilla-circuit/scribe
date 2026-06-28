@@ -3,7 +3,13 @@ import {
   type NodeViewProps,
   NodeViewWrapper,
 } from "@tiptap/react";
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { Tooltip } from "@/components/ui/tooltip";
 import { AccentColorPopover } from "@/editor/block-control-presets";
@@ -39,6 +45,50 @@ export function QuoteView({ node, updateAttributes, editor }: NodeViewProps) {
     }
   }, [showAttribution]);
 
+  // The citation input is debounced: every keystroke updates a local draft (so
+  // the field stays responsive) but only commits to the node attribute after a
+  // short pause. Writing the attribute dispatches a ProseMirror transaction that
+  // marks autosave dirty and re-runs every editor selector, so doing it per
+  // keystroke is needlessly heavy.
+  const [draftCite, setDraftCite] = useState(attribution);
+  const citeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [citeFocused, setCiteFocused] = useState(false);
+  // Re-sync the draft when the stored value changes from elsewhere (undo, a
+  // collaborator) — but never while the field is focused, so a debounced commit
+  // of our own keystrokes can't clobber what's still being typed. Reconciling
+  // during render (per React's "you might not need an effect") rather than in an
+  // effect avoids the cascading-render the lint guards against.
+  const [prevAttribution, setPrevAttribution] = useState(attribution);
+  if (attribution !== prevAttribution) {
+    setPrevAttribution(attribution);
+    if (!citeFocused) setDraftCite(attribution);
+  }
+  useEffect(
+    () => () => {
+      if (citeTimer.current) clearTimeout(citeTimer.current);
+    },
+    [],
+  );
+  const commitCite = useCallback(
+    (value: string) => {
+      if (citeTimer.current) clearTimeout(citeTimer.current);
+      citeTimer.current = setTimeout(() => {
+        updateAttributes({ attribution: value });
+      }, 300);
+    },
+    [updateAttributes],
+  );
+  const flushCite = useCallback(
+    (value: string) => {
+      if (citeTimer.current) {
+        clearTimeout(citeTimer.current);
+        citeTimer.current = null;
+      }
+      updateAttributes({ attribution: value });
+    },
+    [updateAttributes],
+  );
+
   const wrapperStyle: CSSProperties | undefined = color
     ? { "--quote-accent": color }
     : undefined;
@@ -67,10 +117,18 @@ export function QuoteView({ node, updateAttributes, editor }: NodeViewProps) {
                 // drives the width. Otherwise the input's default 20-char width
                 // inflates the auto track and the text floats left of the edge.
                 size={1}
-                value={attribution}
+                value={draftCite}
                 placeholder="Add a citation…"
                 onChange={(e) => {
-                  updateAttributes({ attribution: e.target.value });
+                  setDraftCite(e.target.value);
+                  commitCite(e.target.value);
+                }}
+                onFocus={() => {
+                  setCiteFocused(true);
+                }}
+                onBlur={(e) => {
+                  setCiteFocused(false);
+                  flushCite(e.target.value);
                 }}
                 onKeyDown={(e) => {
                   e.stopPropagation();

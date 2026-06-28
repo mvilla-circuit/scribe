@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { type PageLinkOption, useEditorBridge } from "@/editor/editor-bridge";
@@ -13,7 +13,7 @@ type Row = PageLinkOption;
 // A search-driven picker over every page and book (cross-book). Opened by the
 // "Link to page" slash item; selecting a row hands the target back through the
 // pagePicker store, which inserts a page card.
-export function PagePicker() {
+export const PagePicker = memo(function PagePicker() {
   const onSelect = usePagePicker((s) => s.onSelect);
   const close = usePagePicker((s) => s.close);
   const open = onSelect !== null;
@@ -137,4 +137,4 @@ export function PagePicker() {
       </DialogContent>
     </Dialog>
   );
-}
+});

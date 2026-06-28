@@ -35,6 +35,31 @@ export interface TableState {
   textSelecting: boolean;
 }
 
+// Snapshot returned when the caret isn't inside a table. A stable reference so
+// the default deep-equal comparison in `useEditorState` short-circuits without
+// re-rendering, and — more importantly — so the heavy `can()`/`isActive` probes
+// below run only when there's actually a table to act on (this selector fires on
+// every transaction, including plain typing outside any table).
+const NO_TABLE_STATE: TableState = {
+  tablePos: -1,
+  headerRow: false,
+  headerColumn: false,
+  headerColor: null,
+  rowBorders: true,
+  colBorders: true,
+  canMerge: false,
+  canSplit: false,
+  alignLeft: true,
+  alignCenter: false,
+  alignRight: false,
+  vAlignTop: true,
+  vAlignMiddle: false,
+  vAlignBottom: false,
+  cellFill: null,
+  cellPos: -1,
+  textSelecting: false,
+};
+
 /** Reactively derive the table state from the editor's current selection. */
 export function useTableState(editor: Editor): TableState {
   return useEditorState({
@@ -42,12 +67,6 @@ export function useTableState(editor: Editor): TableState {
     selector: ({ editor: e }) => {
       const { selection } = e.state;
       const { $from } = selection;
-      // Whether the inline-formatting bubble toolbar is showing: it appears over
-      // a genuine, non-empty text run (the same guard as BubbleToolbar). When it
-      // is, we hide the table toolbar so the two don't stack on top of each other
-      // above the cell. A multi-cell CellSelection isn't a TextSelection, so the
-      // table toolbar stays put for those (the bubble toolbar doesn't show then).
-      const textSelecting = hasFormattableSelection(e);
       let pos = -1;
       let table: PMNode | null = null;
       // Presentation of the cell the caret sits in: its vertical alignment
@@ -75,6 +94,16 @@ export function useTableState(editor: Editor): TableState {
           cellFound = true;
         }
       }
+      // Caret isn't in a table: skip the dry-run command probes and header
+      // derivation entirely and return the shared empty snapshot.
+      if (pos < 0) return NO_TABLE_STATE;
+
+      // Whether the inline-formatting bubble toolbar is showing: it appears over
+      // a genuine, non-empty text run (the same guard as BubbleToolbar). When it
+      // is, we hide the table toolbar so the two don't stack on top of each other
+      // above the cell. A multi-cell CellSelection isn't a TextSelection, so the
+      // table toolbar stays put for those (the bubble toolbar doesn't show then).
+      const textSelecting = hasFormattableSelection(e);
       // A header row = every cell in the first row is a tableHeader; a header
       // column = the first cell of every row is. These drive the toggle states.
       const { headerRow, headerColumn } = deriveTableHeaders(table);
