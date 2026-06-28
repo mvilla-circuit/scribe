@@ -1,22 +1,13 @@
-import { offset } from "@floating-ui/dom";
 import { DragHandle } from "@tiptap/extension-drag-handle-react";
 import type { Node as PMNode } from "@tiptap/pm/model";
-import { NodeSelection } from "@tiptap/pm/state";
 import type { ChainedCommands, Editor } from "@tiptap/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import {
   DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { IconProps } from "@/lib/make-icon";
 
 import {
   copyBlock,
@@ -25,60 +16,11 @@ import {
   setColumnCount,
   turnIntoBlock,
 } from "./block-actions";
-import { BASIC_BLOCK_TYPES } from "./extensions/block-types";
-import {
-  CheckIcon,
-  CodeBlockIcon,
-  Columns2Icon,
-  Columns3Icon,
-  CopyIcon,
-  CopyToClipboardIcon,
-  DragHandleIcon,
-  QuoteIcon,
-  TextIcon,
-  TrashIcon,
-} from "./icons";
-
-// Column-count choices offered for a `columns` block. "1" flattens the block
-// back to normal top-level blocks; 2-3 set the number of side-by-side columns.
-const COLUMN_OPTIONS: {
-  count: number;
-  label: string;
-  icon: (props: IconProps) => React.ReactNode;
-}[] = [
-  { count: 1, label: "1 column", icon: TextIcon },
-  { count: 2, label: "2 columns", icon: Columns2Icon },
-  { count: 3, label: "3 columns", icon: Columns3Icon },
-];
-
-// A single block target: the ProseMirror node currently under the gutter handle
-// and the absolute position right before it.
-interface Target {
-  node: PMNode;
-  pos: number;
-}
-
-// "Turn into" conversions. Each applies to the textblock the handle points at,
-// mirroring the slash-menu commands so block typing stays consistent.
-interface TurnInto {
-  label: string;
-  icon: (props: IconProps) => React.ReactNode;
-  apply: (chain: ChainedCommands) => ChainedCommands;
-}
-
-const TURN_INTO: TurnInto[] = [
-  // The basic textblock conversions, shared verbatim with the slash menu.
-  ...BASIC_BLOCK_TYPES.map((block): TurnInto => ({
-    label: block.title,
-    icon: block.icon,
-    apply: block.command,
-  })),
-  // Conversions unique to the handle: Quote wraps the block in place (the slash
-  // menu instead inserts fresh pull/accent quotes), and Code keeps its short
-  // label here.
-  { label: "Quote", icon: QuoteIcon, apply: (c) => c.wrapIn("quote") },
-  { label: "Code", icon: CodeBlockIcon, apply: (c) => c.toggleCodeBlock() },
-];
+import type { BlockTarget } from "./block-handle-target";
+import { BlockMenu } from "./block-menu";
+import { DragHandleIcon } from "./icons";
+import { useBlockHandleDrag } from "./use-block-handle-drag";
+import { useBlockHandlePosition } from "./use-block-handle-position";
 
 // Notion-style gutter control. The handle fades in next to the hovered top-level
 // block: drag it to reorder (handled natively by the drag-handle plugin), or
@@ -90,14 +32,13 @@ const TURN_INTO: TurnInto[] = [
 // button only opens the menu on a real `click` (which a drag suppresses). While
 // the menu is open we lock the drag-handle plugin so it stays put and visible.
 export function BlockHandle({ editor }: { editor: Editor }) {
-  const target = useRef<Target | null>(null);
-  // The DOM element of the block currently being dragged, held so its drag
-  // highlight can be cleared on drag end even if the hover target has moved on.
-  const draggingEl = useRef<HTMLElement | null>(null);
+  // The block currently under the gutter handle; a ref so the stable drag and
+  // position callbacks can read it without re-registering the plugin.
+  const target = useRef<BlockTarget | null>(null);
   const [open, setOpen] = useState(false);
   // Snapshot of the target taken when the menu opens, so the rendered options
   // reflect (and act on) the block that was under the handle at open time.
-  const [menuTarget, setMenuTarget] = useState<Target | null>(null);
+  const [menuTarget, setMenuTarget] = useState<BlockTarget | null>(null);
 
   const lock = useCallback(
     (locked: boolean) => {
@@ -113,12 +54,16 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       lock(next);
       if (next) setMenuTarget(target.current);
     },
-    [lock],
+    [lock, target],
   );
 
   const openMenu = useCallback(() => {
     setMenuTarget(target.current);
     handleOpenChange(true);
+  }, [handleOpenChange, target]);
+
+  const closeMenu = useCallback(() => {
+    handleOpenChange(false);
   }, [handleOpenChange]);
 
   const duplicate = useCallback(() => {
@@ -136,8 +81,8 @@ export function BlockHandle({ editor }: { editor: Editor }) {
   }, [editor, menuTarget]);
 
   const turnInto = useCallback(
-    (option: TurnInto) => {
-      if (menuTarget) turnIntoBlock(editor, menuTarget.pos, option.apply);
+    (apply: (chain: ChainedCommands) => ChainedCommands) => {
+      if (menuTarget) turnIntoBlock(editor, menuTarget.pos, apply);
     },
     [editor, menuTarget],
   );
@@ -149,123 +94,22 @@ export function BlockHandle({ editor }: { editor: Editor }) {
     [editor, menuTarget],
   );
 
-  // Keep `open` readable from the stable drag callbacks without making them a
-  // dependency (which would change their identity and churn plugin registration).
-  // Synced in an effect rather than during render so the ref write happens after
-  // commit; the only reader (drag start) fires on a later user interaction.
-  const openRef = useRef(open);
-  useEffect(() => {
-    openRef.current = open;
-  }, [open]);
-
-  // These three callbacks are passed to <DragHandle>, which re-registers its
-  // ProseMirror plugin whenever any of them change identity. Re-registration
-  // reconfigures the editor and recreates *all* plugin views — including the
-  // drop cursor, whose own destroy() leaks its DOM element. Keeping them stable
-  // is what stops the placement line from being orphaned (and lingering ~5s).
+  // These callbacks are passed to <DragHandle>, so they must keep a stable
+  // identity (see the hooks for why a churn leaks the drop cursor).
   const handleNodeChange = useCallback(
     ({ node, pos }: { node: PMNode | null; pos: number }) => {
       target.current = node && pos >= 0 ? { node, pos } : null;
     },
-    [],
+    [target],
   );
 
-  // Vertically center the grip on the block's first text line (and on the block
-  // center for short, lineless blocks like the divider). Kept flush on the main
-  // axis so the CSS hover bridge to the block edge stays intact, and memoized so
-  // the config identity is stable (a changing identity would churn the plugin
-  // and recreate the drop-cursor view). `target.current` mirrors the block the
-  // extension is positioning for, so we read its DOM metrics for the offset.
-  const handlePosition = useMemo(
-    () => ({
-      placement: "left-start" as const,
-      middleware: [
-        // floating-ui invokes this at positioning time (not during render), so
-        // reading the live `target.current` here is intentional and safe.
-        // eslint-disable-next-line react-hooks/refs -- floating-ui invokes this at positioning time, not during render, so reading target.current here is safe.
-        offset(({ rects }) => {
-          const t = target.current;
-          if (!t) return 0;
-          const dom = editor.view.nodeDOM(t.pos);
-          if (!(dom instanceof HTMLElement)) return 0;
-          const cs = getComputedStyle(dom);
-          let lineHeight = parseFloat(cs.lineHeight);
-          if (!Number.isFinite(lineHeight)) {
-            lineHeight = (parseFloat(cs.fontSize) || 16) * 1.2;
-          }
-          // First-line band: a real line height for textblocks; for lineless
-          // blocks fall back to the block's own (possibly tiny) height.
-          const band = t.node.type.isTextblock
-            ? lineHeight
-            : Math.min(rects.reference.height, lineHeight);
-          const padTop = t.node.type.isTextblock
-            ? parseFloat(cs.paddingTop) || 0
-            : 0;
-          // crossAxis (vertical for a left placement): shift the grip down so
-          // its center meets the first line's center.
-          return {
-            mainAxis: 0,
-            crossAxis: padTop + band / 2 - rects.floating.height / 2,
-          };
-        }),
-      ],
-    }),
-    [editor],
-  );
-
-  const handleElementDragStart = useCallback(() => {
-    if (openRef.current) handleOpenChange(false);
-    const pos = target.current?.pos;
-    if (pos != null) {
-      const dom = editor.view.nodeDOM(pos);
-      if (dom instanceof HTMLElement) {
-        dom.classList.add("scribe-block-dragging");
-        draggingEl.current = dom;
-      }
-    }
-    // The drag-handle extension sets `view.dragging` with a NodeRange selection
-    // and no `node`, so ProseMirror's drop handler removes the source via
-    // `tr.deleteSelection()`. The DOM `selectionchange` fired mid-drag can
-    // collapse that selection into a TextSelection, making the deletion a no-op
-    // and leaving a duplicate. Pin the drag to a NodeSelection of the source
-    // block (runs in a microtask, after the extension populates `view.dragging`)
-    // so PM uses `node.replace`, which deletes the exact node selection-free.
-    queueMicrotask(() => {
-      if (editor.isDestroyed || pos == null) return;
-      const dragging = editor.view.dragging as {
-        node?: NodeSelection;
-        slice?: { content: { firstChild: PMNode | null } };
-      } | null;
-      if (!dragging || dragging.node) return;
-      const node = editor.state.doc.nodeAt(pos);
-      const sliceFirst = dragging.slice?.content?.firstChild ?? null;
-      if (!node || node.type !== sliceFirst?.type) return;
-      try {
-        dragging.node = NodeSelection.create(editor.state.doc, pos);
-      } catch {
-        /* pos no longer selectable; leave PM's default behavior */
-      }
-    });
-  }, [editor, handleOpenChange]);
-
-  const handleElementDragEnd = useCallback(() => {
-    draggingEl.current?.classList.remove("scribe-block-dragging");
-    draggingEl.current = null;
-    // The drop cursor only schedules its fast removal on a `dragend` delivered
-    // to the editor DOM. This drag starts from the handle (outside that DOM),
-    // so synthesize one to clear the indicator immediately instead of waiting
-    // for the plugin's ~5s fallback.
-    editor.view.dom.dispatchEvent(new DragEvent("dragend"));
-  }, [editor]);
-
-  // "Turn into" only makes sense for plain textblocks (paragraph, heading,
-  // code). Structural blocks (callout, columns, table, divider) just get the
-  // reorder/duplicate/delete actions.
-  const canTurnInto = menuTarget?.node.type.isTextblock ?? false;
-
-  // A `columns` block gets a persistent column-count control (1/2/3).
-  const isColumns = menuTarget?.node.type.name === "columns";
-  const columnCount = isColumns ? (menuTarget?.node.childCount ?? 0) : 0;
+  const handlePosition = useBlockHandlePosition(editor, target);
+  const { onElementDragStart, onElementDragEnd } = useBlockHandleDrag({
+    editor,
+    targetRef: target,
+    open,
+    onCloseMenu: closeMenu,
+  });
 
   return (
     <DragHandle
@@ -273,8 +117,8 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       className="scribe-drag-handle"
       computePositionConfig={handlePosition}
       onNodeChange={handleNodeChange}
-      onElementDragStart={handleElementDragStart}
-      onElementDragEnd={handleElementDragEnd}
+      onElementDragStart={onElementDragStart}
+      onElementDragEnd={onElementDragEnd}
     >
       <DropdownMenu open={open} onOpenChange={handleOpenChange}>
         <DropdownMenuTrigger asChild>
@@ -296,77 +140,14 @@ export function BlockHandle({ editor }: { editor: Editor }) {
             <DragHandleIcon size={16} />
           </span>
         </button>
-        <DropdownMenuContent
-          align="start"
-          side="bottom"
-          onCloseAutoFocus={(e) => {
-            e.preventDefault();
-          }}
-        >
-          {canTurnInto && (
-            <>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <TextIcon size={15} />
-                  Turn into
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  {TURN_INTO.map((option) => (
-                    <DropdownMenuItem
-                      key={option.label}
-                      onSelect={() => {
-                        turnInto(option);
-                      }}
-                    >
-                      <option.icon size={15} />
-                      {option.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-              <DropdownMenuSeparator />
-            </>
-          )}
-          {isColumns && (
-            <>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <Columns2Icon size={15} />
-                  Columns
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  {COLUMN_OPTIONS.map((option) => (
-                    <DropdownMenuItem
-                      key={option.count}
-                      onSelect={() => {
-                        changeColumns(option.count);
-                      }}
-                    >
-                      <option.icon size={15} />
-                      {option.label}
-                      {columnCount === option.count && (
-                        <CheckIcon size={15} className="ml-auto" />
-                      )}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-              <DropdownMenuSeparator />
-            </>
-          )}
-          <DropdownMenuItem onSelect={copy}>
-            <CopyToClipboardIcon size={15} />
-            Copy
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={duplicate}>
-            <CopyIcon size={15} />
-            Duplicate
-          </DropdownMenuItem>
-          <DropdownMenuItem danger onSelect={remove}>
-            <TrashIcon size={15} />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
+        <BlockMenu
+          target={menuTarget}
+          onTurnInto={turnInto}
+          onChangeColumns={changeColumns}
+          onCopy={copy}
+          onDuplicate={duplicate}
+          onRemove={remove}
+        />
       </DropdownMenu>
     </DragHandle>
   );
