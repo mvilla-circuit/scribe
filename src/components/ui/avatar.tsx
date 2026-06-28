@@ -21,6 +21,17 @@ export function Avatar({
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
+
+  // Reset the error fallback whenever `src` changes, during render (per React's
+  // "you might not need an effect") rather than in an effect — otherwise a
+  // failed load would stick the initials fallback even after `src` becomes a
+  // valid URL.
+  const [prevSrc, setPrevSrc] = useState(src);
+  if (src !== prevSrc) {
+    setPrevSrc(src);
+    setFailed(false);
+  }
+
   const showImage = Boolean(src) && !failed;
 
   return (

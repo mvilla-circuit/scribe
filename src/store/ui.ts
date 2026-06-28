@@ -5,7 +5,9 @@ import {
   type StateStorage,
 } from "zustand/middleware";
 
+/** Smallest allowed sidebar width, in px; widths are clamped to this floor. */
 export const SIDEBAR_MIN_WIDTH = 200;
+/** Largest allowed sidebar width, in px; widths are clamped to this ceiling. */
 export const SIDEBAR_MAX_WIDTH = 420;
 const SIDEBAR_DEFAULT_WIDTH = 260;
 
@@ -91,19 +93,45 @@ export function migrateUIState(state: unknown): PersistedUIState {
 // localStorage on each page navigation is wasted work on a hot path, so this
 // wrapper skips writes whose payload matches what was last written for the key.
 const lastWritten = new Map<string, string>();
+// `zustand/persist` already routes hydration through its own try/catch (a
+// throwing/parse-failing `getItem` is reported to `onRehydrateStorage`, not
+// thrown), but these are hand-rolled `localStorage` touches, so guard them
+// directly: a private-mode/disabled-storage throw still can't crash startup.
 const dedupedStorage: StateStorage = {
-  getItem: (name) => localStorage.getItem(name),
+  getItem: (name) => {
+    try {
+      return localStorage.getItem(name);
+    } catch {
+      return null;
+    }
+  },
   setItem: (name, value) => {
     if (lastWritten.get(name) === value) return;
+    try {
+      localStorage.setItem(name, value);
+    } catch (err) {
+      // A failed write (quota / disabled storage) is non-fatal; skip caching
+      // so a later change still attempts the write.
+      console.warn("Failed to persist UI state", err);
+      return;
+    }
     lastWritten.set(name, value);
-    localStorage.setItem(name, value);
   },
   removeItem: (name) => {
     lastWritten.delete(name);
-    localStorage.removeItem(name);
+    try {
+      localStorage.removeItem(name);
+    } catch {
+      // Best-effort removal; nothing to recover if it fails.
+    }
   },
 };
 
+/**
+ * Global UI state store: sidebar layout, the active book/document selection, and
+ * which folders/docs are expanded. Layout and expansion are persisted to
+ * `localStorage` under `scribe-ui`; the active selection is per-session.
+ */
 export const useUIStore = create<UIState>()(
   persist(
     (set) => ({

@@ -17,6 +17,7 @@ import {
   UnderlineIcon,
 } from "./icons";
 import { LinkDialog } from "./link-dialog";
+import { normalizeHref } from "./normalize-href";
 import { preserveSelection } from "./preserve-selection";
 import { hasFormattableSelection } from "./selection";
 
@@ -129,12 +130,14 @@ export const BubbleToolbar = memo(function BubbleToolbar({
 
   const applyLink = (href: string) => {
     if (!linkDialog) return;
+    const normalized = normalizeHref(href);
+    if (!normalized) return;
     editor
       .chain()
       .focus()
       .setTextSelection({ from: linkDialog.from, to: linkDialog.to })
       .extendMarkRange("link")
-      .setLink({ href })
+      .setLink({ href: normalized })
       .run();
     setLinkDialog(null);
   };

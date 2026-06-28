@@ -14,7 +14,7 @@ type Row = PageLinkOption;
 // "Link to page" slash item; selecting a row hands the target back through the
 // pagePicker store, which inserts a page card.
 export const PagePicker = memo(function PagePicker() {
-  const onSelect = usePagePicker((s) => s.onSelect);
+  const onSelect = usePagePicker((s) => s.callback);
   const close = usePagePicker((s) => s.close);
   const open = onSelect !== null;
 

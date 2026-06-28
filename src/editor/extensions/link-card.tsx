@@ -4,7 +4,7 @@ import { isBareUrl, normalizeUrl } from "@/editor/link-preview";
 
 import { dataAnchorBlock } from "./data-anchor-block";
 import { stringAttr } from "./data-attr";
-import { keepAsLink } from "./link-card-commands";
+import { insertLinkCard, keepAsLink } from "./link-card-commands";
 import { LinkCardView } from "./link-card-view";
 import { pastePlugin } from "./paste-plugin";
 
@@ -46,13 +46,7 @@ export const LinkCard = dataAnchorBlock({
       const url = normalizeUrl(text);
       if (!url) return false;
 
-      ed.chain()
-        .focus()
-        .insertContent({
-          type: "linkCard",
-          attrs: { url, status: "loading" },
-        })
-        .run();
+      insertLinkCard(ed, url);
 
       toast.success("Added bookmark", {
         action: {

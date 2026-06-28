@@ -5,7 +5,6 @@ import {
   endPositionFor,
   getPositionBetween,
   PositionExhaustedError,
-  rebalancePositions,
 } from "./ordering";
 
 describe("getPositionBetween", () => {
@@ -39,22 +38,6 @@ describe("getPositionBetween", () => {
     expect(() => getPositionBetween(prev, next)).toThrow(
       PositionExhaustedError,
     );
-  });
-});
-
-describe("rebalancePositions", () => {
-  it("evenly re-spaces ids onto the step grid", () => {
-    expect(rebalancePositions(["a", "b", "c"])).toEqual(
-      new Map([
-        ["a", 1024],
-        ["b", 2048],
-        ["c", 3072],
-      ]),
-    );
-  });
-
-  it("returns an empty map for an empty list", () => {
-    expect(rebalancePositions([])).toEqual(new Map());
   });
 });
 

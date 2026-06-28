@@ -61,9 +61,13 @@ describe("useCreateFolder", () => {
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
-    expect(
-      client.getQueryData<{ id: string }[]>(["folders"])?.map((f) => f.id),
-    ).toEqual(["f1", "f2"]);
+    const folders = client.getQueryData<{ id: string; user_id: string }[]>([
+      "folders",
+    ]);
+    expect(folders?.map((f) => f.id)).toEqual(["f1", "f2"]);
+    // The optimistic row stamps the real signed-in user id, never an empty
+    // string, so it matches what the mutationFn inserts (RLS-bound).
+    expect(folders?.find((f) => f.id === "f2")?.user_id).toBe("user-1");
   });
 
   it("rolls back the optimistic append when the server rejects it", async () => {

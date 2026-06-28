@@ -134,20 +134,27 @@ export function useDocumentContent(documentId: string | null) {
 }
 
 // Shared config for every optimistic documents mutation, scoped to one book's
-// per-book cache entry. Always refreshes the cross-book page index too, so page
-// link cards re-resolve their title/icon/breadcrumb when a document changes.
+// per-book cache entry. By default it also refreshes the cross-book page index
+// so link cards re-resolve their title/icon/breadcrumb when a document changes.
+// Pass `pageIndexWhen` to gate that refresh on the variables — the page index
+// only derives from id/title/icon/book_id/parent_document_id/is_title_page, so
+// a patch touching none of those (e.g. an outline-visibility toggle) can skip
+// it and avoid a needless cross-book refetch.
 function documentHandlers<V>(
   qc: ReturnType<typeof useQueryClient>,
   key: ReturnType<typeof documentsKey>,
   update: (prev: DocumentMeta[], variables: V) => DocumentMeta[],
   errorMessage: string,
+  pageIndexWhen?: (variables: V) => boolean,
 ) {
   return listHandlers<DocumentMeta, V>({
     qc,
     key,
     update,
     errorMessage,
-    alsoInvalidate: [pageIndexKey],
+    alsoInvalidate: pageIndexWhen
+      ? (variables) => (pageIndexWhen(variables) ? [pageIndexKey] : [])
+      : [pageIndexKey],
   });
 }
 
@@ -302,6 +309,9 @@ export function useUpdateDocument(bookId: string) {
       key,
       (prev, input) => patchById(prev, input.id, input),
       "Couldn't update page",
+      // The page index only carries title and icon among this hook's editable
+      // fields, so skip its refresh for subtitle/banner/outline-only patches.
+      (input) => "title" in input || "icon" in input,
     ),
   });
 }

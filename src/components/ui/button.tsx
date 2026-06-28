@@ -14,7 +14,7 @@ const variants: Record<Variant, string> = {
   secondary:
     "border border-border bg-surface text-text hover:bg-hover px-3 py-1.5",
   ghost: "text-muted hover:bg-hover hover:text-text px-3 py-1.5",
-  danger: "bg-red-600 text-white hover:bg-red-700 px-3 py-1.5",
+  danger: "bg-danger text-white hover:opacity-90 px-3 py-1.5",
 };
 
 export const Button = forwardRef<

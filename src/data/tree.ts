@@ -2,6 +2,11 @@ import type { Book } from "./books";
 import type { Folder } from "./folders";
 import { byPosition } from "./ordering";
 
+/**
+ * Sentinel container id for the sidebar's top level — the bucket that holds
+ * folders and books with no parent, keyed alongside real folder ids in the
+ * {@link TreeModel}.
+ */
 export const ROOT = "__root__";
 
 /**

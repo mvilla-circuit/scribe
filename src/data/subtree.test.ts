@@ -66,4 +66,13 @@ describe("collectSubtree", () => {
       new Set(["b", "c"]),
     );
   });
+
+  it("terminates on a corrupt cyclic parent link (a -> b -> a)", () => {
+    // b's parent is a and a's parent is b, so the children map links them both
+    // ways. The cycle guard must stop the walk instead of looping forever.
+    const items = [node("a", "b"), node("b", "a")];
+    expect(collectSubtree(items, "a", getParentId)).toEqual(
+      new Set(["a", "b"]),
+    );
+  });
 });

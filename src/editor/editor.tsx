@@ -126,6 +126,14 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     onLeaveStartRef.current = onLeaveStart;
   }, [onLeaveStart]);
 
+  // Keep the latest save-state callback in a ref so a fresh callback identity
+  // doesn't re-run the reporting effect; only an actual `saveState` change
+  // should notify the parent.
+  const onSaveStateChangeRef = useRef(onSaveStateChange);
+  useEffect(() => {
+    onSaveStateChangeRef.current = onSaveStateChange;
+  }, [onSaveStateChange]);
+
   // Debounced outline recompute (see OUTLINE_DEBOUNCE_MS). Cleared when the
   // document changes or the editor unmounts so a pending timer never walks a
   // torn-down editor.
@@ -207,8 +215,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   useTableScrollShadows(editor);
 
   useEffect(() => {
-    onSaveStateChange?.(saveState);
-  }, [saveState, onSaveStateChange]);
+    onSaveStateChangeRef.current?.(saveState);
+  }, [saveState]);
 
   // Reflect read/edit mode onto the live instance without recreating it.
   useEffect(() => {

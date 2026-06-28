@@ -11,6 +11,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+/**
+ * The shared, typed Supabase client for the app. Configured for desktop PKCE
+ * OAuth: it persists/auto-refreshes the session but leaves redirect-URL
+ * detection off, since the loopback OAuth flow exchanges the code itself.
+ */
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,

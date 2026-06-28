@@ -32,15 +32,26 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+/**
+ * Provides the auth context: restores and tracks the Supabase session and
+ * exposes Google sign-in / sign-out. Wrap the app once near its root.
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let ignore = false;
+    // `onAuthStateChange` fires an INITIAL_SESSION event on subscribe, which can
+    // resolve before or after `getSession`. Track whether an auth event has
+    // landed so a late `getSession` result can't clobber the newer value, and so
+    // neither writes state after unmount.
+    let authEventSeen = false;
+
     supabase.auth
       .getSession()
       .then(({ data }) => {
-        setSession(data.session);
+        if (!ignore && !authEventSeen) setSession(data.session);
       })
       .catch((err: unknown) => {
         // A failed session fetch must not leave the app stuck on the boot
@@ -48,17 +59,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error("Failed to restore Supabase session", err);
       })
       .finally(() => {
-        setLoading(false);
+        if (!ignore) setLoading(false);
       });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      authEventSeen = true;
+      if (ignore) return;
       setSession(nextSession);
       setLoading(false);
     });
 
     return () => {
+      ignore = true;
       subscription.unsubscribe();
     };
   }, []);
@@ -76,9 +90,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     let unlisten: (() => void) | null = null;
-    const cleanup = async () => {
+    let detached = false;
+    // Detach the URL listener exactly once. If cleanup runs before `onUrl`'s
+    // promise resolves (e.g. timeout/error before the listener registered),
+    // `detached` makes the late `.then` below detach immediately instead of
+    // leaking the listener.
+    const detach = () => {
+      if (detached) return;
+      detached = true;
       unlisten?.();
       unlisten = null;
+    };
+    const cleanup = async () => {
+      detach();
       await cancel(port).catch(() => {
         /* best-effort cleanup; ignore */
       });
@@ -121,7 +145,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           })();
         }).then((un) => {
-          unlisten = un;
+          // If cleanup already ran while `onUrl` was still registering, detach
+          // right away; otherwise hold the handle for `detach()` to call.
+          if (detached) un();
+          else unlisten = un;
         });
       });
 
@@ -154,6 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+/** Reads the auth context; throws if used outside an {@link AuthProvider}. */
 // eslint-disable-next-line react-refresh/only-export-components -- The auth context hook intentionally ships alongside its AuthProvider component.
 export function useAuth() {
   const ctx = useContext(AuthContext);

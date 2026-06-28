@@ -14,6 +14,7 @@ import {
   bookShowSubtitle,
   bookTheme,
   useBooks,
+  useCreateBook,
   useDeleteBook,
   useRenameBook,
 } from "./books";
@@ -102,6 +103,36 @@ describe("useBooks", () => {
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
+  });
+});
+
+describe("useCreateBook", () => {
+  it("optimistically appends the book stamped with the real user id", async () => {
+    server.use(
+      http.post(BOOKS_URL, () => new HttpResponse(null, { status: 201 })),
+    );
+
+    const client = createTestQueryClient();
+    client.setQueryData(["books"], [makeBook({ id: "b1", position: 1024 })]);
+
+    const { result } = renderHookWithQuery(() => useCreateBook(), { client });
+    result.current.mutate({
+      id: "b2",
+      title: "New",
+      folder_id: null,
+      position: 2048,
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    const books = client.getQueryData<{ id: string; user_id: string }[]>([
+      "books",
+    ]);
+    expect(books?.map((b) => b.id)).toEqual(["b1", "b2"]);
+    // The optimistic row must carry the signed-in user id (never ""), matching
+    // the row the mutationFn inserts so RLS-bound ids never diverge.
+    expect(books?.find((b) => b.id === "b2")?.user_id).toBe("user-1");
   });
 });
 

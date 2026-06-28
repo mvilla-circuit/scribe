@@ -134,7 +134,7 @@ export function useCreateBook() {
       key: booksKey,
       update: (prev, input) => [
         ...prev,
-        newBookRow(input, session?.user.id ?? ""),
+        newBookRow(input, requireUserId(session)),
       ],
       errorMessage: "Couldn't create book",
     }),

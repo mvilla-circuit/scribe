@@ -53,6 +53,21 @@ export function QuoteView({ node, updateAttributes, editor }: NodeViewProps) {
   const [draftCite, setDraftCite] = useState(attribution);
   const citeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [citeFocused, setCiteFocused] = useState(false);
+  // Latest values mirrored into refs so the captured-once commit paths (the
+  // debounce callback and the unmount flush) stay current without re-binding:
+  //  - `attributionRef` lets a commit short-circuit when nothing changed,
+  //  - `updateAttributesRef` keeps the writer fresh across node updates,
+  //  - `pendingCiteRef` holds the value queued by an in-flight debounce so the
+  //    unmount cleanup can flush it instead of dropping a just-typed citation.
+  const attributionRef = useRef(attribution);
+  const updateAttributesRef = useRef(updateAttributes);
+  const pendingCiteRef = useRef<string | null>(null);
+  // Refresh the mirrors after render (not during it, which the refs lint
+  // forbids) so the captured-once commit paths read current values.
+  useEffect(() => {
+    attributionRef.current = attribution;
+    updateAttributesRef.current = updateAttributes;
+  });
   // Re-sync the draft when the stored value changes from elsewhere (undo, a
   // collaborator) — but never while the field is focused, so a debounced commit
   // of our own keystrokes can't clobber what's still being typed. Reconciling
@@ -63,31 +78,50 @@ export function QuoteView({ node, updateAttributes, editor }: NodeViewProps) {
     setPrevAttribution(attribution);
     if (!citeFocused) setDraftCite(attribution);
   }
+  // On unmount, flush a pending debounced citation rather than dropping it — a
+  // writer who types and immediately navigates away would otherwise lose the
+  // last edit. No-op when nothing is queued, preserving prior behavior.
   useEffect(
     () => () => {
-      if (citeTimer.current) clearTimeout(citeTimer.current);
+      if (!citeTimer.current) return;
+      clearTimeout(citeTimer.current);
+      citeTimer.current = null;
+      const pending = pendingCiteRef.current;
+      pendingCiteRef.current = null;
+      if (pending !== null && pending !== attributionRef.current) {
+        try {
+          updateAttributesRef.current({ attribution: pending });
+        } catch {
+          // The node may already be gone (e.g. the quote was deleted) by the
+          // time we unmount; there's nothing left to persist to.
+        }
+      }
     },
     [],
   );
-  const commitCite = useCallback(
-    (value: string) => {
-      if (citeTimer.current) clearTimeout(citeTimer.current);
-      citeTimer.current = setTimeout(() => {
-        updateAttributes({ attribution: value });
-      }, 300);
-    },
-    [updateAttributes],
-  );
-  const flushCite = useCallback(
-    (value: string) => {
-      if (citeTimer.current) {
-        clearTimeout(citeTimer.current);
-        citeTimer.current = null;
+  const commitCite = useCallback((value: string) => {
+    if (citeTimer.current) clearTimeout(citeTimer.current);
+    pendingCiteRef.current = value;
+    citeTimer.current = setTimeout(() => {
+      citeTimer.current = null;
+      pendingCiteRef.current = null;
+      if (value !== attributionRef.current) {
+        updateAttributesRef.current({ attribution: value });
       }
-      updateAttributes({ attribution: value });
-    },
-    [updateAttributes],
-  );
+    }, 300);
+  }, []);
+  const flushCite = useCallback((value: string) => {
+    if (citeTimer.current) {
+      clearTimeout(citeTimer.current);
+      citeTimer.current = null;
+    }
+    pendingCiteRef.current = null;
+    // Skip the write — and the transaction it would dispatch — when the value
+    // already matches what's stored.
+    if (value !== attributionRef.current) {
+      updateAttributesRef.current({ attribution: value });
+    }
+  }, []);
 
   const wrapperStyle: CSSProperties | undefined = color
     ? { "--quote-accent": color }

@@ -23,6 +23,9 @@ export function collectSubtree<T extends { id: string }>(
   while (stack.length) {
     const id = stack.pop();
     if (id === undefined) break;
+    // Guard against a corrupt cyclic parent link (e.g. a -> b -> a): without
+    // this, re-pushed ids would loop the walk forever. Mirrors documentAncestors.
+    if (ids.has(id)) continue;
     ids.add(id);
     for (const child of childrenByParent.get(id) ?? []) stack.push(child.id);
   }

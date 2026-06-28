@@ -102,8 +102,10 @@ export function optimisticListHandlers<T, V>(opts: {
   errorMessage: string;
   // Keys to invalidate on settle (defaults to just this list's key). Use this
   // to also refresh derived caches — e.g. the cross-book page index when a
-  // document changes — instead of hand-rolling `onSettled`.
-  invalidateKeys?: QueryKey[];
+  // document changes — instead of hand-rolling `onSettled`. Pass a function to
+  // decide the set from the mutation's variables (e.g. skip the page index when
+  // a patch touched no field the index derives from).
+  invalidateKeys?: QueryKey[] | ((variables: V) => QueryKey[]);
 }) {
   const { optimistic, rollback } = listOptimism<T>(
     opts.qc,
@@ -124,8 +126,12 @@ export function optimisticListHandlers<T, V>(opts: {
       rollback(context?.previous);
       toast.error(opts.errorMessage);
     },
-    onSettled: () => {
-      invalidateOnSettle(opts.qc, opts.invalidateKeys ?? [opts.key], opts.key);
+    onSettled: (_data: unknown, _error: unknown, variables: V) => {
+      const keys =
+        typeof opts.invalidateKeys === "function"
+          ? opts.invalidateKeys(variables)
+          : (opts.invalidateKeys ?? [opts.key]);
+      invalidateOnSettle(opts.qc, keys, opts.key);
     },
   };
 }
@@ -145,18 +151,27 @@ export function listHandlers<
   key: QueryKey;
   update: (prev: T[], variables: V) => T[];
   errorMessage: string;
-  // Extra caches to refresh on settle alongside this list's own key.
-  alsoInvalidate?: QueryKey[];
+  // Extra caches to refresh on settle alongside this list's own key. Pass a
+  // function to derive the extra keys from the mutation's variables (e.g. only
+  // invalidate the page index when the patch touched a field it indexes).
+  alsoInvalidate?: QueryKey[] | ((variables: V) => QueryKey[]);
 }) {
+  const { key, alsoInvalidate } = opts;
+  let invalidateKeys: QueryKey[] | ((variables: V) => QueryKey[]) | undefined;
+  if (alsoInvalidate === undefined) {
+    invalidateKeys = undefined;
+  } else if (typeof alsoInvalidate === "function") {
+    invalidateKeys = (variables: V) => [key, ...alsoInvalidate(variables)];
+  } else {
+    invalidateKeys = [key, ...alsoInvalidate];
+  }
   return optimisticListHandlers<T, V>({
     qc: opts.qc,
-    key: opts.key,
+    key,
     sort: byPosition,
     update: opts.update,
     errorMessage: opts.errorMessage,
-    invalidateKeys: opts.alsoInvalidate
-      ? [opts.key, ...opts.alsoInvalidate]
-      : undefined,
+    invalidateKeys,
   });
 }
 

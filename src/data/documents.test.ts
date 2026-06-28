@@ -21,6 +21,7 @@ import {
   useDocuments,
   useEnsureTitlePage,
   useMoveDocument,
+  useUpdateDocument,
   useUpdateDocumentContent,
 } from "./documents";
 import { documentContentKey, documentsKey, pageIndexKey } from "./query-keys";
@@ -316,6 +317,55 @@ describe("useMoveDocument", () => {
 
     // onSettled keeps the cross-book page index fresh.
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: pageIndexKey });
+  });
+});
+
+describe("useUpdateDocument", () => {
+  it("invalidates the page index when the patch touches an indexed field (icon)", async () => {
+    server.use(
+      http.patch(DOCUMENTS_URL, () => new HttpResponse(null, { status: 204 })),
+    );
+
+    const client = createTestQueryClient();
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+    client.setQueryData(documentsKey("book-1"), [makeDocument({ id: "d1" })]);
+
+    const { result } = renderHookWithQuery(() => useUpdateDocument("book-1"), {
+      client,
+    });
+    result.current.mutate({ id: "d1", icon: "star" });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: pageIndexKey });
+  });
+
+  it("skips the page index when the patch touches no indexed field", async () => {
+    server.use(
+      http.patch(DOCUMENTS_URL, () => new HttpResponse(null, { status: 204 })),
+    );
+
+    const client = createTestQueryClient();
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+    client.setQueryData(documentsKey("book-1"), [makeDocument({ id: "d1" })]);
+
+    const { result } = renderHookWithQuery(() => useUpdateDocument("book-1"), {
+      client,
+    });
+    result.current.mutate({ id: "d1", show_outline: true });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    // The structural list still reconciles, but an outline-visibility toggle
+    // changes nothing the cross-book page index derives from, so leave it be.
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: documentsKey("book-1"),
+    });
+    expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: pageIndexKey });
   });
 });
 

@@ -212,8 +212,10 @@ const CODE: FontEntry[] = [
 
 // --- Public API -------------------------------------------------------------
 
-// The ordered options shown in each role's picker: the System default first,
-// then (for display/text) a Serif group followed by a Sans group.
+/**
+ * The ordered font options shown in each role's picker: the System default
+ * first, then (for display/text) a Serif group followed by a Sans group.
+ */
 export const ROLE_FONTS: Record<FontRole, FontEntry[]> = {
   display: [SYSTEM_SERIF, ...DISPLAY_SERIF, ...DISPLAY_SANS],
   text: [SYSTEM_SANS, ...TEXT_SERIF, ...TEXT_SANS],
@@ -228,13 +230,17 @@ const DEFAULT_FONT: Record<FontRole, FontEntry> = {
   code: SYSTEM_MONO,
 };
 
+/**
+ * The System default font id for each role, used when no level of the cascade
+ * sets that role (preserving the pre-Phase-6 look).
+ */
 export const DEFAULT_FONT_ID: Record<FontRole, string> = {
   display: DEFAULT_FONT.display.id,
   text: DEFAULT_FONT.text.id,
   code: DEFAULT_FONT.code.id,
 };
 
-// Flat id -> entry lookup across every role (deduped; Vollkorn appears once).
+/** Flat id -> entry lookup across every role (deduped; Vollkorn appears once). */
 export const FONT_REGISTRY: Record<string, FontEntry> = Object.fromEntries(
   [
     SYSTEM_SERIF,
@@ -246,6 +252,7 @@ export const FONT_REGISTRY: Record<string, FontEntry> = Object.fromEntries(
   ].map((f) => [f.id, f]),
 );
 
+/** The three typography roles, in cascade/resolution order. */
 export const FONT_ROLES: FontRole[] = ["display", "text", "code"];
 
 /**

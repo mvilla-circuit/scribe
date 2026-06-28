@@ -4,6 +4,7 @@
 // set reads consistently.
 import type { LucideProps } from "lucide-react";
 
+/** Props shared by every chrome icon: an optional class name and pixel size. */
 export interface IconProps {
   className?: string;
   size?: number;
@@ -13,6 +14,11 @@ export interface IconProps {
 // low-weight aesthetic.
 const STROKE_WIDTH = 1.75;
 
+/**
+ * Wraps a Lucide icon component in the app's local `{ size, className }` API and
+ * uniform stroke weight, so every call site stays unchanged and the icon set
+ * reads consistently. Defaults to a 16px icon.
+ */
 export function makeIcon(Component: React.ComponentType<LucideProps>) {
   return function Icon({ className, size = 16 }: IconProps) {
     return (

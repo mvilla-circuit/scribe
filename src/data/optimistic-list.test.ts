@@ -70,7 +70,7 @@ describe("optimisticListHandlers", () => {
       errorMessage: "Couldn't add",
     });
 
-    handlers.onSettled();
+    handlers.onSettled(undefined, null, { id: "a", position: 1024 });
 
     expect(invalidate).toHaveBeenCalledWith({ queryKey: key });
   });
@@ -88,9 +88,33 @@ describe("optimisticListHandlers", () => {
       invalidateKeys: [key, ["page-index"]],
     });
 
-    handlers.onSettled();
+    handlers.onSettled(undefined, null, { id: "a", position: 1024 });
 
     expect(invalidate).toHaveBeenCalledWith({ queryKey: key });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["page-index"] });
+  });
+
+  it("derives the invalidated keys from the mutation variables", () => {
+    const qc = new QueryClient();
+    const invalidate = vi.spyOn(qc, "invalidateQueries");
+
+    const handlers = optimisticListHandlers<Item, Item>({
+      qc,
+      key,
+      sort,
+      update: (prev) => prev,
+      errorMessage: "Couldn't add",
+      // Only also-invalidate the page index for the "a" row.
+      invalidateKeys: (variables) =>
+        variables.id === "a" ? [key, ["page-index"]] : [key],
+    });
+
+    handlers.onSettled(undefined, null, { id: "b", position: 1024 });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: key });
+    expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ["page-index"] });
+
+    invalidate.mockClear();
+    handlers.onSettled(undefined, null, { id: "a", position: 1024 });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["page-index"] });
   });
 
@@ -109,7 +133,7 @@ describe("optimisticListHandlers", () => {
       errorMessage: "Couldn't add",
     });
 
-    handlers.onSettled();
+    handlers.onSettled(undefined, null, { id: "a", position: 1024 });
 
     expect(invalidate).not.toHaveBeenCalled();
   });

@@ -11,8 +11,7 @@ const STEP = 1024;
  * Thrown when two neighbours sit so close together that float64 can no longer
  * represent a value strictly between them — i.e. the gap has shrunk below one
  * ULP after many reorders into the same slot. Callers should re-space the
- * affected siblings (see `rebalancePositions`) rather than persist a colliding
- * position.
+ * affected siblings rather than persist a colliding position.
  */
 export class PositionExhaustedError extends Error {
   constructor() {
@@ -41,18 +40,6 @@ export function getPositionBetween(prev?: number, next?: number): number {
   const mid = prev + (next - prev) / 2;
   if (mid <= prev || mid >= next) throw new PositionExhaustedError();
   return mid;
-}
-
-/**
- * Evenly re-spaces an ordered list of ids back onto the `STEP` grid, returning
- * the new position for each id. Use to recover a slot whose neighbours have
- * collapsed (see {@link PositionExhaustedError}) by resetting them to a wide,
- * freely divisible gap.
- */
-export function rebalancePositions(orderedIds: string[]): Map<string, number> {
-  const positions = new Map<string, number>();
-  orderedIds.forEach((id, i) => positions.set(id, (i + 1) * STEP));
-  return positions;
 }
 
 /**

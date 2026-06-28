@@ -11,8 +11,8 @@ export const menuItemClass =
 
 export const menuItemDangerClass =
   "flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm " +
-  "text-red-600 outline-none transition-colors data-[highlighted]:bg-red-500/10 " +
-  "dark:text-red-400 data-[disabled]:pointer-events-none data-[disabled]:opacity-50";
+  "text-danger outline-none transition-colors data-[highlighted]:bg-danger/10 " +
+  "data-[disabled]:pointer-events-none data-[disabled]:opacity-50";
 
 export const menuSeparatorClass = "my-1 h-px bg-border";
 

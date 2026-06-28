@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- This module exports row helpers (the padding util and drag-overlay variant) alongside the SidebarRow component. */
-import type { ReactNode } from "react";
+import { type ReactNode, useCallback } from "react";
 
 import { useRovingTabindex } from "@/components/tree/roving-tabindex";
 import { cn } from "@/lib/utils";
@@ -74,6 +74,21 @@ export function SidebarRow({
   // rows is owned by the enclosing TreeDndContainer.
   const tabIndex = useRovingTabindex(id);
 
+  // Compose dnd-kit's keyboard-sensor handler (from dragHandleProps) with the
+  // row-activation handler. dnd-kit must run FIRST so Space/Enter can pick up a
+  // row and arrows can move it; only if it doesn't consume the event (the
+  // activation handler calls preventDefault on Enter/Space) do we fall through
+  // to row activation. Spreading dragHandleProps below would otherwise have its
+  // onKeyDown clobbered by the explicit onKeyDown prop.
+  const dragKeyDown = dragHandleProps?.onKeyDown;
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      dragKeyDown?.(e);
+      if (!e.defaultPrevented) onKeyDown?.(e);
+    },
+    [dragKeyDown, onKeyDown],
+  );
+
   // While dragging, collapse the row into an insertion line at the projected
   // depth so the drop target (including nesting) reads clearly.
   if (isDragging) {
@@ -101,7 +116,7 @@ export function SidebarRow({
       tabIndex={tabIndex}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
-      onKeyDown={onKeyDown}
+      onKeyDown={handleKeyDown}
       className={cn(
         "group flex h-9 cursor-default items-center gap-2 rounded-md pr-1 text-sm outline-none",
         "transition-colors focus-visible:ring-2 focus-visible:ring-ring",

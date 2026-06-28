@@ -22,7 +22,15 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 function readStoredMode(): ThemeMode {
-  const stored = localStorage.getItem(STORAGE_KEY);
+  let stored: string | null;
+  try {
+    stored = localStorage.getItem(STORAGE_KEY);
+  } catch {
+    // Touching localStorage can throw (private mode / disabled storage). This
+    // runs before React mounts, so a throw would crash startup — fall back to
+    // following the system preference instead.
+    return "system";
+  }
   return stored === "light" || stored === "dark" || stored === "system"
     ? stored
     : "system";
@@ -74,7 +82,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [resolved]);
 
   const setMode = useCallback((next: ThemeMode) => {
-    localStorage.setItem(STORAGE_KEY, next);
+    try {
+      localStorage.setItem(STORAGE_KEY, next);
+    } catch (err) {
+      // Persisting the preference is best-effort; a storage failure must not
+      // stop the theme from changing for the current session.
+      console.warn("Failed to persist theme preference", err);
+    }
     setModeState(next);
   }, []);
 

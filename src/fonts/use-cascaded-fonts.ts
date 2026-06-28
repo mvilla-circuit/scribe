@@ -1,4 +1,4 @@
-import { type CSSProperties } from "react";
+import { type CSSProperties, useMemo } from "react";
 
 import type { Book } from "@/data/books";
 import { bookFontOverrides } from "@/data/books";
@@ -55,18 +55,28 @@ export function useCascadedFonts({
 }: UseCascadedFontsOptions): CascadedFonts {
   const { data: profile } = useProfile();
 
-  const globalFonts = profileFonts(profile);
-  const bookOverrides = bookFontOverrides(book);
-
   // The page is the editable scope when given; otherwise it's the book.
   const editingPage = document != null;
-  const overrides = editingPage ? docFontOverrides(document) : bookOverrides;
-  const inherited = editingPage
-    ? resolveFonts(globalFonts, bookOverrides)
-    : resolveFonts(globalFonts);
-  const resolved = editingPage
-    ? resolveFonts(globalFonts, bookOverrides, overrides)
-    : resolveFonts(globalFonts, bookOverrides);
+
+  // The cascade only depends on the profile, book, and page; recompute it (and
+  // the `resolveFonts` layering) only when one of those changes rather than on
+  // every render.
+  const { overrides, inherited, resolved } = useMemo(() => {
+    const globalFonts = profileFonts(profile);
+    const bookOverrides = bookFontOverrides(book);
+    const scopeOverrides = editingPage
+      ? docFontOverrides(document)
+      : bookOverrides;
+    return {
+      overrides: scopeOverrides,
+      inherited: editingPage
+        ? resolveFonts(globalFonts, bookOverrides)
+        : resolveFonts(globalFonts),
+      resolved: editingPage
+        ? resolveFonts(globalFonts, bookOverrides, scopeOverrides)
+        : resolveFonts(globalFonts, bookOverrides),
+    };
+  }, [profile, book, document, editingPage]);
 
   const fontVars = useScopedFonts(resolved);
 

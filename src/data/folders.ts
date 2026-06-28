@@ -93,7 +93,7 @@ export function useCreateFolder() {
       key: foldersKey,
       update: (prev, input) => [
         ...prev,
-        newFolderRow(input, session?.user.id ?? ""),
+        newFolderRow(input, requireUserId(session)),
       ],
       errorMessage: "Couldn't create folder",
     }),

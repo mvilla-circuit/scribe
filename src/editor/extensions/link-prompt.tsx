@@ -10,7 +10,7 @@ import { useLinkPrompt } from "./link-prompt-store";
 // <PagePicker>: the slash item calls `open(cb)` and this dialog, mounted by the
 // editor, collects the URL and hands it back. Mirrors the link editor's chrome.
 export const LinkPrompt = memo(function LinkPrompt() {
-  const onSubmit = useLinkPrompt((s) => s.onSubmit);
+  const onSubmit = useLinkPrompt((s) => s.callback);
   const close = useLinkPrompt((s) => s.close);
   const open = onSubmit !== null;
 

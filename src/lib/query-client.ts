@@ -1,7 +1,10 @@
 import { QueryClient } from "@tanstack/react-query";
 
-// Data is user-scoped and mutated optimistically, so we keep it fresh for a
-// while and avoid aggressive background refetching that would fight the UI.
+/**
+ * The app-wide React Query client. Data is user-scoped and mutated
+ * optimistically, so it stays fresh for a while and avoids aggressive
+ * background refetching that would fight the UI.
+ */
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
