@@ -15,71 +15,72 @@ export interface Swatch {
   value: string;
 }
 
-// Solid Morandi tones for foreground text — fourteen low-chroma hues ordered as
-// a calm hue sweep: a neutral stone first, then a warm-to-cool rainbow (yellow,
-// orange, brown, red, pink, the two purples, the two blues, teal, the two
-// greens), closing on "Ink". Light/dark pairs of a hue sit next to each other.
-// Each is legible on both the warm-paper light theme and the dark surface.
+// The single base hue set every palette derives from: thirteen calm, low-chroma
+// "Morandi" hues ordered as a warm-to-cool sweep (a neutral stone first, then a
+// warm-to-cool rainbow — yellow, orange, brown, red, pink, the two purples, the
+// two blues, teal, the two greens). Each hue carries a `solid` mid-tone (for
+// legible foreground text) and a lighter `wash` rgb (for translucent background
+// fills); every palette picks whichever channel its surface needs, so they all
+// stay in one consistent family and order. The theme-aware "Ink" swatch is
+// appended per-palette after the sweep (its token differs by surface), so it is
+// not part of this table.
+interface Hue {
+  /** Stable label shown in swatch tooltips. */
+  name: string;
+  /** Solid mid-tone (hex) for foreground text, quote accents, and banners. */
+  solid: string;
+  /** Lighter "r, g, b" triple for translucent highlight/callout/table washes. */
+  wash: string;
+}
+
+const HUES: readonly Hue[] = [
+  { name: "Stone", solid: "#8c857c", wash: "150, 158, 150" },
+  { name: "Honey", solid: "#b0924f", wash: "214, 178, 110" },
+  { name: "Terracotta", solid: "#b07a5c", wash: "212, 160, 120" },
+  { name: "Umber", solid: "#8a6e57", wash: "168, 140, 108" },
+  { name: "Clay", solid: "#b27f78", wash: "200, 142, 134" },
+  { name: "Rosewood", solid: "#b6829a", wash: "206, 150, 178" },
+  { name: "Mauve", solid: "#a47db2", wash: "196, 150, 206" },
+  { name: "Plum", solid: "#6f5499", wash: "150, 112, 196" },
+  { name: "Sky", solid: "#6ba6c8", wash: "120, 178, 210" },
+  { name: "Dusk", solid: "#5a6cb0", wash: "96, 120, 198" },
+  { name: "Eucalyptus", solid: "#4e8a84", wash: "110, 168, 160" },
+  { name: "Sage", solid: "#84926d", wash: "150, 168, 124" },
+  { name: "Fern", solid: "#5f7d5b", wash: "118, 158, 114" },
+];
+
 // "Ink" is the lone theme-aware swatch: it stores a CSS variable that resolves
-// to near-black on paper and near-white in the dark, so the one "black" choice
-// always reads as the strongest ink for the active theme.
+// to near-black on paper and near-white in the dark, so the strongest choice
+// always reads as the right ink for the active theme.
+const SOLID_INK: Swatch = { name: "Ink", value: "var(--swatch-ink)" };
+
+// Solid Morandi tones for foreground text — the hue sweep at full opacity,
+// closing on the theme-aware Ink. Legible on both the warm-paper light theme and
+// the dark surface.
 export const TEXT_COLORS: Swatch[] = [
-  { name: "Stone", value: "#8c857c" },
-  { name: "Honey", value: "#b0924f" },
-  { name: "Terracotta", value: "#b07a5c" },
-  { name: "Umber", value: "#8a6e57" },
-  { name: "Clay", value: "#b27f78" },
-  { name: "Rosewood", value: "#b6829a" },
-  { name: "Mauve", value: "#a47db2" },
-  { name: "Plum", value: "#6f5499" },
-  { name: "Sky", value: "#6ba6c8" },
-  { name: "Dusk", value: "#5a6cb0" },
-  { name: "Eucalyptus", value: "#4e8a84" },
-  { name: "Sage", value: "#84926d" },
-  { name: "Fern", value: "#5f7d5b" },
-  { name: "Ink", value: "var(--swatch-ink)" },
+  ...HUES.map((hue) => ({ name: hue.name, value: hue.solid })),
+  SOLID_INK,
 ];
 
-// The thirteen translucent "wash" hues shared by the highlight, callout, and
-// table palettes. Only the rgb triples and the hue order live here — each
-// surface differs solely in alpha, so it derives its own palette through
-// `washPalette` rather than re-typing the colors. This is a distinct family
-// from the solid `TEXT_COLORS`: the same calm sweep, washed rather than solid.
-const WASH_HUES: readonly { name: string; rgb: string }[] = [
-  { name: "Mist", rgb: "150, 158, 150" },
-  { name: "Honey", rgb: "214, 178, 110" },
-  { name: "Peach", rgb: "212, 160, 120" },
-  { name: "Tan", rgb: "168, 140, 108" },
-  { name: "Rose", rgb: "200, 142, 134" },
-  { name: "Blush", rgb: "206, 150, 178" },
-  { name: "Lilac", rgb: "196, 150, 206" },
-  { name: "Plum", rgb: "150, 112, 196" },
-  { name: "Sky", rgb: "120, 178, 210" },
-  { name: "Indigo", rgb: "96, 120, 198" },
-  { name: "Teal", rgb: "110, 168, 160" },
-  { name: "Sage", rgb: "150, 168, 124" },
-  { name: "Forest", rgb: "118, 158, 114" },
-];
-
-// Builds a translucent wash palette from `WASH_HUES`: every hue sits at `base`
-// alpha, with the neutral "Mist" nudged down and the warm "Honey" nudged up by
-// `spread` so the sweep keeps its gentle warm-to-cool balance. Closes on a
+// Builds a translucent wash palette from `HUES`: each hue's `wash` rgb at `base`
+// alpha, with the neutral lead hue nudged down and the warm second hue nudged up
+// by `spread` so the sweep keeps its gentle warm-to-cool balance. Closes on a
 // theme-aware Ink token that inverts to a light wash in the dark theme.
 function washPalette(base: number, spread: number, ink: string): Swatch[] {
-  const alphaFor = (name: string) =>
-    name === "Mist" ? base - spread : name === "Honey" ? base + spread : base;
+  const alphaFor = (i: number) =>
+    i === 0 ? base - spread : i === 1 ? base + spread : base;
   return [
-    ...WASH_HUES.map((hue) => ({
+    ...HUES.map((hue, i) => ({
       name: hue.name,
-      value: `rgba(${hue.rgb}, ${alphaFor(hue.name).toFixed(2)})`,
+      value: `rgba(${hue.wash}, ${alphaFor(i).toFixed(2)})`,
     })),
     { name: "Ink", value: ink },
   ];
 }
 
 // Translucent washes for highlights — alpha keeps contrast in light and dark.
-// Same fourteen-hue order as TEXT_COLORS; "Ink" defers to a theme-aware variable
-// so the darkest band inverts to a light wash in the dark theme.
+// "Ink" defers to a theme-aware variable so the darkest band inverts to a light
+// wash in the dark theme.
 export const HIGHLIGHT_COLORS: Swatch[] = washPalette(
   0.3,
   0.02,
@@ -116,7 +117,6 @@ export const BANNER_COLORS: Swatch[] = TEXT_COLORS.filter(
 // should clearly mark the header without darkening the text it frames. These are
 // translucent so they layer over the cell surface in either theme; the alpha
 // lands a touch above the callout fill so the strip still reads as a header.
-// Same fourteen-hue order as the other palettes, closing on the theme-aware Ink.
 export const TABLE_HEADER_COLORS: Swatch[] = washPalette(
   0.23,
   0.01,
@@ -127,7 +127,7 @@ export const TABLE_HEADER_COLORS: Swatch[] = washPalette(
 // applies to any chosen cell(s), so these are translucent washes layered over
 // the cell surface (legible in both themes). The alpha sits a touch below the
 // header strip so an explicitly filled cell still reads as lighter than a header
-// when the two meet. Same fourteen-hue order, closing on the theme-aware Ink.
+// when the two meet.
 export const TABLE_CELL_COLORS: Swatch[] = washPalette(
   0.19,
   0.01,
