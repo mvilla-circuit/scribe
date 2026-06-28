@@ -5,6 +5,7 @@ import {
   offset,
   shift,
 } from "@floating-ui/dom";
+import type { Node as PMNode } from "@tiptap/pm/model";
 import { TextSelection } from "@tiptap/pm/state";
 import { type Editor, useEditorState } from "@tiptap/react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
@@ -31,6 +32,15 @@ import {
   TrashIcon,
 } from "@/editor/icons";
 import { TABLE_CELL_COLORS, TABLE_HEADER_COLORS } from "@/editor/palette";
+
+import {
+  deriveTableHeaders,
+  resetTableWidth,
+  setCellFill as applyCellFill,
+  setCellVerticalAlign,
+  setTableHeaderColor,
+  toggleTableBorders,
+} from "./table-commands";
 
 // Inline-on-focus table controls. Rather than a persistent toolbar, a compact
 // control cluster floats just above the table the caret is in (and only then),
@@ -71,7 +81,7 @@ export function TableControls({ editor }: { editor: Editor }) {
         !e.isActive("codeBlock") &&
         e.state.doc.textBetween(selection.from, selection.to).trim().length > 0;
       let pos = -1;
-      let table = null;
+      let table: PMNode | null = null;
       // Presentation of the cell the caret sits in: its vertical alignment
       // (default `top`, so a missing attr reads as top) and its fill color. We
       // capture the innermost cell (the first one walking outward) and ignore
@@ -99,25 +109,11 @@ export function TableControls({ editor }: { editor: Editor }) {
       }
       // A header row = every cell in the first row is a tableHeader; a header
       // column = the first cell of every row is. These drive the toggle states.
-      let hRow = false;
-      let hCol = false;
-      if (table && table.childCount > 0) {
-        const firstRow = table.firstChild;
-        if (firstRow && firstRow.childCount > 0) {
-          hRow = true;
-          firstRow.forEach((cell) => {
-            if (cell.type.name !== "tableHeader") hRow = false;
-          });
-        }
-        hCol = true;
-        table.forEach((row) => {
-          if (row.firstChild?.type.name !== "tableHeader") hCol = false;
-        });
-      }
+      const { headerRow, headerColumn } = deriveTableHeaders(table);
       return {
         tablePos: pos,
-        headerRow: hRow,
-        headerColumn: hCol,
+        headerRow,
+        headerColumn,
         headerColor: (table?.attrs.color as string | null) ?? null,
         // Borders default on, so a missing attr reads as "shown".
         rowBorders: table?.attrs.rowBorders !== false,
@@ -207,78 +203,20 @@ export function TableControls({ editor }: { editor: Editor }) {
 
   const chain = () => editor.chain().focus();
 
-  // Vertical alignment is a per-cell attribute, so `setCellAttribute` writes it
-  // across every selected cell (or the caret's cell). `top` is the default, so
-  // we clear back to null rather than serialize a redundant marker.
-  const setVerticalAlign = (value: "top" | "middle" | "bottom") =>
-    chain()
-      .setCellAttribute("verticalAlign", value === "top" ? null : value)
-      .run();
-
-  // Flip a border toggle on the table node. Like the color control, this writes
-  // straight to `tablePos` so it works regardless of which cell holds the caret.
+  const setVerticalAlign = (value: "top" | "middle" | "bottom") => {
+    setCellVerticalAlign(editor, value);
+  };
   const toggleBorders = (attr: "rowBorders" | "colBorders", next: boolean) => {
-    if (tablePos < 0) return;
-    editor.view.dispatch(
-      editor.state.tr.setNodeAttribute(tablePos, attr, next),
-    );
-    editor.commands.focus();
+    toggleTableBorders(editor, tablePos, attr, next);
   };
-
-  // Write the header fill onto the table node. The selection stays inside the
-  // table while the (portaled) popover is open — the editor only blurs, and
-  // ProseMirror keeps its selection across blur — so `tablePos` stays valid and
-  // we can dispatch straight to it without stealing focus back (which would
-  // close the popover and prevent trying several colors in a row).
   const setHeaderColor = (value: string | null) => {
-    if (tablePos < 0) return;
-    editor.view.dispatch(
-      editor.state.tr.setNodeAttribute(tablePos, "color", value),
-    );
+    setTableHeaderColor(editor, tablePos, value);
   };
-
-  // Fill the selected cell(s). `setCellAttribute` targets the current cell
-  // selection (or the caret's cell), which ProseMirror keeps across the blur
-  // when the portaled popover opens — so, like the header color above, we apply
-  // without refocusing to keep the popover open for trying several swatches.
-  // A null value clears the fill back to the cell's default surface.
-  const setCellFill = (value: string | null) =>
-    editor.commands.setCellAttribute("background", value);
-
-  // Resizing columns writes explicit `colwidth` attributes (and a <colgroup>)
-  // that can leave the table narrower or wider than the content column. Clearing
-  // every cell's colwidth drops the table back to its CSS default (width: 100%),
-  // i.e. the full width of the content column with evenly distributed columns.
+  const setCellFill = (value: string | null) => {
+    applyCellFill(editor, value);
+  };
   const resetWidth = () => {
-    if (tablePos < 0) return;
-    const { state } = editor;
-    const table = state.doc.nodeAt(tablePos);
-    if (!table) return;
-    const tr = state.tr;
-    table.descendants((node, offset) => {
-      if (node.attrs.colwidth) {
-        tr.setNodeAttribute(tablePos + 1 + offset, "colwidth", null);
-      }
-      // Cells never nest, so there's no need to recurse into them.
-      return node.type.name === "tableRow";
-    });
-    if (!tr.docChanged) return;
-    editor.view.dispatch(tr);
-
-    // The resizable table node view updates its <colgroup> in place but only
-    // *adds* a min-width when a colwidth is cleared — it leaves the stale inline
-    // `width` on each <col>, so the old sizes linger until the view is recreated
-    // (e.g. on refocus). Clear those widths now so the table reflows instantly.
-    const dom = editor.view.nodeDOM(tablePos);
-    const tableEl =
-      dom instanceof HTMLElement ? dom.querySelector("table") : null;
-    if (tableEl) {
-      tableEl.style.width = "";
-      tableEl.querySelectorAll<HTMLTableColElement>("col").forEach((col) => {
-        col.style.width = "";
-      });
-    }
-    editor.commands.focus();
+    resetTableWidth(editor, tablePos);
   };
 
   return (
@@ -362,21 +300,27 @@ export function TableControls({ editor }: { editor: Editor }) {
       <CtrlButton
         label="Align top"
         active={vAlignTop}
-        onClick={() => setVerticalAlign("top")}
+        onClick={() => {
+          setVerticalAlign("top");
+        }}
       >
         <AlignTopIcon size={15} />
       </CtrlButton>
       <CtrlButton
         label="Align middle"
         active={vAlignMiddle}
-        onClick={() => setVerticalAlign("middle")}
+        onClick={() => {
+          setVerticalAlign("middle");
+        }}
       >
         <AlignMiddleIcon size={15} />
       </CtrlButton>
       <CtrlButton
         label="Align bottom"
         active={vAlignBottom}
-        onClick={() => setVerticalAlign("bottom")}
+        onClick={() => {
+          setVerticalAlign("bottom");
+        }}
       >
         <AlignBottomIcon size={15} />
       </CtrlButton>
