@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 import type { FontMap } from "@/fonts/catalog";
 import { useAuth } from "@/lib/auth";
-import type { Json, Tables } from "@/lib/database.types";
+import type { Json, Tables, TablesUpdate } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
 
 import { optimisticListHandlers } from "./optimistic-list";
@@ -14,6 +14,50 @@ import { collectSubtree } from "./subtree";
 
 /** A single page row from the `documents` table. */
 export type Document = Tables<"documents">;
+
+/** Mutation input shapes, shared between each `mutationFn` and its optimistic updater. */
+interface CreateDocumentInput {
+  id: string;
+  title: string;
+  parent_document_id: string | null;
+  position: number;
+  is_title_page?: boolean;
+}
+interface DuplicateDocumentInput {
+  rows: Document[];
+}
+interface RenameDocumentInput {
+  id: string;
+  title: string;
+}
+type UpdateDocumentInput = { id: string } & Partial<
+  Pick<
+    Document,
+    | "title"
+    | "icon"
+    | "subtitle"
+    | "banner_color"
+    | "banner_text"
+    | "show_outline"
+    | "show_subtitle"
+  >
+>;
+interface MoveDocumentInput {
+  id: string;
+  parent_document_id: string | null;
+  position: number;
+}
+interface DeleteDocumentInput {
+  id: string;
+}
+interface UpdateContentInput {
+  id: string;
+  content: Json;
+}
+interface UpdateFontOverridesInput {
+  id: string;
+  font_overrides: DocFontOverrides | null;
+}
 
 /**
  * A page's per-role font overrides (a partial role -> fontId map). NULL on the
@@ -68,11 +112,15 @@ function documentHandlers<V>(
     errorMessage,
     // Keep the cross-book page index fresh too, so page link cards re-resolve
     // their title/icon/breadcrumb when a document is renamed, moved, or deleted.
-    onSettled: () => {
-      void qc.invalidateQueries({ queryKey: key });
-      void qc.invalidateQueries({ queryKey: pageIndexKey });
-    },
+    invalidateKeys: [key, pageIndexKey],
   });
+}
+
+// Patches a single document by id. Backs rename/update/move/content/font hooks
+// so their mutationFns stay one-liners over a single typed Supabase call.
+async function updateDocumentRow(id: string, patch: TablesUpdate<"documents">) {
+  const { error } = await supabase.from("documents").update(patch).eq("id", id);
+  if (error) throw error;
 }
 
 /**
@@ -148,13 +196,7 @@ export function useCreateDocument(bookId: string) {
   const key = documentsKey(bookId);
 
   return useMutation({
-    mutationFn: async (input: {
-      id: string;
-      title: string;
-      parent_document_id: string | null;
-      position: number;
-      is_title_page?: boolean;
-    }) => {
+    mutationFn: async (input: CreateDocumentInput) => {
       const userId = session?.user.id;
       if (!userId) throw new Error("Not authenticated");
       const { error } = await supabase.from("documents").insert({
@@ -168,13 +210,7 @@ export function useCreateDocument(bookId: string) {
       });
       if (error) throw error;
     },
-    ...documentHandlers<{
-      id: string;
-      title: string;
-      parent_document_id: string | null;
-      position: number;
-      is_title_page?: boolean;
-    }>(
+    ...documentHandlers<CreateDocumentInput>(
       qc,
       key,
       (prev, input) => {
@@ -218,7 +254,7 @@ export function useDuplicateDocument(bookId: string) {
   const key = documentsKey(bookId);
 
   return useMutation({
-    mutationFn: async (input: { rows: Document[] }) => {
+    mutationFn: async (input: DuplicateDocumentInput) => {
       const userId = session?.user.id;
       if (!userId) throw new Error("Not authenticated");
       const { error } = await supabase.from("documents").insert(
@@ -242,7 +278,7 @@ export function useDuplicateDocument(bookId: string) {
       );
       if (error) throw error;
     },
-    ...documentHandlers<{ rows: Document[] }>(
+    ...documentHandlers<DuplicateDocumentInput>(
       qc,
       key,
       (prev, input) => [
@@ -262,14 +298,9 @@ export function useRenameDocument(bookId: string) {
   const qc = useQueryClient();
   const key = documentsKey(bookId);
   return useMutation({
-    mutationFn: async (input: { id: string; title: string }) => {
-      const { error } = await supabase
-        .from("documents")
-        .update({ title: input.title })
-        .eq("id", input.id);
-      if (error) throw error;
-    },
-    ...documentHandlers<{ id: string; title: string }>(
+    mutationFn: (input: RenameDocumentInput) =>
+      updateDocumentRow(input.id, { title: input.title }),
+    ...documentHandlers<RenameDocumentInput>(
       qc,
       key,
       (prev, input) =>
@@ -288,41 +319,11 @@ export function useUpdateDocument(bookId: string) {
   const qc = useQueryClient();
   const key = documentsKey(bookId);
   return useMutation({
-    mutationFn: async (
-      input: { id: string } & Partial<
-        Pick<
-          Document,
-          | "title"
-          | "icon"
-          | "subtitle"
-          | "banner_color"
-          | "banner_text"
-          | "show_outline"
-          | "show_subtitle"
-        >
-      >,
-    ) => {
+    mutationFn: (input: UpdateDocumentInput) => {
       const { id, ...patch } = input;
-      const { error } = await supabase
-        .from("documents")
-        .update(patch)
-        .eq("id", id);
-      if (error) throw error;
+      return updateDocumentRow(id, patch);
     },
-    ...documentHandlers<
-      { id: string } & Partial<
-        Pick<
-          Document,
-          | "title"
-          | "icon"
-          | "subtitle"
-          | "banner_color"
-          | "banner_text"
-          | "show_outline"
-          | "show_subtitle"
-        >
-      >
-    >(
+    ...documentHandlers<UpdateDocumentInput>(
       qc,
       key,
       (prev, input) =>
@@ -337,25 +338,12 @@ export function useMoveDocument(bookId: string) {
   const qc = useQueryClient();
   const key = documentsKey(bookId);
   return useMutation({
-    mutationFn: async (input: {
-      id: string;
-      parent_document_id: string | null;
-      position: number;
-    }) => {
-      const { error } = await supabase
-        .from("documents")
-        .update({
-          parent_document_id: input.parent_document_id,
-          position: input.position,
-        })
-        .eq("id", input.id);
-      if (error) throw error;
-    },
-    ...documentHandlers<{
-      id: string;
-      parent_document_id: string | null;
-      position: number;
-    }>(
+    mutationFn: (input: MoveDocumentInput) =>
+      updateDocumentRow(input.id, {
+        parent_document_id: input.parent_document_id,
+        position: input.position,
+      }),
+    ...documentHandlers<MoveDocumentInput>(
       qc,
       key,
       (prev, input) =>
@@ -378,7 +366,7 @@ export function useDeleteDocument(bookId: string) {
   const qc = useQueryClient();
   const key = documentsKey(bookId);
   return useMutation({
-    mutationFn: async (input: { id: string }) => {
+    mutationFn: async (input: DeleteDocumentInput) => {
       const { error } = await supabase
         .from("documents")
         .delete()
@@ -387,7 +375,7 @@ export function useDeleteDocument(bookId: string) {
     },
     // The page and its descendants cascade away in the DB; remove the same set
     // optimistically so the outline and TOC update instantly.
-    ...documentHandlers<{ id: string }>(
+    ...documentHandlers<DeleteDocumentInput>(
       qc,
       key,
       (prev, input) => {
@@ -407,14 +395,9 @@ export function useUpdateDocumentContent(bookId: string) {
   const qc = useQueryClient();
   const key = documentsKey(bookId);
   return useMutation({
-    mutationFn: async (input: { id: string; content: Json }) => {
-      const { error } = await supabase
-        .from("documents")
-        .update({ content: input.content })
-        .eq("id", input.id);
-      if (error) throw error;
-    },
-    ...documentHandlers<{ id: string; content: Json }>(
+    mutationFn: (input: UpdateContentInput) =>
+      updateDocumentRow(input.id, { content: input.content }),
+    ...documentHandlers<UpdateContentInput>(
       qc,
       key,
       (prev, input) =>
@@ -434,20 +417,9 @@ export function useUpdateDocumentFontOverrides(bookId: string) {
   const qc = useQueryClient();
   const key = documentsKey(bookId);
   return useMutation({
-    mutationFn: async (input: {
-      id: string;
-      font_overrides: DocFontOverrides | null;
-    }) => {
-      const { error } = await supabase
-        .from("documents")
-        .update({ font_overrides: input.font_overrides })
-        .eq("id", input.id);
-      if (error) throw error;
-    },
-    ...documentHandlers<{
-      id: string;
-      font_overrides: DocFontOverrides | null;
-    }>(
+    mutationFn: (input: UpdateFontOverridesInput) =>
+      updateDocumentRow(input.id, { font_overrides: input.font_overrides }),
+    ...documentHandlers<UpdateFontOverridesInput>(
       qc,
       key,
       (prev, input) =>

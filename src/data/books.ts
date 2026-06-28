@@ -1,8 +1,9 @@
+import type { QueryKey } from "@tanstack/react-query";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { FontMap } from "@/fonts/catalog";
 import { useAuth } from "@/lib/auth";
-import type { Tables } from "@/lib/database.types";
+import type { Tables, TablesUpdate } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
 
 import { optimisticListHandlers } from "./optimistic-list";
@@ -11,6 +12,29 @@ import { pageIndexKey } from "./page-index";
 
 /** A single book row from the `books` table. */
 export type Book = Tables<"books">;
+
+/** Mutation input shapes, shared between each `mutationFn` and its optimistic updater. */
+interface CreateBookInput {
+  id: string;
+  title: string;
+  folder_id: string | null;
+  position: number;
+}
+interface RenameBookInput {
+  id: string;
+  title: string;
+}
+type UpdateBookInput = { id: string } & Partial<
+  Pick<Book, "title" | "subtitle" | "icon" | "cover_url" | "theme">
+>;
+interface MoveBookInput {
+  id: string;
+  folder_id: string | null;
+  position: number;
+}
+interface DeleteBookInput {
+  id: string;
+}
 
 /**
  * A book's `theme` jsonb. `fonts` holds per-role font overrides that take
@@ -69,7 +93,7 @@ function bookHandlers<V>(
   qc: ReturnType<typeof useQueryClient>,
   update: (prev: Book[], variables: V) => Book[],
   errorMessage: string,
-  onSettled?: () => void,
+  invalidateKeys?: QueryKey[],
 ) {
   return optimisticListHandlers<Book, V>({
     qc,
@@ -77,8 +101,15 @@ function bookHandlers<V>(
     sort: byPosition,
     update,
     errorMessage,
-    onSettled,
+    invalidateKeys,
   });
+}
+
+// Patches a single book by id. Backs rename/update/move so their mutationFns
+// stay one-liners over a single typed Supabase call.
+async function updateBookRow(id: string, patch: TablesUpdate<"books">) {
+  const { error } = await supabase.from("books").update(patch).eq("id", id);
+  if (error) throw error;
 }
 
 /** Mutation hook that creates a book (optimistically appended to the cache). */
@@ -87,12 +118,7 @@ export function useCreateBook() {
   const { session } = useAuth();
 
   return useMutation({
-    mutationFn: async (input: {
-      id: string;
-      title: string;
-      folder_id: string | null;
-      position: number;
-    }) => {
+    mutationFn: async (input: CreateBookInput) => {
       const userId = session?.user.id;
       if (!userId) throw new Error("Not authenticated");
       const { error } = await supabase.from("books").insert({
@@ -104,12 +130,7 @@ export function useCreateBook() {
       });
       if (error) throw error;
     },
-    ...bookHandlers<{
-      id: string;
-      title: string;
-      folder_id: string | null;
-      position: number;
-    }>(
+    ...bookHandlers<CreateBookInput>(
       qc,
       (prev, input) => {
         const now = new Date().toISOString();
@@ -139,14 +160,9 @@ export function useCreateBook() {
 export function useRenameBook() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { id: string; title: string }) => {
-      const { error } = await supabase
-        .from("books")
-        .update({ title: input.title })
-        .eq("id", input.id);
-      if (error) throw error;
-    },
-    ...bookHandlers<{ id: string; title: string }>(
+    mutationFn: (input: RenameBookInput) =>
+      updateBookRow(input.id, { title: input.title }),
+    ...bookHandlers<RenameBookInput>(
       qc,
       (prev, input) =>
         prev.map((b) => (b.id === input.id ? { ...b, title: input.title } : b)),
@@ -162,20 +178,11 @@ export function useRenameBook() {
 export function useUpdateBook() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (
-      input: { id: string } & Partial<
-        Pick<Book, "title" | "subtitle" | "icon" | "cover_url" | "theme">
-      >,
-    ) => {
+    mutationFn: (input: UpdateBookInput) => {
       const { id, ...patch } = input;
-      const { error } = await supabase.from("books").update(patch).eq("id", id);
-      if (error) throw error;
+      return updateBookRow(id, patch);
     },
-    ...bookHandlers<
-      { id: string } & Partial<
-        Pick<Book, "title" | "subtitle" | "icon" | "cover_url" | "theme">
-      >
-    >(
+    ...bookHandlers<UpdateBookInput>(
       qc,
       (prev, input) =>
         prev.map((b) => (b.id === input.id ? { ...b, ...input } : b)),
@@ -188,18 +195,12 @@ export function useUpdateBook() {
 export function useMoveBook() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: {
-      id: string;
-      folder_id: string | null;
-      position: number;
-    }) => {
-      const { error } = await supabase
-        .from("books")
-        .update({ folder_id: input.folder_id, position: input.position })
-        .eq("id", input.id);
-      if (error) throw error;
-    },
-    ...bookHandlers<{ id: string; folder_id: string | null; position: number }>(
+    mutationFn: (input: MoveBookInput) =>
+      updateBookRow(input.id, {
+        folder_id: input.folder_id,
+        position: input.position,
+      }),
+    ...bookHandlers<MoveBookInput>(
       qc,
       (prev, input) =>
         prev.map((b) =>
@@ -216,7 +217,7 @@ export function useMoveBook() {
 export function useDeleteBook() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { id: string }) => {
+    mutationFn: async (input: DeleteBookInput) => {
       const { error } = await supabase
         .from("books")
         .delete()
@@ -226,14 +227,11 @@ export function useDeleteBook() {
     // Deleting a book cascade-deletes its documents in the DB. The cross-book
     // page index spans every book, so invalidate it too (mirroring the document
     // mutations) or page link cards keep resolving to the now-deleted pages.
-    ...bookHandlers<{ id: string }>(
+    ...bookHandlers<DeleteBookInput>(
       qc,
       (prev, input) => prev.filter((b) => b.id !== input.id),
       "Couldn't delete book",
-      () => {
-        void qc.invalidateQueries({ queryKey: booksKey });
-        void qc.invalidateQueries({ queryKey: pageIndexKey });
-      },
+      [booksKey, pageIndexKey],
     ),
   });
 }

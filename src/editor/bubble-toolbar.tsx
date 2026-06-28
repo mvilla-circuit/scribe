@@ -23,16 +23,32 @@ import {
 export function BubbleToolbar({ editor }: { editor: Editor }) {
   const [colorOpen, setColorOpen] = useState(false);
 
+  // The toolbar is always mounted, so this selector runs on every editor
+  // transaction — including plain typing. Its mark states only matter while the
+  // bar is shown (over a non-empty selection), so short-circuit otherwise to
+  // keep the six `isActive` probes off the per-keystroke path.
   const active = useEditorState({
     editor,
-    selector: ({ editor: e }) => ({
-      bold: e.isActive("bold"),
-      italic: e.isActive("italic"),
-      underline: e.isActive("underline"),
-      strike: e.isActive("strike"),
-      code: e.isActive("code"),
-      link: e.isActive("link"),
-    }),
+    selector: ({ editor: e }) => {
+      if (e.state.selection.empty) {
+        return {
+          bold: false,
+          italic: false,
+          underline: false,
+          strike: false,
+          code: false,
+          link: false,
+        };
+      }
+      return {
+        bold: e.isActive("bold"),
+        italic: e.isActive("italic"),
+        underline: e.isActive("underline"),
+        strike: e.isActive("strike"),
+        code: e.isActive("code"),
+        link: e.isActive("link"),
+      };
+    },
   });
 
   const toggleLink = () => {

@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 
 import type { FontMap } from "@/fonts/catalog";
 import { useAuth } from "@/lib/auth";
 import type { Json, Tables } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
+
+import { optimisticObjectHandlers } from "./optimistic-list";
 
 /** A single row from the `profiles` table. */
 export type Profile = Tables<"profiles">;
@@ -64,20 +65,12 @@ export function useUpdateProfileFonts() {
         .eq("id", userId);
       if (error) throw error;
     },
-    onMutate: async (fonts) => {
-      await qc.cancelQueries({ queryKey: profileKey });
-      const previous = qc.getQueryData<Profile | null>(profileKey);
-      qc.setQueryData<Profile | null>(profileKey, (prev) =>
+    ...optimisticObjectHandlers<Profile, ProfileFonts>({
+      qc,
+      key: profileKey,
+      update: (prev, fonts) =>
         prev ? { ...prev, fonts: fonts as Json } : prev,
-      );
-      return { previous };
-    },
-    onError: (_err, _vars, context) => {
-      if (context) qc.setQueryData(profileKey, context.previous);
-      toast.error("Couldn't save fonts");
-    },
-    onSettled: () => {
-      void qc.invalidateQueries({ queryKey: profileKey });
-    },
+      errorMessage: "Couldn't save fonts",
+    }),
   });
 }

@@ -1,7 +1,8 @@
+import type { QueryKey } from "@tanstack/react-query";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useAuth } from "@/lib/auth";
-import type { Tables } from "@/lib/database.types";
+import type { Tables, TablesUpdate } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
 
 import { optimisticListHandlers } from "./optimistic-list";
@@ -11,7 +12,28 @@ import { collectSubtree } from "./subtree";
 /** A single folder row from the `folders` table. */
 export type Folder = Tables<"folders">;
 
+/** Mutation input shapes, shared between each `mutationFn` and its optimistic updater. */
+interface CreateFolderInput {
+  id: string;
+  name: string;
+  parent_folder_id: string | null;
+  position: number;
+}
+interface RenameFolderInput {
+  id: string;
+  name: string;
+}
+interface MoveFolderInput {
+  id: string;
+  parent_folder_id: string | null;
+  position: number;
+}
+interface DeleteFolderInput {
+  id: string;
+}
+
 const foldersKey = ["folders"] as const;
+const booksKey = ["books"] as const;
 
 /** Query hook for all of the signed-in user's folders, ordered by position. */
 export function useFolders() {
@@ -33,7 +55,7 @@ function folderHandlers<V>(
   qc: ReturnType<typeof useQueryClient>,
   update: (prev: Folder[], variables: V) => Folder[],
   errorMessage: string,
-  onSettled?: () => void,
+  invalidateKeys?: QueryKey[],
 ) {
   return optimisticListHandlers<Folder, V>({
     qc,
@@ -41,8 +63,15 @@ function folderHandlers<V>(
     sort: byPosition,
     update,
     errorMessage,
-    onSettled,
+    invalidateKeys,
   });
+}
+
+// Patches a single folder by id. Backs rename/move so their mutationFns stay
+// one-liners over a single typed Supabase call.
+async function updateFolderRow(id: string, patch: TablesUpdate<"folders">) {
+  const { error } = await supabase.from("folders").update(patch).eq("id", id);
+  if (error) throw error;
 }
 
 /** Mutation hook that creates a folder (optimistically appended to the cache). */
@@ -51,12 +80,7 @@ export function useCreateFolder() {
   const { session } = useAuth();
 
   return useMutation({
-    mutationFn: async (input: {
-      id: string;
-      name: string;
-      parent_folder_id: string | null;
-      position: number;
-    }) => {
+    mutationFn: async (input: CreateFolderInput) => {
       const userId = session?.user.id;
       if (!userId) throw new Error("Not authenticated");
       const { error } = await supabase.from("folders").insert({
@@ -68,12 +92,7 @@ export function useCreateFolder() {
       });
       if (error) throw error;
     },
-    ...folderHandlers<{
-      id: string;
-      name: string;
-      parent_folder_id: string | null;
-      position: number;
-    }>(
+    ...folderHandlers<CreateFolderInput>(
       qc,
       (prev, input) => {
         const now = new Date().toISOString();
@@ -99,14 +118,9 @@ export function useCreateFolder() {
 export function useRenameFolder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { id: string; name: string }) => {
-      const { error } = await supabase
-        .from("folders")
-        .update({ name: input.name })
-        .eq("id", input.id);
-      if (error) throw error;
-    },
-    ...folderHandlers<{ id: string; name: string }>(
+    mutationFn: (input: RenameFolderInput) =>
+      updateFolderRow(input.id, { name: input.name }),
+    ...folderHandlers<RenameFolderInput>(
       qc,
       (prev, input) =>
         prev.map((f) => (f.id === input.id ? { ...f, name: input.name } : f)),
@@ -119,25 +133,12 @@ export function useRenameFolder() {
 export function useMoveFolder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: {
-      id: string;
-      parent_folder_id: string | null;
-      position: number;
-    }) => {
-      const { error } = await supabase
-        .from("folders")
-        .update({
-          parent_folder_id: input.parent_folder_id,
-          position: input.position,
-        })
-        .eq("id", input.id);
-      if (error) throw error;
-    },
-    ...folderHandlers<{
-      id: string;
-      parent_folder_id: string | null;
-      position: number;
-    }>(
+    mutationFn: (input: MoveFolderInput) =>
+      updateFolderRow(input.id, {
+        parent_folder_id: input.parent_folder_id,
+        position: input.position,
+      }),
+    ...folderHandlers<MoveFolderInput>(
       qc,
       (prev, input) =>
         prev.map((f) =>
@@ -165,7 +166,7 @@ function collectFolderSubtree(folders: Folder[], rootId: string): Set<string> {
 export function useDeleteFolder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { id: string }) => {
+    mutationFn: async (input: DeleteFolderInput) => {
       const { error } = await supabase
         .from("folders")
         .delete()
@@ -174,17 +175,14 @@ export function useDeleteFolder() {
     },
     // The folder and its subfolders cascade away; books inside fall back to the
     // root (folder_id -> null). We invalidate books on settle to reconcile.
-    ...folderHandlers<{ id: string }>(
+    ...folderHandlers<DeleteFolderInput>(
       qc,
       (prev, input) => {
         const removed = collectFolderSubtree(prev, input.id);
         return prev.filter((f) => !removed.has(f.id));
       },
       "Couldn't delete folder",
-      () => {
-        void qc.invalidateQueries({ queryKey: foldersKey });
-        void qc.invalidateQueries({ queryKey: ["books"] });
-      },
+      [foldersKey, booksKey],
     ),
   });
 }

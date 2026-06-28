@@ -2,7 +2,10 @@ import { QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { describe, expect, it, vi } from "vitest";
 
-import { optimisticListHandlers } from "./optimistic-list";
+import {
+  optimisticListHandlers,
+  optimisticObjectHandlers,
+} from "./optimistic-list";
 
 vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 
@@ -72,9 +75,9 @@ describe("optimisticListHandlers", () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: key });
   });
 
-  it("uses a custom onSettled when provided", () => {
+  it("invalidates every provided key on settle", () => {
     const qc = new QueryClient();
-    const onSettled = vi.fn();
+    const invalidate = vi.spyOn(qc, "invalidateQueries");
 
     const handlers = optimisticListHandlers<Item, Item>({
       qc,
@@ -82,11 +85,92 @@ describe("optimisticListHandlers", () => {
       sort,
       update: (prev) => prev,
       errorMessage: "Couldn't add",
-      onSettled,
+      invalidateKeys: [key, ["page-index"]],
     });
 
     handlers.onSettled();
 
-    expect(onSettled).toHaveBeenCalledOnce();
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: key });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["page-index"] });
+  });
+
+  it("skips invalidation while other mutations are still in flight", () => {
+    const qc = new QueryClient();
+    // Two mutations counted means this settle isn't the last one; invalidating
+    // now would refetch and clobber the still-pending mutation's optimistic state.
+    vi.spyOn(qc, "isMutating").mockReturnValue(2);
+    const invalidate = vi.spyOn(qc, "invalidateQueries");
+
+    const handlers = optimisticListHandlers<Item, Item>({
+      qc,
+      key,
+      sort,
+      update: (prev) => prev,
+      errorMessage: "Couldn't add",
+    });
+
+    handlers.onSettled();
+
+    expect(invalidate).not.toHaveBeenCalled();
+  });
+});
+
+interface Obj {
+  id: string;
+  name: string;
+}
+
+const objKey = ["obj"] as const;
+
+describe("optimisticObjectHandlers", () => {
+  it("optimistically updates the cached object and snapshots the previous value", async () => {
+    const qc = new QueryClient();
+    qc.setQueryData<Obj>(objKey, { id: "a", name: "Old" });
+
+    const handlers = optimisticObjectHandlers<Obj, string>({
+      qc,
+      key: objKey,
+      update: (prev, name) => (prev ? { ...prev, name } : prev),
+      errorMessage: "Couldn't save",
+    });
+
+    const context = await handlers.onMutate("New");
+
+    expect(qc.getQueryData<Obj>(objKey)).toEqual({ id: "a", name: "New" });
+    expect(context.previous).toEqual({ id: "a", name: "Old" });
+  });
+
+  it("rolls back to the snapshot and toasts on error", async () => {
+    const qc = new QueryClient();
+    qc.setQueryData<Obj>(objKey, { id: "a", name: "Old" });
+
+    const handlers = optimisticObjectHandlers<Obj, string>({
+      qc,
+      key: objKey,
+      update: (prev, name) => (prev ? { ...prev, name } : prev),
+      errorMessage: "Couldn't save",
+    });
+
+    const context = await handlers.onMutate("New");
+    handlers.onError(new Error("boom"), "New", context);
+
+    expect(qc.getQueryData<Obj>(objKey)).toEqual({ id: "a", name: "Old" });
+    expect(toast.error).toHaveBeenCalledWith("Couldn't save");
+  });
+
+  it("invalidates the object key on settle by default", () => {
+    const qc = new QueryClient();
+    const invalidate = vi.spyOn(qc, "invalidateQueries");
+
+    const handlers = optimisticObjectHandlers<Obj, string>({
+      qc,
+      key: objKey,
+      update: (prev) => prev,
+      errorMessage: "Couldn't save",
+    });
+
+    handlers.onSettled();
+
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: objKey });
   });
 });
