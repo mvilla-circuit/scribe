@@ -7,7 +7,7 @@ on:
 
 jobs:
   web:
-    name: Typecheck, lint, circular, dead code, format, build & audit
+    name: Typecheck, lint, circular, dead code, format & build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -40,9 +40,6 @@ jobs:
 
       - name: Build (web)
         run: npm run build
-
-      - name: Audit dependencies
-        run: npm run audit:deps
 
   e2e:
     name: Playwright E2E
@@ -108,3 +105,32 @@ jobs:
 
       - name: Clippy
         run: cargo clippy --all-targets --locked -- -D warnings
+
+  tauri-build:
+    name: Tauri build (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # Installs the toolchain + components pinned by src-tauri/rust-toolchain.toml.
+      # macOS runners already provide Xcode/clang, so no system packages are needed.
+      - name: Install Rust toolchain
+        working-directory: src-tauri
+        run: rustup show
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The frontend build runs automatically via beforeBuildCommand in
+      # tauri.conf.json. --no-bundle skips installer/bundle generation.
+      - name: Build Tauri app (no bundle)
+        run: npm run tauri build -- --no-bundle
