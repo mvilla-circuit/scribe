@@ -11,7 +11,7 @@ import { useAutosave } from "./use-autosave";
 // outline.test.ts uses.
 type Listener = (props?: unknown) => void;
 
-function makeFakeEditor(json: unknown = { type: "doc" }) {
+function makeFakeEditor(getJSON: () => unknown = () => ({ type: "doc" })) {
   const listeners: Record<string, Listener[]> = {};
   return {
     on(event: string, fn: Listener) {
@@ -23,7 +23,7 @@ function makeFakeEditor(json: unknown = { type: "doc" }) {
     emit(event: string, props?: unknown) {
       for (const fn of listeners[event] ?? []) fn(props);
     },
-    getJSON: () => json,
+    getJSON,
   };
 }
 
@@ -60,6 +60,29 @@ describe("useAutosave", () => {
     });
     expect(onPersist).toHaveBeenCalledTimes(1);
     expect(onPersist).toHaveBeenCalledWith({ type: "doc" });
+  });
+
+  it("serializes the document once at flush time, not on every keystroke", () => {
+    const onPersist = vi.fn();
+    const getJSON = vi.fn(() => ({ type: "doc" }));
+    const editor = makeFakeEditor(getJSON);
+    renderHook(() => useAutosave(asEditor(editor), onPersist, 700));
+
+    // Three rapid edits within one debounce window.
+    act(() => {
+      editor.emit("update", update());
+      editor.emit("update", update());
+      editor.emit("update", update());
+    });
+    // The expensive full-document serialization must be deferred to the flush,
+    // not run synchronously on every keystroke.
+    expect(getJSON).not.toHaveBeenCalled();
+
+    act(() => {
+      vi.advanceTimersByTime(700);
+    });
+    expect(getJSON).toHaveBeenCalledTimes(1);
+    expect(onPersist).toHaveBeenCalledTimes(1);
   });
 
   it("ignores transactions tagged skipAutosave (no persist, no churn)", () => {

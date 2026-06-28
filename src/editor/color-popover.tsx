@@ -23,21 +23,31 @@ export function ColorPopover({
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  // Reactively track the active text + highlight + underline values.
+  // Reactively track the active text + highlight + underline values. This lives
+  // in the always-mounted bubble toolbar, so its selector runs on every editor
+  // transaction — including plain typing. The values only matter when the bar
+  // is actually shown (over a non-empty selection), so short-circuit otherwise
+  // to keep the palette scans (3x `find` over the swatch lists) off the
+  // per-keystroke hot path.
   const { textColor, highlightColor, underlineColor } = useEditorState({
     editor,
-    selector: ({ editor: e }) => ({
-      textColor:
-        TEXT_COLORS.find((s) => e.isActive("textStyle", { color: s.value }))
-          ?.value ?? null,
-      highlightColor:
-        HIGHLIGHT_COLORS.find((s) =>
-          e.isActive("highlight", { color: s.value }),
-        )?.value ?? null,
-      underlineColor:
-        TEXT_COLORS.find((s) => e.isActive("underline", { color: s.value }))
-          ?.value ?? null,
-    }),
+    selector: ({ editor: e }) => {
+      if (e.state.selection.empty) {
+        return { textColor: null, highlightColor: null, underlineColor: null };
+      }
+      return {
+        textColor:
+          TEXT_COLORS.find((s) => e.isActive("textStyle", { color: s.value }))
+            ?.value ?? null,
+        highlightColor:
+          HIGHLIGHT_COLORS.find((s) =>
+            e.isActive("highlight", { color: s.value }),
+          )?.value ?? null,
+        underlineColor:
+          TEXT_COLORS.find((s) => e.isActive("underline", { color: s.value }))
+            ?.value ?? null,
+      };
+    },
   });
 
   // Close when the user interacts outside the flyout.

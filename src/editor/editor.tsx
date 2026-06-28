@@ -15,6 +15,11 @@ import { CALLOUT_DEFAULT } from "./palette";
 import { type PersistFn, type SaveState, useAutosave } from "./use-autosave";
 import { useTableScrollShadows } from "./use-table-scroll-shadows";
 
+// Debounce window for recomputing the page outline. The outline only feeds the
+// navigation rail, so a short settle delay is imperceptible and keeps the
+// whole-document `extractHeadings` walk off the per-keystroke path.
+const OUTLINE_DEBOUNCE_MS = 300;
+
 export interface EditorHandle {
   /** Smooth-scroll the heading at the given ProseMirror position into view. */
   scrollToPos: (pos: number) => void;
@@ -107,6 +112,19 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     onLeaveStartRef.current = onLeaveStart;
   }, [onLeaveStart]);
 
+  // Debounced outline recompute (see OUTLINE_DEBOUNCE_MS). Cleared when the
+  // document changes or the editor unmounts so a pending timer never walks a
+  // torn-down editor.
+  const outlineTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (outlineTimer.current) {
+        clearTimeout(outlineTimer.current);
+        outlineTimer.current = null;
+      }
+    };
+  }, [documentId]);
+
   const editor = useEditor(
     {
       extensions: buildExtensions(),
@@ -144,8 +162,17 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       },
       onCreate: ({ editor }) =>
         onOutlineChangeRef.current?.(extractHeadings(editor)),
-      onUpdate: ({ editor }) =>
-        onOutlineChangeRef.current?.(extractHeadings(editor)),
+      onUpdate: ({ editor, transaction }) => {
+        // The outline only changes when the document structure does, so skip
+        // pure selection/metadata transactions, and debounce the rest so a
+        // burst of typing recomputes the whole-document outline once when it
+        // settles rather than on every keystroke.
+        if (!transaction.docChanged) return;
+        if (outlineTimer.current) clearTimeout(outlineTimer.current);
+        outlineTimer.current = setTimeout(() => {
+          onOutlineChangeRef.current?.(extractHeadings(editor));
+        }, OUTLINE_DEBOUNCE_MS);
+      },
     },
     [documentId],
   );

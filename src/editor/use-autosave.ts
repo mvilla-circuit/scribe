@@ -26,10 +26,15 @@ export type PersistFn = (content: Json) => void | Promise<unknown>;
 const SAVED_LINGER = 1500;
 
 /**
- * Invisible autosave: debounces `editor.getJSON()` and hands it to `onPersist`
- * (the optimistic mutation). Pending edits are flushed immediately on blur and
- * on unmount — and because the editor is keyed by document id, an unmount flush
- * is exactly what guarantees no edits are lost when switching documents.
+ * Invisible autosave: debounces persistence and hands the document to
+ * `onPersist` (the optimistic mutation). Pending edits are flushed immediately
+ * on blur and on unmount — and because the editor is keyed by document id, an
+ * unmount flush is exactly what guarantees no edits are lost when switching
+ * documents.
+ *
+ * Serialization (`editor.getJSON()`, an O(document) walk) happens at flush time
+ * rather than on every keystroke: updates only mark the document dirty, so a
+ * burst of typing serializes once when it settles instead of once per stroke.
  *
  * Returns a coarse save state purely for the unobtrusive indicator; the actual
  * persistence/rollback is owned by the injected mutation.
@@ -49,7 +54,10 @@ export function useAutosave(
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pending = useRef<Json | null>(null);
+  // Whether there are unsaved edits to serialize on the next flush. We hold a
+  // dirty flag rather than a serialized snapshot so the expensive `getJSON()`
+  // runs once at flush time, not on every keystroke.
+  const dirty = useRef(false);
 
   useEffect(() => {
     if (!editor) return;
@@ -60,9 +68,9 @@ export function useAutosave(
         clearTimeout(timer.current);
         timer.current = null;
       }
-      if (pending.current === null) return;
-      const content = pending.current;
-      pending.current = null;
+      if (!dirty.current) return;
+      dirty.current = false;
+      const content = editor.getJSON() as Json;
       const result = persistRef.current(content);
       const promise =
         result && typeof result.then === "function" ? result : null;
@@ -101,7 +109,7 @@ export function useAutosave(
       // Skip programmatic transactions that opt out of autosave so they don't
       // trigger a network write (or a "saving" flicker) on document open.
       if (transaction.getMeta(SKIP_AUTOSAVE_META)) return;
-      pending.current = editor.getJSON() as Json;
+      dirty.current = true;
       if (idleTimer.current) clearTimeout(idleTimer.current);
       setState("saving");
       if (timer.current) clearTimeout(timer.current);
