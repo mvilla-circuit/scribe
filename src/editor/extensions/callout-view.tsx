@@ -9,8 +9,8 @@ import { DocumentIcon } from "@/components/ui/document-icon";
 import { IconPicker } from "@/components/ui/icon-picker";
 import { Tooltip } from "@/components/ui/tooltip";
 import { BlockColorPopover } from "@/editor/block-color-popover";
+import { BlockIconControl } from "@/editor/block-control-presets";
 import { BlockControls } from "@/editor/block-controls";
-import { EmojiIcon } from "@/editor/icons";
 import { CALLOUT_COLORS } from "@/editor/palette";
 
 // The callout's writing surface: a tinted box with an optional leading icon and
@@ -68,26 +68,16 @@ export function CalloutView({ node, updateAttributes, editor }: NodeViewProps) {
 
       {editable && (
         <BlockControls className="scribe-callout-controls" open={colorOpen}>
-          <IconPicker
-            value={icon}
+          <BlockIconControl
+            noun="callout"
+            icon={icon}
             onSelect={(next) => {
               updateAttributes({ icon: next });
             }}
             onRemove={() => {
               updateAttributes({ icon: null });
             }}
-            align="end"
-          >
-            <Tooltip content={icon ? "Change icon" : "Add icon"}>
-              <button
-                type="button"
-                aria-label={icon ? "Change callout icon" : "Add callout icon"}
-                className="scribe-block-btn"
-              >
-                <EmojiIcon size={15} />
-              </button>
-            </Tooltip>
-          </IconPicker>
+          />
 
           <BlockColorPopover
             swatches={CALLOUT_COLORS}

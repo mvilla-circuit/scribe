@@ -6,11 +6,12 @@ import {
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 
 import { Tooltip } from "@/components/ui/tooltip";
-import { BlockColorPopover } from "@/editor/block-color-popover";
+import { AccentColorPopover } from "@/editor/block-control-presets";
 import { BlockControls } from "@/editor/block-controls";
 import { AttributionIcon } from "@/editor/icons";
-import { QUOTE_ACCENTS } from "@/editor/palette";
 import { cn } from "@/lib/utils";
+
+import { DEFAULT_QUOTE_VARIANT } from "./quote-constants";
 
 // The quote's writing surface: a tinted/ruled/pull-quote block (driven by the
 // `variant` class) whose accent color flows through the `--quote-accent` CSS
@@ -19,7 +20,7 @@ import { cn } from "@/lib/utils";
 // optional, right-aligned attribution line. Every control writes back via
 // updateAttributes, so edits persist with the document.
 export function QuoteView({ node, updateAttributes, editor }: NodeViewProps) {
-  const variant = (node.attrs.variant as string) || "accentquote";
+  const variant = (node.attrs.variant as string) || DEFAULT_QUOTE_VARIANT;
   const color = (node.attrs.color as string | null) ?? null;
   const attribution = (node.attrs.attribution as string) || "";
   const showAttribution = Boolean(node.attrs.showAttribution);
@@ -108,16 +109,13 @@ export function QuoteView({ node, updateAttributes, editor }: NodeViewProps) {
             </button>
           </Tooltip>
 
-          <BlockColorPopover
-            swatches={QUOTE_ACCENTS}
-            value={color}
+          <AccentColorPopover
+            color={color}
             onChange={(value) => {
               updateAttributes({ color: value });
             }}
             open={colorOpen}
             onOpenChange={setColorOpen}
-            label="Accent"
-            clearLabel="Default accent"
             triggerLabel="Style"
             triggerAriaLabel="Quote style"
           />

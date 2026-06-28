@@ -10,10 +10,11 @@ import { DocumentIcon } from "@/components/ui/document-icon";
 import { IconPicker } from "@/components/ui/icon-picker";
 import { SubtitleToggle } from "@/components/ui/subtitle-toggle";
 import { Tooltip } from "@/components/ui/tooltip";
-import { BlockColorPopover } from "@/editor/block-color-popover";
+import {
+  AccentColorPopover,
+  BlockIconControl,
+} from "@/editor/block-control-presets";
 import { BlockControls } from "@/editor/block-controls";
-import { EmojiIcon } from "@/editor/icons";
-import { QUOTE_ACCENTS } from "@/editor/palette";
 
 // The essay's writing surface: a long-form section framed top and bottom by
 // horizontal accent rules, with the whole thing (a header of optional icon +
@@ -153,37 +154,24 @@ export function EssayView({ node, updateAttributes, editor }: NodeViewProps) {
             variant="block"
           />
 
-          <IconPicker
-            value={icon}
+          <BlockIconControl
+            noun="essay"
+            icon={icon}
             onSelect={(next) => {
               updateAttributes({ icon: next });
             }}
             onRemove={() => {
               updateAttributes({ icon: null });
             }}
-            align="end"
-          >
-            <Tooltip content={icon ? "Change icon" : "Add icon"}>
-              <button
-                type="button"
-                aria-label={icon ? "Change essay icon" : "Add essay icon"}
-                className="scribe-block-btn"
-              >
-                <EmojiIcon size={15} />
-              </button>
-            </Tooltip>
-          </IconPicker>
+          />
 
-          <BlockColorPopover
-            swatches={QUOTE_ACCENTS}
-            value={color}
+          <AccentColorPopover
+            color={color}
             onChange={(value) => {
               updateAttributes({ color: value });
             }}
             open={colorOpen}
             onOpenChange={setColorOpen}
-            label="Accent"
-            clearLabel="Default accent"
             triggerLabel="Accent color"
             triggerAriaLabel="Essay accent color"
           />

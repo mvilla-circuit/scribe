@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { type PageLinkOption, useEditorBridge } from "@/editor/editor-bridge";
-import { nextActiveIndex } from "@/editor/list-navigation";
+import { useKeyboardList } from "@/editor/use-keyboard-list";
 import { cn } from "@/lib/utils";
 
 import { usePagePicker } from "./page-picker-store";
@@ -21,8 +21,6 @@ export function PagePicker() {
   const { pageLinkOptions } = useEditorBridge();
 
   const [query, setQuery] = useState("");
-  const [active, setActive] = useState(0);
-  const listRef = useRef<HTMLDivElement>(null);
 
   const rows = useMemo<Row[]>(() => {
     const q = query.trim().toLowerCase();
@@ -35,6 +33,8 @@ export function PagePicker() {
       : pageLinkOptions;
     return filtered.slice(0, 50);
   }, [pageLinkOptions, query]);
+
+  const { active, setActive, listRef, move } = useKeyboardList(rows.length);
 
   // Reset transient state during render (per React's "you might not need an
   // effect") rather than in effects: clear the query/selection when the picker
@@ -63,23 +63,16 @@ export function PagePicker() {
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    if (move(e.key)) {
       e.preventDefault();
-      setActive((i) => nextActiveIndex(i, e.key, { length: rows.length }));
-    } else if (e.key === "Enter") {
+      return;
+    }
+    if (e.key === "Enter") {
       e.preventDefault();
       const row = rows[active];
       if (row) choose(row);
     }
   };
-
-  // Keep the highlighted row scrolled into view.
-  useEffect(() => {
-    const el = listRef.current?.querySelector<HTMLElement>(
-      `[data-idx="${active}"]`,
-    );
-    el?.scrollIntoView({ block: "nearest" });
-  }, [active, rows]);
 
   return (
     <Dialog

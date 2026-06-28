@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 
 import { NoColorIcon } from "./icons";
 import { type Swatch } from "./palette";
+import { preserveSelection } from "./preserve-selection";
 
 // The compact 5-wide swatch grid shared by every color menu in the editor — the
 // bubble-toolbar text/highlight/underline sections and the block accent/
@@ -34,9 +35,7 @@ export function SwatchGrid({
           type="button"
           aria-label={clearLabel}
           aria-pressed={!value}
-          onMouseDown={(e) => {
-            e.preventDefault();
-          }}
+          onMouseDown={preserveSelection}
           onClick={() => {
             onChange(null);
           }}
@@ -59,9 +58,7 @@ export function SwatchGrid({
               type="button"
               aria-label={s.name}
               aria-pressed={active}
-              onMouseDown={(e) => {
-                e.preventDefault();
-              }}
+              onMouseDown={preserveSelection}
               onClick={() => {
                 onChange(s.value);
               }}

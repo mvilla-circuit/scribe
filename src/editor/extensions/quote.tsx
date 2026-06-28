@@ -2,11 +2,8 @@ import { wrappingInputRule } from "@tiptap/core";
 
 import { boolAttr, stringAttr } from "./data-attr";
 import { dataDivBlock } from "./data-block";
+import { DEFAULT_QUOTE_VARIANT, type QuoteVariant } from "./quote-constants";
 import { QuoteView } from "./quote-view";
-
-export type QuoteVariant = "pullquote" | "accentquote";
-
-const DEFAULT_VARIANT: QuoteVariant = "accentquote";
 
 // A quotation block with two visual treatments (pullquote / accentquote). The
 // variant, an optional accent color, and a plain-text
@@ -28,7 +25,10 @@ export const Quote = dataDivBlock({
   // `blockquote` is parsed too so pasted HTML and legacy markup land as quotes.
   extraParseRules: [{ tag: "blockquote" }],
   attributes: () => ({
-    variant: stringAttr("variant", { default: DEFAULT_VARIANT, always: true }),
+    variant: stringAttr("variant", {
+      default: DEFAULT_QUOTE_VARIANT,
+      always: true,
+    }),
     color: stringAttr("color"),
     attribution: stringAttr("attribution", { default: "" }),
     showAttribution: boolAttr("showAttribution"),
@@ -39,7 +39,7 @@ export const Quote = dataDivBlock({
     wrappingInputRule({
       find: /^\s*>\s$/,
       type,
-      getAttributes: () => ({ variant: DEFAULT_VARIANT }),
+      getAttributes: () => ({ variant: DEFAULT_QUOTE_VARIANT }),
     }),
   ],
   view: QuoteView,
@@ -47,7 +47,7 @@ export const Quote = dataDivBlock({
 
 // Starter content for a fresh quote: the chosen variant wrapping one empty
 // paragraph the caret lands in.
-export function quoteContent(variant: QuoteVariant) {
+export function quoteContent(variant: QuoteVariant = DEFAULT_QUOTE_VARIANT) {
   return {
     type: Quote.name,
     attrs: { variant },

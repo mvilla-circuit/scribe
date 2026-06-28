@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
+import { preserveSelection } from "./preserve-selection";
+
 // A tooltipped, bordered icon button for editor block controls (the floating
 // controls on link cards, page links, and other custom blocks). Cancels its own
 // mousedown so clicking it never steals focus from — or collapses — the editor
@@ -24,9 +26,7 @@ export function EditorIconButton({
       <button
         type="button"
         aria-label={label}
-        onMouseDown={(e) => {
-          e.preventDefault();
-        }}
+        onMouseDown={preserveSelection}
         onClick={onClick}
         className={cn("scribe-block-btn", className)}
       >

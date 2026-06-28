@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 
 import { ChevronDownIcon } from "./icons";
 import { HIGHLIGHT_COLORS, type Swatch, TEXT_COLORS } from "./palette";
+import { preserveSelection } from "./preserve-selection";
 import { SwatchSection } from "./swatch-grid";
 
 // The active swatch value for a `{ color }`-keyed mark, or null when none of the
@@ -102,9 +103,7 @@ export function ColorPopover({
           aria-label="Color and highlight"
           aria-haspopup="true"
           aria-expanded={open}
-          onMouseDown={(e) => {
-            e.preventDefault();
-          }}
+          onMouseDown={preserveSelection}
           onClick={() => {
             onOpenChange(!open);
           }}
@@ -140,9 +139,7 @@ export function ColorPopover({
         // eslint-disable-next-line jsx-a11y/interactive-supports-focus -- The panel only swallows mousedown to preserve the editor selection; the focusable controls live inside it, not on the panel.
         <div
           role="menu"
-          onMouseDown={(e) => {
-            e.preventDefault();
-          }}
+          onMouseDown={preserveSelection}
           className={cn(
             "absolute right-0 top-[calc(100%+8px)] z-10 w-[12rem] font-sans",
             "rounded-xl border border-border bg-elevated p-3 shadow-popover",

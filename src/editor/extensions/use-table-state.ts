@@ -1,6 +1,7 @@
 import type { Node as PMNode } from "@tiptap/pm/model";
-import { TextSelection } from "@tiptap/pm/state";
 import { type Editor, useEditorState } from "@tiptap/react";
+
+import { hasFormattableSelection } from "@/editor/selection";
 
 import { deriveTableHeaders } from "./table-commands";
 
@@ -46,11 +47,7 @@ export function useTableState(editor: Editor): TableState {
       // is, we hide the table toolbar so the two don't stack on top of each other
       // above the cell. A multi-cell CellSelection isn't a TextSelection, so the
       // table toolbar stays put for those (the bubble toolbar doesn't show then).
-      const textSelecting =
-        selection instanceof TextSelection &&
-        !selection.empty &&
-        !e.isActive("codeBlock") &&
-        e.state.doc.textBetween(selection.from, selection.to).trim().length > 0;
+      const textSelecting = hasFormattableSelection(e);
       let pos = -1;
       let table: PMNode | null = null;
       // Presentation of the cell the caret sits in: its vertical alignment

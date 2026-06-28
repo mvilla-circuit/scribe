@@ -67,6 +67,23 @@ export function setCellVerticalAlign(
     .run();
 }
 
+// Set a single attribute on the table node at `tablePos`, the shared write
+// behind the border toggles and the header-fill swatch. Refocusing is optional:
+// the border toggles refocus so typing resumes, while the color writes skip it
+// to keep a portaled popover open across the editor blur (ProseMirror keeps its
+// selection regardless).
+function setTableNodeAttr(
+  editor: Editor,
+  tablePos: number,
+  attr: string,
+  value: string | boolean | null,
+  { refocus = false }: { refocus?: boolean } = {},
+) {
+  if (tablePos < 0) return;
+  editor.view.dispatch(editor.state.tr.setNodeAttribute(tablePos, attr, value));
+  if (refocus) editor.commands.focus();
+}
+
 /**
  * Flip a border toggle on the table node. Writes straight to `tablePos` so it
  * works regardless of which cell holds the caret.
@@ -77,9 +94,7 @@ export function toggleTableBorders(
   attr: "rowBorders" | "colBorders",
   next: boolean,
 ) {
-  if (tablePos < 0) return;
-  editor.view.dispatch(editor.state.tr.setNodeAttribute(tablePos, attr, next));
-  editor.commands.focus();
+  setTableNodeAttr(editor, tablePos, attr, next, { refocus: true });
 }
 
 /**
@@ -92,10 +107,7 @@ export function setTableHeaderColor(
   tablePos: number,
   value: string | null,
 ) {
-  if (tablePos < 0) return;
-  editor.view.dispatch(
-    editor.state.tr.setNodeAttribute(tablePos, "color", value),
-  );
+  setTableNodeAttr(editor, tablePos, "color", value);
 }
 
 /**

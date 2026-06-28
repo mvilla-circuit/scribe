@@ -3,6 +3,7 @@ import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
 
 import { BlockControls } from "@/editor/block-controls";
+import { CardSurface } from "@/editor/card-surface";
 import { useEditorBridge } from "@/editor/editor-bridge";
 import { EditorIconButton } from "@/editor/editor-icon-button";
 import {
@@ -77,18 +78,7 @@ export function PageLinkView({
       className="scribe-pagelink group/pagelink"
       data-not-found={notFound || undefined}
     >
-      <div
-        role="link"
-        tabIndex={0}
-        onClick={navigate}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            navigate();
-          }
-        }}
-        className="scribe-pagelink-body"
-      >
+      <CardSurface className="scribe-pagelink-body" onActivate={navigate}>
         <span className="scribe-pagelink-icon" aria-hidden>
           {notFound ? (
             <PageLinkIcon size={16} />
@@ -109,7 +99,7 @@ export function PageLinkView({
             <span className="scribe-pagelink-crumb">{resolved.breadcrumb}</span>
           )}
         </span>
-      </div>
+      </CardSurface>
 
       {editable && (
         <BlockControls className="scribe-pagelink-controls">

@@ -1,6 +1,6 @@
-import { mergeAttributes, Node } from "@tiptap/core";
-import { type Editor, ReactNodeViewRenderer } from "@tiptap/react";
+import type { Editor } from "@tiptap/core";
 
+import { dataAnchorBlock } from "./data-anchor-block";
 import { stringAttr } from "./data-attr";
 import { PageLinkView } from "./page-link-view";
 import { pageRef, type PageTargetType } from "./page-ref";
@@ -13,60 +13,37 @@ const PAGE_REF = /^scribe:\/\/(page|book)\/([0-9a-fA-F-]{36})$/;
 // truth — only a stale `label` fallback — and always live-resolves the current
 // title/icon/breadcrumb from the local page index, so renaming the target
 // updates the card everywhere.
-export const PageLink = Node.create({
+export const PageLink = dataAnchorBlock({
   name: "pageLink",
-  group: "block",
-  atom: true,
-  draggable: true,
-  selectable: true,
-
-  addAttributes() {
-    return {
-      targetType: stringAttr("targetType", {
-        default: "document",
-        always: true,
-      }),
-      targetId: stringAttr("targetId"),
-      label: stringAttr("label"),
-    };
-  },
-
-  parseHTML() {
-    return [{ tag: "a[data-page-link]" }];
-  },
-
-  renderHTML({ node, HTMLAttributes }) {
+  marker: "page-link",
+  attributes: () => ({
+    targetType: stringAttr("targetType", {
+      default: "document",
+      always: true,
+    }),
+    targetId: stringAttr("targetId"),
+    label: stringAttr("label"),
+  }),
+  renderAttrs: (node) => {
     const targetType = (node.attrs.targetType as PageTargetType) ?? "document";
     const targetId = node.attrs.targetId as string | null;
-    return [
-      "a",
-      mergeAttributes(HTMLAttributes, {
-        "data-page-link": "",
-        href: targetId ? pageRef(targetType, targetId) : "#",
-      }),
-      (node.attrs.label as string) || "Untitled page",
-    ];
+    return { href: targetId ? pageRef(targetType, targetId) : "#" };
   },
-
-  addNodeView() {
-    return ReactNodeViewRenderer(PageLinkView);
-  },
-
+  text: (node) => (node.attrs.label as string) || "Untitled page",
+  view: PageLinkView,
   // Pasting a `scribe://page/<id>` ref inserts a page card.
-  addProseMirrorPlugins() {
-    return [
-      pastePlugin(this.editor, (text, editor) => {
-        const match = PAGE_REF.exec(text.trim());
-        if (!match) return false;
-        const targetId = match[2];
-        if (!targetId) return false;
-        const targetType: PageTargetType =
-          match[1] === "book" ? "book" : "document";
-        insertPageLink(editor, { targetType, targetId });
-        return true;
-      }),
-    ];
-  },
+  plugins: (editor) => [
+    pastePlugin(editor, (text, ed) => {
+      const match = PAGE_REF.exec(text.trim());
+      if (!match) return false;
+      const targetId = match[2];
+      if (!targetId) return false;
+      const targetType: PageTargetType =
+        match[1] === "book" ? "book" : "document";
+      insertPageLink(ed, { targetType, targetId });
+      return true;
+    }),
+  ],
 });
 
 export function insertPageLink(

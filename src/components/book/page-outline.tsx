@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { DocumentIcon } from "@/components/ui/document-icon";
+import { HEADING_SELECTOR } from "@/editor/headings";
 import { EssayIcon } from "@/editor/icons";
 import type { OutlineHeading } from "@/editor/outline";
 import { cn } from "@/lib/utils";
@@ -31,7 +32,9 @@ export function PageOutline({
     // while editing; either way we only keep titled ones so the element order
     // stays aligned with `headings` (which skips untitled essays).
     const els = Array.from(
-      root.querySelectorAll<HTMLElement>("h1, h2, h3, .scribe-essay-title"),
+      root.querySelectorAll<HTMLElement>(
+        `${HEADING_SELECTOR}, .scribe-essay-title`,
+      ),
     ).filter((el) => {
       if (!el.classList.contains("scribe-essay-title")) return true;
       const text =

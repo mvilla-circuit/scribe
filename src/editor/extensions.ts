@@ -20,6 +20,7 @@ import { Quote } from "./extensions/quote";
 import { SlashCommand } from "./extensions/slash-command";
 import { Table, TableCell, TableHeader } from "./extensions/table";
 import { Typography } from "./extensions/typography";
+import { HEADING_LEVELS } from "./headings";
 
 /**
  * The editor's extension set. StarterKit v3 already brings paragraphs,
@@ -36,7 +37,7 @@ import { Typography } from "./extensions/typography";
 export function buildExtensions(): Extensions {
   return [
     StarterKit.configure({
-      heading: { levels: [1, 2, 3] },
+      heading: { levels: [...HEADING_LEVELS] },
       dropcursor: {
         color: "var(--color-accent)",
         width: 3,

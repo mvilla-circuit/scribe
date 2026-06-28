@@ -1,9 +1,10 @@
-import { TextSelection } from "@tiptap/pm/state";
+import type { ChainedCommands } from "@tiptap/core";
 import { type Editor, useEditorState } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { type ReactNode, useState } from "react";
 
 import { Tooltip } from "@/components/ui/tooltip";
+import type { IconProps } from "@/lib/make-icon";
 import { cn } from "@/lib/utils";
 
 import { ColorPopover } from "./color-popover";
@@ -15,6 +16,59 @@ import {
   StrikeIcon,
   UnderlineIcon,
 } from "./icons";
+import { preserveSelection } from "./preserve-selection";
+import { hasFormattableSelection } from "./selection";
+
+// The inline-formatting marks, in toolbar order. One descriptor drives the
+// active-state probe and the rendered buttons, so adding a mark is a single
+// entry rather than three parallel edits.
+interface MarkSpec {
+  name: string;
+  label: string;
+  shortcut?: string;
+  icon: (props: IconProps) => ReactNode;
+  toggle: (chain: ChainedCommands) => ChainedCommands;
+}
+
+const MARKS: MarkSpec[] = [
+  {
+    name: "bold",
+    label: "Bold",
+    shortcut: "⌘B",
+    icon: BoldIcon,
+    toggle: (c) => c.toggleBold(),
+  },
+  {
+    name: "italic",
+    label: "Italic",
+    shortcut: "⌘I",
+    icon: ItalicIcon,
+    toggle: (c) => c.toggleItalic(),
+  },
+  {
+    name: "underline",
+    label: "Underline",
+    shortcut: "⌘U",
+    icon: UnderlineIcon,
+    toggle: (c) => c.toggleUnderline(),
+  },
+  {
+    name: "strike",
+    label: "Strikethrough",
+    icon: StrikeIcon,
+    toggle: (c) => c.toggleStrike(),
+  },
+  {
+    name: "code",
+    label: "Inline code",
+    icon: CodeIcon,
+    toggle: (c) => c.toggleCode(),
+  },
+];
+
+// The mark names whose active state the toolbar tracks: the toggle marks plus
+// the separate link button.
+const TRACKED = [...MARKS.map((m) => m.name), "link"];
 
 // The selection toolbar: a floating, segmented bar of inline-formatting
 // controls. It appears only over a real text selection, mirrors the active
@@ -30,24 +84,11 @@ export function BubbleToolbar({ editor }: { editor: Editor }) {
   const active = useEditorState({
     editor,
     selector: ({ editor: e }) => {
-      if (e.state.selection.empty) {
-        return {
-          bold: false,
-          italic: false,
-          underline: false,
-          strike: false,
-          code: false,
-          link: false,
-        };
-      }
-      return {
-        bold: e.isActive("bold"),
-        italic: e.isActive("italic"),
-        underline: e.isActive("underline"),
-        strike: e.isActive("strike"),
-        code: e.isActive("code"),
-        link: e.isActive("link"),
-      };
+      const empty = e.state.selection.empty;
+      const state: Record<string, boolean> = {};
+      for (const name of TRACKED)
+        state[name] = empty ? false : e.isActive(name);
+      return state;
     },
   });
 
@@ -68,75 +109,38 @@ export function BubbleToolbar({ editor }: { editor: Editor }) {
     <BubbleMenu
       editor={editor}
       options={{ placement: "top", offset: 8 }}
-      shouldShow={({ editor: e, state, from, to }) => {
-        if (!e.isEditable) return false;
-        const { selection } = state;
-        if (selection.empty) return false;
+      shouldShow={({ editor: e }) =>
         // Only over genuine text runs — skip node selections (hr/image) and
         // code blocks (which carry their own editing affordances later).
-        if (!(selection instanceof TextSelection)) return false;
-        if (e.isActive("codeBlock")) return false;
-        return state.doc.textBetween(from, to).trim().length > 0;
-      }}
+        e.isEditable && hasFormattableSelection(e)
+      }
       className="flex items-center gap-0.5 rounded-xl border border-border bg-elevated p-1 shadow-popover"
     >
-      <ToggleButton
-        label="Bold"
-        shortcut="⌘B"
-        isActive={active.bold}
-        onClick={() => {
-          setColorOpen(false);
-          editor.chain().focus().toggleBold().run();
-        }}
-      >
-        <BoldIcon />
-      </ToggleButton>
-      <ToggleButton
-        label="Italic"
-        shortcut="⌘I"
-        isActive={active.italic}
-        onClick={() => {
-          setColorOpen(false);
-          editor.chain().focus().toggleItalic().run();
-        }}
-      >
-        <ItalicIcon />
-      </ToggleButton>
-      <ToggleButton
-        label="Underline"
-        shortcut="⌘U"
-        isActive={active.underline}
-        onClick={() => {
-          setColorOpen(false);
-          editor.chain().focus().toggleUnderline().run();
-        }}
-      >
-        <UnderlineIcon />
-      </ToggleButton>
-      <ToggleButton
-        label="Strikethrough"
-        isActive={active.strike}
-        onClick={() => {
-          setColorOpen(false);
-          editor.chain().focus().toggleStrike().run();
-        }}
-      >
-        <StrikeIcon />
-      </ToggleButton>
-      <ToggleButton
-        label="Inline code"
-        isActive={active.code}
-        onClick={() => {
-          setColorOpen(false);
-          editor.chain().focus().toggleCode().run();
-        }}
-      >
-        <CodeIcon />
-      </ToggleButton>
+      {MARKS.map((mark) => {
+        const Icon = mark.icon;
+        return (
+          <ToggleButton
+            key={mark.name}
+            label={mark.label}
+            shortcut={mark.shortcut}
+            isActive={active[mark.name] ?? false}
+            onClick={() => {
+              setColorOpen(false);
+              mark.toggle(editor.chain().focus()).run();
+            }}
+          >
+            <Icon />
+          </ToggleButton>
+        );
+      })}
 
       <Divider />
 
-      <ToggleButton label="Link" isActive={active.link} onClick={toggleLink}>
+      <ToggleButton
+        label="Link"
+        isActive={active.link ?? false}
+        onClick={toggleLink}
+      >
         <LinkIcon />
       </ToggleButton>
       <ColorPopover
@@ -174,9 +178,7 @@ function ToggleButton({
         type="button"
         aria-label={label}
         aria-pressed={isActive}
-        onMouseDown={(e) => {
-          e.preventDefault();
-        }}
+        onMouseDown={preserveSelection}
         onClick={onClick}
         className={cn(
           "flex h-8 w-8 items-center justify-center rounded-md outline-none transition-colors",

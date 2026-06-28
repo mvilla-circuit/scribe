@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 import { BlockControls } from "@/editor/block-controls";
+import { CardSurface } from "@/editor/card-surface";
 import { EditorIconButton } from "@/editor/editor-icon-button";
 import {
   CopyIcon,
@@ -76,18 +77,7 @@ export function LinkCardView({
       className="scribe-linkcard group/linkcard"
       data-status={status}
     >
-      <div
-        role="link"
-        tabIndex={0}
-        onClick={open}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            open();
-          }
-        }}
-        className="scribe-linkcard-body"
-      >
+      <CardSurface className="scribe-linkcard-body" onActivate={open}>
         {status === "loading" ? (
           <div className="scribe-linkcard-skeleton">
             <div className="scribe-linkcard-text">
@@ -131,7 +121,7 @@ export function LinkCardView({
             )}
           </>
         )}
-      </div>
+      </CardSurface>
 
       {editable && (
         <BlockControls className="scribe-linkcard-controls">

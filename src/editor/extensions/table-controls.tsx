@@ -30,6 +30,7 @@ import {
   TrashIcon,
 } from "@/editor/icons";
 import { TABLE_CELL_COLORS, TABLE_HEADER_COLORS } from "@/editor/palette";
+import { preserveSelection } from "@/editor/preserve-selection";
 import type { IconProps } from "@/lib/make-icon";
 
 import {
@@ -173,9 +174,7 @@ export function TableControls({ editor }: { editor: Editor }) {
       role="toolbar"
       aria-label="Table controls"
       // Keep the selection while clicking a control.
-      onMouseDown={(e) => {
-        e.preventDefault();
-      }}
+      onMouseDown={preserveSelection}
     >
       {AXIS_GROUPS.map(({ noun, remove, add }) => (
         <Fragment key={noun}>

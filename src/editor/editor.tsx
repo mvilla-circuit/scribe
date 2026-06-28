@@ -10,6 +10,7 @@ import { BubbleToolbar } from "./bubble-toolbar";
 import { buildExtensions } from "./extensions";
 import { PagePicker } from "./extensions/page-picker";
 import { TableControls } from "./extensions/table-controls";
+import { HEADING_SELECTOR } from "./headings";
 import { extractHeadings, type OutlineHeading } from "./outline";
 import { CALLOUT_DEFAULT } from "./palette";
 import { type PersistFn, type SaveState, useAutosave } from "./use-autosave";
@@ -200,7 +201,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           node.nodeType === Node.TEXT_NODE
             ? node.parentElement
             : (node as HTMLElement);
-        const heading = el?.closest("h1, h2, h3, .scribe-essay") ?? el;
+        const heading = el?.closest(`${HEADING_SELECTOR}, .scribe-essay`) ?? el;
         heading?.scrollIntoView({ behavior: "smooth", block: "start" });
       },
       focusStart: () => {

@@ -1,12 +1,7 @@
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
 
-import { nextActiveIndex } from "@/editor/list-navigation";
+import { preserveSelection } from "@/editor/preserve-selection";
+import { useKeyboardList } from "@/editor/use-keyboard-list";
 import { cn } from "@/lib/utils";
 
 import type { SlashItem } from "./slash-items";
@@ -26,8 +21,12 @@ export interface SlashMenuRef {
 // SlashCommand extension's Floating UI wiring; this only renders + selects.
 export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
   function SlashMenu({ items, command }, ref) {
-    const [selected, setSelected] = useState(0);
-    const listRef = useRef<HTMLDivElement>(null);
+    const {
+      active: selected,
+      setActive: setSelected,
+      listRef,
+      move,
+    } = useKeyboardList(items.length, { wrap: true });
 
     // Whenever the filtered set changes, snap back to the first row. Done during
     // render (not in an effect) to avoid a cascading re-render.
@@ -37,25 +36,13 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
       setSelected(0);
     }
 
-    useEffect(() => {
-      const el = listRef.current?.querySelector<HTMLElement>(
-        `[data-idx="${selected}"]`,
-      );
-      el?.scrollIntoView({ block: "nearest" });
-    }, [selected]);
-
     useImperativeHandle(ref, () => ({
       onKeyDown: (event) => {
         if (items.length === 0) {
           // Still swallow nav keys so they don't move the caret behind the menu.
           return ["ArrowUp", "ArrowDown", "Enter"].includes(event.key);
         }
-        if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-          setSelected((i) =>
-            nextActiveIndex(i, event.key, { length: items.length, wrap: true }),
-          );
-          return true;
-        }
+        if (move(event.key)) return true;
         if (event.key === "Enter" || event.key === "Tab") {
           const item = items[selected];
           if (item) command(item);
@@ -72,9 +59,7 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
       <div
         ref={listRef}
         className="scribe-slash-menu"
-        onMouseDown={(e) => {
-          e.preventDefault();
-        }}
+        onMouseDown={preserveSelection}
       >
         {items.length === 0 ? (
           <div className="scribe-slash-empty">No results</div>
