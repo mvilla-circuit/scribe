@@ -8,8 +8,26 @@
 const STEP = 1024;
 
 /**
+ * Thrown when two neighbours sit so close together that float64 can no longer
+ * represent a value strictly between them — i.e. the gap has shrunk below one
+ * ULP after many reorders into the same slot. Callers should re-space the
+ * affected siblings (see `rebalancePositions`) rather than persist a colliding
+ * position.
+ */
+export class PositionExhaustedError extends Error {
+  constructor() {
+    super("Fractional position precision exhausted; rebalance required.");
+    this.name = "PositionExhaustedError";
+  }
+}
+
+/**
  * Picks a fractional position strictly between two neighbours so a reorder
  * persists as a single row update. Either bound may be undefined at a list edge.
+ *
+ * Throws {@link PositionExhaustedError} when the neighbours are adjacent floats
+ * and no value fits between them, so the rare precision-exhaustion case surfaces
+ * to the caller instead of silently colliding.
  */
 export function getPositionBetween(prev?: number, next?: number): number {
   if (prev === undefined) {
@@ -17,7 +35,24 @@ export function getPositionBetween(prev?: number, next?: number): number {
     return next - STEP;
   }
   if (next === undefined) return prev + STEP;
-  return (prev + next) / 2;
+  // `prev + (next - prev) / 2` (not `(prev + next) / 2`) avoids overflow for
+  // large positions and lands on the same midpoint; the guard then catches the
+  // case where rounding pins the result to a neighbour.
+  const mid = prev + (next - prev) / 2;
+  if (mid <= prev || mid >= next) throw new PositionExhaustedError();
+  return mid;
+}
+
+/**
+ * Evenly re-spaces an ordered list of ids back onto the `STEP` grid, returning
+ * the new position for each id. Use to recover a slot whose neighbours have
+ * collapsed (see {@link PositionExhaustedError}) by resetting them to a wide,
+ * freely divisible gap.
+ */
+export function rebalancePositions(orderedIds: string[]): Map<string, number> {
+  const positions = new Map<string, number>();
+  orderedIds.forEach((id, i) => positions.set(id, (i + 1) * STEP));
+  return positions;
 }
 
 /**

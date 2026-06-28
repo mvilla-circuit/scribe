@@ -16,6 +16,7 @@ import {
   StrikeIcon,
   UnderlineIcon,
 } from "./icons";
+import { LinkDialog } from "./link-dialog";
 import { preserveSelection } from "./preserve-selection";
 import { hasFormattableSelection } from "./selection";
 
@@ -84,6 +85,15 @@ export const BubbleToolbar = memo(function BubbleToolbar({
   editor: Editor;
 }) {
   const [colorOpen, setColorOpen] = useState(false);
+  // Snapshot of the selection (and any existing link) taken when the link
+  // editor opens. The dialog steals focus from the editor — collapsing the DOM
+  // selection — so we restore this exact range before applying the mark.
+  const [linkDialog, setLinkDialog] = useState<{
+    href: string;
+    hasLink: boolean;
+    from: number;
+    to: number;
+  } | null>(null);
 
   // Stable so `BubbleMenu` doesn't reconfigure its plugin on unrelated re-renders.
   const shouldShow = useCallback(
@@ -109,59 +119,93 @@ export const BubbleToolbar = memo(function BubbleToolbar({
     },
   });
 
-  const toggleLink = () => {
+  const openLink = () => {
     setColorOpen(false);
-    if (editor.isActive("link")) {
-      editor.chain().focus().unsetLink().run();
-      return;
-    }
-    const url = window.prompt("Link URL");
-    if (url === null) return;
-    const href = url.trim();
-    if (!href) return;
-    editor.chain().focus().extendMarkRange("link").setLink({ href }).run();
+    const { from, to } = editor.state.selection;
+    const attrs = editor.getAttributes("link");
+    const href = typeof attrs.href === "string" ? attrs.href : "";
+    setLinkDialog({ href, hasLink: editor.isActive("link"), from, to });
+  };
+
+  const applyLink = (href: string) => {
+    if (!linkDialog) return;
+    editor
+      .chain()
+      .focus()
+      .setTextSelection({ from: linkDialog.from, to: linkDialog.to })
+      .extendMarkRange("link")
+      .setLink({ href })
+      .run();
+    setLinkDialog(null);
+  };
+
+  const removeLink = () => {
+    if (!linkDialog) return;
+    editor
+      .chain()
+      .focus()
+      .setTextSelection({ from: linkDialog.from, to: linkDialog.to })
+      .extendMarkRange("link")
+      .unsetLink()
+      .run();
+    setLinkDialog(null);
   };
 
   return (
-    <BubbleMenu
-      editor={editor}
-      options={BUBBLE_MENU_OPTIONS}
-      shouldShow={shouldShow}
-      className="flex items-center gap-0.5 rounded-xl border border-border bg-elevated p-1 shadow-popover"
-    >
-      {MARKS.map((mark) => {
-        const Icon = mark.icon;
-        return (
-          <ToggleButton
-            key={mark.name}
-            label={mark.label}
-            shortcut={mark.shortcut}
-            isActive={active[mark.name] ?? false}
-            onClick={() => {
-              setColorOpen(false);
-              mark.toggle(editor.chain().focus()).run();
-            }}
-          >
-            <Icon />
-          </ToggleButton>
-        );
-      })}
-
-      <Divider />
-
-      <ToggleButton
-        label="Link"
-        isActive={active.link ?? false}
-        onClick={toggleLink}
-      >
-        <LinkIcon />
-      </ToggleButton>
-      <ColorPopover
+    <>
+      <BubbleMenu
         editor={editor}
-        open={colorOpen}
-        onOpenChange={setColorOpen}
+        options={BUBBLE_MENU_OPTIONS}
+        shouldShow={shouldShow}
+        className="flex items-center gap-0.5 rounded-xl border border-border bg-elevated p-1 shadow-popover"
+      >
+        {MARKS.map((mark) => {
+          const Icon = mark.icon;
+          return (
+            <ToggleButton
+              key={mark.name}
+              label={mark.label}
+              shortcut={mark.shortcut}
+              isActive={active[mark.name] ?? false}
+              onClick={() => {
+                setColorOpen(false);
+                mark.toggle(editor.chain().focus()).run();
+              }}
+            >
+              <Icon />
+            </ToggleButton>
+          );
+        })}
+
+        <Divider />
+
+        <ToggleButton
+          label="Link"
+          isActive={active.link ?? false}
+          onClick={openLink}
+        >
+          <LinkIcon />
+        </ToggleButton>
+        <ColorPopover
+          editor={editor}
+          open={colorOpen}
+          onOpenChange={setColorOpen}
+        />
+      </BubbleMenu>
+      {/* Rendered as a sibling of the bubble menu (not a child): opening it
+          blurs the editor, which hides the menu and would unmount any nested
+          dialog mid-interaction. */}
+      <LinkDialog
+        open={linkDialog !== null}
+        initialHref={linkDialog?.href ?? ""}
+        hasLink={linkDialog?.hasLink ?? false}
+        onOpenChange={(open) => {
+          if (!open) setLinkDialog(null);
+        }}
+        onSubmit={applyLink}
+        onRemove={removeLink}
       />
-    </BubbleMenu>
+    </>
   );
 });
 

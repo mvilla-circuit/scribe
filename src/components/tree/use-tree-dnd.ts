@@ -10,7 +10,7 @@ import {
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useMemo, useState } from "react";
 
-import { getPositionBetween } from "@/data/ordering";
+import { getPositionBetween, PositionExhaustedError } from "@/data/ordering";
 
 import type { DndNode, Projection } from "./tree-dnd";
 
@@ -117,7 +117,19 @@ export function useTreeDnd<T extends DndNode>({
         over,
         proj.parentId,
       );
-      const position = getPositionBetween(prev, next);
+      let position: number;
+      try {
+        position = getPositionBetween(prev, next);
+      } catch (err) {
+        if (!(err instanceof PositionExhaustedError)) throw err;
+        // The target gap has collapsed below float precision (≈50 reorders into
+        // the same slot). Rather than abandon the drag, drop a full step past
+        // the lower neighbour; the cluster can be rebalanced afterwards.
+        position = getPositionBetween(prev, undefined);
+        console.warn(
+          "Reorder hit fractional-index precision limit; positions need rebalancing.",
+        );
+      }
       onMove({ id: active, parentId: proj.parentId, position, node });
     },
     onDragCancel: reset,

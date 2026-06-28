@@ -31,6 +31,8 @@
   --color-ring: var(--ring);
   --color-inverted: var(--inverted);
   --color-inverted-text: var(--inverted-text);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
   --shadow-popover: var(--shadow-popover);
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -71,6 +73,11 @@
   --toast-error-bg: #fbeeec;
   --toast-error-border: rgba(178, 47, 38, 0.24);
   --toast-error-fg: #a8281f;
+  /* Semantic status colors for quiet inline feedback (e.g. the save
+     indicator), tuned to match the toast palette so status reads consistently
+     across the app. Used for both text and the small status dot. */
+  --success: #0b6e46;
+  --danger: #a8281f;
   /* The lone theme-aware palette swatch ("Ink"). Stored on marks as a literal
      var() string so it round-trips, then resolves to the strongest ink for the
      active theme: near-black on warm paper here, near-white in .dark. */
@@ -111,6 +118,8 @@
   --toast-error-bg: #271715;
   --toast-error-border: rgba(242, 163, 155, 0.22);
   --toast-error-fg: #f0a39b;
+  --success: #74e3a8;
+  --danger: #f0a39b;
   /* "Ink" flips to near-white so the darkest swatch stays the strongest ink. */
   --swatch-ink: #ededeb;
   --swatch-ink-wash: rgba(232, 230, 227, 0.18);

@@ -1,18 +1,42 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "enables the default permissions",
+  "description": "Default window permissions. http:default allows outbound HTTPS so the editor can fetch external link previews/metadata; loopback, unspecified, link-local (incl. the cloud-metadata 169.254.169.254 endpoint), and RFC1918 private ranges are denied so a crafted link can't reach local/internal services (SSRF defense-in-depth).",
   "windows": ["main"],
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging",
     "opener:default",
-    "deep-link:default",
     "oauth:allow-start",
     "oauth:allow-cancel",
     {
       "identifier": "http:default",
-      "allow": [{ "url": "https://**" }]
+      "allow": [{ "url": "https://**" }],
+      "deny": [
+        { "url": "https://localhost" },
+        { "url": "https://127.*" },
+        { "url": "https://[::1]" },
+        { "url": "https://0.0.0.0" },
+        { "url": "https://169.254.*" },
+        { "url": "https://10.*" },
+        { "url": "https://192.168.*" },
+        { "url": "https://172.16.*" },
+        { "url": "https://172.17.*" },
+        { "url": "https://172.18.*" },
+        { "url": "https://172.19.*" },
+        { "url": "https://172.20.*" },
+        { "url": "https://172.21.*" },
+        { "url": "https://172.22.*" },
+        { "url": "https://172.23.*" },
+        { "url": "https://172.24.*" },
+        { "url": "https://172.25.*" },
+        { "url": "https://172.26.*" },
+        { "url": "https://172.27.*" },
+        { "url": "https://172.28.*" },
+        { "url": "https://172.29.*" },
+        { "url": "https://172.30.*" },
+        { "url": "https://172.31.*" }
+      ]
     }
   ]
 }

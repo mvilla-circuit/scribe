@@ -76,7 +76,7 @@ export function PageOutline({
       </p>
       <ul className="flex flex-col gap-0.5 border-l border-border">
         {headings.map((heading, index) => (
-          <li key={`${heading.pos}-${index}`}>
+          <li key={heading.pos}>
             <button
               type="button"
               onClick={() => {

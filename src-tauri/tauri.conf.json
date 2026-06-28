@@ -28,13 +28,7 @@
       "csp": "default-src 'self'; connect-src 'self' https: wss:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data: https:; script-src 'self'; object-src 'none'; base-uri 'self'"
     }
   },
-  "plugins": {
-    "deep-link": {
-      "desktop": {
-        "schemes": ["scribe"]
-      }
-    }
-  },
+  "plugins": {},
   "bundle": {
     "active": true,
     "targets": "all",

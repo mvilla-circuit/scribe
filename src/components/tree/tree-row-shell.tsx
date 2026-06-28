@@ -88,6 +88,7 @@ export function TreeRowShell({
 
   const rowInner = (
     <SidebarRow
+      id={id}
       setNodeRef={setNodeRef}
       style={style}
       dragHandleProps={dragHandleProps}

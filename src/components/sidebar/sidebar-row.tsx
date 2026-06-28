@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components -- This module exports row helpers (the padding util and drag-overlay variant) alongside the SidebarRow component. */
 import type { ReactNode } from "react";
 
+import { useRovingTabindex } from "@/components/tree/roving-tabindex";
 import { cn } from "@/lib/utils";
 
 // Shared layout tokens for every sidebar tree row (the Library tree and the
@@ -16,6 +17,8 @@ export function sidebarRowPadding(depth: number) {
 }
 
 interface SidebarRowProps {
+  /** Entity id; identifies the row for roving-tabindex focus management. */
+  id: string;
   // dnd-kit wiring from the caller's useSortable().
   setNodeRef: (node: HTMLElement | null) => void;
   style: React.CSSProperties;
@@ -48,6 +51,7 @@ interface SidebarRowProps {
 // trailing actions; this component owns the row's box, sizing, selection state,
 // and the drag insertion line.
 export function SidebarRow({
+  id,
   setNodeRef,
   style,
   dragHandleProps,
@@ -66,12 +70,16 @@ export function SidebarRow({
   onDoubleClick,
   onKeyDown,
 }: SidebarRowProps) {
+  // One tab stop per tree (roving tabindex); Arrow/Home/End navigation between
+  // rows is owned by the enclosing TreeDndContainer.
+  const tabIndex = useRovingTabindex(id);
+
   // While dragging, collapse the row into an insertion line at the projected
   // depth so the drop target (including nesting) reads clearly.
   if (isDragging) {
     const lineDepth = projectionDepth ?? depth;
     return (
-      <div ref={setNodeRef} style={style} role={role}>
+      <div ref={setNodeRef} style={style} role={role} aria-level={depth + 1}>
         <div style={{ paddingLeft: sidebarRowPadding(lineDepth) }}>
           <div className="h-9 rounded-md border border-dashed border-accent/50 bg-accent/5" />
         </div>
@@ -83,13 +91,14 @@ export function SidebarRow({
     // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- Interactive tree row: a real ARIA role (treeitem/button), tabIndex, and click/keyboard handlers are supplied via props, but eslint can't see the dynamic `role`.
     <div
       ref={setNodeRef}
+      data-roving-id={id}
       style={{ ...style, paddingLeft: sidebarRowPadding(depth) }}
       {...dragHandleProps}
       role={role}
+      aria-level={depth + 1}
       aria-expanded={ariaExpanded}
       aria-selected={ariaSelected}
-      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- Same interactive row element; it is intentionally focusable because its dynamic `role` is interactive.
-      tabIndex={0}
+      tabIndex={tabIndex}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       onKeyDown={onKeyDown}

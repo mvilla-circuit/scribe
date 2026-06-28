@@ -19,15 +19,15 @@ export function SaveStatus({ state }: { state: SaveState }) {
       aria-live="polite"
       className={cn(
         "inline-flex items-center gap-1.5 text-xs transition-opacity duration-500",
-        state === "error" ? "text-red-600 dark:text-red-400" : "text-muted",
+        state === "error" ? "text-danger" : "text-muted",
       )}
       style={{ opacity: visible ? 1 : 0 }}
     >
       <span
         className={cn(
           "inline-block h-1.5 w-1.5 rounded-full transition-colors",
-          state === "saved" && "bg-emerald-500",
-          state === "error" && "bg-red-500",
+          state === "saved" && "bg-success",
+          state === "error" && "bg-danger",
           state !== "saved" && state !== "error" && "bg-muted/60",
         )}
       />

@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { byPosition, endPositionFor, getPositionBetween } from "./ordering";
+import {
+  byPosition,
+  endPositionFor,
+  getPositionBetween,
+  PositionExhaustedError,
+  rebalancePositions,
+} from "./ordering";
 
 describe("getPositionBetween", () => {
   it("returns the step when the list is empty (no neighbours)", () => {
@@ -25,6 +31,30 @@ describe("getPositionBetween", () => {
     const mid = getPositionBetween(512, 513);
     expect(mid).toBeGreaterThan(512);
     expect(mid).toBeLessThan(513);
+  });
+
+  it("throws when neighbours are too close to bisect", () => {
+    const prev = 512;
+    const next = prev + Number.EPSILON; // adjacent floats, no gap to split
+    expect(() => getPositionBetween(prev, next)).toThrow(
+      PositionExhaustedError,
+    );
+  });
+});
+
+describe("rebalancePositions", () => {
+  it("evenly re-spaces ids onto the step grid", () => {
+    expect(rebalancePositions(["a", "b", "c"])).toEqual(
+      new Map([
+        ["a", 1024],
+        ["b", 2048],
+        ["c", 3072],
+      ]),
+    );
+  });
+
+  it("returns an empty map for an empty list", () => {
+    expect(rebalancePositions([])).toEqual(new Map());
   });
 });
 
