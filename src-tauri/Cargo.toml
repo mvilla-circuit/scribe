@@ -11,6 +11,15 @@ publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+# Forbid silent panics in the shell: a bare `.unwrap()`/`.expect()` aborts the
+# whole desktop app with an opaque message. Surface the underlying error and
+# exit (or propagate) instead. `rust:lint` runs clippy with `-D warnings`, so
+# these fail CI. Add a scoped `#[allow(...)]` with a reason for the rare
+# genuinely-unrecoverable setup path.
+[lints.clippy]
+expect_used = "warn"
+unwrap_used = "warn"
+
 [lib]
 name = "app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
