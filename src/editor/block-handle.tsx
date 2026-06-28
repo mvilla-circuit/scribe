@@ -1,5 +1,4 @@
 import { offset } from "@floating-ui/dom";
-import type { JSONContent } from "@tiptap/core";
 import { DragHandle } from "@tiptap/extension-drag-handle-react";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
@@ -19,6 +18,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { IconProps } from "@/lib/make-icon";
 
+import {
+  copyBlock,
+  duplicateBlock,
+  removeBlock,
+  setColumnCount,
+  turnIntoBlock,
+} from "./block-actions";
 import {
   BulletListIcon,
   CheckIcon,
@@ -139,129 +145,29 @@ export function BlockHandle({ editor }: { editor: Editor }) {
   }, [handleOpenChange]);
 
   const duplicate = useCallback(() => {
-    const t = menuTarget;
-    if (!t) return;
-    const node = editor.state.doc.nodeAt(t.pos);
-    if (!node) return;
-    editor
-      .chain()
-      .focus()
-      .insertContentAt(t.pos + node.nodeSize, node.toJSON() as JSONContent)
-      .run();
+    if (menuTarget) duplicateBlock(editor, menuTarget.pos);
   }, [editor, menuTarget]);
 
-  // Copy the whole block to the system clipboard so it can be pasted back into
-  // this document or any other one (each document is its own editor instance,
-  // so an in-memory buffer wouldn't survive the hop). We reuse ProseMirror's own
-  // clipboard serialization: a NodeSelection's slice carries the `data-pm-slice`
-  // metadata that makes a later Cmd/Ctrl+V reconstruct the block losslessly,
-  // while the plain-text alternative keeps it pasteable into other apps.
   const copy = useCallback(async () => {
-    const t = menuTarget;
-    if (!t) return;
-    const node = editor.state.doc.nodeAt(t.pos);
-    if (!node) return;
-    let selection: NodeSelection;
-    try {
-      selection = NodeSelection.create(editor.state.doc, t.pos);
-    } catch {
-      return;
-    }
-    const { dom, text } = editor.view.serializeForClipboard(
-      selection.content(),
-    );
-    try {
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          "text/html": new Blob([dom.innerHTML], { type: "text/html" }),
-          "text/plain": new Blob([text], { type: "text/plain" }),
-        }),
-      ]);
+    if (menuTarget && (await copyBlock(editor, menuTarget.pos))) {
       toast.success("Block copied");
-    } catch {
-      // Clipboard API can be blocked (permissions, insecure context). Fall back
-      // to selecting the node and letting the browser's native copy command run
-      // through ProseMirror's own copy handler.
-      editor.chain().focus().setNodeSelection(t.pos).run();
-      // Deliberate fallback when the async Clipboard API is unavailable
-      // (permissions / insecure context); execCommand still works here.
-      // eslint-disable-next-line @typescript-eslint/no-deprecated -- Deliberate fallback: execCommand("copy") is the only option when the async Clipboard API is unavailable.
-      if (document.execCommand("copy")) toast.success("Block copied");
     }
   }, [editor, menuTarget]);
 
   const remove = useCallback(() => {
-    const t = menuTarget;
-    if (!t) return;
-    const node = editor.state.doc.nodeAt(t.pos);
-    if (!node) return;
-    editor
-      .chain()
-      .focus()
-      .deleteRange({ from: t.pos, to: t.pos + node.nodeSize })
-      .run();
+    if (menuTarget) removeBlock(editor, menuTarget.pos);
   }, [editor, menuTarget]);
 
   const turnInto = useCallback(
     (option: TurnInto) => {
-      const t = menuTarget;
-      if (!t) return;
-      option
-        .apply(
-          editor
-            .chain()
-            .focus()
-            .setTextSelection(t.pos + 1),
-        )
-        .run();
+      if (menuTarget) turnIntoBlock(editor, menuTarget.pos, option.apply);
     },
     [editor, menuTarget],
   );
 
-  // Re-shape a `columns` block to `count` columns, preserving content. Reducing
-  // the count folds the trailing column(s) into the last one kept; increasing it
-  // appends empty columns; `count <= 1` flattens the block back to plain blocks.
-  const setColumnCount = useCallback(
+  const changeColumns = useCallback(
     (count: number) => {
-      const t = menuTarget;
-      if (!t) return;
-      const node = editor.state.doc.nodeAt(t.pos);
-      if (node?.type.name !== "columns") return;
-
-      const columns: JSONContent[][] = [];
-      node.forEach((col) => {
-        const blocks: JSONContent[] = [];
-        col.forEach((child) => blocks.push(child.toJSON() as JSONContent));
-        columns.push(blocks);
-      });
-
-      const range = { from: t.pos, to: t.pos + node.nodeSize };
-
-      if (count <= 1) {
-        const blocks = columns.flat();
-        const allEmpty = blocks.every(
-          (b) => b.type === "paragraph" && !b.content?.length,
-        );
-        const content =
-          blocks.length === 0 || allEmpty ? [{ type: "paragraph" }] : blocks;
-        editor.chain().focus().insertContentAt(range, content).run();
-        return;
-      }
-
-      const newColumns: JSONContent[] = [];
-      for (let i = 0; i < count; i++) {
-        const blocks =
-          i < count - 1 ? (columns[i] ?? []) : columns.slice(i).flat();
-        newColumns.push({
-          type: "column",
-          content: blocks.length ? blocks : [{ type: "paragraph" }],
-        });
-      }
-      editor
-        .chain()
-        .focus()
-        .insertContentAt(range, { type: "columns", content: newColumns })
-        .run();
+      if (menuTarget) setColumnCount(editor, menuTarget.pos, count);
     },
     [editor, menuTarget],
   );
@@ -456,7 +362,7 @@ export function BlockHandle({ editor }: { editor: Editor }) {
                     <DropdownMenuItem
                       key={option.count}
                       onSelect={() => {
-                        setColumnCount(option.count);
+                        changeColumns(option.count);
                       }}
                     >
                       <option.icon size={15} />
