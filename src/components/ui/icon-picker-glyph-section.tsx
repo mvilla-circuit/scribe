@@ -76,20 +76,21 @@ export function GlyphSection({
         ) : (
           <>
             {results.map((name) => (
-              <button
-                key={name}
-                type="button"
-                title={name}
-                onClick={() => {
-                  onSelect(serializeIcon({ type: "glyph", name, color }));
-                }}
-                className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-md outline-none transition-colors hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring",
-                  currentGlyph?.name === name && "bg-selected",
-                )}
-              >
-                <DynamicIcon name={name} size={18} aria-hidden />
-              </button>
+              <Tooltip key={name} content={name}>
+                <button
+                  type="button"
+                  aria-label={name}
+                  onClick={() => {
+                    onSelect(serializeIcon({ type: "glyph", name, color }));
+                  }}
+                  className={cn(
+                    "flex h-8 w-8 items-center justify-center rounded-md outline-none transition-colors hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring",
+                    currentGlyph?.name === name && "bg-selected",
+                  )}
+                >
+                  <DynamicIcon name={name} size={18} aria-hidden />
+                </button>
+              </Tooltip>
             ))}
             {hasMore && (
               <div ref={sentinelRef} aria-hidden className="col-span-8 h-1" />

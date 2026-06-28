@@ -43,6 +43,7 @@ All of these are enforced by ESLint/Prettier — follow them so `verify` stays g
 - **JSDoc**: the exported API of the `data/`, `lib/`, `fonts/`, `store/`, and `editor/` layers requires a description block (no `{type}` tags — TypeScript carries the types).
 - **Logging**: `console` is limited to `warn` and `error`.
 - **No native dialogs**: `window.alert`/`confirm`/`prompt` are banned (`no-alert`); use an in-app dialog or popover (e.g. the store-driven `LinkDialog`/`PagePicker`).
+- **No native `title` tooltips**: the `title` attribute on host elements is banned (lint); use the `<Tooltip>` component for hover hints, and `aria-label` for an icon-only control's accessible name. (A component prop named `title`, e.g. `<ConfirmDialog title=…>`, is fine.)
 - **Formatting**: Prettier — 2-space indent, double quotes, semicolons, trailing commas, 80-col width. Don't hand-format; run `npm run format`.
 
 ## Design guidelines

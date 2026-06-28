@@ -167,6 +167,17 @@ export default defineConfig([
             "Avoid `as unknown` double-casts; model the type or use a type guard instead.",
         },
         {
+          // Ban the native `title` attribute on host elements: it renders an
+          // unstyled, inconsistent, delay-uncontrolled browser tooltip. Use the
+          // app's <Tooltip> component (and `aria-label` for an icon-only
+          // control's accessible name). Scoped to lowercase tags so a component
+          // prop named `title` (e.g. <ConfirmDialog title=...>) is unaffected.
+          selector:
+            "JSXOpeningElement[name.name=/^[a-z]/] > JSXAttribute[name.name='title']",
+          message:
+            "Don't use the native `title` attribute; wrap the element in the <Tooltip> component (and add `aria-label` if it's icon-only).",
+        },
+        {
           // Enforce the "Tokens, never raw values" design rule for `className`
           // string literals: a raw Tailwind palette color (e.g. `text-red-600`,
           // `bg-emerald-500`) has no light/dark pair and bypasses the theme.

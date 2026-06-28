@@ -12,6 +12,7 @@ import { BookIcon, BookPlusIcon, FolderPlusIcon } from "./sidebar/icons";
 import { Button } from "./ui/button";
 import { DocumentIcon } from "./ui/document-icon";
 import { Skeleton } from "./ui/skeleton";
+import { Tooltip } from "./ui/tooltip";
 
 const BrandIcon = makeIcon(PenLine);
 
@@ -136,36 +137,39 @@ function RecentBookCard({
   onSelect: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      title={book.title}
-      className={cn(
-        "group flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2.5 text-left",
-        "outline-none transition hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring",
-      )}
-    >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-tree-group text-muted">
-        {book.icon ? (
-          <DocumentIcon icon={book.icon} size={18} />
-        ) : (
-          <BookIcon size={18} />
+    <Tooltip content={book.title || "Untitled"}>
+      <button
+        type="button"
+        onClick={onSelect}
+        className={cn(
+          "group flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2.5 text-left",
+          "outline-none transition hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring",
         )}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-text">
-          {book.title || "Untitled"}
-        </p>
-        {book.subtitle && (
-          <p className="mt-0.5 truncate text-xs text-muted">{book.subtitle}</p>
-        )}
-      </div>
-      {book.updated_at && (
-        <span className="shrink-0 text-xs text-muted tabular-nums">
-          {formatRelativeTime(book.updated_at, { compact: true })}
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-tree-group text-muted">
+          {book.icon ? (
+            <DocumentIcon icon={book.icon} size={18} />
+          ) : (
+            <BookIcon size={18} />
+          )}
         </span>
-      )}
-    </button>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-text">
+            {book.title || "Untitled"}
+          </p>
+          {book.subtitle && (
+            <p className="mt-0.5 truncate text-xs text-muted">
+              {book.subtitle}
+            </p>
+          )}
+        </div>
+        {book.updated_at && (
+          <span className="shrink-0 text-xs text-muted tabular-nums">
+            {formatRelativeTime(book.updated_at, { compact: true })}
+          </span>
+        )}
+      </button>
+    </Tooltip>
   );
 }
 
