@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { toast } from "sonner";
 
 import type { FontMap } from "@/fonts/catalog";
 import { useAuth } from "@/lib/auth";
@@ -8,14 +7,14 @@ import type { Json, Tables, TablesUpdate } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
 import { asJsonObject } from "@/lib/utils";
 
+import { collectDocumentSubtree } from "./document-duplicate";
 import {
   optimisticListHandlers,
   patchById,
   removeBySet,
 } from "./optimistic-list";
-import { byPosition, getPositionBetween } from "./ordering";
+import { byPosition } from "./ordering";
 import { documentsKey, pageIndexKey } from "./query-keys";
-import { collectSubtree } from "./subtree";
 
 /** A single page row from the `documents` table. */
 export type Document = Tables<"documents">;
@@ -121,69 +120,36 @@ async function updateDocumentRow(id: string, patch: TablesUpdate<"documents">) {
 }
 
 /**
- * Collects a document plus all of its descendant ids. The DB cascades the
- * delete (parent_document_id ON DELETE CASCADE); we mirror that optimistically.
+ * Builds the full documents row for a freshly created page. Both the Supabase
+ * insert and the optimistic cache entry are derived from this one place so the
+ * column set can't drift between them (the insert simply drops the two
+ * DB-managed timestamps and lets Postgres default them).
  */
-export function collectDocumentSubtree(
-  documents: Document[],
-  rootId: string,
-): Set<string> {
-  return collectSubtree(documents, rootId, (d) => d.parent_document_id);
-}
-
-/**
- * Builds the rows for a deep copy of a page and all of its nested pages,
- * inserted as a sibling right after the source. Each copied page gets a fresh
- * id, descendants are re-parented onto those new ids, and only the copy's root
- * is renamed (" copy") and repositioned; descendants keep their relative order.
- * `user_id` is left blank here and stamped by the mutation at insert time.
- */
-export function buildDocumentDuplicate(
-  documents: Document[],
-  sourceId: string,
-): { rows: Document[]; rootId: string } | null {
-  const source = documents.find((d) => d.id === sourceId);
-  if (!source || source.is_title_page) return null;
-
-  const subtreeIds = collectDocumentSubtree(documents, sourceId);
-  const idMap = new Map<string, string>();
-  for (const id of subtreeIds) idMap.set(id, crypto.randomUUID());
-
-  const siblings = documents
-    .filter(
-      (d) =>
-        !d.is_title_page && d.parent_document_id === source.parent_document_id,
-    )
-    .sort(byPosition);
-  const sourceIdx = siblings.findIndex((d) => d.id === sourceId);
-  const next = siblings[sourceIdx + 1];
-  const rootPosition = getPositionBetween(source.position, next?.position);
-
+function newDocumentRow(
+  input: CreateDocumentInput,
+  bookId: string,
+  userId: string,
+): Document {
   const now = new Date().toISOString();
-  const rows = documents
-    .filter((d) => subtreeIds.has(d.id))
-    .map((d): Document => {
-      const isRoot = d.id === sourceId;
-      // Every subtree id is in idMap; the `??` fallbacks just keep the types
-      // honest (they never trigger given the filter above).
-      const newId = idMap.get(d.id) ?? d.id;
-      const newParent =
-        d.parent_document_id === null
-          ? null
-          : (idMap.get(d.parent_document_id) ?? d.parent_document_id);
-      return {
-        ...d,
-        id: newId,
-        user_id: "",
-        parent_document_id: isRoot ? d.parent_document_id : newParent,
-        title: isRoot ? `${d.title || "Untitled"} copy` : d.title,
-        position: isRoot ? rootPosition : d.position,
-        created_at: now,
-        updated_at: now,
-      };
-    });
-
-  return { rows, rootId: idMap.get(sourceId) ?? sourceId };
+  return {
+    id: input.id,
+    user_id: userId,
+    book_id: bookId,
+    parent_document_id: input.parent_document_id,
+    title: input.title,
+    icon: null,
+    subtitle: null,
+    banner_color: null,
+    banner_text: null,
+    show_outline: false,
+    show_subtitle: false,
+    is_title_page: input.is_title_page ?? false,
+    position: input.position,
+    content: {},
+    font_overrides: null,
+    created_at: now,
+    updated_at: now,
+  };
 }
 
 /** Mutation hook that inserts a new page (optimistically appended to the cache). */
@@ -196,45 +162,22 @@ export function useCreateDocument(bookId: string) {
     mutationFn: async (input: CreateDocumentInput) => {
       const userId = session?.user.id;
       if (!userId) throw new Error("Not authenticated");
-      const { error } = await supabase.from("documents").insert({
-        id: input.id,
-        user_id: userId,
-        book_id: bookId,
-        parent_document_id: input.parent_document_id,
-        title: input.title,
-        is_title_page: input.is_title_page ?? false,
-        position: input.position,
-      });
+      // Drop the DB-managed timestamps so Postgres defaults them on insert.
+      const {
+        created_at: _created,
+        updated_at: _updated,
+        ...row
+      } = newDocumentRow(input, bookId, userId);
+      const { error } = await supabase.from("documents").insert(row);
       if (error) throw error;
     },
     ...documentHandlers<CreateDocumentInput>(
       qc,
       key,
-      (prev, input) => {
-        const now = new Date().toISOString();
-        return [
-          ...prev,
-          {
-            id: input.id,
-            user_id: session?.user.id ?? "",
-            book_id: bookId,
-            parent_document_id: input.parent_document_id,
-            title: input.title,
-            icon: null,
-            subtitle: null,
-            banner_color: null,
-            banner_text: null,
-            show_outline: false,
-            show_subtitle: false,
-            is_title_page: input.is_title_page ?? false,
-            position: input.position,
-            content: {},
-            font_overrides: null,
-            created_at: now,
-            updated_at: now,
-          },
-        ];
-      },
+      (prev, input) => [
+        ...prev,
+        newDocumentRow(input, bookId, session?.user.id ?? ""),
+      ],
       "Couldn't create page",
     ),
   });
@@ -254,25 +197,15 @@ export function useDuplicateDocument(bookId: string) {
     mutationFn: async (input: DuplicateDocumentInput) => {
       const userId = session?.user.id;
       if (!userId) throw new Error("Not authenticated");
-      const { error } = await supabase.from("documents").insert(
-        input.rows.map((r) => ({
-          id: r.id,
+      // Stamp the owner and let Postgres default the timestamps; every other
+      // column carries over verbatim from the pre-built duplicate rows.
+      const rows = input.rows.map(
+        ({ created_at: _created, updated_at: _updated, ...r }) => ({
+          ...r,
           user_id: userId,
-          book_id: r.book_id,
-          parent_document_id: r.parent_document_id,
-          title: r.title,
-          icon: r.icon,
-          subtitle: r.subtitle,
-          banner_color: r.banner_color,
-          banner_text: r.banner_text,
-          show_outline: r.show_outline,
-          show_subtitle: r.show_subtitle,
-          is_title_page: r.is_title_page,
-          position: r.position,
-          content: r.content,
-          font_overrides: r.font_overrides,
-        })),
+        }),
       );
+      const { error } = await supabase.from("documents").insert(rows);
       if (error) throw error;
     },
     ...documentHandlers<DuplicateDocumentInput>(
@@ -411,52 +344,6 @@ export function useUpdateDocumentFontOverrides(bookId: string) {
         patchById(prev, input.id, { font_overrides: input.font_overrides }),
       "Couldn't update page fonts",
     ),
-  });
-}
-
-// Allowed image types and max size for a user-uploaded page icon. Kept small:
-// icons render at tiny sizes, so there's no reason to accept large files.
-const ICON_UPLOAD_MAX_BYTES = 1024 * 1024; // 1 MB
-const ICON_UPLOAD_TYPES: Record<string, string> = {
-  "image/png": "png",
-  "image/jpeg": "jpg",
-  "image/webp": "webp",
-  "image/gif": "gif",
-  "image/svg+xml": "svg",
-};
-
-/**
- * Uploads a custom page icon to the `page-icons` storage bucket under the
- * owner's folder and returns its public URL. The IconPicker stores that URL on
- * the document as an `image` icon.
- */
-export function useUploadIcon() {
-  const { session } = useAuth();
-  return useMutation({
-    mutationFn: async (file: File): Promise<string> => {
-      const userId = session?.user.id;
-      if (!userId) throw new Error("Not authenticated");
-
-      const ext = ICON_UPLOAD_TYPES[file.type];
-      if (!ext) throw new Error("Unsupported image type");
-      if (file.size > ICON_UPLOAD_MAX_BYTES) {
-        throw new Error("Image must be under 1 MB");
-      }
-
-      const path = `${userId}/${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage
-        .from("page-icons")
-        .upload(path, file, { contentType: file.type, upsert: false });
-      if (error) throw error;
-
-      const { data } = supabase.storage.from("page-icons").getPublicUrl(path);
-      return data.publicUrl;
-    },
-    onError: (error) => {
-      toast.error(
-        error instanceof Error ? error.message : "Couldn't upload icon",
-      );
-    },
   });
 }
 

@@ -12,6 +12,8 @@ import {
 import {
   buildDocumentDuplicate,
   collectDocumentSubtree,
+} from "./document-duplicate";
+import {
   docFontOverrides,
   useDeleteDocument,
   useDocuments,

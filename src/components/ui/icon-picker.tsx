@@ -3,8 +3,8 @@ import { EmojiPicker } from "frimousse";
 import { DynamicIcon, iconNames } from "lucide-react/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { useUploadIcon } from "@/data/documents";
 import { type IconValue, parseIcon, serializeIcon } from "@/data/icon";
+import { useUploadIcon } from "@/data/icon-upload";
 import { NoColorIcon } from "@/editor/icons";
 import { TEXT_COLORS } from "@/editor/palette";
 import { cn } from "@/lib/utils";
