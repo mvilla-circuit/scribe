@@ -95,6 +95,7 @@ export function MainEmptyState() {
               </h3>
               <div className="mt-3 flex flex-col gap-1.5">
                 {Array.from({ length: 3 }).map((_, i) => (
+                  // eslint-disable-next-line react/no-array-index-key -- decorative placeholder cards; fixed count, no stable id
                   <RecentBookCardSkeleton key={i} />
                 ))}
               </div>

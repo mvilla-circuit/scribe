@@ -60,6 +60,7 @@ export function SkeletonText({
     >
       {Array.from({ length: lines }).map((_, i) => (
         <Skeleton
+          // eslint-disable-next-line react/no-array-index-key -- decorative, fixed-length placeholder bars; never reorder and carry no stable id
           key={i}
           height={lineHeight}
           width={i === lines - 1 ? "60%" : "100%"}

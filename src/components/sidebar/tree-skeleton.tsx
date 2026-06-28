@@ -22,6 +22,7 @@ export function TreeSkeleton({
     <div aria-hidden className={cn("flex flex-col", SIDEBAR_ROW_GAP)}>
       {depths.map((depth, i) => (
         <div
+          // eslint-disable-next-line react/no-array-index-key -- decorative placeholder rows; fixed order, no stable id
           key={i}
           style={{ paddingLeft: sidebarRowPadding(depth) }}
           className="flex h-9 items-center gap-2 rounded-md pr-1"

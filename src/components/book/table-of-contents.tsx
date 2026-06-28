@@ -83,6 +83,7 @@ export function TableOfContents({
                 <span aria-hidden className="flex shrink-0">
                   {Array.from({ length: entry.depth }).map((_, level) => (
                     <span
+                      // eslint-disable-next-line react/no-array-index-key -- positional indent rules; count-based, never reorder
                       key={level}
                       className="border-l border-border"
                       style={{ width: INDENT }}
@@ -157,12 +158,13 @@ function TableOfContentsSkeleton() {
     <div aria-hidden className="mt-8">
       <Skeleton width="4.5rem" height="0.7rem" />
       <ol className="mt-3 flex flex-col">
-        {SKELETON_ROWS.map((row, i) => (
-          <li key={i} className="flex items-stretch">
+        {SKELETON_ROWS.map((row) => (
+          <li key={`${row.depth}-${row.width}`} className="flex items-stretch">
             {row.depth > 0 && (
               <span className="flex shrink-0">
                 {Array.from({ length: row.depth }).map((_, level) => (
                   <span
+                    // eslint-disable-next-line react/no-array-index-key -- positional indent rules; count-based, never reorder
                     key={level}
                     className="border-l border-border"
                     style={{ width: INDENT }}

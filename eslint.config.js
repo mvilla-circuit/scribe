@@ -1,5 +1,6 @@
 import js from "@eslint/js";
 import globals from "globals";
+import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import jsxA11y from "eslint-plugin-jsx-a11y";
@@ -40,7 +41,9 @@ export default defineConfig([
     plugins: {
       "simple-import-sort": simpleImportSort,
       "@eslint-community/eslint-comments": eslintComments,
+      react,
     },
+    settings: { react: { version: "detect" } },
     // Flag `eslint-disable` directives that no longer suppress anything so they
     // get cleaned up instead of silently rotting.
     linterOptions: {
@@ -178,6 +181,10 @@ export default defineConfig([
       // Native dialogs (`window.alert`/`confirm`/`prompt`) are jarring and
       // unstyled inside the desktop shell; use an in-app dialog/popover instead.
       "no-alert": "error",
+      // An array index makes an unstable React key: on insert/remove/reorder it
+      // remaps to a different item and corrupts component state. Key on a stable
+      // id instead. (We don't pull in the rest of eslint-plugin-react's rules.)
+      "react/no-array-index-key": "error",
       "no-console": ["warn", { allow: ["warn", "error"] }],
       eqeqeq: ["error", "always", { null: "ignore" }],
       // Non-sibling imports go through the `@/` alias; only same-directory
