@@ -13,6 +13,7 @@ import {
   PageLinkIcon,
   TrashIcon,
 } from "@/editor/icons";
+import { SKIP_AUTOSAVE_META } from "@/editor/use-autosave";
 import { useUIStore } from "@/store/ui";
 
 import { pageRef, type PageTargetType } from "./page-ref";
@@ -24,7 +25,7 @@ import { pageRef, type PageTargetType } from "./page-ref";
 export function PageLinkView({
   node,
   editor,
-  updateAttributes,
+  getPos,
   deleteNode,
 }: NodeViewProps) {
   const targetType = (node.attrs.targetType as PageTargetType) ?? "document";
@@ -82,11 +83,24 @@ export function PageLinkView({
 
   // Keep the stale `label` fallback in step with the live title (used for export
   // and as the placeholder before the index loads), without it being canonical.
+  // This is a programmatic refresh, not a user edit, so write it through a
+  // transaction that is excluded from undo history AND flagged so autosave
+  // ignores it — otherwise merely opening a document with page links whose
+  // targets were renamed elsewhere would trigger a save (and pollute undo) with
+  // no user input. Only the editable instance owns the canonical label.
   useEffect(() => {
-    if (resolved?.title && resolved.title !== staleLabel) {
-      updateAttributes({ label: resolved.title });
-    }
-  }, [resolved, staleLabel, updateAttributes]);
+    if (!editor.isEditable) return;
+    if (!resolved?.title || resolved.title === staleLabel) return;
+    const pos = getPos();
+    if (typeof pos !== "number") return;
+    const { view } = editor;
+    view.dispatch(
+      view.state.tr
+        .setNodeAttribute(pos, "label", resolved.title)
+        .setMeta("addToHistory", false)
+        .setMeta(SKIP_AUTOSAVE_META, true),
+    );
+  }, [resolved, staleLabel, editor, getPos]);
 
   const navigate = () => {
     if (!resolved) return;

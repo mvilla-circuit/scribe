@@ -48,6 +48,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Desktop OAuth via a localhost loopback server: the same running app that
   // starts the flow also receives the redirect, so the PKCE verifier matches.
+  // Resolves only once the redirect has been received and the code exchanged;
+  // rejects (so the caller can surface a message) when the redirect carries no
+  // code or the exchange fails, instead of silently leaving the user stranded.
   const signInWithGoogle = async () => {
     const port = await start({
       ports: [OAUTH_PORT],
@@ -55,26 +58,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         "Sign-in complete. You can close this tab and return to Scribe.",
     });
 
-    const unlisten = await onUrl((url) => {
-      void (async () => {
-        try {
-          const code = new URL(url).searchParams.get("code");
-          if (code) {
-            const { error } = await supabase.auth.exchangeCodeForSession(code);
-            if (error) console.error("Code exchange failed", error);
-          }
-        } catch (err) {
-          console.error("Could not parse OAuth redirect", url, err);
-        } finally {
-          unlisten();
-          await cancel(port).catch(() => {
-            /* best-effort cleanup; ignore */
-          });
-        }
-      })();
-    });
+    let unlisten: (() => void) | null = null;
+    const cleanup = async () => {
+      unlisten?.();
+      unlisten = null;
+      await cancel(port).catch(() => {
+        /* best-effort cleanup; ignore */
+      });
+    };
 
     try {
+      const redirect = new Promise<void>((resolve, reject) => {
+        void onUrl((url) => {
+          void (async () => {
+            try {
+              const code = new URL(url).searchParams.get("code");
+              if (!code) {
+                throw new Error(
+                  "Sign-in didn't complete — no authorization code was returned.",
+                );
+              }
+              const { error } =
+                await supabase.auth.exchangeCodeForSession(code);
+              if (error) throw error;
+              resolve();
+            } catch (err) {
+              reject(
+                err instanceof Error
+                  ? err
+                  : new Error("Sign-in failed. Please try again."),
+              );
+            }
+          })();
+        }).then((un) => {
+          unlisten = un;
+        });
+      });
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
@@ -84,12 +104,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       if (error) throw error;
       if (data.url) await openUrl(data.url);
-    } catch (err) {
-      unlisten();
-      await cancel(port).catch(() => {
-        /* best-effort cleanup; ignore */
-      });
-      throw err;
+
+      await redirect;
+    } finally {
+      await cleanup();
     }
   };
 

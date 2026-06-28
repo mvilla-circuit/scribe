@@ -14,8 +14,10 @@ import {
   bookShowSubtitle,
   bookTheme,
   useBooks,
+  useDeleteBook,
   useRenameBook,
 } from "./books";
+import { pageIndexKey } from "./page-index";
 
 // Avoid pulling auth.tsx (and its Tauri plugin imports) into the test runtime;
 // the hooks under test don't depend on the session.
@@ -140,5 +142,28 @@ describe("useRenameBook", () => {
     expect(
       client.getQueryData<{ title: string }[]>(["books"])?.[0]?.title,
     ).toBe("Old");
+  });
+});
+
+describe("useDeleteBook", () => {
+  it("invalidates the cross-book page index on settle so link cards re-resolve", async () => {
+    server.use(
+      http.delete(BOOKS_URL, () => new HttpResponse(null, { status: 204 })),
+    );
+
+    const client = createTestQueryClient();
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+    client.setQueryData(["books"], [makeBook({ id: "b1" })]);
+
+    const { result } = renderHookWithQuery(() => useDeleteBook(), { client });
+    result.current.mutate({ id: "b1" });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    // The book's documents cascade-delete in the DB; the page index spans all
+    // books, so it must be invalidated or link cards keep stale targets.
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: pageIndexKey });
   });
 });

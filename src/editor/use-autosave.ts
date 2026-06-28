@@ -1,3 +1,4 @@
+import type { EditorEvents } from "@tiptap/react";
 import type { Editor } from "@tiptap/react";
 import { useEffect, useRef, useState } from "react";
 
@@ -5,6 +6,14 @@ import type { Json } from "@/lib/database.types";
 
 /** Coarse save status surfaced by the autosave indicator. */
 export type SaveState = "idle" | "saving" | "saved" | "error";
+
+/**
+ * Transaction meta flag for programmatic, non-user edits that must not count as
+ * a change worth saving (e.g. a page-link NodeView refreshing its cached label
+ * when the page index loads). Tag such transactions with
+ * `tr.setMeta(SKIP_AUTOSAVE_META, true)` so autosave ignores them.
+ */
+export const SKIP_AUTOSAVE_META = "skipAutosave";
 
 /**
  * `onPersist` may run synchronously or return a promise we can await to learn
@@ -88,7 +97,10 @@ export function useAutosave(
       );
     };
 
-    const handleUpdate = () => {
+    const handleUpdate = ({ transaction }: EditorEvents["update"]) => {
+      // Skip programmatic transactions that opt out of autosave so they don't
+      // trigger a network write (or a "saving" flicker) on document open.
+      if (transaction.getMeta(SKIP_AUTOSAVE_META)) return;
       pending.current = editor.getJSON() as Json;
       if (idleTimer.current) clearTimeout(idleTimer.current);
       setState("saving");

@@ -16,6 +16,7 @@ import {
   documentsKey,
   useDeleteDocument,
   useDocuments,
+  useEnsureTitlePage,
   useMoveDocument,
 } from "./documents";
 import { pageIndexKey } from "./page-index";
@@ -220,5 +221,30 @@ describe("useMoveDocument", () => {
 
     // onSettled keeps the cross-book page index fresh.
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: pageIndexKey });
+  });
+});
+
+describe("useEnsureTitlePage", () => {
+  it("retries creating the Title Page after a transient insert failure", async () => {
+    let inserts = 0;
+    server.use(
+      http.get(DOCUMENTS_URL, () => HttpResponse.json([])),
+      http.post(DOCUMENTS_URL, () => {
+        inserts += 1;
+        // First attempt fails (transient); the rollback removes the optimistic
+        // Title Page, so a correct implementation must retry on the next render.
+        return inserts === 1
+          ? new HttpResponse(null, { status: 500 })
+          : new HttpResponse(null, { status: 201 });
+      }),
+    );
+
+    renderHookWithQuery(() => {
+      useEnsureTitlePage("book-1");
+    });
+
+    await waitFor(() => {
+      expect(inserts).toBe(2);
+    });
   });
 });

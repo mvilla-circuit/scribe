@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 
 import { optimisticListHandlers } from "./optimistic-list";
 import { byPosition } from "./ordering";
+import { pageIndexKey } from "./page-index";
 
 /** A single book row from the `books` table. */
 export type Book = Tables<"books">;
@@ -68,6 +69,7 @@ function bookHandlers<V>(
   qc: ReturnType<typeof useQueryClient>,
   update: (prev: Book[], variables: V) => Book[],
   errorMessage: string,
+  onSettled?: () => void,
 ) {
   return optimisticListHandlers<Book, V>({
     qc,
@@ -75,6 +77,7 @@ function bookHandlers<V>(
     sort: byPosition,
     update,
     errorMessage,
+    onSettled,
   });
 }
 
@@ -220,10 +223,17 @@ export function useDeleteBook() {
         .eq("id", input.id);
       if (error) throw error;
     },
+    // Deleting a book cascade-deletes its documents in the DB. The cross-book
+    // page index spans every book, so invalidate it too (mirroring the document
+    // mutations) or page link cards keep resolving to the now-deleted pages.
     ...bookHandlers<{ id: string }>(
       qc,
       (prev, input) => prev.filter((b) => b.id !== input.id),
       "Couldn't delete book",
+      () => {
+        void qc.invalidateQueries({ queryKey: booksKey });
+        void qc.invalidateQueries({ queryKey: pageIndexKey });
+      },
     ),
   });
 }

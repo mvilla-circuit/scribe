@@ -529,12 +529,23 @@ export function useEnsureTitlePage(bookId: string | null) {
     if (documents.some((d) => d.is_title_page)) return;
     if (attempted.current.has(bookId)) return;
     attempted.current.add(bookId);
-    create({
-      id: crypto.randomUUID(),
-      title: "Title Page",
-      parent_document_id: null,
-      position: 0,
-      is_title_page: true,
-    });
+    create(
+      {
+        id: crypto.randomUUID(),
+        title: "Title Page",
+        parent_document_id: null,
+        position: 0,
+        is_title_page: true,
+      },
+      {
+        // A transient failure rolls the optimistic Title Page back out of the
+        // cache, so clear the guard to allow a retry on the next render/refetch.
+        // Without this, a single failed insert leaves the book with no Title
+        // Page for the rest of the session.
+        onError: () => {
+          attempted.current.delete(bookId);
+        },
+      },
+    );
   }, [bookId, ready, documents, create]);
 }
