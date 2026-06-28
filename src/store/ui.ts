@@ -127,9 +127,16 @@ export const useUIStore = create<UIState>()(
         expandedFolderIds: s.expandedFolderIds,
         expandedDocIds: s.expandedDocIds,
       }),
-      // Defensively sanitize any previously-stored blob so a corrupted or
-      // pre-v1 payload can never crash hydration.
-      migrate: (persistedState) => migrateUIState(persistedState),
+      // Defensively sanitize the persisted blob on *every* hydrate, not just on
+      // a version bump: `persist` only calls `migrate` when the stored version
+      // differs, so the coercion has to live in `merge` to actually run on a
+      // normal load. Without this a corrupted or tampered payload (e.g. a
+      // non-array `expandedFolderIds`) would reach consumers like `toggleIn` and
+      // crash on `arr.includes`.
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        ...migrateUIState(persistedState),
+      }),
     },
   ),
 );

@@ -104,7 +104,7 @@ describe("useProfile", () => {
 describe("useUpdateProfileFonts", () => {
   it("optimistically writes the fonts map and keeps it on success", async () => {
     server.use(
-      http.patch(PROFILE_URL, () => new HttpResponse(null, { status: 204 })),
+      http.post(PROFILE_URL, () => new HttpResponse(null, { status: 204 })),
     );
 
     const client = createTestQueryClient();
@@ -123,9 +123,32 @@ describe("useUpdateProfileFonts", () => {
     });
   });
 
+  it("seeds an optimistic profile row when none is cached yet", async () => {
+    server.use(
+      http.post(PROFILE_URL, () => new HttpResponse(null, { status: 204 })),
+    );
+
+    const client = createTestQueryClient();
+    // No profile row in the cache: the first-ever font change must still apply
+    // optimistically rather than no-op against a missing row.
+    client.setQueryData(["profile"], null);
+
+    const { result } = renderHookWithQuery(() => useUpdateProfileFonts(), {
+      client,
+    });
+    result.current.mutate({ text: "lora" });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    const seeded = client.getQueryData<Profile>(["profile"]);
+    expect(seeded?.id).toBe("user-1");
+    expect(seeded?.fonts).toEqual({ text: "lora" });
+  });
+
   it("rolls back the optimistic write when the server rejects it", async () => {
     server.use(
-      http.patch(PROFILE_URL, () => new HttpResponse(null, { status: 500 })),
+      http.post(PROFILE_URL, () => new HttpResponse(null, { status: 500 })),
     );
 
     const client = createTestQueryClient();

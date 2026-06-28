@@ -17,6 +17,12 @@ import { supabase } from "./supabase";
 // Supabase's Auth → URL Configuration → Redirect URLs as `http://localhost:1421`.
 const OAUTH_PORT = 1421;
 
+// How long to wait for the browser redirect before giving up. Without a bound,
+// abandoning the browser tab leaves `await redirect` pending forever, so the
+// `finally` cleanup never runs and the loopback server stays bound to the port
+// for the rest of the session (blocking any retry).
+const OAUTH_TIMEOUT_MS = 3 * 60_000;
+
 interface AuthContextValue {
   session: Session | null;
   loading: boolean;
@@ -80,6 +86,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const redirect = new Promise<void>((resolve, reject) => {
+        // Time-box the wait so an abandoned browser flow rejects (and the
+        // `finally` below frees the port) instead of hanging indefinitely.
+        const timer = setTimeout(() => {
+          reject(new Error("Sign-in timed out. Please try again."));
+        }, OAUTH_TIMEOUT_MS);
+        const succeed = () => {
+          clearTimeout(timer);
+          resolve();
+        };
+        const fail = (err: Error) => {
+          clearTimeout(timer);
+          reject(err);
+        };
         void onUrl((url) => {
           void (async () => {
             try {
@@ -92,9 +111,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const { error } =
                 await supabase.auth.exchangeCodeForSession(code);
               if (error) throw error;
-              resolve();
+              succeed();
             } catch (err) {
-              reject(
+              fail(
                 err instanceof Error
                   ? err
                   : new Error("Sign-in failed. Please try again."),

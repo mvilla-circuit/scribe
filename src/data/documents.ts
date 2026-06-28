@@ -168,7 +168,7 @@ export function useCreateDocument(bookId: string) {
       key,
       (prev, input) => [
         ...prev,
-        newDocumentRow(input, bookId, session?.user.id ?? ""),
+        newDocumentRow(input, bookId, requireUserId(session)),
       ],
       "Couldn't create page",
     ),
@@ -201,13 +201,10 @@ export function useDuplicateDocument(bookId: string) {
     ...documentHandlers<DuplicateDocumentInput>(
       qc,
       key,
-      (prev, input) => [
-        ...prev,
-        ...input.rows.map((r) => ({
-          ...r,
-          user_id: session?.user.id ?? "",
-        })),
-      ],
+      (prev, input) => {
+        const userId = requireUserId(session);
+        return [...prev, ...input.rows.map((r) => ({ ...r, user_id: userId }))];
+      },
       "Couldn't duplicate page",
     ),
   });

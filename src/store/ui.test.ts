@@ -145,3 +145,36 @@ describe("migrateUIState", () => {
     expect(migrateUIState([])).toEqual(defaults);
   });
 });
+
+describe("persist hydration", () => {
+  it("runs the sanitizer on rehydrate so a corrupted payload can't crash consumers", async () => {
+    // A version-matching but corrupted blob: `migrate` wouldn't fire (versions
+    // match), so without a sanitizing `merge` these bad values would load
+    // verbatim and `toggleFolderExpanded` would throw on `arr.includes`.
+    localStorage.setItem(
+      "scribe-ui",
+      JSON.stringify({
+        state: {
+          sidebarCollapsed: "yes",
+          sidebarWidth: "wide",
+          expandedFolderIds: "not-an-array",
+          expandedDocIds: null,
+        },
+        version: 1,
+      }),
+    );
+
+    await useUIStore.persist.rehydrate();
+
+    const state = useUIStore.getState();
+    expect(Array.isArray(state.expandedFolderIds)).toBe(true);
+    expect(Array.isArray(state.expandedDocIds)).toBe(true);
+    expect(typeof state.sidebarWidth).toBe("number");
+    expect(state.sidebarCollapsed).toBe(false);
+    expect(() => {
+      state.toggleFolderExpanded("f1");
+    }).not.toThrow();
+
+    localStorage.clear();
+  });
+});

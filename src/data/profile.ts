@@ -58,17 +58,37 @@ export function useUpdateProfileFonts() {
   const qc = useQueryClient();
   const { session } = useAuth();
   return useMutation({
+    // Upsert (not update): a brand-new user has no profile row yet, so a bare
+    // `update` would silently affect zero rows and the font choice would be
+    // lost. Upserting on the primary key inserts the row the first time and
+    // patches it thereafter.
     mutationFn: async (fonts: ProfileFonts) => {
       const userId = requireUserId(session);
       await execWrite(
-        supabase.from("profiles").update({ fonts: fonts }).eq("id", userId),
+        supabase.from("profiles").upsert({ id: userId, fonts: fonts as Json }),
       );
     },
     ...optimisticObjectHandlers<Profile, ProfileFonts>({
       qc,
       key: profileKey,
-      update: (prev, fonts) =>
-        prev ? { ...prev, fonts: fonts as Json } : prev,
+      update: (prev, fonts) => {
+        if (prev) return { ...prev, fonts: fonts as Json };
+        // No cached row yet (first-ever font change): mint an optimistic one so
+        // the reading surface restyles instantly. The settle-time refetch
+        // replaces it with the real row, so the defaulted columns are transient.
+        const userId = session?.user.id;
+        if (!userId) return prev;
+        const now = new Date().toISOString();
+        return {
+          id: userId,
+          fonts: fonts as Json,
+          default_font: null,
+          display_name: null,
+          theme: "system",
+          created_at: now,
+          updated_at: now,
+        };
+      },
       errorMessage: "Couldn't save fonts",
     }),
   });
