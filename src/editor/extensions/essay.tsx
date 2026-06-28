@@ -1,6 +1,7 @@
 import { mergeAttributes, Node } from "@tiptap/core";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 
+import { boolAttr, stringAttr } from "./data-attr";
 import { EssayView } from "./essay-view";
 
 // A long-form section block: a header (optional icon, a title, an optional
@@ -20,49 +21,15 @@ export const Essay = Node.create({
 
   addAttributes() {
     return {
-      title: {
-        default: "",
-        parseHTML: (el) => el.getAttribute("data-title") ?? "",
-        renderHTML: (attrs) =>
-          attrs.title ? { "data-title": attrs.title } : {},
-      },
-      titleItalic: {
-        default: false,
-        parseHTML: (el) => el.getAttribute("data-title-italic") === "true",
-        renderHTML: (attrs) =>
-          attrs.titleItalic ? { "data-title-italic": "true" } : {},
-      },
-      subtitle: {
-        default: "",
-        parseHTML: (el) => el.getAttribute("data-subtitle") ?? "",
-        renderHTML: (attrs) =>
-          attrs.subtitle ? { "data-subtitle": attrs.subtitle } : {},
-      },
+      title: stringAttr("title", { default: "" }),
+      titleItalic: boolAttr("titleItalic"),
+      subtitle: stringAttr("subtitle", { default: "" }),
       // Subtitle defaults to italic to preserve the essay's editorial look; the
       // writer can toggle it off (or the title on) with Cmd/Ctrl+I.
-      subtitleItalic: {
-        default: true,
-        parseHTML: (el) => el.getAttribute("data-subtitle-italic") !== "false",
-        renderHTML: (attrs) =>
-          attrs.subtitleItalic ? {} : { "data-subtitle-italic": "false" },
-      },
-      showSubtitle: {
-        default: false,
-        parseHTML: (el) => el.getAttribute("data-show-subtitle") === "true",
-        renderHTML: (attrs) =>
-          attrs.showSubtitle ? { "data-show-subtitle": "true" } : {},
-      },
-      icon: {
-        default: null,
-        parseHTML: (el) => el.getAttribute("data-icon"),
-        renderHTML: (attrs) => (attrs.icon ? { "data-icon": attrs.icon } : {}),
-      },
-      color: {
-        default: null,
-        parseHTML: (el) => el.getAttribute("data-color"),
-        renderHTML: (attrs) =>
-          attrs.color ? { "data-color": attrs.color } : {},
-      },
+      subtitleItalic: boolAttr("subtitleItalic", { default: true }),
+      showSubtitle: boolAttr("showSubtitle"),
+      icon: stringAttr("icon"),
+      color: stringAttr("color"),
     };
   },
 

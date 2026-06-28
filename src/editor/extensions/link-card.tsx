@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { isBareUrl, normalizeUrl } from "@/editor/link-preview";
 
+import { stringAttr } from "./data-attr";
 import { keepAsLink } from "./link-card-commands";
 import { LinkCardView } from "./link-card-view";
 
@@ -28,42 +29,12 @@ export const LinkCard = Node.create({
         renderHTML: (attrs) =>
           attrs.url ? { href: attrs.url, "data-url": attrs.url } : {},
       },
-      title: {
-        default: null,
-        parseHTML: (el) => el.getAttribute("data-title"),
-        renderHTML: (attrs) =>
-          attrs.title ? { "data-title": attrs.title } : {},
-      },
-      description: {
-        default: null,
-        parseHTML: (el) => el.getAttribute("data-description"),
-        renderHTML: (attrs) =>
-          attrs.description ? { "data-description": attrs.description } : {},
-      },
-      siteName: {
-        default: null,
-        parseHTML: (el) => el.getAttribute("data-site-name"),
-        renderHTML: (attrs) =>
-          attrs.siteName ? { "data-site-name": attrs.siteName } : {},
-      },
-      favicon: {
-        default: null,
-        parseHTML: (el) => el.getAttribute("data-favicon"),
-        renderHTML: (attrs) =>
-          attrs.favicon ? { "data-favicon": attrs.favicon } : {},
-      },
-      image: {
-        default: null,
-        parseHTML: (el) => el.getAttribute("data-image"),
-        renderHTML: (attrs) =>
-          attrs.image ? { "data-image": attrs.image } : {},
-      },
-      status: {
-        default: "ready",
-        parseHTML: (el) => el.getAttribute("data-status") ?? "ready",
-        renderHTML: (attrs) =>
-          attrs.status ? { "data-status": attrs.status } : {},
-      },
+      title: stringAttr("title"),
+      description: stringAttr("description"),
+      siteName: stringAttr("siteName"),
+      favicon: stringAttr("favicon"),
+      image: stringAttr("image"),
+      status: stringAttr("status", { default: "ready" }),
     };
   },
 

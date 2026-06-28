@@ -2,6 +2,7 @@ import { mergeAttributes, Node } from "@tiptap/core";
 import { Plugin } from "@tiptap/pm/state";
 import { type Editor, ReactNodeViewRenderer } from "@tiptap/react";
 
+import { stringAttr } from "./data-attr";
 import { PageLinkView } from "./page-link-view";
 import { pageRef, type PageTargetType } from "./page-ref";
 
@@ -21,23 +22,12 @@ export const PageLink = Node.create({
 
   addAttributes() {
     return {
-      targetType: {
+      targetType: stringAttr("targetType", {
         default: "document",
-        parseHTML: (el) => el.getAttribute("data-target-type") ?? "document",
-        renderHTML: (attrs) => ({ "data-target-type": attrs.targetType }),
-      },
-      targetId: {
-        default: null,
-        parseHTML: (el) => el.getAttribute("data-target-id"),
-        renderHTML: (attrs) =>
-          attrs.targetId ? { "data-target-id": attrs.targetId } : {},
-      },
-      label: {
-        default: null,
-        parseHTML: (el) => el.getAttribute("data-label"),
-        renderHTML: (attrs) =>
-          attrs.label ? { "data-label": attrs.label } : {},
-      },
+        always: true,
+      }),
+      targetId: stringAttr("targetId"),
+      label: stringAttr("label"),
     };
   },
 

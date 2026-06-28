@@ -1,6 +1,7 @@
 import { mergeAttributes, Node, wrappingInputRule } from "@tiptap/core";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 
+import { boolAttr, stringAttr } from "./data-attr";
 import { QuoteView } from "./quote-view";
 
 export type QuoteVariant = "pullquote" | "accentquote";
@@ -26,29 +27,13 @@ export const Quote = Node.create({
 
   addAttributes() {
     return {
-      variant: {
+      variant: stringAttr("variant", {
         default: DEFAULT_VARIANT,
-        parseHTML: (el) => el.getAttribute("data-variant") ?? DEFAULT_VARIANT,
-        renderHTML: (attrs) => ({ "data-variant": attrs.variant }),
-      },
-      color: {
-        default: null,
-        parseHTML: (el) => el.getAttribute("data-color"),
-        renderHTML: (attrs) =>
-          attrs.color ? { "data-color": attrs.color } : {},
-      },
-      attribution: {
-        default: "",
-        parseHTML: (el) => el.getAttribute("data-attribution") ?? "",
-        renderHTML: (attrs) =>
-          attrs.attribution ? { "data-attribution": attrs.attribution } : {},
-      },
-      showAttribution: {
-        default: false,
-        parseHTML: (el) => el.getAttribute("data-show-attribution") === "true",
-        renderHTML: (attrs) =>
-          attrs.showAttribution ? { "data-show-attribution": "true" } : {},
-      },
+        always: true,
+      }),
+      color: stringAttr("color"),
+      attribution: stringAttr("attribution", { default: "" }),
+      showAttribution: boolAttr("showAttribution"),
     };
   },
 
