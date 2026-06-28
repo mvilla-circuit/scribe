@@ -3,7 +3,7 @@ import { type NodeViewProps, NodeViewWrapper } from "@tiptap/react";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
-import { Tooltip } from "@/components/ui/tooltip";
+import { EditorIconButton } from "@/editor/editor-icon-button";
 import {
   CopyIcon,
   ExternalLinkIcon,
@@ -134,59 +134,33 @@ export function LinkCardView({
 
       {editable && (
         <div className="scribe-block-controls scribe-linkcard-controls">
-          <Ctrl label="Open in browser" onClick={open}>
+          <EditorIconButton label="Open in browser" onClick={open}>
             <ExternalLinkIcon size={14} />
-          </Ctrl>
-          <Ctrl label="Copy link" onClick={copy}>
+          </EditorIconButton>
+          <EditorIconButton label="Copy link" onClick={copy}>
             <CopyIcon size={14} />
-          </Ctrl>
-          <Ctrl label="Refresh preview" onClick={refresh}>
+          </EditorIconButton>
+          <EditorIconButton label="Refresh preview" onClick={refresh}>
             <RefreshIcon size={14} />
-          </Ctrl>
-          <Ctrl
+          </EditorIconButton>
+          <EditorIconButton
             label="Convert to link"
             onClick={() => {
               keepAsLink(editor, url);
             }}
           >
             <LinkIcon size={14} />
-          </Ctrl>
-          <Ctrl
+          </EditorIconButton>
+          <EditorIconButton
             label="Remove"
             onClick={() => {
               deleteNode();
             }}
           >
             <TrashIcon size={14} />
-          </Ctrl>
+          </EditorIconButton>
         </div>
       )}
     </NodeViewWrapper>
-  );
-}
-
-function Ctrl({
-  label,
-  onClick,
-  children,
-}: {
-  label: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <Tooltip content={label}>
-      <button
-        type="button"
-        aria-label={label}
-        onMouseDown={(e) => {
-          e.preventDefault();
-        }}
-        onClick={onClick}
-        className="scribe-block-btn"
-      >
-        {children}
-      </button>
-    </Tooltip>
   );
 }

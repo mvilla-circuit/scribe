@@ -3,8 +3,8 @@ import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
 
 import { DocumentIcon } from "@/components/ui/document-icon";
-import { Tooltip } from "@/components/ui/tooltip";
 import { useEditorBridge } from "@/editor/editor-bridge";
+import { EditorIconButton } from "@/editor/editor-icon-button";
 import {
   BookIcon,
   CopyIcon,
@@ -116,50 +116,24 @@ export function PageLinkView({
         <div className="scribe-block-controls scribe-pagelink-controls">
           {!notFound && (
             <>
-              <Ctrl label="Open page" onClick={navigate}>
+              <EditorIconButton label="Open page" onClick={navigate}>
                 <ExternalLinkIcon size={14} />
-              </Ctrl>
-              <Ctrl label="Copy page link" onClick={copyRef}>
+              </EditorIconButton>
+              <EditorIconButton label="Copy page link" onClick={copyRef}>
                 <CopyIcon size={14} />
-              </Ctrl>
+              </EditorIconButton>
             </>
           )}
-          <Ctrl
+          <EditorIconButton
             label="Remove"
             onClick={() => {
               deleteNode();
             }}
           >
             <TrashIcon size={14} />
-          </Ctrl>
+          </EditorIconButton>
         </div>
       )}
     </NodeViewWrapper>
-  );
-}
-
-function Ctrl({
-  label,
-  onClick,
-  children,
-}: {
-  label: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <Tooltip content={label}>
-      <button
-        type="button"
-        aria-label={label}
-        onMouseDown={(e) => {
-          e.preventDefault();
-        }}
-        onClick={onClick}
-        className="scribe-block-btn"
-      >
-        {children}
-      </button>
-    </Tooltip>
   );
 }
