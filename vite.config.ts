@@ -27,6 +27,32 @@ export default defineConfig({
   },
   server: { port: 1420, strictPort: true },
   clearScreen: false,
+  build: {
+    rollupOptions: {
+      output: {
+        // Split heavy vendor groups into their own chunks so the editor's
+        // TipTap/ProseMirror payload, the Radix UI primitives, and the data
+        // layer each cache and load independently of the app shell.
+        manualChunks: (id) => {
+          if (!id.includes("node_modules")) return undefined;
+          if (
+            id.includes("node_modules/@tiptap") ||
+            id.includes("node_modules/prosemirror-")
+          ) {
+            return "tiptap";
+          }
+          if (id.includes("node_modules/@radix-ui")) return "radix";
+          if (
+            id.includes("node_modules/@supabase") ||
+            id.includes("node_modules/@tanstack")
+          ) {
+            return "data";
+          }
+          return undefined;
+        },
+      },
+    },
+  },
   test: {
     // A single jsdom environment runs every tier (pure-logic, store, component,
     // and data-layer hooks). Vitest 4 removed `environmentMatchGlobs`, and a
