@@ -62,11 +62,20 @@ function handleRest(store: Record<string, Row[]>, route: Route): Promise<void> {
   switch (request.method()) {
     case "GET": {
       const bookId = eqParam(url, "book_id");
-      const result = bookId ? rows.filter((r) => r.book_id === bookId) : rows;
+      const id = eqParam(url, "id");
+      let result = rows;
+      if (bookId) result = result.filter((r) => r.book_id === bookId);
+      if (id) result = result.filter((r) => r.id === id);
+      // `.single()`/`.maybeSingle()` request a lone object via this Accept type;
+      // mirror PostgREST by returning the matching row (or null) rather than an
+      // array, so a single-row read resolves to the object the caller expects.
+      const wantsObject = (request.headers().accept ?? "").includes(
+        "application/vnd.pgrst.object+json",
+      );
       return route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify(result),
+        body: JSON.stringify(wantsObject ? (result[0] ?? null) : result),
       });
     }
     case "POST": {
