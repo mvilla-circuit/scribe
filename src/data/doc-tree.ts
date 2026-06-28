@@ -95,3 +95,26 @@ export function expandableDocIds(tree: DocTreeNode[]): string[] {
 export function descendantCount(documents: Document[], id: string): number {
   return collectSubtree(documents, id, (d) => d.parent_document_id).size - 1;
 }
+
+/**
+ * The ancestor chain of a document, ordered root-first, for the page
+ * breadcrumb. Stops at (and excludes) the book's title page, skips a missing
+ * parent, and guards against cycles so a corrupt parent link can't loop.
+ */
+export function documentAncestors(
+  documents: Document[],
+  document: Document,
+): Document[] {
+  const byId = new Map(documents.map((d) => [d.id, d]));
+  const chain: Document[] = [];
+  let parentId = document.parent_document_id;
+  const guard = new Set<string>();
+  while (parentId && !guard.has(parentId)) {
+    guard.add(parentId);
+    const parent = byId.get(parentId);
+    if (!parent || parent.is_title_page) break;
+    chain.unshift(parent);
+    parentId = parent.parent_document_id;
+  }
+  return chain;
+}

@@ -5,6 +5,7 @@ import { makeDocument } from "@/test/fixtures";
 import {
   buildDocTree,
   descendantCount,
+  documentAncestors,
   expandableDocIds,
   flattenTocExpanded,
 } from "./doc-tree";
@@ -78,5 +79,43 @@ describe("descendantCount", () => {
     ];
     expect(descendantCount(docs, "ch1")).toBe(2);
     expect(descendantCount(docs, "ch2")).toBe(0);
+  });
+});
+
+describe("documentAncestors", () => {
+  it("returns an empty chain for a top-level document", () => {
+    const doc = makeDocument({ id: "ch1", parent_document_id: null });
+    expect(documentAncestors([doc], doc)).toEqual([]);
+  });
+
+  it("walks the parent chain root-first", () => {
+    const root = makeDocument({ id: "root" });
+    const mid = makeDocument({ id: "mid", parent_document_id: "root" });
+    const leaf = makeDocument({ id: "leaf", parent_document_id: "mid" });
+    expect(documentAncestors([leaf, mid, root], leaf).map((d) => d.id)).toEqual(
+      ["root", "mid"],
+    );
+  });
+
+  it("stops at (and excludes) the title page", () => {
+    const title = makeDocument({ id: "title", is_title_page: true });
+    const root = makeDocument({ id: "root", parent_document_id: "title" });
+    const leaf = makeDocument({ id: "leaf", parent_document_id: "root" });
+    expect(
+      documentAncestors([title, root, leaf], leaf).map((d) => d.id),
+    ).toEqual(["root"]);
+  });
+
+  it("stops when a parent link is missing", () => {
+    const leaf = makeDocument({ id: "leaf", parent_document_id: "gone" });
+    expect(documentAncestors([leaf], leaf)).toEqual([]);
+  });
+
+  it("does not loop on a cyclic parent chain", () => {
+    const a = makeDocument({ id: "a", parent_document_id: "b" });
+    const b = makeDocument({ id: "b", parent_document_id: "a" });
+    // Terminates via the cycle guard rather than hanging (it unshifts b then a
+    // before re-encountering b and stopping).
+    expect(documentAncestors([a, b], a).map((d) => d.id)).toEqual(["a", "b"]);
   });
 });

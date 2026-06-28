@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import { BannerControl } from "@/components/ui/banner-control";
 import { SubtitleToggle } from "@/components/ui/subtitle-toggle";
@@ -24,6 +24,7 @@ import { useScopedFonts } from "@/fonts/use-scoped-fonts";
 import { cn, formatDateTime, formatRelativeTime } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
 
+import { DocumentBreadcrumb } from "./document-breadcrumb";
 import { EditableText, type EditableTextHandle } from "./editable-text";
 import { EditorBridgeHost } from "./editor-bridge-host";
 import { FontControl } from "./font-control";
@@ -52,21 +53,6 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
   const editorRef = useRef<EditorHandle>(null);
   const titleRef = useRef<EditableTextHandle>(null);
   const proseContainerRef = useRef<HTMLDivElement>(null);
-
-  const ancestors = useMemo(() => {
-    const byId = new Map(documents.map((d) => [d.id, d]));
-    const chain: Document[] = [];
-    let parentId = document.parent_document_id;
-    const guard = new Set<string>();
-    while (parentId && !guard.has(parentId)) {
-      guard.add(parentId);
-      const parent = byId.get(parentId);
-      if (!parent || parent.is_title_page) break;
-      chain.unshift(parent);
-      parentId = parent.parent_document_id;
-    }
-    return chain;
-  }, [documents, document]);
 
   const showOutline = document.show_outline && headings.length > 0;
 
@@ -132,33 +118,12 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
         data-tauri-drag-region
         className="sticky top-0 z-20 flex items-center gap-1 bg-bg px-8 py-3 text-sm text-muted"
       >
-        <button
-          type="button"
-          onClick={() => {
-            setActiveDoc(null);
-          }}
-          className="rounded-sm px-1 outline-none hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {book.title}
-        </button>
-        {ancestors.map((parent) => (
-          <span key={parent.id} className="flex items-center gap-1">
-            <BreadcrumbSep />
-            <button
-              type="button"
-              onClick={() => {
-                setActiveDoc(parent.id);
-              }}
-              className="max-w-[16ch] truncate rounded-sm px-1 outline-none hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {parent.title || "Untitled"}
-            </button>
-          </span>
-        ))}
-        <BreadcrumbSep />
-        <span className="max-w-[20ch] truncate px-1 text-text">
-          {document.title || "Untitled"}
-        </span>
+        <DocumentBreadcrumb
+          book={book}
+          document={document}
+          documents={documents}
+          onNavigate={setActiveDoc}
+        />
         <span className="ml-auto flex items-center gap-1 pl-3">
           <span className="mr-2">
             <SaveStatus state={saveState} />
@@ -344,8 +309,4 @@ function PageMeta({ document }: { document: Document }) {
       </Tooltip>
     </p>
   );
-}
-
-function BreadcrumbSep() {
-  return <span className="select-none text-muted/50">/</span>;
 }
