@@ -1,6 +1,7 @@
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-
+import {
+  rowActivationHandlers,
+  useSortableRow,
+} from "@/components/tree/row-interactions";
 import { DocumentIcon } from "@/components/ui/document-icon";
 import { InlineRename } from "@/components/ui/inline-rename";
 import {
@@ -58,23 +59,19 @@ export function TreeRow({
   onDelete,
   onNewBookInside,
 }: TreeRowProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: node.id });
-
-  const style: React.CSSProperties = {
-    transform: CSS.Translate.toString(transform),
-    transition,
-  };
+  const { setNodeRef, style, dragHandleProps, isDragging } = useSortableRow(
+    node.id,
+  );
 
   const child = node.child;
   const isFolder = child.kind === "folder";
   const label = child.kind === "folder" ? child.folder.name : child.book.title;
+
+  const activation = rowActivationHandlers({
+    editing,
+    onActivate: isFolder ? onToggleExpand : onSelectBook,
+    onStartRename,
+  });
 
   const icon = (
     <span
@@ -141,7 +138,7 @@ export function TreeRow({
     <SidebarRow
       setNodeRef={setNodeRef}
       style={style}
-      dragHandleProps={{ ...attributes, ...listeners }}
+      dragHandleProps={dragHandleProps}
       isDragging={isDragging}
       depth={node.depth}
       projectionDepth={projectionDepth}
@@ -151,26 +148,7 @@ export function TreeRow({
       ariaSelected={!isFolder ? selected : undefined}
       icon={icon}
       actions={actions}
-      onClick={() => {
-        if (editing) return;
-        if (isFolder) onToggleExpand();
-        else onSelectBook();
-      }}
-      onDoubleClick={(e) => {
-        e.stopPropagation();
-        if (!editing) onStartRename();
-      }}
-      onKeyDown={(e) => {
-        if (editing) return;
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          if (isFolder) onToggleExpand();
-          else onSelectBook();
-        } else if (e.key === "F2") {
-          e.preventDefault();
-          onStartRename();
-        }
-      }}
+      {...activation}
     >
       {labelNode}
     </SidebarRow>

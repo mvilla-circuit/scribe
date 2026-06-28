@@ -1,15 +1,6 @@
-import {
-  closestCenter,
-  DndContext,
-  DragOverlay,
-  MeasuringStrategy,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
 import { type ReactNode, useMemo, useState } from "react";
 
+import { TreeDndContainer } from "@/components/tree/tree-dnd-container";
 import { useTreeDnd } from "@/components/tree/use-tree-dnd";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -304,28 +295,16 @@ export function SidebarTree() {
             }}
           />
         ) : (
-          <DndContext
+          <TreeDndContainer
             sensors={sensors}
-            collisionDetection={closestCenter}
-            measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
-            {...handlers}
+            dndHandlers={handlers}
+            items={visibleNodes.map((n) => n.id)}
+            ariaLabel="Books and folders"
+            className="gap-1.5"
+            overlay={activeNode ? <DragRowOverlay node={activeNode} /> : null}
           >
-            <SortableContext
-              items={visibleNodes.map((n) => n.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div
-                role="tree"
-                aria-label="Books and folders"
-                className="flex flex-col gap-1.5"
-              >
-                {treeElements}
-              </div>
-            </SortableContext>
-            <DragOverlay dropAnimation={null}>
-              {activeNode ? <DragRowOverlay node={activeNode} /> : null}
-            </DragOverlay>
-          </DndContext>
+            {treeElements}
+          </TreeDndContainer>
         )}
       </div>
 

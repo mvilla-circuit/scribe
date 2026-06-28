@@ -1,6 +1,3 @@
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-
 import {
   DuplicateIcon,
   PencilIcon,
@@ -11,6 +8,10 @@ import {
   SidebarRow,
   SidebarRowOverlay,
 } from "@/components/sidebar/sidebar-row";
+import {
+  rowActivationHandlers,
+  useSortableRow,
+} from "@/components/tree/row-interactions";
 import { DocumentIcon } from "@/components/ui/document-icon";
 import { InlineRename } from "@/components/ui/inline-rename";
 import {
@@ -69,21 +70,17 @@ export function OutlineRow({
   onDuplicate,
   onNewChild,
 }: OutlineRowProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: node.id });
-
-  const style: React.CSSProperties = {
-    transform: CSS.Translate.toString(transform),
-    transition,
-  };
+  const { setNodeRef, style, dragHandleProps, isDragging } = useSortableRow(
+    node.id,
+  );
 
   const label = node.document.title || "Untitled";
+
+  const activation = rowActivationHandlers({
+    editing,
+    onActivate: onSelect,
+    onStartRename,
+  });
 
   // Always show the page's icon; for rows with children, reveal the
   // expand/collapse chevron over it on hover or focus (the icon fades out so the
@@ -189,7 +186,7 @@ export function OutlineRow({
     <SidebarRow
       setNodeRef={setNodeRef}
       style={style}
-      dragHandleProps={{ ...attributes, ...listeners }}
+      dragHandleProps={dragHandleProps}
       isDragging={isDragging}
       depth={node.depth}
       projectionDepth={projectionDepth}
@@ -199,23 +196,7 @@ export function OutlineRow({
       ariaSelected={selected}
       icon={icon}
       actions={actions}
-      onClick={() => {
-        if (!editing) onSelect();
-      }}
-      onDoubleClick={(e) => {
-        e.stopPropagation();
-        if (!editing) onStartRename();
-      }}
-      onKeyDown={(e) => {
-        if (editing) return;
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onSelect();
-        } else if (e.key === "F2") {
-          e.preventDefault();
-          onStartRename();
-        }
-      }}
+      {...activation}
     >
       {labelNode}
     </SidebarRow>

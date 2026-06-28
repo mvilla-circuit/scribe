@@ -1,13 +1,3 @@
-import {
-  closestCenter,
-  DndContext,
-  DragOverlay,
-  MeasuringStrategy,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
 import { useMemo, useState } from "react";
 
 import { BookIcon } from "@/components/sidebar/icons";
@@ -17,6 +7,7 @@ import {
   sidebarRowPadding,
 } from "@/components/sidebar/sidebar-row";
 import { TreeSkeleton } from "@/components/sidebar/tree-skeleton";
+import { TreeDndContainer } from "@/components/tree/tree-dnd-container";
 import { useTreeDnd } from "@/components/tree/use-tree-dnd";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DocumentIcon } from "@/components/ui/document-icon";
@@ -224,61 +215,51 @@ export function OutlinePanel({ book }: { book: Book }) {
             Add your first page
           </button>
         ) : (
-          <DndContext
+          <TreeDndContainer
             sensors={sensors}
-            collisionDetection={closestCenter}
-            measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
-            {...handlers}
+            dndHandlers={handlers}
+            items={visibleNodes.map((n) => n.id)}
+            ariaLabel="Document outline"
+            className={SIDEBAR_ROW_GAP}
+            overlay={
+              activeNode ? <OutlineDragOverlay node={activeNode} /> : null
+            }
           >
-            <SortableContext
-              items={visibleNodes.map((n) => n.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div
-                role="tree"
-                aria-label="Document outline"
-                className={cn("flex flex-col", SIDEBAR_ROW_GAP)}
-              >
-                {visibleNodes.map((node) => (
-                  <OutlineRow
-                    key={node.id}
-                    node={node}
-                    selected={node.id === activeDocId}
-                    editing={editingId === node.id}
-                    expanded={expanded.has(node.id)}
-                    projectionDepth={projectionDepthFor(node.id)}
-                    onToggleExpand={() => {
-                      toggleDocExpanded(node.id);
-                    }}
-                    onSelect={() => {
-                      setActiveDoc(node.id);
-                    }}
-                    onStartRename={() => {
-                      setEditingId(node.id);
-                    }}
-                    onCommitRename={(value) => {
-                      commitRename(node, value);
-                    }}
-                    onCancelRename={() => {
-                      setEditingId(null);
-                    }}
-                    onDelete={() => {
-                      requestDelete(node);
-                    }}
-                    onDuplicate={() => {
-                      handleDuplicate(node);
-                    }}
-                    onNewChild={() => {
-                      handleCreate(node.id);
-                    }}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-            <DragOverlay dropAnimation={null}>
-              {activeNode ? <OutlineDragOverlay node={activeNode} /> : null}
-            </DragOverlay>
-          </DndContext>
+            {visibleNodes.map((node) => (
+              <OutlineRow
+                key={node.id}
+                node={node}
+                selected={node.id === activeDocId}
+                editing={editingId === node.id}
+                expanded={expanded.has(node.id)}
+                projectionDepth={projectionDepthFor(node.id)}
+                onToggleExpand={() => {
+                  toggleDocExpanded(node.id);
+                }}
+                onSelect={() => {
+                  setActiveDoc(node.id);
+                }}
+                onStartRename={() => {
+                  setEditingId(node.id);
+                }}
+                onCommitRename={(value) => {
+                  commitRename(node, value);
+                }}
+                onCancelRename={() => {
+                  setEditingId(null);
+                }}
+                onDelete={() => {
+                  requestDelete(node);
+                }}
+                onDuplicate={() => {
+                  handleDuplicate(node);
+                }}
+                onNewChild={() => {
+                  handleCreate(node.id);
+                }}
+              />
+            ))}
+          </TreeDndContainer>
         )}
       </div>
 
