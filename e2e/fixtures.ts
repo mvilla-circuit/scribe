@@ -1,4 +1,4 @@
-import { expect, type Page, test as base } from "@playwright/test";
+import { expect, type Page, type Route, test as base } from "@playwright/test";
 
 // The localStorage key the Supabase client persists its session under, derived
 // from the dummy VITE_SUPABASE_URL (`http://supabase.test`). Confirmed against
@@ -27,18 +27,93 @@ function fakeSession(): string {
   });
 }
 
-// Adds an `authedPage`: a page that boots straight into the signed-in app by
-// seeding a session into localStorage and stubbing every Supabase REST call
-// with an empty result (no real backend required).
-export const test = base.extend<{ authedPage: Page }>({
-  authedPage: async ({ page }, use) => {
-    await page.route("**/rest/v1/**", (route) =>
-      route.fulfill({
+type Row = Record<string, unknown>;
+
+/** Rows seeded into the in-memory Supabase REST stand-in, keyed by table. */
+export interface SeedData {
+  books: Row[];
+  folders: Row[];
+  documents: Row[];
+}
+
+const EMPTY_SEED: SeedData = { books: [], folders: [], documents: [] };
+
+// PostgREST encodes filters as `column=eq.<value>`; pull the value back out.
+function eqParam(url: URL, key: string): string | null {
+  const raw = url.searchParams.get(key);
+  return raw?.startsWith("eq.") ? raw.slice(3) : null;
+}
+
+function parseRows(raw: string | null): Row[] {
+  if (!raw) return [];
+  const parsed: unknown = JSON.parse(raw);
+  return Array.isArray(parsed) ? (parsed as Row[]) : [parsed as Row];
+}
+
+// Backs every `**/rest/v1/**` call against a mutable per-test store, so a
+// created row survives the optimistic mutation's settle-time refetch (which
+// would otherwise re-read the original seed and drop it).
+function handleRest(store: Record<string, Row[]>, route: Route): Promise<void> {
+  const request = route.request();
+  const url = new URL(request.url());
+  const table = url.pathname.split("/rest/v1/")[1]?.split("/")[0] ?? "";
+  const rows = (store[table] ??= []);
+
+  switch (request.method()) {
+    case "GET": {
+      const bookId = eqParam(url, "book_id");
+      const result = bookId ? rows.filter((r) => r.book_id === bookId) : rows;
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(result),
+      });
+    }
+    case "POST": {
+      rows.push(...parseRows(request.postData()));
+      // Inserts use `Prefer: return=minimal`, so an empty body is enough.
+      return route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: "[]",
+      });
+    }
+    case "PATCH": {
+      const id = eqParam(url, "id");
+      const patch = parseRows(request.postData())[0] ?? {};
+      for (const r of rows) {
+        if (!id || r.id === id) Object.assign(r, patch);
+      }
+      return route.fulfill({ status: 204, body: "" });
+    }
+    case "DELETE": {
+      const id = eqParam(url, "id");
+      store[table] = id ? rows.filter((r) => r.id !== id) : [];
+      return route.fulfill({ status: 204, body: "" });
+    }
+    default:
+      return route.fulfill({
         status: 200,
         contentType: "application/json",
         body: "[]",
-      }),
-    );
+      });
+  }
+}
+
+// `authedPage` boots straight into the signed-in app: it seeds a session into
+// localStorage and routes Supabase REST through the in-memory store above.
+// Override `seed` per test (via `test.use({ seed: ... })`) to start with books,
+// folders, or documents already present.
+export const test = base.extend<{ seed: SeedData; authedPage: Page }>({
+  seed: [EMPTY_SEED, { option: true }],
+  authedPage: async ({ page, seed }, use) => {
+    const store: Record<string, Row[]> = {
+      books: [...seed.books],
+      folders: [...seed.folders],
+      documents: [...seed.documents],
+    };
+
+    await page.route("**/rest/v1/**", (route) => handleRest(store, route));
     await page.addInitScript(
       ([key, value]) => {
         window.localStorage.setItem(key, value);

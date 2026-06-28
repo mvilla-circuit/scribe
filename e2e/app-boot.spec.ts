@@ -5,9 +5,10 @@ test.describe("signed in", () => {
     await authedPage.goto("/");
 
     // The main empty state renders its primary actions regardless of how the
-    // (stubbed) data requests resolve.
+    // (stubbed) data requests resolve. The sidebar's empty state also offers a
+    // "New book" button, so scope to the main section.
     await expect(
-      authedPage.getByRole("button", { name: "New book" }),
+      authedPage.locator("section").getByRole("button", { name: "New book" }),
     ).toBeVisible();
     await expect(
       authedPage.getByText(/create your first book to start writing/i),

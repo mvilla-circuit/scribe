@@ -10,7 +10,17 @@
       "node"
     ]
   },
-  "include": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/test"],
+  /* The CSS custom-property augmentation (declare module "react") lives in a
+     standalone .d.ts that the app project picks up via its "src" glob. Include
+     it here too so components pulled in transitively by a test (e.g. the editor
+     extensions imported through buildExtensions) still see `--foo` inline
+     styles as valid CSSProperties. */
+  "include": [
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/test",
+    "src/css-custom-properties.d.ts"
+  ],
   /* Reset the inherited app-project exclude, which filters out exactly these
      test files. */
   "exclude": []

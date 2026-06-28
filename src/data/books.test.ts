@@ -9,7 +9,13 @@ import {
   renderHookWithQuery,
 } from "@/test/render-with-query";
 
-import { useBooks, useRenameBook } from "./books";
+import {
+  bookFontOverrides,
+  bookShowSubtitle,
+  bookTheme,
+  useBooks,
+  useRenameBook,
+} from "./books";
 
 // Avoid pulling auth.tsx (and its Tauri plugin imports) into the test runtime;
 // the hooks under test don't depend on the session.
@@ -19,6 +25,51 @@ vi.mock("@/lib/auth", () => ({
 vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 
 const BOOKS_URL = "http://supabase.test/rest/v1/books";
+
+describe("bookTheme", () => {
+  it("returns the stored theme object", () => {
+    const book = makeBook({ theme: { showSubtitle: true } });
+    expect(bookTheme(book)).toEqual({ showSubtitle: true });
+  });
+
+  it("falls back to an empty object for null, arrays, and non-objects", () => {
+    expect(bookTheme(makeBook({ theme: null }))).toEqual({});
+    expect(bookTheme(makeBook({ theme: ["x"] }))).toEqual({});
+  });
+});
+
+describe("bookFontOverrides", () => {
+  it("returns the theme's font map when present", () => {
+    const book = makeBook({ theme: { fonts: { display: "lora" } } });
+    expect(bookFontOverrides(book)).toEqual({ display: "lora" });
+  });
+
+  it("falls back to an empty map when fonts are unset or malformed", () => {
+    expect(bookFontOverrides(makeBook({ theme: {} }))).toEqual({});
+    expect(bookFontOverrides(makeBook({ theme: { fonts: ["lora"] } }))).toEqual(
+      {},
+    );
+  });
+});
+
+describe("bookShowSubtitle", () => {
+  it("honors an explicit boolean flag", () => {
+    expect(bookShowSubtitle(makeBook({ theme: { showSubtitle: true } }))).toBe(
+      true,
+    );
+    expect(
+      bookShowSubtitle(
+        makeBook({ subtitle: "Has subtitle", theme: { showSubtitle: false } }),
+      ),
+    ).toBe(false);
+  });
+
+  it("defaults to true only when a non-empty subtitle exists", () => {
+    expect(bookShowSubtitle(makeBook({ subtitle: "A subtitle" }))).toBe(true);
+    expect(bookShowSubtitle(makeBook({ subtitle: "   " }))).toBe(false);
+    expect(bookShowSubtitle(makeBook({ subtitle: null }))).toBe(false);
+  });
+});
 
 describe("useBooks", () => {
   it("returns the user's books sorted by position", async () => {
