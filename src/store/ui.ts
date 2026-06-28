@@ -26,6 +26,16 @@ interface UIState {
 const clampWidth = (width: number) =>
   Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, width));
 
+// Add `id` if absent, otherwise remove it — the "toggle membership" idiom shared
+// by both expansion sets.
+const toggleIn = (arr: string[], id: string): string[] =>
+  arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id];
+
+// Force `id` present (`on`) or absent, idempotently — the "set membership" idiom
+// shared by both expansion sets.
+const setIn = (arr: string[], id: string, on: boolean): string[] =>
+  on ? (arr.includes(id) ? arr : [...arr, id]) : arr.filter((x) => x !== id);
+
 // The slice of UIState persisted under `scribe-ui` (see `partialize` below).
 interface PersistedUIState {
   sidebarCollapsed: boolean;
@@ -94,32 +104,16 @@ export const useUIStore = create<UIState>()(
         ),
       setActiveDoc: (id) => set({ activeDocId: id }),
       toggleFolderExpanded: (id) =>
-        set((s) => ({
-          expandedFolderIds: s.expandedFolderIds.includes(id)
-            ? s.expandedFolderIds.filter((x) => x !== id)
-            : [...s.expandedFolderIds, id],
-        })),
+        set((s) => ({ expandedFolderIds: toggleIn(s.expandedFolderIds, id) })),
       setFolderExpanded: (id, expanded) =>
         set((s) => ({
-          expandedFolderIds: expanded
-            ? s.expandedFolderIds.includes(id)
-              ? s.expandedFolderIds
-              : [...s.expandedFolderIds, id]
-            : s.expandedFolderIds.filter((x) => x !== id),
+          expandedFolderIds: setIn(s.expandedFolderIds, id, expanded),
         })),
       toggleDocExpanded: (id) =>
-        set((s) => ({
-          expandedDocIds: s.expandedDocIds.includes(id)
-            ? s.expandedDocIds.filter((x) => x !== id)
-            : [...s.expandedDocIds, id],
-        })),
+        set((s) => ({ expandedDocIds: toggleIn(s.expandedDocIds, id) })),
       setDocExpanded: (id, expanded) =>
         set((s) => ({
-          expandedDocIds: expanded
-            ? s.expandedDocIds.includes(id)
-              ? s.expandedDocIds
-              : [...s.expandedDocIds, id]
-            : s.expandedDocIds.filter((x) => x !== id),
+          expandedDocIds: setIn(s.expandedDocIds, id, expanded),
         })),
     }),
     {

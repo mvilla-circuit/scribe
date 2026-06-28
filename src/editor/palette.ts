@@ -40,66 +40,66 @@ export const TEXT_COLORS: Swatch[] = [
   { name: "Ink", value: "var(--swatch-ink)" },
 ];
 
-// Translucent washes for highlights — alpha keeps contrast in light and dark.
-// Same fourteen-hue order as TEXT_COLORS; "Ink" again defers to a theme-aware
-// variable so the darkest band inverts to a light wash in the dark theme.
-export const HIGHLIGHT_COLORS: Swatch[] = [
-  { name: "Mist", value: "rgba(150, 158, 150, 0.28)" },
-  { name: "Honey", value: "rgba(214, 178, 110, 0.32)" },
-  { name: "Peach", value: "rgba(212, 160, 120, 0.30)" },
-  { name: "Tan", value: "rgba(168, 140, 108, 0.30)" },
-  { name: "Rose", value: "rgba(200, 142, 134, 0.30)" },
-  { name: "Blush", value: "rgba(206, 150, 178, 0.30)" },
-  { name: "Lilac", value: "rgba(196, 150, 206, 0.30)" },
-  { name: "Plum", value: "rgba(150, 112, 196, 0.30)" },
-  { name: "Sky", value: "rgba(120, 178, 210, 0.30)" },
-  { name: "Indigo", value: "rgba(96, 120, 198, 0.30)" },
-  { name: "Teal", value: "rgba(110, 168, 160, 0.30)" },
-  { name: "Sage", value: "rgba(150, 168, 124, 0.30)" },
-  { name: "Forest", value: "rgba(118, 158, 114, 0.30)" },
-  { name: "Ink", value: "var(--swatch-ink-wash)" },
+// The thirteen translucent "wash" hues shared by the highlight, callout, and
+// table palettes. Only the rgb triples and the hue order live here — each
+// surface differs solely in alpha, so it derives its own palette through
+// `washPalette` rather than re-typing the colors. This is a distinct family
+// from the solid `TEXT_COLORS`: the same calm sweep, washed rather than solid.
+const WASH_HUES: readonly { name: string; rgb: string }[] = [
+  { name: "Mist", rgb: "150, 158, 150" },
+  { name: "Honey", rgb: "214, 178, 110" },
+  { name: "Peach", rgb: "212, 160, 120" },
+  { name: "Tan", rgb: "168, 140, 108" },
+  { name: "Rose", rgb: "200, 142, 134" },
+  { name: "Blush", rgb: "206, 150, 178" },
+  { name: "Lilac", rgb: "196, 150, 206" },
+  { name: "Plum", rgb: "150, 112, 196" },
+  { name: "Sky", rgb: "120, 178, 210" },
+  { name: "Indigo", rgb: "96, 120, 198" },
+  { name: "Teal", rgb: "110, 168, 160" },
+  { name: "Sage", rgb: "150, 168, 124" },
+  { name: "Forest", rgb: "118, 158, 114" },
 ];
+
+// Builds a translucent wash palette from `WASH_HUES`: every hue sits at `base`
+// alpha, with the neutral "Mist" nudged down and the warm "Honey" nudged up by
+// `spread` so the sweep keeps its gentle warm-to-cool balance. Closes on a
+// theme-aware Ink token that inverts to a light wash in the dark theme.
+function washPalette(base: number, spread: number, ink: string): Swatch[] {
+  const alphaFor = (name: string) =>
+    name === "Mist" ? base - spread : name === "Honey" ? base + spread : base;
+  return [
+    ...WASH_HUES.map((hue) => ({
+      name: hue.name,
+      value: `rgba(${hue.rgb}, ${alphaFor(hue.name).toFixed(2)})`,
+    })),
+    { name: "Ink", value: ink },
+  ];
+}
+
+// Translucent washes for highlights — alpha keeps contrast in light and dark.
+// Same fourteen-hue order as TEXT_COLORS; "Ink" defers to a theme-aware variable
+// so the darkest band inverts to a light wash in the dark theme.
+export const HIGHLIGHT_COLORS: Swatch[] = washPalette(
+  0.3,
+  0.02,
+  "var(--swatch-ink-wash)",
+);
 
 // Accent tones for quote blocks. A single solid base hue is stored on the node;
 // each quote variant derives its own intensity from it via `color-mix` in CSS
-// (a faint panel wash, a stronger rule, a soft pull-quote glyph). These reuse
-// the solid Morandi `TEXT_COLORS` so quotes stay in the same restrained family.
-export const QUOTE_ACCENTS: Swatch[] = [
-  { name: "Stone", value: "#8c857c" },
-  { name: "Honey", value: "#b0924f" },
-  { name: "Terracotta", value: "#b07a5c" },
-  { name: "Umber", value: "#8a6e57" },
-  { name: "Clay", value: "#b27f78" },
-  { name: "Rosewood", value: "#b6829a" },
-  { name: "Mauve", value: "#a47db2" },
-  { name: "Plum", value: "#6f5499" },
-  { name: "Sky", value: "#6ba6c8" },
-  { name: "Dusk", value: "#5a6cb0" },
-  { name: "Eucalyptus", value: "#4e8a84" },
-  { name: "Sage", value: "#84926d" },
-  { name: "Fern", value: "#5f7d5b" },
-  { name: "Ink", value: "var(--swatch-ink)" },
-];
+// (a faint panel wash, a stronger rule, a soft pull-quote glyph). Quotes reuse
+// the solid Morandi `TEXT_COLORS` so they stay in the same restrained family.
+export const QUOTE_ACCENTS: Swatch[] = [...TEXT_COLORS];
 
 // Softer washes for callout block backgrounds. A callout tints a whole block,
 // so its fill is lighter than an inline highlight band — enough to set the box
 // apart from the page without ever fighting the text inside it (light or dark).
-export const CALLOUT_COLORS: Swatch[] = [
-  { name: "Mist", value: "rgba(150, 158, 150, 0.15)" },
-  { name: "Honey", value: "rgba(214, 178, 110, 0.17)" },
-  { name: "Peach", value: "rgba(212, 160, 120, 0.16)" },
-  { name: "Tan", value: "rgba(168, 140, 108, 0.16)" },
-  { name: "Rose", value: "rgba(200, 142, 134, 0.16)" },
-  { name: "Blush", value: "rgba(206, 150, 178, 0.16)" },
-  { name: "Lilac", value: "rgba(196, 150, 206, 0.16)" },
-  { name: "Plum", value: "rgba(150, 112, 196, 0.16)" },
-  { name: "Sky", value: "rgba(120, 178, 210, 0.16)" },
-  { name: "Indigo", value: "rgba(96, 120, 198, 0.16)" },
-  { name: "Teal", value: "rgba(110, 168, 160, 0.16)" },
-  { name: "Sage", value: "rgba(150, 168, 124, 0.16)" },
-  { name: "Forest", value: "rgba(118, 158, 114, 0.16)" },
-  { name: "Ink", value: "var(--swatch-ink-fill)" },
-];
+export const CALLOUT_COLORS: Swatch[] = washPalette(
+  0.16,
+  0.01,
+  "var(--swatch-ink-fill)",
+);
 
 // Fills for the page-level banner — the full-width band shown directly below a
 // page's breadcrumbs. Unlike the faint block washes, a banner is a bold solid
@@ -117,44 +117,22 @@ export const BANNER_COLORS: Swatch[] = TEXT_COLORS.filter(
 // translucent so they layer over the cell surface in either theme; the alpha
 // lands a touch above the callout fill so the strip still reads as a header.
 // Same fourteen-hue order as the other palettes, closing on the theme-aware Ink.
-export const TABLE_HEADER_COLORS: Swatch[] = [
-  { name: "Mist", value: "rgba(150, 158, 150, 0.22)" },
-  { name: "Honey", value: "rgba(214, 178, 110, 0.24)" },
-  { name: "Peach", value: "rgba(212, 160, 120, 0.23)" },
-  { name: "Tan", value: "rgba(168, 140, 108, 0.23)" },
-  { name: "Rose", value: "rgba(200, 142, 134, 0.23)" },
-  { name: "Blush", value: "rgba(206, 150, 178, 0.23)" },
-  { name: "Lilac", value: "rgba(196, 150, 206, 0.23)" },
-  { name: "Plum", value: "rgba(150, 112, 196, 0.23)" },
-  { name: "Sky", value: "rgba(120, 178, 210, 0.23)" },
-  { name: "Indigo", value: "rgba(96, 120, 198, 0.23)" },
-  { name: "Teal", value: "rgba(110, 168, 160, 0.23)" },
-  { name: "Sage", value: "rgba(150, 168, 124, 0.23)" },
-  { name: "Forest", value: "rgba(118, 158, 114, 0.23)" },
-  { name: "Ink", value: "var(--swatch-ink-wash)" },
-];
+export const TABLE_HEADER_COLORS: Swatch[] = washPalette(
+  0.23,
+  0.01,
+  "var(--swatch-ink-wash)",
+);
 
 // Fills for individual table cells. A cell fill reads like the header strip but
 // applies to any chosen cell(s), so these are translucent washes layered over
 // the cell surface (legible in both themes). The alpha sits a touch below the
 // header strip so an explicitly filled cell still reads as lighter than a header
 // when the two meet. Same fourteen-hue order, closing on the theme-aware Ink.
-export const TABLE_CELL_COLORS: Swatch[] = [
-  { name: "Mist", value: "rgba(150, 158, 150, 0.18)" },
-  { name: "Honey", value: "rgba(214, 178, 110, 0.20)" },
-  { name: "Peach", value: "rgba(212, 160, 120, 0.19)" },
-  { name: "Tan", value: "rgba(168, 140, 108, 0.19)" },
-  { name: "Rose", value: "rgba(200, 142, 134, 0.19)" },
-  { name: "Blush", value: "rgba(206, 150, 178, 0.19)" },
-  { name: "Lilac", value: "rgba(196, 150, 206, 0.19)" },
-  { name: "Plum", value: "rgba(150, 112, 196, 0.19)" },
-  { name: "Sky", value: "rgba(120, 178, 210, 0.19)" },
-  { name: "Indigo", value: "rgba(96, 120, 198, 0.19)" },
-  { name: "Teal", value: "rgba(110, 168, 160, 0.19)" },
-  { name: "Sage", value: "rgba(150, 168, 124, 0.19)" },
-  { name: "Forest", value: "rgba(118, 158, 114, 0.19)" },
-  { name: "Ink", value: "var(--swatch-ink-wash)" },
-];
+export const TABLE_CELL_COLORS: Swatch[] = washPalette(
+  0.19,
+  0.01,
+  "var(--swatch-ink-wash)",
+);
 
 /**
  * Preset callout variants: each pairs an emoji with a soft block wash. Only the
