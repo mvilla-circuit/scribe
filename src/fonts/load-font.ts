@@ -5,7 +5,15 @@
 // font is fetched at most once per session, and de-dupe concurrent requests for
 // the same font (e.g. global + per-document resolution firing together).
 
-import { FONT_REGISTRY, type FontRole, resolveFontEntry } from "./catalog";
+import type { CSSProperties } from "react";
+
+import {
+  FONT_REGISTRY,
+  FONT_ROLES,
+  type FontRole,
+  type ResolvedFonts,
+  resolveFontEntry,
+} from "./catalog";
 
 const loaded = new Set<string>();
 const inflight = new Map<string, Promise<void>>();
@@ -47,4 +55,23 @@ export function fontStackFor(
   role: FontRole,
 ): string {
   return resolveFontEntry(fontId, role).stack;
+}
+
+/**
+ * Builds the `--font-display/text/code` custom properties for a resolved
+ * role -> fontId map. Shared by the global hook (assigned to the document root)
+ * and the scoped hook (an inline style on the reading surface) so both compute
+ * the same variables the same way.
+ */
+export function fontVarsFor(resolved: ResolvedFonts): CSSProperties {
+  return {
+    "--font-display": fontStackFor(resolved.display, "display"),
+    "--font-text": fontStackFor(resolved.text, "text"),
+    "--font-code": fontStackFor(resolved.code, "code"),
+  };
+}
+
+/** Lazily loads the web CSS for every role's font in a resolved map. */
+export function ensureFontsLoaded(resolved: ResolvedFonts): void {
+  for (const role of FONT_ROLES) void ensureFontLoaded(resolved[role]);
 }

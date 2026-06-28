@@ -1,7 +1,7 @@
 import { type CSSProperties, useEffect } from "react";
 
 import { type ResolvedFonts } from "./catalog";
-import { ensureFontLoaded, fontStackFor } from "./load-font";
+import { ensureFontsLoaded, fontVarsFor } from "./load-font";
 
 /**
  * Given a fully-resolved role -> fontId map, returns an inline style that points
@@ -13,14 +13,8 @@ export function useScopedFonts(resolved: ResolvedFonts): CSSProperties {
   const { display, text, code } = resolved;
 
   useEffect(() => {
-    void ensureFontLoaded(display);
-    void ensureFontLoaded(text);
-    void ensureFontLoaded(code);
+    ensureFontsLoaded({ display, text, code });
   }, [display, text, code]);
 
-  return {
-    "--font-display": fontStackFor(display, "display"),
-    "--font-text": fontStackFor(text, "text"),
-    "--font-code": fontStackFor(code, "code"),
-  };
+  return fontVarsFor(resolved);
 }
