@@ -102,14 +102,6 @@ src-tauri/         Tauri (Rust) shell, config, and capabilities
 - Review fonts again
 
 - Add testing
-- Revisit the relaxed linting rules (audit the linting rules again)
-  - Accessibility
-  - Stale/verbose comments
-  - Enforce jsdoc comments
-  - Folder structure
-  - File naming conventions
-  - Variable naming conventions
-  - Strict types
 - Review code (refactor as necessary)
   - SOLID and DRY principles
 - Web bundle needs optimization (`manualChunks`/lazy-loading)

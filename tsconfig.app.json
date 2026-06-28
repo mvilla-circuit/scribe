@@ -32,5 +32,8 @@
     "forceConsistentCasingInFileNames": true,
     "noUncheckedIndexedAccess": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  /* Tests and the test harness are type-checked by tsconfig.vitest.json, which
+     provides the Vitest/jest-dom global typings the app project lacks. */
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/test"]
 }

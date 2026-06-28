@@ -16,6 +16,13 @@ dist-ssr
 # Tauri / Rust build output
 src-tauri/target
 
+# Test output
+coverage
+test-results
+playwright-report
+.playwright
+blob-report
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
