@@ -2,18 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { DocumentIcon } from "@/components/ui/document-icon";
-import { useBooks } from "@/data/books";
-import { usePageIndex } from "@/data/page-index";
+import { type PageLinkOption, useEditorBridge } from "@/editor/editor-bridge";
 import { BookIcon, PageLinkIcon } from "@/editor/icons";
 import { cn } from "@/lib/utils";
 
-import { type PagePickTarget, usePagePicker } from "./page-picker-store";
+import { usePagePicker } from "./page-picker-store";
 
-type Row = PagePickTarget & {
-  icon: string | null;
-  glyph: "page" | "book";
-  subtitle: string;
-};
+type Row = PageLinkOption;
 
 // A search-driven picker over every page and book (cross-book). Opened by the
 // "Link to page" slash item; selecting a row hands the target back through the
@@ -23,47 +18,23 @@ export function PagePicker() {
   const close = usePagePicker((s) => s.close);
   const open = onSelect !== null;
 
-  const { data: index = [] } = usePageIndex();
-  const { data: books = [] } = useBooks();
+  const { pageLinkOptions } = useEditorBridge();
 
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
 
   const rows = useMemo<Row[]>(() => {
-    const bookTitle = new Map(
-      books.map((b) => [b.id, b.title || "Untitled book"]),
-    );
-    const bookRows: Row[] = books.map((b) => ({
-      targetType: "book",
-      targetId: b.id,
-      label: b.title || "Untitled book",
-      icon: b.icon,
-      glyph: "book",
-      subtitle: "Book",
-    }));
-    const pageRows: Row[] = index
-      // A book's title page is represented by the book row itself.
-      .filter((e) => !e.is_title_page)
-      .map((e) => ({
-        targetType: "document",
-        targetId: e.id,
-        label: e.title || "Untitled",
-        icon: e.icon,
-        glyph: "page",
-        subtitle: bookTitle.get(e.book_id) ?? "",
-      }));
-    const all = [...bookRows, ...pageRows];
     const q = query.trim().toLowerCase();
     const filtered = q
-      ? all.filter(
+      ? pageLinkOptions.filter(
           (r) =>
             r.label.toLowerCase().includes(q) ||
             r.subtitle.toLowerCase().includes(q),
         )
-      : all;
+      : pageLinkOptions;
     return filtered.slice(0, 50);
-  }, [index, books, query]);
+  }, [pageLinkOptions, query]);
 
   // Reset transient state during render (per React's "you might not need an
   // effect") rather than in effects: clear the query/selection when the picker

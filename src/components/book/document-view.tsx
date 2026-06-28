@@ -25,6 +25,7 @@ import { cn, formatDateTime, formatRelativeTime } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
 
 import { EditableText, type EditableTextHandle } from "./editable-text";
+import { EditorBridgeHost } from "./editor-bridge-host";
 import { FontControl } from "./font-control";
 import { ListIcon } from "./icons";
 import { Masthead } from "./masthead";
@@ -255,22 +256,24 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
             className="mt-8"
             style={{ fontFamily: bodyFont }}
           >
-            <Editor
-              ref={editorRef}
-              key={document.id}
-              documentId={document.id}
-              initialContent={document.content}
-              editable
-              onOutlineChange={setHeadings}
-              onLeaveStart={() => {
-                titleRef.current?.focus();
-                return true;
-              }}
-              onPersist={(content) =>
-                updateContent.mutateAsync({ id: document.id, content })
-              }
-              onSaveStateChange={setSaveState}
-            />
+            <EditorBridgeHost>
+              <Editor
+                ref={editorRef}
+                key={document.id}
+                documentId={document.id}
+                initialContent={document.content}
+                editable
+                onOutlineChange={setHeadings}
+                onLeaveStart={() => {
+                  titleRef.current?.focus();
+                  return true;
+                }}
+                onPersist={(content) =>
+                  updateContent.mutateAsync({ id: document.id, content })
+                }
+                onSaveStateChange={setSaveState}
+              />
+            </EditorBridgeHost>
           </div>
         </article>
 

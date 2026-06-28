@@ -4,8 +4,7 @@ import { toast } from "sonner";
 
 import { DocumentIcon } from "@/components/ui/document-icon";
 import { Tooltip } from "@/components/ui/tooltip";
-import { useBooks } from "@/data/books";
-import { type PageIndexEntry, usePageIndex } from "@/data/page-index";
+import { useEditorBridge } from "@/editor/editor-bridge";
 import {
   BookIcon,
   CopyIcon,
@@ -14,7 +13,6 @@ import {
   TrashIcon,
 } from "@/editor/icons";
 import { SKIP_AUTOSAVE_META } from "@/editor/use-autosave";
-import { useUIStore } from "@/store/ui";
 
 import { pageRef, type PageTargetType } from "./page-ref";
 
@@ -33,53 +31,12 @@ export function PageLinkView({
   const staleLabel = (node.attrs.label as string | null) ?? null;
   const editable = editor.isEditable;
 
-  const { data: index = [], isLoading: indexLoading } = usePageIndex();
-  const { data: books = [], isLoading: booksLoading } = useBooks();
-  const loading = indexLoading || booksLoading;
+  const { resolvePageTarget, navigateToPage, loading } = useEditorBridge();
 
-  const setActiveBook = useUIStore((s) => s.setActiveBook);
-  const setActiveDoc = useUIStore((s) => s.setActiveDoc);
-
-  const resolved = useMemo(() => {
-    if (!targetId) return null;
-    if (targetType === "book") {
-      const book = books.find((b) => b.id === targetId);
-      if (!book) return null;
-      return {
-        title: book.title || "Untitled book",
-        icon: book.icon,
-        fallbackGlyph: "book" as const,
-        breadcrumb: "Book",
-        bookId: book.id,
-        docId: null as string | null,
-      };
-    }
-    const entry = index.find((e) => e.id === targetId);
-    if (!entry) return null;
-    const book = books.find((b) => b.id === entry.book_id);
-    const byId = new Map(index.map((e) => [e.id, e]));
-    const trail: string[] = [];
-    let parentId = entry.parent_document_id;
-    const guard = new Set<string>();
-    while (parentId && !guard.has(parentId)) {
-      guard.add(parentId);
-      const parent: PageIndexEntry | undefined = byId.get(parentId);
-      if (!parent || parent.is_title_page) break;
-      trail.unshift(parent.title || "Untitled");
-      parentId = parent.parent_document_id;
-    }
-    const breadcrumb = [book?.title || "Untitled book", ...trail].join(" / ");
-    return {
-      title: entry.is_title_page
-        ? book?.title || entry.title || "Untitled"
-        : entry.title || "Untitled",
-      icon: entry.icon,
-      fallbackGlyph: "page" as const,
-      breadcrumb,
-      bookId: entry.book_id,
-      docId: entry.is_title_page ? null : entry.id,
-    };
-  }, [index, books, targetId, targetType]);
+  const resolved = useMemo(
+    () => resolvePageTarget(targetType, targetId),
+    [resolvePageTarget, targetType, targetId],
+  );
 
   // Keep the stale `label` fallback in step with the live title (used for export
   // and as the placeholder before the index loads), without it being canonical.
@@ -104,8 +61,7 @@ export function PageLinkView({
 
   const navigate = () => {
     if (!resolved) return;
-    setActiveBook(resolved.bookId);
-    setActiveDoc(resolved.docId);
+    navigateToPage({ bookId: resolved.bookId, docId: resolved.docId });
   };
 
   const copyRef = () => {
