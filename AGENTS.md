@@ -6,6 +6,7 @@ This file applies to the whole repo. Scoped `AGENTS.md` files add area-specific 
 
 - [`src/editor/AGENTS.md`](src/editor/AGENTS.md) — TipTap/ProseMirror editor
 - [`src/data/AGENTS.md`](src/data/AGENTS.md) — React Query data layer
+- [`src/store/AGENTS.md`](src/store/AGENTS.md) — Zustand UI state
 - [`e2e/AGENTS.md`](e2e/AGENTS.md) — Playwright end-to-end specs
 - [`src-tauri/AGENTS.md`](src-tauri/AGENTS.md) — Rust/Tauri shell
 
@@ -84,6 +85,26 @@ adding or changing UI, hold to the direction inferred from the existing styles
   shouting; match that quiet tone for any new feedback.
 - **Accessibility**: `jsx-a11y` runs in strict mode — keep semantic markup,
   labels, and visible focus rings (`--ring`). Maintain contrast in both themes.
+
+## Performance
+
+Keep interaction hot paths cheap and renders contained. These are conventions,
+not lint-enforced — hold to them so typing, dragging, and navigation stay smooth.
+See the scoped [`src/editor`](src/editor/AGENTS.md) and [`src/data`](src/data/AGENTS.md)
+files for area-specific rules.
+
+- **Stable props for lists**: give long lists (sidebar tree, page outline)
+  memoized rows (`React.memo`) and referentially-stable handler props, so a drag
+  or hover doesn't re-render every visible row.
+- **Refs for latest callbacks**: when a value is only read inside an effect or a
+  captured-once handler, hold it in a ref instead of widening a `useMemo`/effect
+  dependency array — a new callback identity each render shouldn't bust a memo.
+- **Drag interactions**: drive continuous gestures (sidebar resize, reorder)
+  through a ref + `requestAnimationFrame` and commit the result once on
+  `mouseup`; never write to a store or `localStorage` on every `mousemove`.
+- **Defer expensive work**: debounce per-keystroke recomputes and gate heavy
+  mounts (e.g. the editor) on the data they need rather than rendering then
+  patching.
 
 ## Architecture boundaries
 

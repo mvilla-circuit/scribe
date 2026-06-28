@@ -19,6 +19,26 @@ and commands live in `src/editor/extensions/`. See the root
 - **JSDoc**: exported editor utilities (the `editor/` layer) require a
   description block on their public API, per the root conventions.
 
+## Hot path
+
+The editor runs work on every keystroke and selection change. Keep it lean:
+
+- **Build once per instance**: memoize the extension set and the normalized
+  initial content (keyed by `documentId`), not per render. Migrations should
+  return the original node when nothing changed so a modern document isn't
+  deep-cloned on mount.
+- **Short-circuit per-keystroke selectors**: state probes that run on every
+  transaction (e.g. table `can()`/`isActive` checks) must return a constant
+  snapshot when they don't apply, before doing the real work.
+- **Debounce attribute writes**: commit node-attribute edits (quote citations)
+  and whole-document walks (outline recompute) on blur/idle, not on every
+  keystroke.
+- **Contain save-state renders**: wrap the floating overlay children
+  (`BubbleToolbar`, `BlockHandle`, `TableControls`, `PagePicker`) in `React.memo`
+  and keep `saveState` consumption scoped, so a save transition doesn't cascade.
+- **Guard async after unmount**: autosave and other in-flight promises must check
+  a `mounted` ref before touching state in their `.then`.
+
 ## Boundaries
 
 `editor` may import from `components`, `data`, `store`, and `lib` (and `components`
