@@ -158,6 +158,35 @@ src-tauri/      Tauri (Rust) shell, config, capabilities    -> src-tauri/AGENTS.
 e2e/            Playwright end-to-end specs                  -> e2e/AGENTS.md
 ```
 
+## Test-driven development
+
+Build features and fix bugs **test-first**. This is the default workflow for any
+behavior change, not an optional extra.
+
+- **Red → green → refactor**: write one failing test, make it pass with the
+  minimal change, then clean up while staying green.
+- **Watch it fail first**: run the new test and confirm it fails _for the right
+  reason_ (the behavior is missing — not a typo or bad import) before writing the
+  implementation. A test that passes the moment you write it proves nothing.
+- **Minimal implementation**: write just enough to pass the current test; don't
+  add unrequested options or abstraction ("YAGNI").
+- **Good tests**: one behavior per test, a name that states that behavior, and
+  assertions against real behavior — prefer real code, the real store, and the
+  real query cache over mocks.
+- **How to test here**:
+  - Co-locate `*.test.ts(x)` next to the code under test.
+  - Render components with `renderWithProviders` (`src/test/render-with-query.tsx`)
+    and build entities with the factories in `src/test/fixtures.ts`.
+  - Seed React Query with `client.setQueryData(<key>, …)` using the keys in
+    `src/data/query-keys.ts`; reset Zustand stores in a `beforeEach`.
+  - Data-layer tests intercept HTTP with **MSW** (see [`src/data/AGENTS.md`](src/data/AGENTS.md)),
+    not by mocking the Supabase client.
+- **Iterate on one file** (`npx vitest run <path>`) through the red/green cycle,
+  then run `npm run verify` before declaring the task done.
+- **Narrow exceptions** (use judgement, and call them out): throwaway spikes,
+  generated code, and purely presentational/config tweaks (e.g. a tooltip side
+  or a CSS-only change) where a test would assert nothing meaningful.
+
 ## Testing baseline
 
 - **Unit/component**: Vitest in a jsdom environment, with co-located `*.test.ts(x)` files next to the code they cover. Testing Library + jest-dom are available.

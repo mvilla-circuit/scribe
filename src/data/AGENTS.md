@@ -35,6 +35,9 @@ Lessons baked into the current hooks — keep them intact:
 
 ## Testing
 
+- **Test-first**: follow the repo-wide TDD workflow in the root
+  [`AGENTS.md`](../../AGENTS.md) — write the failing test for a hook's behavior
+  and watch it fail before implementing it.
 - Data-layer tests intercept the **HTTP boundary with MSW** rather than mocking
   the Supabase client. Handlers live in `src/test/msw`; global wiring is in
   `src/test/setup.ts`.

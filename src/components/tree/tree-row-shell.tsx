@@ -82,7 +82,7 @@ export function TreeRowShell({
   const actions = (
     <>
       {leadingActions}
-      <RowActionDropdown actions={menuActions} />
+      <RowActionDropdown actions={menuActions} tooltipSide="right" />
     </>
   );
 

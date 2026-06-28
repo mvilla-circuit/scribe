@@ -230,7 +230,7 @@ export function SidebarTree() {
           Library
         </span>
         <DropdownMenu>
-          <Tooltip content="New book or folder">
+          <Tooltip content="New book or folder" side="right">
             <DropdownMenuTrigger asChild>
               <button
                 type="button"

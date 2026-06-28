@@ -144,7 +144,7 @@ export const OutlineRow = memo(function OutlineRow({
   ];
 
   const leadingActions = (
-    <Tooltip content="Add page inside">
+    <Tooltip content="Add page inside" side="right">
       <button
         type="button"
         tabIndex={-1}

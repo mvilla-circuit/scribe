@@ -215,7 +215,7 @@ export function OutlinePanel({ book }: { book: Book }) {
           <span className="select-none text-xs font-medium uppercase tracking-wide text-muted">
             Pages
           </span>
-          <Tooltip content="New page">
+          <Tooltip content="New page" side="right">
             <button
               type="button"
               onClick={() => {

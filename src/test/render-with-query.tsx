@@ -1,6 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { renderHook, type RenderHookOptions } from "@testing-library/react";
-import type { PropsWithChildren } from "react";
+import {
+  render,
+  renderHook,
+  type RenderHookOptions,
+  type RenderOptions,
+} from "@testing-library/react";
+import type { PropsWithChildren, ReactElement } from "react";
+
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 // A throwaway QueryClient (one per test, so state never leaks) with retries off
 // for deterministic failures. gcTime is Infinity so observer-less cache entries
@@ -35,5 +42,24 @@ export function renderHookWithQuery<Result, Props>(
   return {
     client,
     ...renderHook(hook, { wrapper: makeWrapper(client), ...hookOptions }),
+  };
+}
+
+// Renders a component inside a fresh QueryClientProvider + TooltipProvider and
+// returns the client so tests can seed/inspect the React Query cache (e.g.
+// `client.setQueryData(booksKey, [...])`) before or after rendering.
+export function renderWithProviders(
+  ui: ReactElement,
+  options: WithClient<Omit<RenderOptions, "wrapper">> = {},
+) {
+  const { client = createTestQueryClient(), ...renderOptions } = options;
+  const Wrapper = ({ children }: PropsWithChildren) => (
+    <QueryClientProvider client={client}>
+      <TooltipProvider>{children}</TooltipProvider>
+    </QueryClientProvider>
+  );
+  return {
+    client,
+    ...render(ui, { wrapper: Wrapper, ...renderOptions }),
   };
 }

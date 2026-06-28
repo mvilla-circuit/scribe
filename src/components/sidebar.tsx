@@ -11,6 +11,7 @@ import { type ThemeMode, useTheme } from "@/theme/theme";
 import { ChevronLeftIcon } from "./book/icons";
 import { OutlinePanel } from "./book/outline-panel";
 import { SettingsDialog } from "./settings/settings-dialog";
+import { CollapsedSidebarNav } from "./sidebar/collapsed-sidebar-nav";
 import { SidebarTree } from "./sidebar/sidebar-tree";
 import { Avatar } from "./ui/avatar";
 import {
@@ -77,7 +78,7 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
       <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-0.5">
         {!collapsed &&
           (activeBook ? (
-            <Tooltip content="Back to library">
+            <Tooltip content="Back to library" side="right">
               <button
                 type="button"
                 onClick={() => {
@@ -95,7 +96,10 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
               Scribe
             </span>
           ))}
-        <Tooltip content={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+        <Tooltip
+          content={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          side="right"
+        >
           <button
             type="button"
             onClick={toggleSidebar}
@@ -111,7 +115,9 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
 
       {/* Nav: the Library tree, or the active book's Outline drilled in. */}
       {collapsed ? (
-        <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-1" />
+        <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-1">
+          <CollapsedSidebarNav activeBook={activeBook} />
+        </nav>
       ) : (
         <div
           key={activeBook ? `book-${activeBook.id}` : "library"}
@@ -144,7 +150,7 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
             </div>
           )}
           <DropdownMenu>
-            <Tooltip content="Settings" side="top">
+            <Tooltip content="Settings" side="right">
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"

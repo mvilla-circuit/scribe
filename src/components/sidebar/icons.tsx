@@ -12,6 +12,7 @@ import {
   Pencil,
   Plus,
   Trash2,
+  TriangleAlert,
 } from "lucide-react";
 
 import { makeIcon } from "@/lib/make-icon";
@@ -25,3 +26,4 @@ export const TrashIcon = makeIcon(Trash2);
 export const DuplicateIcon = makeIcon(Copy);
 export const FolderPlusIcon = makeIcon(FolderPlus);
 export const BookPlusIcon = makeIcon(BookPlus);
+export const AlertIcon = makeIcon(TriangleAlert);

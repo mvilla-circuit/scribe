@@ -1,5 +1,10 @@
 import { MoreHorizontal } from "lucide-react";
-import { type ComponentType, Fragment, type ReactNode } from "react";
+import {
+  type ComponentProps,
+  type ComponentType,
+  Fragment,
+  type ReactNode,
+} from "react";
 
 import { makeIcon } from "@/lib/make-icon";
 
@@ -99,13 +104,16 @@ export function RowContextMenu({
 export function RowActionDropdown({
   actions,
   label = "More actions",
+  tooltipSide,
 }: {
   actions: RowAction[];
   label?: string;
+  /** Which side the label tooltip opens on; defaults to the Tooltip default. */
+  tooltipSide?: ComponentProps<typeof Tooltip>["side"];
 }) {
   return (
     <DropdownMenu>
-      <Tooltip content={label}>
+      <Tooltip content={label} side={tooltipSide}>
         <DropdownMenuTrigger asChild>
           <button
             type="button"
