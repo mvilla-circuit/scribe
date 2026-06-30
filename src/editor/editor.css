@@ -1044,27 +1044,34 @@ button.scribe-essay-icon-btn:hover {
 }
 .scribe-linkcard-body {
   display: flex;
-  gap: 1rem;
   align-items: stretch;
-  min-height: 4.5rem;
-  padding: 0.85rem 1rem;
+  min-height: 5.5rem;
+  padding: 0;
+  /* Clip the full-bleed media to the card's rounded corners. */
+  overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
   cursor: pointer;
   outline: none;
   text-decoration: none;
+  /* The card is app chrome, not reading content: stay on the system sans stack
+     instead of inheriting the editorial serif from the surrounding prose. */
+  font-family: var(--font-sans);
   transition:
-    border-color 120ms ease,
-    background 120ms ease;
+    border-color 140ms ease-out,
+    box-shadow 140ms ease-out,
+    background 140ms ease-out;
 }
 .scribe-linkcard-body:hover {
   border-color: color-mix(
     in srgb,
-    var(--color-accent) 40%,
+    var(--color-accent) 35%,
     var(--color-border)
   );
-  background: var(--color-hover);
+  background: var(--color-elevated);
+  /* Depth from the shared soft shadow, not a heavier border. */
+  box-shadow: var(--shadow-popover);
 }
 .scribe-linkcard-body:focus-visible {
   box-shadow: 0 0 0 2px var(--color-ring);
@@ -1072,10 +1079,11 @@ button.scribe-essay-icon-btn:hover {
 .scribe-linkcard-text {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.25rem;
   flex: 1 1 auto;
   min-width: 0;
   justify-content: center;
+  padding: 0.85rem 1rem;
 }
 .scribe-linkcard-site {
   display: flex;
@@ -1096,7 +1104,7 @@ button.scribe-essay-icon-btn:hover {
   color: var(--color-text);
   line-height: 1.35;
   display: -webkit-box;
-  -webkit-line-clamp: 1;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -1109,13 +1117,57 @@ button.scribe-essay-icon-btn:hover {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.scribe-linkcard-thumb {
-  flex-shrink: 0;
-  width: 7.5rem;
-  border-radius: var(--radius-sm);
-  background-size: cover;
-  background-position: center;
-  background-color: var(--color-hover);
+/* Media rail: a full-bleed preview image, or a calm tinted fallback tile so a
+   card with no image never reads as empty. */
+.scribe-linkcard-media {
+  flex: 0 0 auto;
+  width: 9.5rem;
+  align-self: stretch;
+  background: var(--color-hover);
+  border-left: 1px solid var(--color-border);
+}
+.scribe-linkcard-media[data-empty="true"] {
+  width: 5rem;
+}
+.scribe-linkcard-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.scribe-linkcard-fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    color-mix(
+      in oklab,
+      hsl(var(--seed-hue, 220) 45% 55%) 16%,
+      var(--color-surface)
+    ),
+    color-mix(
+      in oklab,
+      hsl(var(--seed-hue, 220) 45% 55%) 5%,
+      var(--color-surface)
+    )
+  );
+}
+.scribe-linkcard-fallback img {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  opacity: 0.9;
+}
+.scribe-linkcard-fallback span {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: color-mix(
+    in oklab,
+    hsl(var(--seed-hue, 220) 35% 45%) 75%,
+    var(--color-muted)
+  );
 }
 .scribe-linkcard-controls {
   position: absolute;
@@ -1128,15 +1180,14 @@ button.scribe-essay-icon-btn:hover {
   transform: translateY(0);
   pointer-events: auto;
 }
-/* Loading skeleton */
-.scribe-linkcard-skeleton {
-  display: flex;
-  gap: 1rem;
+/* Loading skeleton. The base `.scribe-skel` shimmer lives in index.css so it
+   can be shared across the app chrome. */
+.scribe-linkcard-media-skel {
+  display: block;
   width: 100%;
-  align-items: stretch;
+  height: 100%;
+  border-radius: 0;
 }
-/* Link-card-specific skeleton sizes. The base `.scribe-skel` shimmer lives in
-   index.css so it can be shared across the app chrome. */
 .scribe-skel-site {
   width: 35%;
   height: 0.7rem;
@@ -1148,6 +1199,11 @@ button.scribe-essay-icon-btn:hover {
 .scribe-skel-desc {
   width: 60%;
   height: 0.7rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scribe-linkcard-body {
+    transition: none;
+  }
 }
 
 /* --- Internal page link card --- */

@@ -31,6 +31,34 @@ export function hostLabel(url: string): string {
 }
 
 /**
+ * A readable label from a URL's path, e.g.
+ * "https://github.com/owner/repo" -> "owner/repo". Returns `null` for a bare
+ * domain (no path), so callers can fall back to the host. Used to give an
+ * unfetchable link (private repo, 404, offline) a meaningful title.
+ */
+export function pathLabel(url: string): string | null {
+  try {
+    const cleaned = decodeURIComponent(new URL(url).pathname).replace(
+      /^\/+|\/+$/g,
+      "",
+    );
+    return cleaned || null;
+  } catch {
+    return null;
+  }
+}
+
+// The conventional `/favicon.ico` for a URL's origin, used so even an
+// unfetchable link can still show the site's icon.
+function originFavicon(url: string): string | null {
+  try {
+    return `${new URL(url).origin}/favicon.ico`;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Normalizes a user-entered URL: adds https:// when no scheme is present so the
  * HTTP plugin (and the eventual <a href>) always get an absolute URL.
  */
@@ -69,7 +97,12 @@ function absolute(
   }
 }
 
-function parseMetadata(html: string, baseUrl: string): LinkMetadata {
+/**
+ * Extracts OG/Twitter/`<title>`/favicon metadata from a page's HTML. Pure and
+ * tolerant: missing fields read back as `null` (with a bare-domain `siteName`
+ * fallback), and relative image/favicon URLs are resolved against `baseUrl`.
+ */
+export function parseMetadata(html: string, baseUrl: string): LinkMetadata {
   const doc = new DOMParser().parseFromString(html, "text/html");
 
   const meta = (selector: string): string | null => {
@@ -90,8 +123,17 @@ function parseMetadata(html: string, baseUrl: string): LinkMetadata {
 
   const siteName = meta('meta[property="og:site_name"]') ?? hostLabel(baseUrl);
 
+  // Try a spread of image conventions: sites disagree on which one they set, so
+  // checking several (incl. the secure/url variants and the legacy image_src
+  // link) recovers a preview far more often than og:image alone.
   const image = absolute(
-    meta('meta[property="og:image"]') ?? meta('meta[name="twitter:image"]'),
+    meta('meta[property="og:image"]') ??
+      meta('meta[property="og:image:secure_url"]') ??
+      meta('meta[property="og:image:url"]') ??
+      meta('meta[name="twitter:image"]') ??
+      meta('meta[name="twitter:image:src"]') ??
+      doc.querySelector('link[rel="image_src"]')?.getAttribute("href") ??
+      null,
     baseUrl,
   );
 
@@ -111,12 +153,9 @@ function parseMetadata(html: string, baseUrl: string): LinkMetadata {
   return { title, description, siteName, image, favicon };
 }
 
-/**
- * Fetches a page and extracts its OG/Twitter/<title>/favicon metadata. Tolerant
- * by design: any network or parse failure resolves to the bare-domain fallback
- * (a card still renders) rather than throwing.
- */
-export async function fetchLinkMetadata(url: string): Promise<LinkMetadata> {
+// Fetches a page and parses its metadata, or resolves to `null` on any network
+// / HTTP failure so the caller can fall back to an oEmbed provider.
+async function fetchAndParse(url: string): Promise<LinkMetadata | null> {
   try {
     const res = await fetch(url, {
       method: "GET",
@@ -128,10 +167,91 @@ export async function fetchLinkMetadata(url: string): Promise<LinkMetadata> {
       },
       connectTimeout: 8000,
     });
-    if (!res.ok) return { ...EMPTY, siteName: hostLabel(url) };
+    if (!res.ok) return null;
     const html = await res.text();
     return parseMetadata(html, url);
   } catch {
-    return { ...EMPTY, siteName: hostLabel(url) };
+    return null;
   }
+}
+
+// The shape of the bits of an oEmbed payload we use (snake_case per the spec).
+interface OEmbedResponse {
+  title?: string;
+  thumbnail_url?: string;
+  provider_name?: string;
+}
+
+// Returns the oEmbed JSON endpoint for providers whose pages are JS shells that
+// hide their OG tags from a plain GET (so scraping the HTML yields nothing).
+function oEmbedEndpoint(url: string): string | null {
+  let host: string;
+  try {
+    host = new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+  const target = encodeURIComponent(url);
+  if (host === "youtube.com" || host === "youtu.be") {
+    return `https://www.youtube.com/oembed?url=${target}&format=json`;
+  }
+  if (host === "vimeo.com") {
+    return `https://vimeo.com/api/oembed.json?url=${target}`;
+  }
+  return null;
+}
+
+// Reliable title + thumbnail for a known provider via its oEmbed endpoint, or
+// `null` when there's no endpoint or the request/parse fails.
+async function fetchOEmbed(url: string): Promise<LinkMetadata | null> {
+  const endpoint = oEmbedEndpoint(url);
+  if (!endpoint) return null;
+  try {
+    const res = await fetch(endpoint, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      connectTimeout: 8000,
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as OEmbedResponse;
+    const title = data.title?.trim() || null;
+    const image = data.thumbnail_url?.trim() || null;
+    if (!title && !image) return null;
+    return {
+      ...EMPTY,
+      title,
+      image,
+      siteName: data.provider_name?.trim() || hostLabel(url),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolves a URL's bookmark metadata. Scrapes the page's OG/Twitter tags first
+ * and, when that leaves the title or preview image missing, fills the gaps from
+ * a provider oEmbed endpoint (e.g. YouTube). Tolerant by design: any failure
+ * still resolves to a bare-domain fallback so a card always renders.
+ */
+export async function fetchLinkMetadata(url: string): Promise<LinkMetadata> {
+  const parsed = await fetchAndParse(url);
+  if (parsed?.title && parsed.image) return parsed;
+
+  const embed = await fetchOEmbed(url);
+  if (!parsed && !embed) {
+    return {
+      ...EMPTY,
+      siteName: hostLabel(url),
+      favicon: originFavicon(url),
+    };
+  }
+
+  return {
+    title: parsed?.title ?? embed?.title ?? null,
+    description: parsed?.description ?? null,
+    siteName: embed?.siteName ?? parsed?.siteName ?? hostLabel(url),
+    favicon: parsed?.favicon ?? originFavicon(url),
+    image: parsed?.image ?? embed?.image ?? null,
+  };
 }

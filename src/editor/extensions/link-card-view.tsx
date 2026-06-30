@@ -1,6 +1,6 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { type NodeViewProps, NodeViewWrapper } from "@tiptap/react";
-import { useEffect, useRef } from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { BlockControls } from "@/editor/block-controls";
@@ -13,11 +13,70 @@ import {
   RefreshIcon,
   TrashIcon,
 } from "@/editor/icons";
-import { fetchLinkMetadata, hostLabel } from "@/editor/link-preview";
+import { fetchLinkMetadata, hostLabel, pathLabel } from "@/editor/link-preview";
 
 import { keepAsLink } from "./link-card-commands";
 
 type Status = "loading" | "ready" | "error";
+
+// A stable hue (0–360) derived from the hostname, so the no-image fallback tile
+// gets a calm, domain-consistent tint instead of looking blank.
+function hueFromHost(url: string): number {
+  const host = hostLabel(url);
+  let hash = 0;
+  for (const ch of host) hash = (hash * 31 + ch.charCodeAt(0)) % 360;
+  return hash;
+}
+
+// The full-bleed media rail: a preview image when one was extracted, otherwise a
+// calm domain-tinted tile (favicon, or a monogram) so a card is never blank. A
+// broken image swaps to the tile; remounting via `key={image}` resets that.
+function LinkCardMedia({
+  url,
+  image,
+  favicon,
+}: {
+  url: string;
+  image: string | null;
+  favicon: string | null;
+}) {
+  const [broken, setBroken] = useState(false);
+  const showImage = Boolean(image) && !broken;
+  const fallbackStyle: CSSProperties = { ["--seed-hue"]: hueFromHost(url) };
+  const monogram = hostLabel(url).charAt(0).toUpperCase() || "\u2022";
+
+  return (
+    <div
+      className="scribe-linkcard-media"
+      data-empty={showImage ? undefined : "true"}
+    >
+      {showImage ? (
+        <img
+          src={image ?? undefined}
+          alt=""
+          className="scribe-linkcard-image"
+          onError={() => {
+            setBroken(true);
+          }}
+        />
+      ) : (
+        <div className="scribe-linkcard-fallback" style={fallbackStyle}>
+          {favicon ? (
+            <img
+              src={favicon}
+              alt=""
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          ) : (
+            <span>{monogram}</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Renders a bookmark card and owns the one-time metadata fetch. On insert (with
 // no cached metadata, status="loading") it fetches once, then writes the result
@@ -40,22 +99,34 @@ export function LinkCardView({
 
   // Guard so the fetch fires once per URL even under StrictMode's double-mount.
   const fetchedFor = useRef<string | null>(null);
+  // Track liveness instead of cancelling per-effect: StrictMode's mount/unmount/
+  // remount cycle would otherwise cancel the sole in-flight fetch while the
+  // `fetchedFor` guard blocks a restart, stranding the card in "loading".
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
-    if (!url || status !== "loading") return;
+    // Fetch while loading, and also retry "error" cards once on mount so nodes
+    // that failed before (e.g. a transient network blip, or state poisoned by an
+    // earlier bug) self-heal instead of being permanently stuck.
+    if (!url || (status !== "loading" && status !== "error")) return;
     if (fetchedFor.current === url) return;
     fetchedFor.current = url;
-    let cancelled = false;
     void fetchLinkMetadata(url).then((meta) => {
-      if (cancelled) return;
+      // Drop the result only if the view is gone or a newer fetch (refresh / URL
+      // change) has superseded this one.
+      if (!mounted.current || fetchedFor.current !== url) return;
       updateAttributes({
         ...meta,
-        status: meta.title ? "ready" : "error",
+        // Any extracted preview (title or image) counts as a usable card.
+        status: meta.title || meta.image ? "ready" : "error",
       });
     });
-    return () => {
-      cancelled = true;
-    };
   }, [url, status, updateAttributes]);
 
   const open = () => {
@@ -79,14 +150,16 @@ export function LinkCardView({
     >
       <CardSurface className="scribe-linkcard-body" onActivate={open}>
         {status === "loading" ? (
-          <div className="scribe-linkcard-skeleton">
+          <>
             <div className="scribe-linkcard-text">
               <span className="scribe-skel scribe-skel-site" />
               <span className="scribe-skel scribe-skel-title" />
               <span className="scribe-skel scribe-skel-desc" />
             </div>
-            <span className="scribe-skel scribe-linkcard-thumb" />
-          </div>
+            <div className="scribe-linkcard-media">
+              <span className="scribe-skel scribe-linkcard-media-skel" />
+            </div>
+          </>
         ) : (
           <>
             <div className="scribe-linkcard-text">
@@ -104,21 +177,18 @@ export function LinkCardView({
                 <span className="truncate">{siteName}</span>
               </div>
               <div className="scribe-linkcard-title">
-                {title || hostLabel(url)}
+                {title || pathLabel(url) || hostLabel(url)}
               </div>
               {description && (
                 <div className="scribe-linkcard-desc">{description}</div>
               )}
-              {status === "error" && !description && (
-                <div className="scribe-linkcard-desc truncate">{url}</div>
-              )}
             </div>
-            {image && status === "ready" && (
-              <div
-                className="scribe-linkcard-thumb"
-                style={{ backgroundImage: `url("${image}")` }}
-              />
-            )}
+            <LinkCardMedia
+              key={image ?? "empty"}
+              url={url}
+              image={image}
+              favicon={favicon}
+            />
           </>
         )}
       </CardSurface>
