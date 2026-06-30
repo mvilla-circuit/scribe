@@ -97,14 +97,17 @@ src/
 src-tauri/         Tauri (Rust) shell, config, and capabilities
 ```
 
-- Table menu might need to be reorganized
-- Sidebar collapsed state
-- Review fonts again
+## TODO
 
-- Add testing
-- Review code (refactor as necessary)
-  - SOLID and DRY principles
-- Web bundle needs optimization (`manualChunks`/lazy-loading)
+- Revisit link cards
+- Copy page links
+- Menu option: copy plain text
+- Keyboard shortcuts
+- Review fonts again
+- New books should default to first page created for free
+- ToC (optional) for parent docs
+- Custom dictionary/grammar hints
+- Bug: Random backspacing while typing
 - Prep version 1 (package name and app icon)
 - Install Scribe
 - Update README
