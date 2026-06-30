@@ -102,7 +102,10 @@
   margin: 1.5em 0;
   --quote-accent-resolved: var(--quote-accent, var(--block-accent));
 }
-.scribe-prose .scribe-quote-body > * + * {
+/* The React node view nests the body's blocks under an inner
+   `[data-node-view-content-react]` wrapper, so spacing targets that wrapper's
+   children rather than the direct (single) child of `.scribe-quote-body`. */
+.scribe-prose .scribe-quote-body [data-node-view-content-react] > * + * {
   margin-top: 0.5em;
 }
 .scribe-prose .scribe-quote-body p {
@@ -546,11 +549,31 @@ button.scribe-callout-emoji-btn:hover {
   flex: 1 1 auto;
   min-width: 0;
 }
-.scribe-callout-body > * + * {
-  margin-top: 0.6em;
+/* TipTap's React node view wraps the body content in an extra
+   `div[data-node-view-content-react]`, so the callout's real blocks are
+   grandchildren of `.scribe-callout-body` (same as the essay body below). A
+   `> * + *` on the body itself only ever sees that single wrapper, so no
+   inter-block margin lands and the blocks collapse together — the spacing has
+   to target the inner wrapper's children. Mirror the top-level prose rhythm
+   (0.9em) so callout content reads with the same spacing as plain text. */
+.scribe-callout-body [data-node-view-content-react] > * + * {
+  margin-top: 0.9em;
 }
-.scribe-callout-body > :first-child {
+.scribe-callout-body [data-node-view-content-react] > :first-child {
   margin-top: 0;
+}
+/* A divider dropped inside a callout sits on the tinted panel, where the
+   full-page hairline (a strong 18% text tint) reads as a heavy full-bleed
+   break. Match the callout's own hairline frame (`--color-border`) instead so
+   the rule recedes into the surface — a quiet separator rather than a bar. Its
+   own (slightly generous) symmetric margin gives it room to breathe; this rule
+   outweighs the sibling-spacing rule above, so the gap can't come from there. */
+.scribe-callout-body [data-node-view-content-react] > hr {
+  border: none;
+  height: 1px;
+  margin: 0.625em 0;
+  padding: 0;
+  background: var(--color-border);
 }
 .scribe-callout-controls {
   position: absolute;
@@ -690,10 +713,13 @@ button.scribe-essay-icon-btn:hover {
   min-width: 0;
   border-radius: var(--radius-sm);
 }
-.scribe-column-body > * + * {
+/* As with the callout/essay/quote bodies, the React node view nests the real
+   blocks under an inner `[data-node-view-content-react]` wrapper, so target the
+   wrapper's children — a `> * + *` on the body only matches the lone wrapper. */
+.scribe-column-body [data-node-view-content-react] > * + * {
   margin-top: 0.7em;
 }
-.scribe-column-body > :first-child {
+.scribe-column-body [data-node-view-content-react] > :first-child {
   margin-top: 0;
 }
 /* Editing guides: while the editor is editable, each column reserves a

@@ -12,12 +12,13 @@ import {
 import type { IconProps } from "@/lib/make-icon";
 
 /**
- * A basic block type shared by the slash menu and the block handle's "Turn
- * into" submenu. These are the textblock conversions that read and apply
- * identically in both places (same label, icon, and command), so they live in
- * one registry to keep the two menus in lockstep. Insert-only blocks (tables,
- * columns, callouts, page links, …) and conversions unique to one menu stay
- * defined alongside their menu.
+ * A basic block type the slash menu inserts via command (it always runs from an
+ * empty paragraph, where `setNode`/`toggleXList` apply cleanly). The block
+ * handle's "Turn into" submenu instead uses the content-preserving registry in
+ * `block-convert.ts`, which works from any source; the two are kept in lockstep
+ * by sharing the same labels and icons (Text, Heading 1-3, the three lists, …).
+ * Insert-only blocks (tables, columns, callouts, page links, …) and conversions
+ * unique to one menu stay defined alongside their menu.
  */
 export interface BasicBlockType {
   title: string;

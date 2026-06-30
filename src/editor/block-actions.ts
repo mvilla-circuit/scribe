@@ -1,6 +1,6 @@
 import type { JSONContent } from "@tiptap/core";
 import { NodeSelection } from "@tiptap/pm/state";
-import type { ChainedCommands, Editor } from "@tiptap/react";
+import type { Editor } from "@tiptap/react";
 
 // Block-level actions for the gutter handle menu, lifted out of the
 // BlockHandle component so the operations (and the trickiest one — column
@@ -29,20 +29,6 @@ export function removeBlock(editor: Editor, pos: number) {
     .focus()
     .deleteRange({ from: pos, to: pos + node.nodeSize })
     .run();
-}
-
-/** Run a "Turn into" conversion against the textblock at `pos`. */
-export function turnIntoBlock(
-  editor: Editor,
-  pos: number,
-  apply: (chain: ChainedCommands) => ChainedCommands,
-) {
-  apply(
-    editor
-      .chain()
-      .focus()
-      .setTextSelection(pos + 1),
-  ).run();
 }
 
 /**

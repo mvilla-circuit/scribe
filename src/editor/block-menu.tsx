@@ -1,5 +1,3 @@
-import type { ChainedCommands } from "@tiptap/react";
-
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -11,40 +9,21 @@ import {
 import type { IconProps } from "@/lib/make-icon";
 
 import type { BlockTarget } from "./block-handle-target";
-import { BASIC_BLOCK_TYPES } from "./extensions/block-types";
+import {
+  CONVERT_TARGETS,
+  CONVERTIBLE_SOURCES,
+  type ConvertTargetId,
+  sourceTypeId,
+} from "./extensions/block-convert";
 import {
   CheckIcon,
-  CodeBlockIcon,
   Columns2Icon,
   Columns3Icon,
   CopyIcon,
   CopyToClipboardIcon,
-  QuoteIcon,
   TextIcon,
   TrashIcon,
 } from "./icons";
-
-// "Turn into" conversions. Each applies to the textblock the handle points at,
-// mirroring the slash-menu commands so block typing stays consistent.
-interface TurnInto {
-  label: string;
-  icon: (props: IconProps) => React.ReactNode;
-  apply: (chain: ChainedCommands) => ChainedCommands;
-}
-
-const TURN_INTO: TurnInto[] = [
-  // The basic textblock conversions, shared verbatim with the slash menu.
-  ...BASIC_BLOCK_TYPES.map((block): TurnInto => ({
-    label: block.title,
-    icon: block.icon,
-    apply: block.command,
-  })),
-  // Conversions unique to the handle: Quote wraps the block in place (the slash
-  // menu instead inserts fresh pull/accent quotes), and Code keeps its short
-  // label here.
-  { label: "Quote", icon: QuoteIcon, apply: (c) => c.wrapIn("quote") },
-  { label: "Code", icon: CodeBlockIcon, apply: (c) => c.toggleCodeBlock() },
-];
 
 // Column-count choices offered for a `columns` block. "1" flattens the block
 // back to normal top-level blocks; 2-3 set the number of side-by-side columns.
@@ -61,7 +40,7 @@ const COLUMN_OPTIONS: {
 interface BlockMenuProps {
   /** The block the menu acts on (snapshotted when the menu opened). */
   target: BlockTarget | null;
-  onTurnInto: (apply: (chain: ChainedCommands) => ChainedCommands) => void;
+  onTurnInto: (targetId: ConvertTargetId) => void;
   onChangeColumns: (count: number) => void;
   onCopy: () => void;
   onDuplicate: () => void;
@@ -79,10 +58,14 @@ export function BlockMenu({
   onDuplicate,
   onRemove,
 }: BlockMenuProps) {
-  // "Turn into" only makes sense for plain textblocks (paragraph, heading,
-  // code). Structural blocks (callout, columns, table, divider) just get the
+  // "Turn into" shows for every text-bearing block (paragraph, heading, lists,
+  // quote, callout, code); the current type/variant is marked with a check.
+  // Structural blocks (columns, table, divider, cards) only get the
   // reorder/duplicate/delete actions.
-  const canTurnInto = target?.node.type.isTextblock ?? false;
+  const canTurnInto = target
+    ? CONVERTIBLE_SOURCES.has(target.node.type.name)
+    : false;
+  const currentTypeId = target ? sourceTypeId(target.node) : null;
 
   // A `columns` block gets a persistent column-count control (1/2/3).
   const isColumns = target?.node.type.name === "columns";
@@ -104,15 +87,18 @@ export function BlockMenu({
               Turn into
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
-              {TURN_INTO.map((option) => (
+              {CONVERT_TARGETS.map((option) => (
                 <DropdownMenuItem
-                  key={option.label}
+                  key={option.id}
                   onSelect={() => {
-                    onTurnInto(option.apply);
+                    onTurnInto(option.id);
                   }}
                 >
                   <option.icon size={15} />
                   {option.label}
+                  {currentTypeId === option.id && (
+                    <CheckIcon size={15} className="ml-auto" />
+                  )}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuSubContent>

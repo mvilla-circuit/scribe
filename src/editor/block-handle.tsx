@@ -1,6 +1,6 @@
 import { DragHandle } from "@tiptap/extension-drag-handle-react";
 import type { Node as PMNode } from "@tiptap/pm/model";
-import type { ChainedCommands, Editor } from "@tiptap/react";
+import type { Editor } from "@tiptap/react";
 import { memo, useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -14,10 +14,10 @@ import {
   duplicateBlock,
   removeBlock,
   setColumnCount,
-  turnIntoBlock,
 } from "./block-actions";
 import type { BlockTarget } from "./block-handle-target";
 import { BlockMenu } from "./block-menu";
+import { convertBlock, type ConvertTargetId } from "./extensions/block-convert";
 import { DragHandleIcon } from "./icons";
 import { useBlockHandleDrag } from "./use-block-handle-drag";
 import { useBlockHandlePosition } from "./use-block-handle-position";
@@ -85,8 +85,8 @@ export const BlockHandle = memo(function BlockHandle({
   }, [editor, menuTarget]);
 
   const turnInto = useCallback(
-    (apply: (chain: ChainedCommands) => ChainedCommands) => {
-      if (menuTarget) turnIntoBlock(editor, menuTarget.pos, apply);
+    (targetId: ConvertTargetId) => {
+      if (menuTarget) convertBlock(editor, menuTarget.pos, targetId);
     },
     [editor, menuTarget],
   );
