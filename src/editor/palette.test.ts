@@ -12,8 +12,8 @@ import {
   TEXT_COLORS,
 } from "./palette";
 
-// Every palette is a calm fourteen-hue sweep that closes on the theme-aware
-// "Ink" tone, so each row of swatches stays aligned across the editor surfaces.
+// Every palette is a calm fourteen-hue sweep that closes on an "Ink" tone, so
+// each row of swatches stays aligned across the editor surfaces.
 const FOURTEEN_HUE_PALETTES: Record<string, Swatch[]> = {
   TEXT_COLORS,
   HIGHLIGHT_COLORS,
@@ -21,6 +21,7 @@ const FOURTEEN_HUE_PALETTES: Record<string, Swatch[]> = {
   CALLOUT_COLORS,
   TABLE_HEADER_COLORS,
   TABLE_CELL_COLORS,
+  BANNER_COLORS,
 };
 
 describe("palette invariants", () => {
@@ -33,9 +34,32 @@ describe("palette invariants", () => {
     },
   );
 
-  it("derives BANNER_COLORS from TEXT_COLORS with Ink dropped", () => {
-    expect(BANNER_COLORS.some((s) => s.name === "Ink")).toBe(false);
-    expect(BANNER_COLORS).toEqual(TEXT_COLORS.filter((s) => s.name !== "Ink"));
+  it.each(Object.entries(FOURTEEN_HUE_PALETTES))(
+    "%s stores every hue as a CSS-variable token, never a resolved color",
+    (_name, palette) => {
+      // Drop the trailing Ink swatch (its own token), then require each hue to be
+      // a `var(--swatch-…)` solid or an `rgba(var(--swatch-…-rgb), a)` wash — so a
+      // palette edit in index.css retints saved content instead of a baked literal.
+      const SOLID = /^var\(--swatch-[a-z]+\)$/;
+      const WASH = /^rgba\(var\(--swatch-[a-z]+-rgb\), \d\.\d{2}\)$/;
+      for (const swatch of palette.slice(0, -1)) {
+        expect(
+          SOLID.test(swatch.value) || WASH.test(swatch.value),
+          `${swatch.name} = ${swatch.value}`,
+        ).toBe(true);
+      }
+    },
+  );
+
+  it("shares the solid hue sweep with TEXT_COLORS but uses a banner-specific Ink", () => {
+    // The hue sweep matches TEXT_COLORS exactly...
+    expect(BANNER_COLORS.slice(0, -1)).toEqual(TEXT_COLORS.slice(0, -1));
+    // ...but the banner's Ink uses a token that stays dark in both themes, so it
+    // never flips to near-white and hides the banner's fixed light caption.
+    expect(BANNER_COLORS.at(-1)).toEqual({
+      name: "Ink",
+      value: "var(--swatch-banner-ink)",
+    });
   });
 
   it("defaults a fresh callout to the Info variant", () => {

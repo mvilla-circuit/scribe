@@ -2,10 +2,16 @@
 // swatches — soft, dusty, low-chroma "Morandi" tones rather than a full color
 // wheel. The aim is premium and calm: accents that whisper instead of shout.
 //
+// Every swatch's `value` is a CSS-variable reference (`var(--swatch-…)`), not a
+// resolved color: the literal hues live once in `index.css` and resolve at
+// render. Storing the token means editing a hue there retints every saved
+// instance live, instead of baking a now-stale color into the document.
+//
 // Text colors are solid mid-tones chosen to stay legible on both the warm
 // paper background (light) and the near-black surface (dark). Highlights are
-// translucent washes (rgba) so they tint the page gently and keep the theme's
-// own text color readable in either mode — no light-on-light surprises.
+// translucent washes (the hue's rgb token composed at an alpha) so they tint the
+// page gently and keep the theme's own text color readable in either mode — no
+// light-on-light surprises.
 
 /** A single selectable text-color or highlight swatch. */
 export interface Swatch {
@@ -18,35 +24,50 @@ export interface Swatch {
 // The single base hue set every palette derives from: thirteen calm, low-chroma
 // "Morandi" hues ordered as a warm-to-cool sweep (a neutral stone first, then a
 // warm-to-cool rainbow — yellow, orange, brown, red, pink, the two purples, the
-// two blues, teal, the two greens). Each hue carries a `solid` mid-tone (for
-// legible foreground text) and a lighter `wash` rgb (for translucent background
-// fills); every palette picks whichever channel its surface needs, so they all
-// stay in one consistent family and order. The theme-aware "Ink" swatch is
-// appended per-palette after the sweep (its token differs by surface), so it is
-// not part of this table.
+// two blues, teal, the two greens). Each hue references two CSS-variable tokens
+// (defined once in `index.css`): a `solid` mid-tone (legible foreground text,
+// quote accents, banners) and a `wash` "r, g, b" triple (composed at a
+// per-surface alpha for translucent fills). Storing the `var()` reference rather
+// than a resolved color is what lets a palette edit in `index.css` retint every
+// saved instance live. The theme-aware "Ink" swatch is appended per-palette
+// after the sweep (its token differs by surface), so it is not part of this
+// table.
 interface Hue {
   /** Stable label shown in swatch tooltips. */
   name: string;
-  /** Solid mid-tone (hex) for foreground text, quote accents, and banners. */
+  /** `var(--swatch-<slug>)` token for foreground text, quote accents, banners. */
   solid: string;
-  /** Lighter "r, g, b" triple for translucent highlight/callout/table washes. */
+  /**
+   * `var(--swatch-<slug>-rgb)` token holding an "r, g, b" triple, composed at a
+   * per-surface alpha for translucent highlight/callout/table washes.
+   */
   wash: string;
 }
 
+// Build a hue from its slug so each entry names its `--swatch-<slug>` /
+// `--swatch-<slug>-rgb` token pair (declared in `index.css`) exactly once.
+function makeHue(name: string, slug: string): Hue {
+  return {
+    name,
+    solid: `var(--swatch-${slug})`,
+    wash: `var(--swatch-${slug}-rgb)`,
+  };
+}
+
 const HUES: readonly Hue[] = [
-  { name: "Stone", solid: "#8c857c", wash: "150, 158, 150" },
-  { name: "Honey", solid: "#b0924f", wash: "214, 178, 110" },
-  { name: "Terracotta", solid: "#b07a5c", wash: "212, 160, 120" },
-  { name: "Umber", solid: "#8a6e57", wash: "168, 140, 108" },
-  { name: "Clay", solid: "#b27f78", wash: "200, 142, 134" },
-  { name: "Rosewood", solid: "#b6829a", wash: "206, 150, 178" },
-  { name: "Mauve", solid: "#a47db2", wash: "196, 150, 206" },
-  { name: "Plum", solid: "#6f5499", wash: "150, 112, 196" },
-  { name: "Sky", solid: "#6ba6c8", wash: "120, 178, 210" },
-  { name: "Dusk", solid: "#5a6cb0", wash: "96, 120, 198" },
-  { name: "Eucalyptus", solid: "#4e8a84", wash: "110, 168, 160" },
-  { name: "Sage", solid: "#84926d", wash: "150, 168, 124" },
-  { name: "Fern", solid: "#5f7d5b", wash: "118, 158, 114" },
+  makeHue("Stone", "stone"),
+  makeHue("Honey", "honey"),
+  makeHue("Terracotta", "terracotta"),
+  makeHue("Umber", "umber"),
+  makeHue("Clay", "clay"),
+  makeHue("Rosewood", "rosewood"),
+  makeHue("Mauve", "mauve"),
+  makeHue("Plum", "plum"),
+  makeHue("Sky", "sky"),
+  makeHue("Dusk", "dusk"),
+  makeHue("Eucalyptus", "eucalyptus"),
+  makeHue("Moss", "moss"),
+  makeHue("Fern", "fern"),
 ];
 
 // "Ink" is the lone theme-aware swatch: it stores a CSS variable that resolves
@@ -102,15 +123,22 @@ export const CALLOUT_COLORS: Swatch[] = washPalette(
   "var(--swatch-ink-fill)",
 );
 
+// "Ink" on a banner can't reuse the theme-aware `--swatch-ink`: that flips to
+// near-white in the dark theme, which would hide the banner's fixed light
+// caption text. Instead it stores a banner-specific token that stays a solid
+// dark ink in BOTH themes, so the light caption always reads.
+const BANNER_INK: Swatch = { name: "Ink", value: "var(--swatch-banner-ink)" };
+
 // Fills for the page-level banner — the full-width band shown directly below a
 // page's breadcrumbs. Unlike the faint block washes, a banner is a bold solid
-// band designed to carry light caption text, so it reuses the solid Morandi
-// `TEXT_COLORS` (mid-tone hues) for a confident, saturated fill. The theme-aware
-// "Ink" tone is dropped: it flips to near-white in the dark theme, which would
-// hide the banner's fixed light caption text.
-export const BANNER_COLORS: Swatch[] = TEXT_COLORS.filter(
-  (s) => s.name !== "Ink",
-);
+// band designed to carry light caption text, so it reuses the solid Morandi hue
+// sweep (mid-tone hues) for a confident, saturated fill, closing on the
+// banner-specific Ink above (dark in both themes) rather than the theme-aware
+// `--swatch-ink`.
+export const BANNER_COLORS: Swatch[] = [
+  ...HUES.map((hue) => ({ name: hue.name, value: hue.solid })),
+  BANNER_INK,
+];
 
 // Header washes for the table block. A table header strip (the header row and/or
 // header column) sits between an inline highlight and a callout in presence — it
@@ -147,8 +175,10 @@ export interface CalloutVariant {
 
 // The default a fresh callout starts from (the Info variant). Defined as its
 // own constant so it's statically known to exist (vs. an array index lookup).
+// The wash is the Sky callout token (CALLOUT_COLORS index 8) — kept in sync by
+// the palette test — so it resolves and retints from `index.css` like the rest.
 export const CALLOUT_DEFAULT: CalloutVariant = {
   name: "Info",
   icon: "ℹ️",
-  color: "rgba(120, 178, 210, 0.16)",
+  color: "rgba(var(--swatch-sky-rgb), 0.16)",
 };

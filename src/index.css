@@ -84,6 +84,43 @@
   --swatch-ink: #23221f; /* solid text/accent */
   --swatch-ink-wash: rgba(40, 38, 34, 0.2); /* inline highlight band */
   --swatch-ink-fill: rgba(40, 38, 34, 0.12); /* callout block fill */
+  /* The banner's "Ink" stays a solid dark ink in BOTH themes (it never flips
+     to near-white) so the banner's fixed light caption text always reads. */
+  --swatch-banner-ink: #2c2a26;
+  /* The Morandi hue sweep, the single source of truth for every editor color
+     swatch. Each hue carries a solid mid-tone (foreground text/banners) and an
+     "r, g, b" wash triple (composed at an alpha per surface for translucent
+     highlights/callouts/table fills). palette.ts stores these as `var()`
+     references on marks and node attributes, so editing a value here retints
+     every saved instance live. The hues are theme-independent (defined once
+     here); only "Ink" above flips per theme. The comma form lets a value site
+     compose alpha via `rgba(var(--swatch-<hue>-rgb), <alpha>)`. */
+  --swatch-stone: #8c857c;
+  --swatch-stone-rgb: 150, 158, 150;
+  --swatch-honey: #b0924f;
+  --swatch-honey-rgb: 214, 178, 110;
+  --swatch-terracotta: #b07a5c;
+  --swatch-terracotta-rgb: 212, 160, 120;
+  --swatch-umber: #8a6e57;
+  --swatch-umber-rgb: 168, 140, 108;
+  --swatch-clay: #b27f78;
+  --swatch-clay-rgb: 200, 142, 134;
+  --swatch-rosewood: #b6829a;
+  --swatch-rosewood-rgb: 206, 150, 178;
+  --swatch-mauve: #a47db2;
+  --swatch-mauve-rgb: 196, 150, 206;
+  --swatch-plum: #6f5499;
+  --swatch-plum-rgb: 150, 112, 196;
+  --swatch-sky: #6ba6c8;
+  --swatch-sky-rgb: 120, 178, 210;
+  --swatch-dusk: #5a6cb0;
+  --swatch-dusk-rgb: 96, 120, 198;
+  --swatch-eucalyptus: #4e8a84;
+  --swatch-eucalyptus-rgb: 110, 168, 160;
+  --swatch-moss: #a4ac72;
+  --swatch-moss-rgb: 188, 198, 134;
+  --swatch-fern: #4d6a48;
+  --swatch-fern-rgb: 96, 134, 92;
   /* Neutral default accent for blocks (quote/essay rules) when no swatch is
      chosen. Kept a calm stone gray — not the blue UI accent — so an untinted
      block reads as quietly neutral rather than coloured. */
@@ -124,6 +161,9 @@
   --swatch-ink: #ededeb;
   --swatch-ink-wash: rgba(232, 230, 227, 0.18);
   --swatch-ink-fill: rgba(232, 230, 227, 0.1);
+  /* A touch lighter than the dark page so the Ink banner still reads as a
+     distinct band, while staying dark enough for the light caption. */
+  --swatch-banner-ink: #34322d;
   /* A touch lighter on the dark surface so the neutral rule stays visible. */
   --block-accent: #9c958b;
 }

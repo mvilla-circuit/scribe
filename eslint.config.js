@@ -363,6 +363,25 @@ export default defineConfig([
     },
   },
 
+  // One-off maintenance scripts run with `tsx` (e.g. data migrations). They run
+  // in Node, log progress to stdout, and wade through untyped Supabase rows and
+  // arbitrary JSON, so allow `console` and relax the no-unsafe-* family (as the
+  // editor-extensions and test carve-outs do).
+  {
+    files: ["scripts/**/*.ts"],
+    languageOptions: {
+      globals: globals.node,
+    },
+    rules: {
+      "no-console": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+    },
+  },
+
   // Tests and the shared test harness. Wire up the Vitest / Testing Library /
   // jest-dom lint plugins and relax a few production-only rules that fight with
   // test ergonomics (render helpers export non-components; fixtures lean on
