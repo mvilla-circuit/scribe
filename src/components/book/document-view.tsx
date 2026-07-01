@@ -150,7 +150,6 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
       <PageBanner
         color={document.banner_color}
         text={document.banner_text}
-        bodyFont={bodyFont}
         reserveOutline={showOutline}
         onCommitText={(bannerText) => {
           updateDocument.mutate({

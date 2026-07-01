@@ -10,13 +10,11 @@ import { EditableText } from "./editable-text";
 export function PageBanner({
   color,
   text,
-  bodyFont,
   reserveOutline,
   onCommitText,
 }: {
   color: string | null;
   text: string | null;
-  bodyFont: string;
   reserveOutline: boolean;
   onCommitText: (text: string) => void;
 }) {
@@ -36,8 +34,8 @@ export function PageBanner({
             ariaLabel="Banner caption"
             allowEmpty
             onCommit={onCommitText}
-            className="text-sm font-medium tracking-[0.08em]"
-            style={{ color: "rgba(255, 255, 255, 0.95)", fontFamily: bodyFont }}
+            className="font-sans text-sm font-medium tracking-[0.08em]"
+            style={{ color: "rgba(255, 255, 255, 0.95)" }}
           />
         </div>
         {reserveOutline && (
