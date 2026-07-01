@@ -95,8 +95,7 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
               subtitle: subtitle || null,
             });
           }}
-          className="mt-2 text-xl leading-snug text-muted"
-          style={{ fontFamily: bodyFont }}
+          className="mt-2 font-sans text-xl leading-snug text-muted"
         />
       )}
 
