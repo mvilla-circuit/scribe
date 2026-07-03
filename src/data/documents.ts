@@ -92,6 +92,14 @@ export function docFontOverrides(doc: DocumentMeta): DocFontOverrides {
   return coerceFontMap(doc.font_overrides);
 }
 
+/**
+ * How many page rows to request per round-trip when loading a book. The Supabase
+ * API caps any single response at `max_rows` (see `supabase/config.toml`), so a
+ * book with more pages than the cap must be fetched over successive pages. Keep
+ * this at or below that cap; a book smaller than it still loads in one request.
+ */
+export const DOCUMENTS_PAGE_SIZE = 1000;
+
 /** Query hook for one book's page metadata (no editor bodies), by position. */
 export function useDocuments(bookId: string | null) {
   return useQuery({
@@ -99,13 +107,25 @@ export function useDocuments(bookId: string | null) {
     enabled: bookId !== null,
     queryFn: async (): Promise<DocumentMeta[]> => {
       if (bookId === null) return [];
-      const { data, error } = await supabase
-        .from("documents")
-        .select(DOCUMENT_META_COLUMNS)
-        .eq("book_id", bookId)
-        .order("position", { ascending: true });
-      if (error) throw error;
-      return (data ?? []).slice().sort(byPosition);
+      // Page through the API's `max_rows` cap: request fixed-size windows until
+      // one comes back short, so a book with more pages than the cap still
+      // loads in full. A total order (position, then the unique id) keeps the
+      // windows from overlapping or skipping rows when positions tie.
+      const all: DocumentMeta[] = [];
+      for (let from = 0; ; from += DOCUMENTS_PAGE_SIZE) {
+        const { data, error } = await supabase
+          .from("documents")
+          .select(DOCUMENT_META_COLUMNS)
+          .eq("book_id", bookId)
+          .order("position", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, from + DOCUMENTS_PAGE_SIZE - 1);
+        if (error) throw error;
+        const batch = data ?? [];
+        all.push(...batch);
+        if (batch.length < DOCUMENTS_PAGE_SIZE) break;
+      }
+      return all.slice().sort(byPosition);
     },
   });
 }

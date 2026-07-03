@@ -15,6 +15,7 @@ import {
 } from "./document-duplicate";
 import {
   docFontOverrides,
+  DOCUMENTS_PAGE_SIZE,
   needsTitlePage,
   useDeleteDocument,
   useDocumentContent,
@@ -179,6 +180,35 @@ describe("useDocuments", () => {
     // fetch status rather than loading.
     expect(result.current.fetchStatus).toBe("idle");
     expect(result.current.isPending).toBe(true);
+  });
+
+  it("pages past the API row cap so a book larger than max_rows loads every page", async () => {
+    // The API returns at most DOCUMENTS_PAGE_SIZE rows per request, so a book
+    // with one more page than the cap must be fetched over two round-trips.
+    const firstPage = Array.from({ length: DOCUMENTS_PAGE_SIZE }, (_, i) =>
+      makeDocument({ id: `p${i}`, position: i + 1 }),
+    );
+    const overflow = makeDocument({
+      id: "overflow",
+      position: DOCUMENTS_PAGE_SIZE + 1,
+    });
+
+    server.use(
+      http.get(DOCUMENTS_URL, ({ request }) => {
+        // `.range()` is sent as `offset`/`limit` query params: the first page
+        // starts at offset 0, the remainder at the next offset.
+        const offset = new URL(request.url).searchParams.get("offset");
+        return HttpResponse.json(offset === "0" ? firstPage : [overflow]);
+      }),
+    );
+
+    const { result } = renderHookWithQuery(() => useDocuments("book-1"));
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(result.current.data).toHaveLength(DOCUMENTS_PAGE_SIZE + 1);
+    expect(result.current.data?.some((d) => d.id === "overflow")).toBe(true);
   });
 });
 
