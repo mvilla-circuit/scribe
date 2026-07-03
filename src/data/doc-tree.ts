@@ -12,8 +12,16 @@ export interface DocTreeNode {
   children: DocTreeNode[];
 }
 
-/** Builds the nested document tree for a book from its flat document list. */
-export function buildDocTree(documents: DocumentMeta[]): DocTreeNode[] {
+/**
+ * Builds the nested document tree for a book from its flat document list.
+ * Passing a `rootId` scopes the result to that document's subtree, returning its
+ * direct children as the roots -- the shape a parent page's inline Table of
+ * Contents renders from. Defaults to the whole book (roots with no parent).
+ */
+export function buildDocTree(
+  documents: DocumentMeta[],
+  rootId: string | null = null,
+): DocTreeNode[] {
   const hierarchy = documents.filter((d) => !d.is_title_page);
   const validIds = new Set(hierarchy.map((d) => d.id));
 
@@ -36,7 +44,7 @@ export function buildDocTree(documents: DocumentMeta[]): DocTreeNode[] {
       .sort(byPosition)
       .map((document) => ({ document, children: build(document.id) }));
 
-  return build(null);
+  return build(rootId);
 }
 
 /** A flattened table-of-contents row: a document tagged with its nesting depth. */

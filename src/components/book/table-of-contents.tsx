@@ -13,13 +13,22 @@ import { INDENT } from "./outline-dnd";
 interface TableOfContentsProps {
   documents: DocumentMeta[];
   loading: boolean;
-  onCreateFirst: () => void;
+  /**
+   * Empty-state action (cover only) offering to create the book's first page.
+   * Omitted when the list can't be empty (a parent page always has children).
+   */
+  onCreateFirst?: () => void;
   /** The book's resolved title-role font, so the contents echo the cover. */
   titleFont: string;
   /** Ids of expanded parents; collapsed parents hide their subtree. */
   expandedIds: Set<string>;
   /** Toggle a single parent's expansion. */
   onToggle: (id: string) => void;
+  /**
+   * Scope the contents to a single document's subtree (its children become the
+   * roots). Defaults to the whole book -- the book cover's behavior.
+   */
+  rootId?: string | null;
 }
 
 // The book's auto Table of Contents: the document hierarchy, depth-indented,
@@ -32,10 +41,14 @@ export function TableOfContents({
   titleFont,
   expandedIds,
   onToggle,
+  rootId = null,
 }: TableOfContentsProps) {
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
 
-  const tree = useMemo(() => buildDocTree(documents), [documents]);
+  const tree = useMemo(
+    () => buildDocTree(documents, rootId),
+    [documents, rootId],
+  );
   const entries = useMemo(
     () => flattenTocExpanded(tree, expandedIds),
     [tree, expandedIds],
@@ -46,6 +59,9 @@ export function TableOfContents({
   }
 
   if (entries.length === 0) {
+    // A scoped subtree (parent-page contents) has no first-page affordance --
+    // it only renders when the page already has children, so stay silent.
+    if (!onCreateFirst) return null;
     return (
       <div className="mt-10 rounded-lg border border-dashed border-border px-6 py-8 text-center">
         <p className="text-base text-text" style={{ fontFamily: titleFont }}>

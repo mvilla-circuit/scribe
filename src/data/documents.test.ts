@@ -15,6 +15,7 @@ import {
 } from "./document-duplicate";
 import {
   docFontOverrides,
+  type DocumentMeta,
   DOCUMENTS_PAGE_SIZE,
   needsTitlePage,
   useDeleteDocument,
@@ -395,6 +396,33 @@ describe("useUpdateDocument", () => {
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: documentsKey("book-1"),
     });
+    expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: pageIndexKey });
+  });
+
+  it("skips the page index for a show_contents-only patch", async () => {
+    server.use(
+      http.patch(DOCUMENTS_URL, () => new HttpResponse(null, { status: 204 })),
+    );
+
+    const client = createTestQueryClient();
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+    client.setQueryData(documentsKey("book-1"), [
+      makeDocument({ id: "d1", show_contents: false }),
+    ]);
+
+    const { result } = renderHookWithQuery(() => useUpdateDocument("book-1"), {
+      client,
+    });
+    result.current.mutate({ id: "d1", show_contents: true });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    // Contents visibility isn't part of the cross-book page index, so only the
+    // structural list reconciles.
+    const cached = client.getQueryData<DocumentMeta[]>(documentsKey("book-1"));
+    expect(cached?.[0]?.show_contents).toBe(true);
     expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: pageIndexKey });
   });
 });

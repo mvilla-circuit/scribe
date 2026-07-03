@@ -25,6 +25,7 @@ import { Masthead } from "./masthead";
 import { PageBanner } from "./page-banner";
 import { PageOutline } from "./page-outline";
 import { PageSettingsToolbar } from "./page-settings-toolbar";
+import { TableOfContents } from "./table-of-contents";
 
 interface DocumentViewProps {
   book: Book;
@@ -49,6 +50,25 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
   const proseContainerRef = useRef<HTMLDivElement>(null);
 
   const showOutline = document.show_outline && headings.length > 0;
+
+  // A parent page (one with child pages) can render its subtree as an inline
+  // table of contents, mirroring the book cover.
+  const hasChildren = documents.some(
+    (d) => d.parent_document_id === document.id && !d.is_title_page,
+  );
+  const showContents = document.show_contents && hasChildren;
+
+  // Contents expansion is local + session-scoped and opens collapsed, matching
+  // the Title Page's Table of Contents.
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const toggleContentsRow = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   // Fonts cascade global -> book -> page, resolved live so changes apply without
   // a reload. Title uses the Display role, body prose the Text role, code the
@@ -123,6 +143,13 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
           fontOverrides={overrides}
           inheritedFonts={inherited}
           fontHandlers={pageFonts}
+          hasChildren={hasChildren}
+          onToggleContents={() => {
+            updateDocument.mutate({
+              id: document.id,
+              show_contents: !document.show_contents,
+            });
+          }}
           onToggleOutline={() => {
             updateDocument.mutate({
               id: document.id,
@@ -173,6 +200,17 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
           >
             {titleBlock}
           </Masthead>
+
+          {showContents && (
+            <TableOfContents
+              documents={documents}
+              loading={false}
+              titleFont={titleFont}
+              rootId={document.id}
+              expandedIds={expandedIds}
+              onToggle={toggleContentsRow}
+            />
+          )}
 
           <div
             ref={proseContainerRef}

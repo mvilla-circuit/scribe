@@ -102,6 +102,7 @@ export type Database = {
           is_title_page: boolean
           parent_document_id: string | null
           position: number
+          show_contents: boolean
           show_outline: boolean
           show_subtitle: boolean
           subtitle: string | null
@@ -121,6 +122,7 @@ export type Database = {
           is_title_page?: boolean
           parent_document_id?: string | null
           position?: number
+          show_contents?: boolean
           show_outline?: boolean
           show_subtitle?: boolean
           subtitle?: string | null
@@ -140,6 +142,7 @@ export type Database = {
           is_title_page?: boolean
           parent_document_id?: string | null
           position?: number
+          show_contents?: boolean
           show_outline?: boolean
           show_subtitle?: boolean
           subtitle?: string | null

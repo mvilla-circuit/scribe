@@ -31,6 +31,26 @@ describe("buildDocTree", () => {
     ]);
     expect(tree.map((n) => n.document.id).sort()).toEqual(["lost", "orphan"]);
   });
+
+  it("scopes to a rootId subtree, returning that document's children as roots", () => {
+    const tree = buildDocTree(
+      [
+        makeDocument({ id: "ch1", position: 1024 }),
+        makeDocument({ id: "ch1a", parent_document_id: "ch1", position: 1024 }),
+        makeDocument({
+          id: "ch1a1",
+          parent_document_id: "ch1a",
+          position: 1024,
+        }),
+        makeDocument({ id: "ch1b", parent_document_id: "ch1", position: 2048 }),
+        makeDocument({ id: "ch2", position: 2048 }),
+      ],
+      "ch1",
+    );
+
+    expect(tree.map((n) => n.document.id)).toEqual(["ch1a", "ch1b"]);
+    expect(tree[0]?.children.map((n) => n.document.id)).toEqual(["ch1a1"]);
+  });
 });
 
 describe("flattenTocExpanded", () => {

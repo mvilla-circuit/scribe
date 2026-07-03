@@ -9,6 +9,7 @@ import {
   ChevronsUpDown,
   FileText,
   List,
+  ListTree,
   Plus,
 } from "lucide-react";
 
@@ -21,3 +22,4 @@ export const ChevronsUpDownIcon = makeIcon(ChevronsUpDown);
 export const PageIcon = makeIcon(FileText);
 export const PlusIcon = makeIcon(Plus);
 export const ListIcon = makeIcon(List);
+export const ListTreeIcon = makeIcon(ListTree);
