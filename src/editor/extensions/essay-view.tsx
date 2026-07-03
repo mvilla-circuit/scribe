@@ -73,13 +73,13 @@ export function EssayView({ node, updateAttributes, editor }: NodeViewProps) {
                       aria-label="Change essay icon"
                       className="scribe-essay-icon-btn"
                     >
-                      <DocumentIcon icon={icon} size={34} />
+                      <DocumentIcon icon={icon} size={28} />
                     </button>
                   </Tooltip>
                 </IconPicker>
               ) : (
                 <span className="scribe-essay-icon-btn" aria-hidden>
-                  <DocumentIcon icon={icon} size={34} />
+                  <DocumentIcon icon={icon} size={28} />
                 </span>
               )}
             </div>

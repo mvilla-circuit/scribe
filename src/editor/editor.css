@@ -597,7 +597,7 @@ button.scribe-callout-emoji-btn:hover {
 .scribe-prose .scribe-essay {
   position: relative;
   margin: 2em 0;
-  padding: 1.85em 1.25em;
+  padding: 1.3em 1em;
   border-top: 3px solid
     color-mix(in srgb, var(--essay-accent-resolved) 50%, transparent);
   border-bottom: 3px solid
@@ -618,15 +618,15 @@ button.scribe-callout-emoji-btn:hover {
   flex-shrink: 0;
   user-select: none;
 }
-/* The icon box matches the title's line height (font-size 2em x line-height 1.1)
-   and the row top-aligns, so the glyph optically centers on the title's first
-   line and stays anchored there whether or not a subtitle is shown. */
+/* The icon box matches the title's line height (font-size 1.65em x line-height
+   1.15) and the row top-aligns, so the glyph optically centers on the title's
+   first line and stays anchored there whether or not a subtitle is shown. */
 .scribe-essay-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 2.2em;
-  width: 2.2em;
+  height: 1.9em;
+  width: 1.9em;
   border-radius: var(--radius-sm);
   outline: none;
   transition: background 120ms ease;
@@ -644,9 +644,9 @@ button.scribe-essay-icon-btn:hover {
 .scribe-prose .scribe-essay-title {
   margin: 0;
   font-family: var(--font-display, inherit);
-  font-size: 2em;
+  font-size: 1.65em;
   font-weight: 700;
-  line-height: 1.1;
+  line-height: 1.15;
   letter-spacing: -0.015em;
   color: var(--color-text);
 }
@@ -666,18 +666,11 @@ button.scribe-essay-icon-btn:hover {
 .scribe-essay-body [data-node-view-content-react] > :first-child {
   margin-top: 0;
 }
-/* Lists copy the regular list rhythm rather than sitting a full block apart:
-   the list box itself carries no margin, and the per-item 0.25em on the `li`
-   (see `.scribe-prose li`) sets the gap above, below, and between items. The
-   sibling after a list gets the same 0.25em so the spacing stays symmetric. */
-.scribe-essay-body [data-node-view-content-react] > ul,
-.scribe-essay-body [data-node-view-content-react] > ol {
-  margin: 0;
-}
-.scribe-essay-body [data-node-view-content-react] > ul + *,
-.scribe-essay-body [data-node-view-content-react] > ol + * {
-  margin-top: 0.25em;
-}
+/* Lists get the same full-block sibling spacing as regular prose: the `> * + *`
+   rule above (0.9em) sets the gap above the list and above whatever follows it,
+   while the per-item 0.25em on the `li` (see `.scribe-prose li`) carries the
+   internal rhythm. Overriding the list box margin here would out-specify the
+   sibling rule and swallow that top gap, so it's intentionally left alone. */
 .scribe-essay-controls {
   position: absolute;
   top: 0.6em;
