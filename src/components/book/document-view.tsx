@@ -49,7 +49,12 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
   const titleRef = useRef<EditableTextHandle>(null);
   const proseContainerRef = useRef<HTMLDivElement>(null);
 
-  const showOutline = document.show_outline && headings.length > 0;
+  // Reserve the outline gutter from first paint on the stable page flag rather
+  // than waiting for async headings, so the reading column keeps a constant
+  // width and the auto-grown title isn't remeasured-then-clipped when the editor
+  // reports its outline. `PageOutline` renders nothing until headings arrive, so
+  // the reserved column simply starts empty.
+  const reserveOutline = document.show_outline;
 
   // A parent page (one with child pages) can render its subtree as an inline
   // table of contents, mirroring the book cover.
@@ -177,7 +182,7 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
       <PageBanner
         color={document.banner_color}
         text={document.banner_text}
-        reserveOutline={showOutline}
+        reserveOutline={reserveOutline}
         onCommitText={(bannerText) => {
           updateDocument.mutate({
             id: document.id,
@@ -248,7 +253,7 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
           </div>
         </article>
 
-        {showOutline && (
+        {reserveOutline && (
           <aside className="hidden w-52 shrink-0 md:block">
             <PageOutline
               headings={headings}

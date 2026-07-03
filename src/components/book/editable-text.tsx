@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useLayoutEffect,
@@ -78,16 +79,49 @@ export const EditableText = forwardRef<EditableTextHandle, EditableTextProps>(
       if (!focused.current) setDraft(value);
     }, [value]);
 
-    useLayoutEffect(() => {
+    // Auto-grow: reset the height then read scrollHeight so the field tracks its
+    // content. Shared by the text-change effect and the width-change observer
+    // below, since a narrower column can wrap a title onto an extra line.
+    const measure = useCallback(() => {
       const el = ref.current;
       if (!el) return;
       el.style.height = "auto";
       el.style.height = `${el.scrollHeight}px`;
-      if (pendingCaret.current !== null) {
+    }, []);
+
+    useLayoutEffect(() => {
+      measure();
+      const el = ref.current;
+      if (el && pendingCaret.current !== null) {
         el.selectionStart = el.selectionEnd = pendingCaret.current;
         pendingCaret.current = null;
       }
-    }, [draft]);
+    }, [draft, measure]);
+
+    // Remeasure when the field's own width changes — e.g. the reading column
+    // narrows as the page outline mounts on load, or the window/sidebar is
+    // resized. Height is otherwise only recomputed on edits, so a title measured
+    // at the wide width would keep its stale one-line height and get clipped by
+    // `overflow-hidden` once the column shrinks. Guard on width so our own height
+    // writes don't spin the observer, and batch through rAF to coalesce bursts.
+    useEffect(() => {
+      const el = ref.current;
+      if (!el) return;
+      let lastWidth = -1;
+      let frame = 0;
+      const observer = new ResizeObserver((entries) => {
+        const width = entries[0]?.contentRect.width ?? el.clientWidth;
+        if (width === lastWidth) return;
+        lastWidth = width;
+        cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(measure);
+      });
+      observer.observe(el);
+      return () => {
+        cancelAnimationFrame(frame);
+        observer.disconnect();
+      };
+    }, [measure]);
 
     const commit = () => {
       const outcome = resolveEditedValue(draft, {
