@@ -9,6 +9,7 @@ import {
   Folder,
   FolderOpen,
   FolderPlus,
+  Link,
   Pencil,
   Plus,
   Trash2,
@@ -26,4 +27,5 @@ export const TrashIcon = makeIcon(Trash2);
 export const DuplicateIcon = makeIcon(Copy);
 export const FolderPlusIcon = makeIcon(FolderPlus);
 export const BookPlusIcon = makeIcon(BookPlus);
+export const LinkIcon = makeIcon(Link);
 export const AlertIcon = makeIcon(TriangleAlert);

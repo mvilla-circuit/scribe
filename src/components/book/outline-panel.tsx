@@ -32,6 +32,7 @@ import {
   useRenameDocument,
 } from "@/data/documents";
 import { endPositionFor } from "@/data/ordering";
+import { copyPageLink } from "@/editor/copy-page-link";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
 
@@ -158,6 +159,10 @@ export function OutlinePanel({ book }: { book: Book }) {
     [cancelRename, renameDocumentMutate],
   );
 
+  const onCopyLink = useCallback((id: string) => {
+    void copyPageLink("document", id);
+  }, []);
+
   const onDelete = useCallback(
     (node: FlatDocNode) => {
       requestDelete({
@@ -273,6 +278,7 @@ export function OutlinePanel({ book }: { book: Book }) {
                 onCancelRename={cancelRename}
                 onDelete={onDelete}
                 onDuplicate={onDuplicate}
+                onCopyLink={onCopyLink}
                 onNewChild={handleCreate}
               />
             ))}

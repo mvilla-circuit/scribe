@@ -32,6 +32,7 @@ import {
 import { endPositionFor } from "@/data/ordering";
 import { buildTree, childrenOf, countBooksInFolder } from "@/data/tree";
 import { useCreateRootItem } from "@/data/use-create-root-item";
+import { copyPageLink } from "@/editor/copy-page-link";
 import { useUIStore } from "@/store/ui";
 
 import { type FlatNode, flattenTree, getProjection } from "./dnd-tree";
@@ -138,6 +139,10 @@ export function SidebarTree() {
     [cancelRename, renameFolderMutate, renameBookMutate],
   );
 
+  const onCopyLink = useCallback((id: string) => {
+    void copyPageLink("book", id);
+  }, []);
+
   const onDelete = useCallback(
     (node: FlatNode) => {
       if (node.child.kind === "folder") {
@@ -187,6 +192,7 @@ export function SidebarTree() {
       onCommitRename={onCommitRename}
       onCancelRename={cancelRename}
       onDelete={onDelete}
+      onCopyLink={onCopyLink}
       onNewBookInside={onNewBookInside}
     />
   );

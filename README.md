@@ -101,13 +101,12 @@ src-tauri/         Tauri (Rust) shell, config, and capabilities
 
 - Revisit link cards
 - Copy page links
-- Menu option: copy plain text
 - Keyboard shortcuts
 - Review fonts again
 - New books should default to first page created for free
-- ToC (optional) for parent docs
 - Custom dictionary/grammar hints
-- Bug: Random backspacing while typing
+- Search/find functionality
+- Toasts for API failures
 - Prep version 1 (package name and app icon)
 - Install Scribe
 - Update README

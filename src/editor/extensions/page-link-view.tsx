@@ -1,9 +1,9 @@
 import { type NodeViewProps, NodeViewWrapper } from "@tiptap/react";
 import { useEffect, useMemo } from "react";
-import { toast } from "sonner";
 
 import { BlockControls } from "@/editor/block-controls";
 import { CardSurface } from "@/editor/card-surface";
+import { copyPageLink } from "@/editor/copy-page-link";
 import { useEditorBridge } from "@/editor/editor-bridge";
 import { EditorIconButton } from "@/editor/editor-icon-button";
 import {
@@ -14,7 +14,7 @@ import {
 } from "@/editor/icons";
 import { SKIP_AUTOSAVE_META } from "@/editor/use-autosave";
 
-import { pageRef, type PageTargetType } from "./page-ref";
+import { type PageTargetType } from "./page-ref";
 import { PageTargetIcon } from "./page-target-icon";
 
 // Live-resolving internal page card. It reads the current title/icon and the
@@ -67,8 +67,7 @@ export function PageLinkView({
 
   const copyRef = () => {
     if (!targetId) return;
-    void navigator.clipboard.writeText(pageRef(targetType, targetId));
-    toast.success("Page link copied");
+    void copyPageLink(targetType, targetId);
   };
 
   const notFound = !loading && !resolved;

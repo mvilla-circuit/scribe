@@ -11,6 +11,7 @@ import {
   BookPlusIcon,
   FolderIcon,
   FolderOpenIcon,
+  LinkIcon,
   PencilIcon,
   TrashIcon,
 } from "./icons";
@@ -26,6 +27,7 @@ interface TreeRowHandlers {
   onCommitRename: (node: FlatNode, value: string) => void;
   onCancelRename: () => void;
   onDelete: (node: FlatNode) => void;
+  onCopyLink: (id: string) => void;
   onNewBookInside: (id: string) => void;
 }
 
@@ -50,6 +52,7 @@ export const TreeRow = memo(function TreeRow({
   onCommitRename,
   onCancelRename,
   onDelete,
+  onCopyLink,
   onNewBookInside,
 }: TreeRowProps) {
   const child = node.child;
@@ -99,6 +102,17 @@ export const TreeRow = memo(function TreeRow({
       },
       separatorBefore: isFolder,
     },
+    ...(!isFolder
+      ? [
+          {
+            icon: <LinkIcon size={15} />,
+            label: "Copy link",
+            onSelect: () => {
+              onCopyLink(node.id);
+            },
+          },
+        ]
+      : []),
     {
       icon: <TrashIcon size={15} />,
       label: "Delete",

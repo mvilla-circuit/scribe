@@ -2,6 +2,7 @@ import { memo } from "react";
 
 import {
   DuplicateIcon,
+  LinkIcon,
   PencilIcon,
   TrashIcon,
 } from "@/components/sidebar/icons";
@@ -40,6 +41,7 @@ interface OutlineRowHandlers {
   onCancelRename: () => void;
   onDelete: (node: FlatDocNode) => void;
   onDuplicate: (node: FlatDocNode) => void;
+  onCopyLink: (id: string) => void;
   onNewChild: (id: string) => void;
 }
 
@@ -65,6 +67,7 @@ export const OutlineRow = memo(function OutlineRow({
   onCancelRename,
   onDelete,
   onDuplicate,
+  onCopyLink,
   onNewChild,
 }: OutlineRowProps) {
   const label = node.document.title || "Untitled";
@@ -130,6 +133,13 @@ export const OutlineRow = memo(function OutlineRow({
       label: "Duplicate",
       onSelect: () => {
         onDuplicate(node);
+      },
+    },
+    {
+      icon: <LinkIcon size={15} />,
+      label: "Copy link",
+      onSelect: () => {
+        onCopyLink(node.id);
       },
     },
     {
