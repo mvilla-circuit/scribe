@@ -51,6 +51,19 @@ export function profileFonts(
 }
 
 /**
+ * Typed view of the profiles.dictionary jsonb column: the account-wide custom
+ * dictionary (words added via "Add to dictionary"), coerced to a clean string
+ * array so an untrusted column can't leak non-string entries.
+ */
+export function profileDictionary(
+  profile: Profile | null | undefined,
+): string[] {
+  const raw = profile?.dictionary;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((word): word is string => typeof word === "string");
+}
+
+/**
  * Writes the whole global role -> fontId map (callers merge with the current map
  * before saving). Optimistic so the reading surface restyles instantly.
  */
@@ -82,6 +95,7 @@ export function useUpdateProfileFonts() {
         return {
           id: userId,
           fonts: fonts as Json,
+          dictionary: [],
           default_font: null,
           display_name: null,
           theme: "system",
@@ -90,6 +104,51 @@ export function useUpdateProfileFonts() {
         };
       },
       errorMessage: "Couldn't save fonts",
+    }),
+  });
+}
+
+/**
+ * Writes the whole account-wide custom dictionary (callers append to the current
+ * list before saving). Optimistic so a just-added word stops being flagged
+ * immediately across every open page. Upserts (not updates) so a brand-new user
+ * with no profile row yet still gets their first added word persisted.
+ */
+export function useUpdateProfileDictionary() {
+  const qc = useQueryClient();
+  const { session } = useAuth();
+  return useMutation({
+    mutationFn: async (dictionary: string[]) => {
+      const userId = requireUserId(session);
+      await execWrite(
+        supabase
+          .from("profiles")
+          .upsert({ id: userId, dictionary: dictionary as Json }),
+      );
+    },
+    ...optimisticObjectHandlers<Profile, string[]>({
+      qc,
+      key: profileKey,
+      update: (prev, dictionary) => {
+        if (prev) return { ...prev, dictionary: dictionary as Json };
+        // No cached row yet (first-ever added word): mint an optimistic one so
+        // the word stops being flagged instantly. The settle-time refetch
+        // replaces it with the real row, so the defaulted columns are transient.
+        const userId = session?.user.id;
+        if (!userId) return prev;
+        const now = new Date().toISOString();
+        return {
+          id: userId,
+          fonts: {},
+          dictionary: dictionary as Json,
+          default_font: null,
+          display_name: null,
+          theme: "system",
+          created_at: now,
+          updated_at: now,
+        };
+      },
+      errorMessage: "Couldn't update dictionary",
     }),
   });
 }

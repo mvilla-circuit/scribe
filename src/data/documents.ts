@@ -32,7 +32,7 @@ export type DocumentMeta = Omit<Document, "content">;
 // Every column except `content`, so the per-book list query stays lightweight.
 // `as const` preserves the literal type so Supabase still infers the row shape.
 const DOCUMENT_META_COLUMNS =
-  "id, user_id, book_id, parent_document_id, title, icon, subtitle, banner_color, banner_text, show_outline, show_subtitle, show_contents, is_title_page, position, font_overrides, created_at, updated_at" as const;
+  "id, user_id, book_id, parent_document_id, title, icon, subtitle, banner_color, banner_text, show_outline, show_subtitle, show_contents, spellcheck_enabled, spellcheck_ignores, is_title_page, position, font_overrides, created_at, updated_at" as const;
 
 /** Mutation input shapes, shared between each `mutationFn` and its optimistic updater. */
 interface CreateDocumentInput {
@@ -63,6 +63,8 @@ type UpdateDocumentInput = { id: string } & Partial<
     | "show_outline"
     | "show_subtitle"
     | "show_contents"
+    | "spellcheck_enabled"
+    | "spellcheck_ignores"
   >
 >;
 interface MoveDocumentInput {
@@ -91,6 +93,17 @@ export type DocFontOverrides = FontMap;
 /** Typed view of the documents.font_overrides jsonb column. */
 export function docFontOverrides(doc: DocumentMeta): DocFontOverrides {
   return coerceFontMap(doc.font_overrides);
+}
+
+/**
+ * Typed view of the documents.spellcheck_ignores jsonb column: the list of
+ * words the writer chose to ignore for this document, coerced to a clean string
+ * array (dropping any non-string entries an untrusted column might hold).
+ */
+export function docSpellcheckIgnores(doc: DocumentMeta): string[] {
+  const raw = doc.spellcheck_ignores;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((word): word is string => typeof word === "string");
 }
 
 /**
@@ -210,6 +223,8 @@ function newDocumentRow(
     show_outline: false,
     show_subtitle: false,
     show_contents: false,
+    spellcheck_enabled: true,
+    spellcheck_ignores: [],
     is_title_page: input.is_title_page ?? false,
     position: input.position,
     font_overrides: null,

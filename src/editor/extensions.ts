@@ -18,6 +18,7 @@ import { LinkCard } from "./extensions/link-card";
 import { PageLink } from "./extensions/page-link";
 import { Quote } from "./extensions/quote";
 import { SlashCommand } from "./extensions/slash-command";
+import { Spellcheck, type SpellcheckOptions } from "./extensions/spellcheck";
 import { Table, TableCell, TableHeader } from "./extensions/table";
 import { Typography } from "./extensions/typography";
 import { HEADING_LEVELS } from "./headings";
@@ -33,8 +34,12 @@ import { HEADING_LEVELS } from "./headings";
  * On top of that we layer the few marks StarterKit omits: a multicolor
  * Highlight, TextStyle + Color for foreground tints, and a Placeholder that
  * only nudges the first empty line.
+ *
+ * `spellcheck` wires the custom spell checker; when omitted (e.g. schema-only
+ * uses) the extension is added inert (disabled, no checker) so squiggles never
+ * render.
  */
-export function buildExtensions(): Extensions {
+export function buildExtensions(spellcheck?: SpellcheckOptions): Extensions {
   return [
     StarterKit.configure({
       heading: { levels: [...HEADING_LEVELS] },
@@ -134,5 +139,10 @@ export function buildExtensions(): Extensions {
 
     // The "/" command menu, surfacing all of the above plus the built-ins.
     SlashCommand,
+
+    // Custom spell/grammar checking: red squiggles for misspellings, a click
+    // menu with suggestions, and a scaffolded (no-op) grammar provider. Inert
+    // unless configured with an enabled document + checker.
+    spellcheck ? Spellcheck.configure(spellcheck) : Spellcheck,
   ];
 }

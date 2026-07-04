@@ -5,6 +5,7 @@ import { SkeletonText } from "@/components/ui/skeleton";
 import { Tooltip } from "@/components/ui/tooltip";
 import type { Book } from "@/data/books";
 import {
+  docSpellcheckIgnores,
   type DocumentMeta,
   useDocumentContent,
   useRenameDocument,
@@ -12,6 +13,11 @@ import {
   useUpdateDocumentContent,
   useUpdateDocumentFontOverrides,
 } from "@/data/documents";
+import {
+  profileDictionary,
+  useProfile,
+  useUpdateProfileDictionary,
+} from "@/data/profile";
 import { copyPageLink } from "@/editor/copy-page-link";
 import { Editor, type EditorHandle } from "@/editor/lazy-editor";
 import type { OutlineHeading } from "@/editor/outline";
@@ -43,6 +49,16 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
   const updateContent = useUpdateDocumentContent();
   const updateFontOverrides = useUpdateDocumentFontOverrides(book.id);
   const contentQuery = useDocumentContent(document.id);
+  const profileQuery = useProfile();
+  const updateDictionary = useUpdateProfileDictionary();
+  const dictionary = profileDictionary(profileQuery.data);
+  // Hold the editor (and its spellcheck) until the account-wide dictionary has
+  // settled, so a word the writer added isn't briefly flagged as a misspelling
+  // before the profile query resolves. The profile is fetched app-wide (fonts),
+  // so it's already cached on all but the very first page load; on error or when
+  // signed out the query isn't loading, so this never blocks indefinitely.
+  const dictionaryReady = !profileQuery.isLoading;
+  const docIgnores = docSpellcheckIgnores(document);
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [headings, setHeadings] = useState<OutlineHeading[]>([]);
@@ -187,6 +203,12 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
               show_subtitle: !document.show_subtitle,
             });
           }}
+          onToggleSpellcheck={() => {
+            updateDocument.mutate({
+              id: document.id,
+              spellcheck_enabled: !document.spellcheck_enabled,
+            });
+          }}
           onBannerChange={(bannerColor) => {
             updateDocument.mutate({
               id: document.id,
@@ -242,7 +264,7 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
             className="mt-8"
             style={{ fontFamily: bodyFont }}
           >
-            {contentQuery.isSuccess ? (
+            {contentQuery.isSuccess && dictionaryReady ? (
               <EditorBridgeHost>
                 <Editor
                   ref={editorRef}
@@ -250,6 +272,20 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
                   documentId={document.id}
                   initialContent={contentQuery.data}
                   editable
+                  spellcheckEnabled={document.spellcheck_enabled}
+                  docIgnores={docIgnores}
+                  dictionary={dictionary}
+                  onIgnoreWord={(word) => {
+                    if (docIgnores.includes(word)) return;
+                    updateDocument.mutate({
+                      id: document.id,
+                      spellcheck_ignores: [...docIgnores, word],
+                    });
+                  }}
+                  onAddToDictionary={(word) => {
+                    if (dictionary.includes(word)) return;
+                    updateDictionary.mutate([...dictionary, word]);
+                  }}
                   onOutlineChange={setHeadings}
                   onLeaveStart={() => {
                     titleRef.current?.focus();
@@ -263,8 +299,9 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
               </EditorBridgeHost>
             ) : (
               // The editor is keyed by document id and reads its body once at
-              // mount, so hold it back until the content query resolves rather
-              // than mounting it empty and never picking the body up.
+              // mount, so hold it back until the content query resolves (and the
+              // dictionary has settled) rather than mounting it empty and never
+              // picking the body up.
               <div className="flex flex-col gap-6" aria-hidden>
                 <SkeletonText lines={3} lineHeight="0.85rem" />
                 <SkeletonText lines={4} lineHeight="0.85rem" />

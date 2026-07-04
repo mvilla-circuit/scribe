@@ -309,6 +309,26 @@
   line-height: 1.5;
 }
 
+/* --- Spellcheck squiggles ---
+ * Inline decorations from our own spell/grammar checker: a red wavy underline
+ * for misspellings and a blue one for grammar (scaffolded). Tokened so both
+ * light and dark themes stay in step; `skip-ink: none` keeps the wave unbroken
+ * under descenders so a short word still reads as flagged. */
+.scribe-prose .scribe-spell-error {
+  text-decoration: underline wavy var(--color-danger);
+  text-decoration-skip-ink: none;
+  text-underline-offset: 0.15em;
+  text-decoration-thickness: 1px;
+  cursor: pointer;
+}
+.scribe-prose .scribe-spell-grammar {
+  text-decoration: underline wavy var(--color-accent);
+  text-decoration-skip-ink: none;
+  text-underline-offset: 0.15em;
+  text-decoration-thickness: 1px;
+  cursor: pointer;
+}
+
 /* --- Marks --- */
 .scribe-prose strong {
   font-weight: 700;

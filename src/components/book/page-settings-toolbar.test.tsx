@@ -14,12 +14,14 @@ function renderToolbar(
     document?: Partial<DocumentMeta>;
     hasChildren?: boolean;
     onToggleContents?: () => void;
+    onToggleSpellcheck?: () => void;
   } = {},
 ) {
   const {
     document: documentOverrides,
     hasChildren = false,
     onToggleContents = vi.fn(),
+    onToggleSpellcheck = vi.fn(),
   } = overrides;
   const { content: _content, ...meta } = makeDocument(documentOverrides);
   render(
@@ -38,11 +40,12 @@ function renderToolbar(
         onToggleContents={onToggleContents}
         onToggleOutline={vi.fn()}
         onToggleSubtitle={vi.fn()}
+        onToggleSpellcheck={onToggleSpellcheck}
         onBannerChange={vi.fn()}
       />
     </TooltipProvider>,
   );
-  return { onToggleContents };
+  return { onToggleContents, onToggleSpellcheck };
 }
 
 describe("PageSettingsToolbar", () => {
@@ -69,5 +72,46 @@ describe("PageSettingsToolbar", () => {
 
     await userEvent.click(button);
     expect(onToggleContents).toHaveBeenCalledOnce();
+  });
+
+  it("renders the spellcheck toggle on (by default) and calls its handler", async () => {
+    // makeDocument defaults spellcheck_enabled to true, matching the DB default.
+    const { onToggleSpellcheck } = renderToolbar();
+
+    const button = screen.getByRole("button", { name: "Disable spellcheck" });
+    expect(button).toHaveAttribute("aria-pressed", "true");
+
+    await userEvent.click(button);
+    expect(onToggleSpellcheck).toHaveBeenCalledOnce();
+  });
+
+  it("shows the spellcheck toggle as off when disabled", () => {
+    renderToolbar({ document: { spellcheck_enabled: false } });
+    expect(
+      screen.getByRole("button", { name: "Enable spellcheck" }),
+    ).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("orders the controls Banner, Subtitle, Outline, Fonts, Spellcheck", () => {
+    // Fixture defaults: no banner (null), subtitle hidden, outline shown,
+    // spellcheck on — which fix each control's accessible name below.
+    renderToolbar();
+
+    const names = screen
+      .getAllByRole("button")
+      .map((el) => el.getAttribute("aria-label") ?? el.textContent ?? "");
+    const orderOf = (label: string) => names.indexOf(label);
+
+    const banner = orderOf("Add banner");
+    const subtitle = orderOf("Show subtitle");
+    const outline = orderOf("Hide outline");
+    const fonts = orderOf("Fonts");
+    const spellcheck = orderOf("Disable spellcheck");
+
+    expect(banner).toBeGreaterThanOrEqual(0);
+    expect(banner).toBeLessThan(subtitle);
+    expect(subtitle).toBeLessThan(outline);
+    expect(outline).toBeLessThan(fonts);
+    expect(fonts).toBeLessThan(spellcheck);
   });
 });

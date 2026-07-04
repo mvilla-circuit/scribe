@@ -8,21 +8,29 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
 } from "react";
 
 import type { Json } from "@/lib/database.types";
+import { getSharedChecker } from "@/lib/spellcheck/checker";
 
 import { BlockHandle } from "./block-handle";
 import { BubbleToolbar } from "./bubble-toolbar";
 import { buildExtensions } from "./extensions";
 import { LinkPrompt } from "./extensions/link-prompt";
 import { PagePicker } from "./extensions/page-picker";
+import {
+  type SpellcheckOptions,
+  spellcheckPluginKey,
+} from "./extensions/spellcheck";
+import { noopGrammarProvider } from "./extensions/spellcheck-decorations";
 import { TableControls } from "./extensions/table-controls";
 import { HEADING_SELECTOR } from "./headings";
 import { LinkHoverLayer } from "./link-hover-layer";
 import { openLinkFromEvent } from "./link-interaction";
 import { extractHeadings, type OutlineHeading } from "./outline";
 import { CALLOUT_DEFAULT } from "./palette";
+import { SpellPopover } from "./spell-popover";
 import { type PersistFn, type SaveState, useAutosave } from "./use-autosave";
 import { useTableScrollShadows } from "./use-table-scroll-shadows";
 
@@ -53,7 +61,19 @@ interface EditorProps {
   // caller can hand focus back to the page title. Return `true` if the handoff
   // happened (which suppresses the default delete).
   onLeaveStart?: () => boolean | undefined;
+  // Custom spellcheck wiring. When enabled (default), our checker draws the
+  // squiggles and the native contenteditable spellcheck is turned off so they
+  // don't double up.
+  spellcheckEnabled?: boolean;
+  // Words ignored for this document, and the account-wide custom dictionary.
+  docIgnores?: string[];
+  dictionary?: string[];
+  // Persist an "Ignore" (per-document) / "Add to dictionary" (account-wide).
+  onIgnoreWord?: (word: string) => void;
+  onAddToDictionary?: (word: string) => void;
 }
+
+const EMPTY_WORDS: string[] = [];
 
 // Rewrite legacy "block quote" content into the `callout` block, which replaced
 // it. Two shapes are migrated: old StarterKit `blockquote` nodes (no longer in
@@ -112,6 +132,11 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     editable = true,
     onOutlineChange,
     onLeaveStart,
+    spellcheckEnabled = true,
+    docIgnores = EMPTY_WORDS,
+    dictionary = EMPTY_WORDS,
+    onIgnoreWord,
+    onAddToDictionary,
   },
   ref,
 ) {
@@ -150,12 +175,66 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     };
   }, [documentId]);
 
+  // The spell checker is process-wide (created + dictionary loaded once), so
+  // switching pages never reloads it. Track readiness as state so the recompute
+  // effect below can fire the one recompute the checker asks for when its
+  // dictionary finishes loading.
+  const checker = useMemo(() => getSharedChecker(), []);
+  const [checkerReady, setCheckerReady] = useState(checker.isReady);
+  useEffect(() => {
+    if (checker.isReady) {
+      setCheckerReady(true);
+      return;
+    }
+    let mounted = true;
+    void checker.whenReady.then(() => {
+      if (mounted) setCheckerReady(true);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [checker]);
+
+  // Hold the latest spellcheck inputs in a ref so the extension's lazy getters
+  // (built once) always read current values without rebuilding the extension set
+  // or busting the editor memo on every keystroke/render.
+  const spellRef = useRef({
+    enabled: spellcheckEnabled,
+    ignores: docIgnores,
+    dictionary,
+    onIgnoreWord,
+    onAddToDictionary,
+  });
+  spellRef.current = {
+    enabled: spellcheckEnabled,
+    ignores: docIgnores,
+    dictionary,
+    onIgnoreWord,
+    onAddToDictionary,
+  };
+
+  const spellcheckOptions = useMemo<SpellcheckOptions>(
+    () => ({
+      checker,
+      isEnabled: () => spellRef.current.enabled,
+      getIgnores: () => spellRef.current.ignores,
+      getDictionary: () => spellRef.current.dictionary,
+      grammarProvider: noopGrammarProvider,
+      onIgnoreWord: (word) => spellRef.current.onIgnoreWord?.(word),
+      onAddToDictionary: (word) => spellRef.current.onAddToDictionary?.(word),
+    }),
+    [checker],
+  );
+
   // Build the extension set and normalize the body once per editor instance
   // rather than on every render. `useEditor` only consumes these when its dep
   // array (`[documentId]`) changes, so recomputing them each render — e.g. on a
   // save-state transition — just allocated ~25 extensions and re-walked the
   // whole document for nothing.
-  const extensions = useMemo(() => buildExtensions(), []);
+  const extensions = useMemo(
+    () => buildExtensions(spellcheckOptions),
+    [spellcheckOptions],
+  );
   const content = useMemo(
     () => normalizeContent(initialContent),
     [initialContent],
@@ -168,7 +247,10 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       editable,
       shouldRerenderOnTransaction: false,
       editorProps: {
-        attributes: { spellcheck: "true" },
+        // Turn the native contenteditable spellcheck off when ours is on, so
+        // squiggles never double up; a reactive effect keeps this in sync when
+        // the per-document toggle flips (editorProps are captured at creation).
+        attributes: { spellcheck: String(!spellcheckEnabled) },
         // Keep the caret clear of the viewport's bottom edge while typing: when
         // ProseMirror scrolls the cursor into view, trigger the scroll early and
         // leave a comfortable gap beneath it (and a small one up top to clear the
@@ -237,6 +319,25 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
     editor?.setEditable(editable);
   }, [editor, editable]);
 
+  // Keep the native spellcheck attribute in sync with the per-document toggle
+  // (editorProps are captured once at creation, so a later toggle needs this).
+  useEffect(() => {
+    editor?.view.dom.setAttribute("spellcheck", String(!spellcheckEnabled));
+  }, [editor, spellcheckEnabled]);
+
+  // Trigger one debounced recompute of the squiggles whenever an input the
+  // decorations derive from changes: the enabled flag, the ignore list, the
+  // dictionary, or the checker becoming ready. Join the word lists into strings
+  // so a fresh array identity each render doesn't fire a needless recompute.
+  const ignoresKey = docIgnores.join("\u0000");
+  const dictionaryKey = dictionary.join("\u0000");
+  useEffect(() => {
+    if (!editor) return;
+    editor.view.dispatch(
+      editor.state.tr.setMeta(spellcheckPluginKey, { recompute: true }),
+    );
+  }, [editor, spellcheckEnabled, checkerReady, ignoresKey, dictionaryKey]);
+
   useImperativeHandle(
     ref,
     () => ({
@@ -275,6 +376,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           <TableControls editor={editor} />
           <PagePicker />
           <LinkPrompt />
+          <SpellPopover />
         </>
       )}
       {/* Outside the editable gate so the URL preview (and open/copy) also work

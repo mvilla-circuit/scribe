@@ -105,6 +105,8 @@ export type Database = {
           show_contents: boolean
           show_outline: boolean
           show_subtitle: boolean
+          spellcheck_enabled: boolean
+          spellcheck_ignores: Json
           subtitle: string | null
           title: string
           updated_at: string
@@ -125,6 +127,8 @@ export type Database = {
           show_contents?: boolean
           show_outline?: boolean
           show_subtitle?: boolean
+          spellcheck_enabled?: boolean
+          spellcheck_ignores?: Json
           subtitle?: string | null
           title?: string
           updated_at?: string
@@ -145,6 +149,8 @@ export type Database = {
           show_contents?: boolean
           show_outline?: boolean
           show_subtitle?: boolean
+          spellcheck_enabled?: boolean
+          spellcheck_ignores?: Json
           subtitle?: string | null
           title?: string
           updated_at?: string
@@ -239,6 +245,7 @@ export type Database = {
         Row: {
           created_at: string
           default_font: string | null
+          dictionary: Json
           display_name: string | null
           fonts: Json
           id: string
@@ -248,6 +255,7 @@ export type Database = {
         Insert: {
           created_at?: string
           default_font?: string | null
+          dictionary?: Json
           display_name?: string | null
           fonts?: Json
           id: string
@@ -257,6 +265,7 @@ export type Database = {
         Update: {
           created_at?: string
           default_font?: string | null
+          dictionary?: Json
           display_name?: string | null
           fonts?: Json
           id?: string
