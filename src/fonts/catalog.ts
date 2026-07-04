@@ -218,7 +218,7 @@ const CODE: FontEntry[] = [
  */
 export const ROLE_FONTS: Record<FontRole, FontEntry[]> = {
   display: [SYSTEM_SERIF, ...DISPLAY_SERIF, ...DISPLAY_SANS],
-  text: [SYSTEM_SANS, ...TEXT_SERIF, ...TEXT_SANS],
+  text: [SYSTEM_SANS, SYSTEM_SERIF, ...TEXT_SERIF, ...TEXT_SANS],
   code: [SYSTEM_MONO, ...CODE],
 };
 

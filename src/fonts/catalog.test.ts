@@ -5,6 +5,7 @@ import {
   FONT_REGISTRY,
   FONT_ROLES,
   resolveFontEntry,
+  ROLE_FONTS,
 } from "./catalog";
 
 describe("resolveFontEntry", () => {
@@ -50,5 +51,18 @@ describe("FONT_REGISTRY", () => {
     expect(FONT_REGISTRY[DEFAULT_FONT_ID.display]?.system).toBe(true);
     expect(FONT_REGISTRY[DEFAULT_FONT_ID.text]?.system).toBe(true);
     expect(FONT_REGISTRY[DEFAULT_FONT_ID.code]?.system).toBe(true);
+  });
+});
+
+describe("ROLE_FONTS.text", () => {
+  it("offers the System serif option", () => {
+    const systemSerif = ROLE_FONTS.text.find((f) => f.id === "system-serif");
+    expect(systemSerif).toBeDefined();
+    expect(systemSerif?.system).toBe(true);
+  });
+
+  it("keeps System sans as default while also offering System serif", () => {
+    expect(DEFAULT_FONT_ID.text).toBe("system-sans");
+    expect(resolveFontEntry("system-serif", "text").id).toBe("system-serif");
   });
 });
