@@ -15,9 +15,11 @@ import {
 } from "./document-duplicate";
 import {
   docFontOverrides,
+  docSpellcheckIgnores,
   type DocumentMeta,
   DOCUMENTS_PAGE_SIZE,
   needsTitlePage,
+  useCreateDocument,
   useDeleteDocument,
   useDocumentContent,
   useDocuments,
@@ -50,6 +52,27 @@ describe("docFontOverrides", () => {
     expect(
       docFontOverrides(makeDocument({ font_overrides: ["lora"] })),
     ).toEqual({});
+  });
+});
+
+describe("docSpellcheckIgnores", () => {
+  it("returns the stored word list when it is an array of strings", () => {
+    const doc = makeDocument({ spellcheck_ignores: ["helllo", "wrng"] });
+    expect(docSpellcheckIgnores(doc)).toEqual(["helllo", "wrng"]);
+  });
+
+  it("falls back to an empty list for null, non-arrays, and drops non-strings", () => {
+    expect(
+      docSpellcheckIgnores(makeDocument({ spellcheck_ignores: null })),
+    ).toEqual([]);
+    expect(
+      docSpellcheckIgnores(makeDocument({ spellcheck_ignores: "helllo" })),
+    ).toEqual([]);
+    expect(
+      docSpellcheckIgnores(
+        makeDocument({ spellcheck_ignores: ["ok", 42, null] }),
+      ),
+    ).toEqual(["ok"]);
   });
 });
 
@@ -424,6 +447,89 @@ describe("useUpdateDocument", () => {
     const cached = client.getQueryData<DocumentMeta[]>(documentsKey("book-1"));
     expect(cached?.[0]?.show_contents).toBe(true);
     expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: pageIndexKey });
+  });
+
+  it("optimistically toggles spellcheck for the page without touching the page index", async () => {
+    server.use(
+      http.patch(DOCUMENTS_URL, () => new HttpResponse(null, { status: 204 })),
+    );
+
+    const client = createTestQueryClient();
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+    client.setQueryData(documentsKey("book-1"), [
+      makeDocument({ id: "d1", spellcheck_enabled: true }),
+    ]);
+
+    const { result } = renderHookWithQuery(() => useUpdateDocument("book-1"), {
+      client,
+    });
+    result.current.mutate({ id: "d1", spellcheck_enabled: false });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    const cached = client.getQueryData<DocumentMeta[]>(documentsKey("book-1"));
+    expect(cached?.[0]?.spellcheck_enabled).toBe(false);
+    expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: pageIndexKey });
+  });
+
+  it("optimistically persists an ignored word to the document only", async () => {
+    server.use(
+      http.patch(DOCUMENTS_URL, () => new HttpResponse(null, { status: 204 })),
+    );
+
+    const client = createTestQueryClient();
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+    client.setQueryData(documentsKey("book-1"), [
+      makeDocument({ id: "d1", spellcheck_ignores: [] }),
+    ]);
+
+    const { result } = renderHookWithQuery(() => useUpdateDocument("book-1"), {
+      client,
+    });
+    result.current.mutate({ id: "d1", spellcheck_ignores: ["helllo"] });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    const cached = client.getQueryData<DocumentMeta[]>(documentsKey("book-1"));
+    expect(cached?.[0]?.spellcheck_ignores).toEqual(["helllo"]);
+    // Ignores aren't part of the cross-book page index, so leave it alone.
+    expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: pageIndexKey });
+  });
+});
+
+describe("useCreateDocument", () => {
+  it("defaults new pages to spellcheck enabled with no ignores", async () => {
+    server.use(
+      http.get(DOCUMENTS_URL, () => HttpResponse.json([])),
+      http.post(DOCUMENTS_URL, () => new HttpResponse(null, { status: 201 })),
+    );
+
+    const client = createTestQueryClient();
+    client.setQueryData(documentsKey("book-1"), []);
+
+    const { result } = renderHookWithQuery(() => useCreateDocument("book-1"), {
+      client,
+    });
+    result.current.mutate({
+      id: "d1",
+      title: "New page",
+      parent_document_id: null,
+      position: 1024,
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    const created = client
+      .getQueryData<DocumentMeta[]>(documentsKey("book-1"))
+      ?.find((d) => d.id === "d1");
+    expect(created?.spellcheck_enabled).toBe(true);
+    expect(created?.spellcheck_ignores).toEqual([]);
   });
 });
 

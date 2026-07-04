@@ -11,6 +11,7 @@ import {
   List,
   ListTree,
   Plus,
+  SpellCheck,
 } from "lucide-react";
 
 import { makeIcon } from "@/lib/make-icon";
@@ -23,3 +24,4 @@ export const PageIcon = makeIcon(FileText);
 export const PlusIcon = makeIcon(Plus);
 export const ListIcon = makeIcon(List);
 export const ListTreeIcon = makeIcon(ListTree);
+export const SpellCheckIcon = makeIcon(SpellCheck);

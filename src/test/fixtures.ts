@@ -52,6 +52,8 @@ export function makeDocument(overrides: Partial<Document> = {}): Document {
     show_outline: true,
     show_subtitle: false,
     show_contents: false,
+    spellcheck_enabled: true,
+    spellcheck_ignores: [],
     position: 1024,
     created_at: "2026-01-01T00:00:00.000Z",
     updated_at: "2026-01-01T00:00:00.000Z",

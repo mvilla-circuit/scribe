@@ -12,18 +12,38 @@ const collabShim = fileURLToPath(
   new URL("./src/editor/shims/tiptap-collab.ts", import.meta.url),
 );
 
+// `dictionary-en` (v4) only exports its `index.js` entry, whose default export
+// reads the aff/dic off disk with `node:fs` — fine in Node, but it can't be
+// bundled for the browser. The checker instead wants the raw Hunspell files as
+// strings (Vite `?raw`), so map clean `dictionary-en/aff|dic` specifiers past
+// the package's `exports` restriction straight to the files. TypeScript resolves
+// the same `dictionary-en/aff?raw` specifiers through vite/client's `*?raw`
+// ambient module, and knip still attributes them to the `dictionary-en` package.
+const srcDir = fileURLToPath(new URL("./src", import.meta.url));
+const dictAff = fileURLToPath(
+  new URL("./node_modules/dictionary-en/index.aff", import.meta.url),
+);
+const dictDic = fileURLToPath(
+  new URL("./node_modules/dictionary-en/index.dic", import.meta.url),
+);
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
-    alias: {
+    // Array form so the dictionary entries can use regex `find`s (a plain string
+    // alias won't match the trailing `?raw` query). Prefix-replacing regexes
+    // keep the `?raw` suffix intact so Vite's raw loader still fires.
+    alias: [
+      { find: /^dictionary-en\/aff/, replacement: dictAff },
+      { find: /^dictionary-en\/dic/, replacement: dictDic },
+      { find: "@tiptap/extension-collaboration", replacement: collabShim },
+      { find: "@tiptap/y-tiptap", replacement: collabShim },
       // `@/x` -> `src/x` (mirrors tsconfig paths). The `@rollup/plugin-alias`
       // boundary match only fires on `@/...`, so scoped packages like
       // `@tiptap/*` and `@radix-ui/*` are left untouched.
-      "@": fileURLToPath(new URL("./src", import.meta.url)),
-      "@tiptap/extension-collaboration": collabShim,
-      "@tiptap/y-tiptap": collabShim,
-    },
+      { find: "@", replacement: srcDir },
+    ],
   },
   server: { port: 1420, strictPort: true },
   clearScreen: false,
