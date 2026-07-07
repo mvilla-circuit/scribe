@@ -42,7 +42,7 @@ export function PageSettingsToolbar({
   onBannerChange: (color: string | null) => void;
 }) {
   return (
-    <span className="ml-auto flex items-center gap-1 pl-3">
+    <span className="ml-auto flex shrink-0 items-center gap-1 pl-3">
       <span className="mr-2">
         <SaveStatus state={saveState} />
       </span>
