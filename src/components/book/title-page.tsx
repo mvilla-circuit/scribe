@@ -19,6 +19,7 @@ import { EditableText } from "./editable-text";
 import { FontControl } from "./font-control";
 import { ChevronsDownUpIcon, ChevronsUpDownIcon } from "./icons";
 import { Masthead } from "./masthead";
+import { NavHistoryControls } from "./nav-history-controls";
 import { TableOfContents } from "./table-of-contents";
 
 interface TitlePageProps {
@@ -137,6 +138,7 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
         data-tauri-drag-region
         className="sticky top-0 z-20 flex items-center bg-bg px-8 py-3"
       >
+        <NavHistoryControls />
         <span className="ml-auto flex items-center gap-1">
           {expandable.length > 0 && (
             <Tooltip content={allExpanded ? "Collapse all" : "Expand all"}>

@@ -3,6 +3,8 @@
 // app. The shared `makeIcon` factory preserves the local `{ size, className }`
 // API and uniform stroke weight, so call sites stay unchanged.
 import {
+  ArrowLeft,
+  ArrowRight,
   ChevronLeft,
   ChevronRight,
   ChevronsDownUp,
@@ -16,6 +18,8 @@ import {
 
 import { makeIcon } from "@/lib/make-icon";
 
+export const ArrowLeftIcon = makeIcon(ArrowLeft);
+export const ArrowRightIcon = makeIcon(ArrowRight);
 export const ChevronRightIcon = makeIcon(ChevronRight);
 export const ChevronLeftIcon = makeIcon(ChevronLeft);
 export const ChevronsDownUpIcon = makeIcon(ChevronsDownUp);

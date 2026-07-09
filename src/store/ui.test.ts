@@ -17,6 +17,8 @@ const reset = () =>
     activeDocId: null,
     expandedFolderIds: [],
     expandedDocIds: [],
+    history: [],
+    historyIndex: -1,
   });
 
 beforeEach(reset);
@@ -63,6 +65,107 @@ describe("active book/doc selection", () => {
     useUIStore.getState().setActiveBook("b1");
 
     expect(useUIStore.getState().activeDocId).toBe("d1");
+  });
+});
+
+describe("navigation history", () => {
+  it("records visited locations and steps back and forward", () => {
+    const store = useUIStore.getState();
+    store.setActiveBook("b1");
+    store.setActiveDoc("d1");
+    store.setActiveDoc("d2");
+
+    // At the end of history: forward is exhausted, back is available.
+    expect(useUIStore.getState().historyIndex).toBe(2);
+    expect(useUIStore.getState().activeDocId).toBe("d2");
+
+    useUIStore.getState().goBack();
+    expect(useUIStore.getState().activeBookId).toBe("b1");
+    expect(useUIStore.getState().activeDocId).toBe("d1");
+
+    useUIStore.getState().goBack();
+    expect(useUIStore.getState().activeBookId).toBe("b1");
+    expect(useUIStore.getState().activeDocId).toBeNull();
+
+    useUIStore.getState().goForward();
+    expect(useUIStore.getState().activeDocId).toBe("d1");
+
+    useUIStore.getState().goForward();
+    expect(useUIStore.getState().activeDocId).toBe("d2");
+  });
+
+  it("does not record duplicate consecutive locations", () => {
+    const store = useUIStore.getState();
+    store.setActiveBook("b1");
+    store.setActiveDoc("d1");
+    // Re-selecting the same book keeps the doc — no location change, no entry.
+    useUIStore.getState().setActiveBook("b1");
+    // Re-selecting the same doc is likewise a no-op for history.
+    useUIStore.getState().setActiveDoc("d1");
+
+    expect(useUIStore.getState().history).toEqual([
+      { bookId: "b1", docId: null },
+      { bookId: "b1", docId: "d1" },
+    ]);
+    expect(useUIStore.getState().historyIndex).toBe(1);
+  });
+
+  it("truncates forward history after a new navigation", () => {
+    const store = useUIStore.getState();
+    store.setActiveBook("b1");
+    store.setActiveDoc("d1");
+    store.setActiveDoc("d2");
+
+    useUIStore.getState().goBack();
+    expect(useUIStore.getState().activeDocId).toBe("d1");
+
+    // Navigating from the middle drops the stale forward entry (d2).
+    useUIStore.getState().setActiveDoc("d3");
+    expect(useUIStore.getState().historyIndex).toBe(2);
+    expect(useUIStore.getState().history).toEqual([
+      { bookId: "b1", docId: null },
+      { bookId: "b1", docId: "d1" },
+      { bookId: "b1", docId: "d3" },
+    ]);
+
+    // Forward is now exhausted.
+    useUIStore.getState().goForward();
+    expect(useUIStore.getState().activeDocId).toBe("d3");
+  });
+
+  it("navigateTo records a single combined entry", () => {
+    const store = useUIStore.getState();
+    store.setActiveBook("b1");
+    store.setActiveDoc("d1");
+
+    useUIStore.getState().navigateTo({ bookId: "b2", docId: "d9" });
+
+    expect(useUIStore.getState().activeBookId).toBe("b2");
+    expect(useUIStore.getState().activeDocId).toBe("d9");
+    expect(useUIStore.getState().history).toEqual([
+      { bookId: "b1", docId: null },
+      { bookId: "b1", docId: "d1" },
+      { bookId: "b2", docId: "d9" },
+    ]);
+  });
+
+  it("goBack and goForward clamp at the ends", () => {
+    const store = useUIStore.getState();
+    store.setActiveBook("b1");
+    store.setActiveDoc("d1");
+
+    // Forward at the end is a no-op.
+    useUIStore.getState().goForward();
+    expect(useUIStore.getState().activeDocId).toBe("d1");
+    expect(useUIStore.getState().historyIndex).toBe(1);
+
+    useUIStore.getState().goBack();
+    // Back at the start is a no-op.
+    useUIStore.getState().goBack();
+    useUIStore.getState().goBack();
+    expect(useUIStore.getState().historyIndex).toBe(0);
+    expect(useUIStore.getState().activeBookId).toBe("b1");
+    expect(useUIStore.getState().activeDocId).toBeNull();
   });
 });
 

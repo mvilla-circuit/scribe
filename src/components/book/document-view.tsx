@@ -30,6 +30,7 @@ import { DocumentBreadcrumb } from "./document-breadcrumb";
 import { EditableText, type EditableTextHandle } from "./editable-text";
 import { EditorBridgeHost } from "./editor-bridge-host";
 import { Masthead } from "./masthead";
+import { NavHistoryControls } from "./nav-history-controls";
 import { PageBanner } from "./page-banner";
 import { PageOutline } from "./page-outline";
 import { PageSettingsToolbar } from "./page-settings-toolbar";
@@ -172,6 +173,7 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
         data-tauri-drag-region
         className="sticky top-0 z-20 flex items-center gap-1 bg-bg px-8 py-3 text-sm text-muted"
       >
+        <NavHistoryControls />
         <DocumentBreadcrumb
           book={book}
           document={document}

@@ -20,8 +20,7 @@ import {
 export function EditorBridgeHost({ children }: { children: ReactNode }) {
   const { data: index = [], isLoading: indexLoading } = usePageIndex();
   const { data: books = [], isLoading: booksLoading } = useBooks();
-  const setActiveBook = useUIStore((s) => s.setActiveBook);
-  const setActiveDoc = useUIStore((s) => s.setActiveDoc);
+  const navigateTo = useUIStore((s) => s.navigateTo);
 
   // Build the id map once per index, not inside every card's resolve call.
   const byId = useMemo(() => indexById(index), [index]);
@@ -39,10 +38,9 @@ export function EditorBridgeHost({ children }: { children: ReactNode }) {
 
   const navigateToPage = useCallback<EditorBridge["navigateToPage"]>(
     ({ bookId, docId }) => {
-      setActiveBook(bookId);
-      setActiveDoc(docId);
+      navigateTo({ bookId, docId });
     },
-    [setActiveBook, setActiveDoc],
+    [navigateTo],
   );
 
   const bridge = useMemo<EditorBridge>(

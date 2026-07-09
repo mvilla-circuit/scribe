@@ -11,6 +11,13 @@ export const SIDEBAR_MIN_WIDTH = 200;
 export const SIDEBAR_MAX_WIDTH = 420;
 const SIDEBAR_DEFAULT_WIDTH = 260;
 
+// A single visited page in the navigation history — the book being read and the
+// document within it (or `null` for the book's Title Page / no active book).
+interface HistoryEntry {
+  bookId: string | null;
+  docId: string | null;
+}
+
 interface UIState {
   sidebarCollapsed: boolean;
   sidebarWidth: number;
@@ -18,11 +25,16 @@ interface UIState {
   activeDocId: string | null;
   expandedFolderIds: string[];
   expandedDocIds: string[];
+  history: HistoryEntry[];
+  historyIndex: number;
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   setSidebarWidth: (width: number) => void;
   setActiveBook: (id: string | null) => void;
   setActiveDoc: (id: string | null) => void;
+  navigateTo: (entry: HistoryEntry) => void;
+  goBack: () => void;
+  goForward: () => void;
   toggleFolderExpanded: (id: string) => void;
   setFolderExpanded: (id: string, expanded: boolean) => void;
   toggleDocExpanded: (id: string) => void;
@@ -41,6 +53,27 @@ const toggleIn = (arr: string[], id: string): string[] =>
 // shared by both expansion sets.
 const setIn = (arr: string[], id: string, on: boolean): string[] =>
   on ? (arr.includes(id) ? arr : [...arr, id]) : arr.filter((x) => x !== id);
+
+// Append the freshly-visited `(bookId, docId)` location to the navigation
+// history, returning the updated `history`/`historyIndex` slice. Consecutive
+// duplicates of the current entry are dropped (re-selecting the same page is not
+// a navigation), and any forward entries are truncated — landing somewhere new
+// after going back abandons the old forward trail, exactly like a browser.
+const recordLocation = (
+  state: Pick<UIState, "history" | "historyIndex">,
+  bookId: string | null,
+  docId: string | null,
+): Pick<UIState, "history" | "historyIndex"> => {
+  const current = state.history[state.historyIndex];
+  if (current?.bookId === bookId && current?.docId === docId) {
+    return { history: state.history, historyIndex: state.historyIndex };
+  }
+  const history = [
+    ...state.history.slice(0, state.historyIndex + 1),
+    { bookId, docId },
+  ];
+  return { history, historyIndex: history.length - 1 };
+};
 
 // The slice of UIState persisted under `scribe-ui` (see `partialize` below).
 interface PersistedUIState {
@@ -141,19 +174,62 @@ export const useUIStore = create<UIState>()(
       activeDocId: null,
       expandedFolderIds: [],
       expandedDocIds: [],
+      history: [],
+      historyIndex: -1,
       toggleSidebar: () =>
         set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
       setSidebarWidth: (width) => set({ sidebarWidth: clampWidth(width) }),
       // Opening a different book always lands on its Title Page, never on a
-      // stale document carried over from the previously open book.
+      // stale document carried over from the previously open book. The resulting
+      // location is recorded in the navigation history.
       setActiveBook: (id) =>
-        set((s) =>
-          s.activeBookId === id
-            ? { activeBookId: id }
-            : { activeBookId: id, activeDocId: null },
-        ),
-      setActiveDoc: (id) => set({ activeDocId: id }),
+        set((s) => {
+          const docId = s.activeBookId === id ? s.activeDocId : null;
+          return {
+            activeBookId: id,
+            activeDocId: docId,
+            ...recordLocation(s, id, docId),
+          };
+        }),
+      setActiveDoc: (id) =>
+        set((s) => ({
+          activeDocId: id,
+          ...recordLocation(s, s.activeBookId, id),
+        })),
+      // Set both the book and document in one step, recording a single history
+      // entry — used by cross-book navigation (e.g. editor page links) that would
+      // otherwise record a spurious intermediate Title Page location.
+      navigateTo: ({ bookId, docId }) =>
+        set((s) => ({
+          activeBookId: bookId,
+          activeDocId: docId,
+          ...recordLocation(s, bookId, docId),
+        })),
+      // Restore the previous/next visited location without recording a new
+      // entry, so the history trail is preserved as the cursor moves along it.
+      goBack: () =>
+        set((s) => {
+          const index = s.historyIndex - 1;
+          const entry = s.history[index];
+          if (!entry) return {};
+          return {
+            historyIndex: index,
+            activeBookId: entry.bookId,
+            activeDocId: entry.docId,
+          };
+        }),
+      goForward: () =>
+        set((s) => {
+          const index = s.historyIndex + 1;
+          const entry = s.history[index];
+          if (!entry) return {};
+          return {
+            historyIndex: index,
+            activeBookId: entry.bookId,
+            activeDocId: entry.docId,
+          };
+        }),
       toggleFolderExpanded: (id) =>
         set((s) => ({ expandedFolderIds: toggleIn(s.expandedFolderIds, id) })),
       setFolderExpanded: (id, expanded) =>
