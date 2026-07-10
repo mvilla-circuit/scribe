@@ -52,53 +52,60 @@ export function SpellPopover() {
           side="bottom"
           align="start"
           sideOffset={6}
-          className="scribe-pop z-50 min-w-[12rem] max-w-[16rem] rounded-lg border border-border bg-elevated p-1.5 font-sans shadow-popover"
+          className="scribe-pop z-50 flex max-h-[min(20rem,var(--radix-popover-content-available-height))] min-w-[12rem] max-w-[16rem] flex-col overflow-hidden rounded-lg border border-border bg-elevated font-sans shadow-popover"
         >
           {target && (
-            <div className="flex flex-col">
-              {target.suggestions.length > 0 ? (
-                <div className="flex flex-col">
-                  {target.suggestions.map((suggestion) => (
-                    <button
-                      key={suggestion}
-                      type="button"
-                      onClick={() => {
-                        target.replace(suggestion);
-                        close();
-                      }}
-                      className="flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm text-text outline-none transition-colors hover:bg-hover focus-visible:bg-hover"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="px-2 py-1.5 text-sm text-muted">No suggestions</p>
-              )}
-
-              <div className="my-1 h-px bg-border" />
-
-              <button
-                type="button"
-                onClick={() => {
-                  target.ignore();
-                  close();
-                }}
-                className="flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:bg-hover focus-visible:text-text"
+            <>
+              <div
+                data-testid="spell-suggestions"
+                className="flex-1 overflow-y-auto p-1.5"
               >
-                Ignore
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  target.addToDictionary();
-                  close();
-                }}
-                className="flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:bg-hover focus-visible:text-text"
-              >
-                Add to dictionary
-              </button>
-            </div>
+                {target.suggestions.length > 0 ? (
+                  <div className="flex flex-col">
+                    {target.suggestions.map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        onClick={() => {
+                          target.replace(suggestion);
+                          close();
+                        }}
+                        className="flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm text-text outline-none transition-colors hover:bg-hover focus-visible:bg-hover"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="px-2 py-1.5 text-sm text-muted">
+                    No suggestions
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-none flex-col border-t border-border p-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    target.ignore();
+                    close();
+                  }}
+                  className="flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:bg-hover focus-visible:text-text"
+                >
+                  Ignore
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    target.addToDictionary();
+                    close();
+                  }}
+                  className="flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:bg-hover focus-visible:text-text"
+                >
+                  Add to dictionary
+                </button>
+              </div>
+            </>
           )}
         </RPopover.Content>
       </RPopover.Portal>

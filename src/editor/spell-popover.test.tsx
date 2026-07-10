@@ -71,6 +71,31 @@ describe("SpellPopover", () => {
     expect(screen.getByText("No suggestions")).toBeInTheDocument();
   });
 
+  it("keeps the suggestion list in a bounded, scrollable region", () => {
+    openTarget();
+    renderWithProviders(<SpellPopover />);
+
+    expect(screen.getByTestId("spell-suggestions")).toHaveClass(
+      "overflow-y-auto",
+    );
+  });
+
+  it("pins the actions outside the scrollable suggestion region", () => {
+    openTarget({
+      suggestions: Array.from({ length: 30 }, (_, i) => `word${i}`),
+    });
+    renderWithProviders(<SpellPopover />);
+
+    const scroll = screen.getByTestId("spell-suggestions");
+    const ignore = screen.getByRole("button", { name: "Ignore" });
+    const add = screen.getByRole("button", { name: "Add to dictionary" });
+
+    expect(ignore).toBeInTheDocument();
+    expect(add).toBeInTheDocument();
+    expect(scroll).not.toContainElement(ignore);
+    expect(scroll).not.toContainElement(add);
+  });
+
   it("clears the active target on unmount so it can't reopen on the next page", () => {
     openTarget();
     const { unmount } = renderWithProviders(<SpellPopover />);
