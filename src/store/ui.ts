@@ -11,16 +11,25 @@ export const SIDEBAR_MIN_WIDTH = 200;
 export const SIDEBAR_MAX_WIDTH = 420;
 const SIDEBAR_DEFAULT_WIDTH = 260;
 
+/**
+ * How a datagrid row opens over its grid: as a centered modal, a side split
+ * pane, or a full-window surface. Persisted per-datagrid in an ephemeral map.
+ */
+export type RowOpenMode = "modal" | "split" | "full";
+
 // A single visited location in the navigation history. The app shows exactly one
-// of two surfaces: a book's document (`bookId`/`docId`) or a collection's entry
-// (`collectionId`/`entryId`). The unused axis is `null`; an all-`null` entry is
-// the library home. Keeping both axes in one entry lets the browser-style
-// history step across the two surfaces uniformly.
+// of three surfaces: a book's document (`bookId`/`docId`), a collection's entry
+// (`collectionId`/`entryId`), or a datagrid's row (`datagridId`/`rowId`). Unused
+// axes are `null`; an all-`null` entry is the library home. Keeping every axis
+// in one entry lets the browser-style history step across the surfaces
+// uniformly.
 interface HistoryEntry {
   bookId: string | null;
   docId: string | null;
   collectionId: string | null;
   entryId: string | null;
+  datagridId: string | null;
+  rowId: string | null;
 }
 
 // A partial location accepted by `navigateTo`; omitted axes default to `null`.
@@ -31,6 +40,8 @@ const EMPTY_LOCATION: HistoryEntry = {
   docId: null,
   collectionId: null,
   entryId: null,
+  datagridId: null,
+  rowId: null,
 };
 
 interface UIState {
@@ -40,6 +51,12 @@ interface UIState {
   activeDocId: string | null;
   activeCollectionId: string | null;
   activeEntryId: string | null;
+  activeDatagridId: string | null;
+  activeDatagridRowId: string | null;
+  rowOpenMode: RowOpenMode;
+  // Per-datagrid memory of the last chosen row-open mode, so reopening a
+  // datagrid restores how its rows opened. Ephemeral (never persisted).
+  rowOpenModeByDatagridId: Record<string, RowOpenMode>;
   expandedFolderIds: string[];
   expandedDocIds: string[];
   history: HistoryEntry[];
@@ -51,6 +68,9 @@ interface UIState {
   setActiveDoc: (id: string | null) => void;
   setActiveCollection: (id: string | null) => void;
   setActiveEntry: (id: string, collectionId: string) => void;
+  setActiveDatagrid: (id: string | null) => void;
+  setActiveDatagridRow: (rowId: string, datagridId: string) => void;
+  setRowOpenMode: (mode: RowOpenMode) => void;
   navigateTo: (location: Location) => void;
   goBack: () => void;
   goForward: () => void;
@@ -80,15 +100,19 @@ const locationState = (loc: HistoryEntry) => ({
   activeDocId: loc.docId,
   activeCollectionId: loc.collectionId,
   activeEntryId: loc.entryId,
+  activeDatagridId: loc.datagridId,
+  activeDatagridRowId: loc.rowId,
 });
 
-// Whether two locations point at the same surface (all four axes match).
+// Whether two locations point at the same surface (all axes match).
 const sameLocation = (a: HistoryEntry | undefined, b: HistoryEntry): boolean =>
   !!a &&
   a.bookId === b.bookId &&
   a.docId === b.docId &&
   a.collectionId === b.collectionId &&
-  a.entryId === b.entryId;
+  a.entryId === b.entryId &&
+  a.datagridId === b.datagridId &&
+  a.rowId === b.rowId;
 
 // Append the freshly-visited location to the navigation history, returning the
 // updated `history`/`historyIndex` slice. Consecutive duplicates of the current
@@ -206,6 +230,10 @@ export const useUIStore = create<UIState>()(
       activeDocId: null,
       activeCollectionId: null,
       activeEntryId: null,
+      activeDatagridId: null,
+      activeDatagridRowId: null,
+      rowOpenMode: "modal",
+      rowOpenModeByDatagridId: {},
       expandedFolderIds: [],
       expandedDocIds: [],
       history: [],
@@ -221,20 +249,18 @@ export const useUIStore = create<UIState>()(
         set((s) => {
           const docId = s.activeBookId === id ? s.activeDocId : null;
           const loc: HistoryEntry = {
+            ...EMPTY_LOCATION,
             bookId: id,
             docId,
-            collectionId: null,
-            entryId: null,
           };
           return { ...locationState(loc), ...recordLocation(s, loc) };
         }),
       setActiveDoc: (id) =>
         set((s) => {
           const loc: HistoryEntry = {
+            ...EMPTY_LOCATION,
             bookId: s.activeBookId,
             docId: id,
-            collectionId: null,
-            entryId: null,
           };
           return { ...locationState(loc), ...recordLocation(s, loc) };
         }),
@@ -245,8 +271,7 @@ export const useUIStore = create<UIState>()(
         set((s) => {
           const entryId = s.activeCollectionId === id ? s.activeEntryId : null;
           const loc: HistoryEntry = {
-            bookId: null,
-            docId: null,
+            ...EMPTY_LOCATION,
             collectionId: id,
             entryId,
           };
@@ -255,13 +280,51 @@ export const useUIStore = create<UIState>()(
       setActiveEntry: (id, collectionId) =>
         set((s) => {
           const loc: HistoryEntry = {
-            bookId: null,
-            docId: null,
+            ...EMPTY_LOCATION,
             collectionId,
             entryId: id,
           };
           return { ...locationState(loc), ...recordLocation(s, loc) };
         }),
+      // Opening a different datagrid lands on its grid (no row), never a stale
+      // row from the previously open datagrid, and leaves the book/collection
+      // surfaces — mirroring `setActiveBook`/`setActiveCollection`. The
+      // remembered per-datagrid row-open mode is restored when present.
+      setActiveDatagrid: (id) =>
+        set((s) => {
+          const rowId =
+            s.activeDatagridId === id ? s.activeDatagridRowId : null;
+          const loc: HistoryEntry = {
+            ...EMPTY_LOCATION,
+            datagridId: id,
+            rowId,
+          };
+          const remembered = id ? s.rowOpenModeByDatagridId[id] : undefined;
+          return {
+            ...locationState(loc),
+            ...recordLocation(s, loc),
+            rowOpenMode: remembered ?? s.rowOpenMode,
+          };
+        }),
+      setActiveDatagridRow: (rowId, datagridId) =>
+        set((s) => {
+          const loc: HistoryEntry = {
+            ...EMPTY_LOCATION,
+            datagridId,
+            rowId,
+          };
+          return { ...locationState(loc), ...recordLocation(s, loc) };
+        }),
+      // Set how rows open, remembering the choice for the active datagrid so
+      // reopening it restores the same mode. With no datagrid active the map is
+      // left untouched.
+      setRowOpenMode: (mode) =>
+        set((s) => ({
+          rowOpenMode: mode,
+          rowOpenModeByDatagridId: s.activeDatagridId
+            ? { ...s.rowOpenModeByDatagridId, [s.activeDatagridId]: mode }
+            : s.rowOpenModeByDatagridId,
+        })),
       // Set a whole location in one step, recording a single history entry — used
       // by cross-surface navigation (e.g. editor page links) that would otherwise
       // record a spurious intermediate location. Omitted axes default to null.

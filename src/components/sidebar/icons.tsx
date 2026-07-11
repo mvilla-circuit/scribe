@@ -14,6 +14,7 @@ import {
   Link,
   Pencil,
   Plus,
+  Table2,
   Trash2,
   TriangleAlert,
 } from "lucide-react";
@@ -24,6 +25,7 @@ export const FolderIcon = makeIcon(Folder);
 export const FolderOpenIcon = makeIcon(FolderOpen);
 export const BookIcon = makeIcon(Book);
 export const CollectionIcon = makeIcon(Library);
+export const DatagridIcon = makeIcon(Table2);
 export const PlusIcon = makeIcon(Plus);
 export const PencilIcon = makeIcon(Pencil);
 export const TrashIcon = makeIcon(Trash2);

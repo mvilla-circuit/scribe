@@ -17,24 +17,32 @@ const reset = () =>
     activeDocId: null,
     activeCollectionId: null,
     activeEntryId: null,
+    activeDatagridId: null,
+    activeDatagridRowId: null,
+    rowOpenMode: "modal",
+    rowOpenModeByDatagridId: {},
     expandedFolderIds: [],
     expandedDocIds: [],
     history: [],
     historyIndex: -1,
   });
 
-// A full four-axis history location with only the given axes set, matching the
-// store's HistoryEntry shape so assertions stay concise.
+// A full history location with only the given axes set, matching the store's
+// HistoryEntry shape so assertions stay concise.
 const loc = (over: {
   bookId?: string | null;
   docId?: string | null;
   collectionId?: string | null;
   entryId?: string | null;
+  datagridId?: string | null;
+  rowId?: string | null;
 }) => ({
   bookId: null,
   docId: null,
   collectionId: null,
   entryId: null,
+  datagridId: null,
+  rowId: null,
   ...over,
 });
 
@@ -265,6 +273,130 @@ describe("active collection/entry selection", () => {
     const persisted = partialize?.(useUIStore.getState());
     expect(persisted).not.toHaveProperty("activeCollectionId");
     expect(persisted).not.toHaveProperty("activeEntryId");
+  });
+});
+
+describe("active datagrid/row selection", () => {
+  it("opening a datagrid clears the other surface axes", () => {
+    const store = useUIStore.getState();
+    store.setActiveBook("b1");
+    store.setActiveDoc("d1");
+    store.setActiveCollection("c1");
+
+    useUIStore.getState().setActiveDatagrid("dg1");
+
+    const state = useUIStore.getState();
+    expect(state.activeDatagridId).toBe("dg1");
+    expect(state.activeDatagridRowId).toBeNull();
+    expect(state.activeBookId).toBeNull();
+    expect(state.activeDocId).toBeNull();
+    expect(state.activeCollectionId).toBeNull();
+    expect(state.activeEntryId).toBeNull();
+  });
+
+  it("clears the active row when switching to a different datagrid", () => {
+    const store = useUIStore.getState();
+    store.setActiveDatagrid("dg1");
+    store.setActiveDatagridRow("r1", "dg1");
+
+    useUIStore.getState().setActiveDatagrid("dg2");
+
+    expect(useUIStore.getState().activeDatagridRowId).toBeNull();
+    expect(useUIStore.getState().activeDatagridId).toBe("dg2");
+  });
+
+  it("keeps the active row when re-selecting the same datagrid", () => {
+    const store = useUIStore.getState();
+    store.setActiveDatagrid("dg1");
+    store.setActiveDatagridRow("r1", "dg1");
+
+    useUIStore.getState().setActiveDatagrid("dg1");
+
+    expect(useUIStore.getState().activeDatagridRowId).toBe("r1");
+  });
+
+  it("selecting a row records its datagrid and clears other surfaces", () => {
+    const store = useUIStore.getState();
+    store.setActiveCollection("c1");
+
+    useUIStore.getState().setActiveDatagridRow("r1", "dg1");
+
+    const state = useUIStore.getState();
+    expect(state.activeDatagridId).toBe("dg1");
+    expect(state.activeDatagridRowId).toBe("r1");
+    expect(state.activeCollectionId).toBeNull();
+  });
+
+  it("records datagrid/row locations and steps back and forward", () => {
+    const store = useUIStore.getState();
+    store.setActiveDatagrid("dg1");
+    store.setActiveDatagridRow("r1", "dg1");
+
+    expect(useUIStore.getState().history).toEqual([
+      loc({ datagridId: "dg1" }),
+      loc({ datagridId: "dg1", rowId: "r1" }),
+    ]);
+
+    useUIStore.getState().goBack();
+    expect(useUIStore.getState().activeDatagridId).toBe("dg1");
+    expect(useUIStore.getState().activeDatagridRowId).toBeNull();
+
+    useUIStore.getState().goForward();
+    expect(useUIStore.getState().activeDatagridRowId).toBe("r1");
+  });
+
+  it("navigateTo includes the datagrid/row axes", () => {
+    useUIStore.getState().navigateTo({ datagridId: "dg9", rowId: "r9" });
+
+    const state = useUIStore.getState();
+    expect(state.activeDatagridId).toBe("dg9");
+    expect(state.activeDatagridRowId).toBe("r9");
+  });
+
+  it("does not persist the datagrid selection or row-open mode", () => {
+    useUIStore.getState().setActiveDatagrid("dg1");
+    useUIStore.getState().setRowOpenMode("split");
+
+    const partialize = useUIStore.persist.getOptions().partialize;
+    const persisted = partialize?.(useUIStore.getState());
+    expect(persisted).not.toHaveProperty("activeDatagridId");
+    expect(persisted).not.toHaveProperty("activeDatagridRowId");
+    expect(persisted).not.toHaveProperty("rowOpenMode");
+    expect(persisted).not.toHaveProperty("rowOpenModeByDatagridId");
+  });
+});
+
+describe("row-open mode", () => {
+  it("defaults to modal", () => {
+    expect(useUIStore.getState().rowOpenMode).toBe("modal");
+  });
+
+  it("setRowOpenMode updates the current mode", () => {
+    useUIStore.getState().setRowOpenMode("full");
+    expect(useUIStore.getState().rowOpenMode).toBe("full");
+  });
+
+  it("remembers the open mode per active datagrid and restores it on reopen", () => {
+    const store = useUIStore.getState();
+    store.setActiveDatagrid("dg1");
+    store.setRowOpenMode("split");
+
+    expect(useUIStore.getState().rowOpenModeByDatagridId).toEqual({
+      dg1: "split",
+    });
+
+    // Switching to another datagrid does not carry the remembered mode over.
+    useUIStore.getState().setActiveDatagrid("dg2");
+    useUIStore.getState().setRowOpenMode("full");
+
+    // Returning to dg1 restores its remembered "split" mode.
+    useUIStore.getState().setActiveDatagrid("dg1");
+    expect(useUIStore.getState().rowOpenMode).toBe("split");
+  });
+
+  it("does not record the open mode in the map when no datagrid is active", () => {
+    useUIStore.getState().setRowOpenMode("full");
+    expect(useUIStore.getState().rowOpenModeByDatagridId).toEqual({});
   });
 });
 

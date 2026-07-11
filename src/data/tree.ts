@@ -1,5 +1,6 @@
 import type { Book } from "./books";
 import type { Collection } from "./collections";
+import type { Datagrid } from "./datagrids";
 import type { EntryMeta } from "./entries";
 import type { Folder } from "./folders";
 import { byPosition } from "./ordering";
@@ -46,6 +47,13 @@ export type TreeChild =
       position: number;
       created_at: string;
       entry: EntryMeta;
+    }
+  | {
+      kind: "datagrid";
+      id: string;
+      position: number;
+      created_at: string;
+      datagrid: Datagrid;
     };
 
 /** The sidebar tree: a map from container id (folder/collection id or ROOT) to its children. */
@@ -65,6 +73,7 @@ export function buildTree(
   books: Book[],
   collections: Collection[] = [],
   entries: EntryMeta[] = [],
+  datagrids: Datagrid[] = [],
 ): TreeModel {
   const children = new Map<string, TreeChild[]>();
   const push = (key: string, child: TreeChild) => {
@@ -107,6 +116,16 @@ export function buildTree(
       position: e.position,
       created_at: e.created_at,
       entry: e,
+    });
+  }
+  // Datagrids nest under their collection only — never the root or a folder.
+  for (const d of datagrids) {
+    push(d.collection_id, {
+      kind: "datagrid",
+      id: d.id,
+      position: d.position,
+      created_at: d.created_at,
+      datagrid: d,
     });
   }
 

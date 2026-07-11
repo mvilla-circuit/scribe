@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   makeBook,
   makeCollection,
+  makeDatagrid,
   makeEntry,
   makeFolder,
 } from "@/test/fixtures";
@@ -74,6 +75,48 @@ describe("buildTree", () => {
         id: child.id,
       })),
     ).toEqual([{ kind: "entry", id: "e1" }]);
+  });
+
+  it("places a datagrid under its collection", () => {
+    const collection = makeCollection({ id: "c1" });
+    const datagrid = makeDatagrid({ id: "dg1", collection_id: "c1" });
+    const model = buildTree([], [], [collection], [], [datagrid]);
+
+    expect(
+      childrenOf(model, "c1").map((child) => ({
+        kind: child.kind,
+        id: child.id,
+      })),
+    ).toEqual([{ kind: "datagrid", id: "dg1" }]);
+  });
+
+  it("interleaves a datagrid with entries by position under its collection", () => {
+    const collection = makeCollection({ id: "c1" });
+    const entry = makeEntry({ id: "e1", collection_id: "c1", position: 2048 });
+    const datagrid = makeDatagrid({
+      id: "dg1",
+      collection_id: "c1",
+      position: 1024,
+    });
+    const model = buildTree([], [], [collection], [entry], [datagrid]);
+
+    expect(
+      childrenOf(model, "c1").map((child) => ({
+        kind: child.kind,
+        id: child.id,
+      })),
+    ).toEqual([
+      { kind: "datagrid", id: "dg1" },
+      { kind: "entry", id: "e1" },
+    ]);
+  });
+
+  it("never nests a datagrid at the root even without a collection match", () => {
+    const datagrid = makeDatagrid({ id: "dg1", collection_id: "c1" });
+    const model = buildTree([], [], [], [], [datagrid]);
+
+    expect(childrenOf(model, ROOT)).toEqual([]);
+    expect(childrenOf(model, "c1").map((child) => child.id)).toEqual(["dg1"]);
   });
 
   it("returns an empty list for an unknown container", () => {

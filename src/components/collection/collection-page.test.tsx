@@ -6,11 +6,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   booksKey,
   collectionsKey,
+  datagridsKey,
   entriesKey,
   foldersKey,
 } from "@/data/query-keys";
 import { useUIStore } from "@/store/ui";
-import { makeBook, makeCollection, makeEntry } from "@/test/fixtures";
+import {
+  makeBook,
+  makeCollection,
+  makeDatagrid,
+  makeEntry,
+} from "@/test/fixtures";
 import { server } from "@/test/msw/server";
 import {
   createTestQueryClient,
@@ -57,6 +63,7 @@ function seed() {
       cover_url: "https://example.test/opening.jpg",
     }),
   ]);
+  client.setQueryData(datagridsKey, []);
   return client;
 }
 
@@ -90,6 +97,26 @@ describe("CollectionPage", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Opening scene" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows datagrid cards belonging to the collection", () => {
+    const client = seed();
+    client.setQueryData(datagridsKey, [
+      makeDatagrid({
+        id: "dg1",
+        collection_id: "c1",
+        name: "World bible",
+      }),
+    ]);
+
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+
+    expect(
+      screen.getByRole("button", { name: "World bible" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Datagrids" }),
     ).toBeInTheDocument();
   });
 
@@ -240,6 +267,7 @@ describe("CollectionPage", () => {
     client.setQueryData(booksKey, []);
     client.setQueryData(collectionsKey, [makeCollection({ id: "c1" })]);
     client.setQueryData(entriesKey, []);
+    client.setQueryData(datagridsKey, []);
 
     renderWithProviders(<CollectionPage collectionId="c1" />, { client });
 

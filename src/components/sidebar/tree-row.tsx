@@ -14,6 +14,7 @@ import {
   BookPlusIcon,
   CollectionIcon,
   CollectionPlusIcon,
+  DatagridIcon,
   FolderIcon,
   FolderOpenIcon,
   LinkIcon,
@@ -31,6 +32,7 @@ interface TreeRowHandlers {
   onSelectBook: (id: string) => void;
   onSelectCollection: (id: string) => void;
   onSelectEntry: (id: string, collectionId: string) => void;
+  onSelectDatagrid: (id: string) => void;
   onStartRename: (id: string) => void;
   onCommitRename: (node: FlatNode, value: string) => void;
   onCancelRename: () => void;
@@ -40,6 +42,7 @@ interface TreeRowHandlers {
   onNewBookInCollection: (id: string) => void;
   onNewCollectionInside: (id: string) => void;
   onNewEntryInside: (id: string) => void;
+  onNewDatagridInside: (id: string) => void;
   // Reparent this node into a collection, or back to the top level (null).
   onMoveToCollection: (
     node: FlatNode,
@@ -69,6 +72,7 @@ export const TreeRow = memo(function TreeRow({
   onSelectBook,
   onSelectCollection,
   onSelectEntry,
+  onSelectDatagrid,
   onStartRename,
   onCommitRename,
   onCancelRename,
@@ -78,12 +82,14 @@ export const TreeRow = memo(function TreeRow({
   onNewBookInCollection,
   onNewCollectionInside,
   onNewEntryInside,
+  onNewDatagridInside,
   onMoveToCollection,
 }: TreeRowProps) {
   const child = node.child;
   const isFolder = child.kind === "folder";
   const isCollection = child.kind === "collection";
   const isEntry = child.kind === "entry";
+  const isDatagrid = child.kind === "datagrid";
   const label =
     child.kind === "folder"
       ? child.folder.name
@@ -91,7 +97,9 @@ export const TreeRow = memo(function TreeRow({
         ? child.collection.name
         : child.kind === "book"
           ? child.book.title
-          : child.entry.title;
+          : child.kind === "entry"
+            ? child.entry.title
+            : child.datagrid.name;
 
   // The set of collections this node may move into: never itself, never one of
   // its own descendants (which would form a cycle), and never its current
@@ -170,8 +178,12 @@ export const TreeRow = memo(function TreeRow({
         <DocumentIcon icon={child.book.icon} size={SIDEBAR_ICON_SIZE} />
       ) : child.kind === "entry" && child.entry.icon ? (
         <DocumentIcon icon={child.entry.icon} size={SIDEBAR_ICON_SIZE} />
+      ) : child.kind === "datagrid" && child.datagrid.icon ? (
+        <DocumentIcon icon={child.datagrid.icon} size={SIDEBAR_ICON_SIZE} />
       ) : isEntry ? (
         <PageIcon size={SIDEBAR_ICON_SIZE} />
+      ) : child.kind === "datagrid" ? (
+        <DatagridIcon size={SIDEBAR_ICON_SIZE} />
       ) : (
         <BookIcon size={SIDEBAR_ICON_SIZE} />
       )}
@@ -214,6 +226,13 @@ export const TreeRow = memo(function TreeRow({
           },
         },
         {
+          icon: <DatagridIcon size={15} />,
+          label: "New datagrid",
+          onSelect: () => {
+            onNewDatagridInside(node.id);
+          },
+        },
+        {
           icon: <PencilIcon size={15} />,
           label: "Rename",
           onSelect: () => {
@@ -232,7 +251,7 @@ export const TreeRow = memo(function TreeRow({
           separatorBefore: true,
         },
       ]
-    : isEntry
+    : isEntry || isDatagrid
       ? [
           {
             icon: <PencilIcon size={15} />,
@@ -315,6 +334,7 @@ export const TreeRow = memo(function TreeRow({
         else if (isCollection) onSelectCollection(node.id);
         else if (child.kind === "entry")
           onSelectEntry(node.id, child.entry.collection_id);
+        else if (child.kind === "datagrid") onSelectDatagrid(node.id);
         else onSelectBook(node.id);
       }}
       onStartRename={() => {
@@ -347,6 +367,12 @@ export function DragRowOverlay({ node }: { node: FlatNode }) {
       ) : (
         <BookIcon size={SIDEBAR_ICON_SIZE} />
       )
+    ) : child.kind === "datagrid" ? (
+      child.datagrid.icon ? (
+        <DocumentIcon icon={child.datagrid.icon} size={SIDEBAR_ICON_SIZE} />
+      ) : (
+        <DatagridIcon size={SIDEBAR_ICON_SIZE} />
+      )
     ) : child.entry.icon ? (
       <DocumentIcon icon={child.entry.icon} size={SIDEBAR_ICON_SIZE} />
     ) : (
@@ -359,6 +385,8 @@ export function DragRowOverlay({ node }: { node: FlatNode }) {
         ? child.collection.name
         : child.kind === "book"
           ? child.book.title
-          : child.entry.title;
+          : child.kind === "entry"
+            ? child.entry.title
+            : child.datagrid.name;
   return <SidebarRowOverlay icon={icon} label={label} />;
 }

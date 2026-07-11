@@ -5,6 +5,7 @@ import { buildTree } from "@/data/tree";
 import {
   makeBook,
   makeCollection,
+  makeDatagrid,
   makeEntry,
   makeFolder,
 } from "@/test/fixtures";
@@ -194,5 +195,59 @@ describe("entries in the tree", () => {
     // Root-level and folder drops are illegal for entries (collection_id is required).
     expect(getProjection(nodes, "e1", "c1", 0)).toBeNull();
     expect(getProjection(nodes, "e1", "bf1", INDENT)).toBeNull();
+  });
+});
+
+describe("datagrids in the tree", () => {
+  const gridModel = buildTree(
+    [],
+    [],
+    [makeCollection({ id: "c1" })],
+    [],
+    [makeDatagrid({ id: "dg1", collection_id: "c1", position: 1024 })],
+  );
+
+  it("includes datagrids beneath an expanded collection as draggable leaves", () => {
+    const nodes = flattenTree(gridModel, new Set(["c1"]));
+    expect(
+      nodes.map((node) => ({
+        id: node.id,
+        depth: node.depth,
+        kind: node.kind,
+      })),
+    ).toEqual([
+      { id: "c1", depth: 0, kind: "collection" },
+      { id: "dg1", depth: 1, kind: "datagrid" },
+    ]);
+    expect(nodes.find((node) => node.id === "dg1")?.draggable).toBe(true);
+  });
+
+  it("projects a datagrid under a collection, not the root or a folder", () => {
+    const model = buildTree(
+      [makeFolder({ id: "f1", position: 1024 })],
+      [
+        makeBook({ id: "bf1", folder_id: "f1", position: 1024 }),
+        makeBook({ id: "b1", collection_id: "c1", position: 1024 }),
+      ],
+      [
+        makeCollection({ id: "c1", position: 2048 }),
+        makeCollection({ id: "c2", position: 3072 }),
+      ],
+      [],
+      [makeDatagrid({ id: "dg1", collection_id: "c1", position: 2048 })],
+    );
+    const nodes = flattenTree(model, new Set(["c1", "f1", "c2"]));
+
+    expect(getProjection(nodes, "dg1", "b1", INDENT)).toEqual({
+      depth: 1,
+      parentId: "c1",
+    });
+    expect(getProjection(nodes, "dg1", "c2", INDENT)).toEqual({
+      depth: 1,
+      parentId: "c2",
+    });
+    // Root-level and folder drops are illegal for datagrids.
+    expect(getProjection(nodes, "dg1", "c1", 0)).toBeNull();
+    expect(getProjection(nodes, "dg1", "bf1", INDENT)).toBeNull();
   });
 });

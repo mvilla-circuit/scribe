@@ -53,3 +53,31 @@ export const entriesKey = ["entries"] as const;
  */
 export const entryContentKey = (entryId: string) =>
   ["entry-content", entryId] as const;
+
+/**
+ * Sentinel datagrid id used to key the rows/views queries when no datagrid is
+ * selected, so the (disabled) query still has a stable key.
+ */
+export const NO_DATAGRID = "__none__";
+
+/** Cache key for the signed-in user's datagrids. */
+export const datagridsKey = ["datagrids"] as const;
+
+/**
+ * Cache key for one datagrid's row metadata (no editor body). Rows are keyed per
+ * datagrid so opening a datagrid loads only its own rows and optimistic
+ * mutations touch a single cache entry.
+ */
+export const datagridRowsKey = (datagridId: string) =>
+  ["datagrid-rows", datagridId] as const;
+
+/**
+ * Cache key for a single datagrid row's editor body, kept separate from the
+ * metadata list so a content autosave only touches this one entry.
+ */
+export const datagridRowContentKey = (rowId: string) =>
+  ["datagrid-row-content", rowId] as const;
+
+/** Cache key for one datagrid's saved views, keyed per datagrid. */
+export const datagridViewsKey = (datagridId: string) =>
+  ["datagrid-views", datagridId] as const;

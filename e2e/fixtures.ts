@@ -39,14 +39,26 @@ export interface SeedData {
   documents: Row[];
   collections?: Row[];
   entries?: Row[];
+  datagrids?: Row[];
+  datagrid_views?: Row[];
+  datagrid_rows?: Row[];
 }
 
 const EMPTY_SEED: SeedData = { books: [], folders: [], documents: [] };
 
-// PostgREST encodes filters as `column=eq.<value>`; pull the value back out.
+// PostgREST encodes filters as `column=eq.<value>` or `column=in.(a,b)`;
+// pull the matching id(s) back out.
 function eqParam(url: URL, key: string): string | null {
   const raw = url.searchParams.get(key);
   return raw?.startsWith("eq.") ? raw.slice(3) : null;
+}
+
+function inParam(url: URL, key: string): string[] | null {
+  const raw = url.searchParams.get(key);
+  if (!raw?.startsWith("in.(") || !raw.endsWith(")")) return null;
+  const inner = raw.slice(4, -1);
+  if (inner === "") return [];
+  return inner.split(",").map((part) => part.replace(/^"(.*)"$/, "$1"));
 }
 
 function parseRows(raw: string | null): Row[] {
@@ -68,11 +80,14 @@ function handleRest(store: Record<string, Row[]>, route: Route): Promise<void> {
     case "GET": {
       const bookId = eqParam(url, "book_id");
       const collectionId = eqParam(url, "collection_id");
+      const datagridId = eqParam(url, "datagrid_id");
       const id = eqParam(url, "id");
       let result = rows;
       if (bookId) result = result.filter((r) => r.book_id === bookId);
       if (collectionId)
         result = result.filter((r) => r.collection_id === collectionId);
+      if (datagridId)
+        result = result.filter((r) => r.datagrid_id === datagridId);
       if (id) result = result.filter((r) => r.id === id);
       // `.single()`/`.maybeSingle()` request a lone object via this Accept type;
       // mirror PostgREST by returning the matching row (or null) rather than an
@@ -97,15 +112,34 @@ function handleRest(store: Record<string, Row[]>, route: Route): Promise<void> {
     }
     case "PATCH": {
       const id = eqParam(url, "id");
+      const ids = inParam(url, "id");
       const patch = parseRows(request.postData())[0] ?? {};
-      for (const r of rows) {
-        if (!id || r.id === id) Object.assign(r, patch);
+      if (id) {
+        for (const r of rows) {
+          if (r.id === id) Object.assign(r, patch);
+        }
+      } else if (ids) {
+        const match = new Set(ids);
+        for (const r of rows) {
+          if (match.has(String(r.id))) Object.assign(r, patch);
+        }
+      } else {
+        return route.fulfill({ status: 400, body: "missing id filter" });
       }
       return route.fulfill({ status: 204, body: "" });
     }
     case "DELETE": {
       const id = eqParam(url, "id");
-      store[table] = id ? rows.filter((r) => r.id !== id) : [];
+      const ids = inParam(url, "id");
+      if (id) {
+        store[table] = rows.filter((r) => r.id !== id);
+      } else if (ids) {
+        const remove = new Set(ids);
+        store[table] = rows.filter((r) => !remove.has(String(r.id)));
+      } else {
+        // Refuse unfiltered deletes so a missing filter can't wipe the table.
+        return route.fulfill({ status: 400, body: "missing id filter" });
+      }
       return route.fulfill({ status: 204, body: "" });
     }
     default:
@@ -130,6 +164,9 @@ export const test = base.extend<{ seed: SeedData; authedPage: Page }>({
       documents: [...seed.documents],
       collections: [...(seed.collections ?? [])],
       entries: [...(seed.entries ?? [])],
+      datagrids: [...(seed.datagrids ?? [])],
+      datagrid_views: [...(seed.datagrid_views ?? [])],
+      datagrid_rows: [...(seed.datagrid_rows ?? [])],
     };
 
     await page.route("**/rest/v1/**", (route) => handleRest(store, route));

@@ -11,6 +11,9 @@ export function AppShell() {
   const activeBookId = useUIStore((s) => s.activeBookId);
   const activeCollectionId = useUIStore((s) => s.activeCollectionId);
   const activeEntryId = useUIStore((s) => s.activeEntryId);
+  const activeDatagridId = useUIStore((s) => s.activeDatagridId);
+  const activeDatagridRowId = useUIStore((s) => s.activeDatagridRowId);
+  const rowOpenMode = useUIStore((s) => s.rowOpenMode);
   const { data: books } = useBooks();
   const activeBook = books?.find((b) => b.id === activeBookId) ?? null;
 
@@ -24,6 +27,9 @@ export function AppShell() {
               activeBook={activeBook}
               activeCollectionId={activeCollectionId}
               activeEntryId={activeEntryId}
+              activeDatagridId={activeDatagridId}
+              activeDatagridRowId={activeDatagridRowId}
+              rowOpenMode={rowOpenMode}
             />
           </div>
         </section>

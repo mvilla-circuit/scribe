@@ -1,5 +1,9 @@
 import { PageIcon } from "@/components/book/icons";
-import { BookIcon, CollectionIcon } from "@/components/sidebar/icons";
+import {
+  BookIcon,
+  CollectionIcon,
+  DatagridIcon,
+} from "@/components/sidebar/icons";
 import { DocumentIcon } from "@/components/ui/document-icon";
 import {
   type RowAction,
@@ -23,6 +27,8 @@ function galleryFallback(child: GalleryChild) {
       return <BookIcon size={18} />;
     case "entry":
       return <PageIcon size={18} />;
+    case "datagrid":
+      return <DatagridIcon size={18} />;
   }
 }
 

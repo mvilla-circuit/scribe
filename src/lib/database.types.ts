@@ -152,6 +152,153 @@ export type Database = {
           },
         ]
       }
+      datagrid_rows: {
+        Row: {
+          content: Json
+          cover_url: string | null
+          created_at: string
+          datagrid_id: string
+          icon: string | null
+          id: string
+          position: number
+          properties: Json
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: Json
+          cover_url?: string | null
+          created_at?: string
+          datagrid_id: string
+          icon?: string | null
+          id?: string
+          position?: number
+          properties?: Json
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: Json
+          cover_url?: string | null
+          created_at?: string
+          datagrid_id?: string
+          icon?: string | null
+          id?: string
+          position?: number
+          properties?: Json
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "datagrid_rows_datagrid_id_fkey"
+            columns: ["datagrid_id"]
+            isOneToOne: false
+            referencedRelation: "datagrids"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      datagrid_views: {
+        Row: {
+          config: Json
+          created_at: string
+          datagrid_id: string
+          id: string
+          is_default: boolean
+          name: string
+          position: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          datagrid_id: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          position?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          datagrid_id?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          position?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "datagrid_views_datagrid_id_fkey"
+            columns: ["datagrid_id"]
+            isOneToOne: false
+            referencedRelation: "datagrids"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      datagrids: {
+        Row: {
+          collection_id: string
+          cover_url: string | null
+          created_at: string
+          fields: Json
+          icon: string | null
+          id: string
+          name: string
+          position: number
+          subtitle: string | null
+          theme: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          collection_id: string
+          cover_url?: string | null
+          created_at?: string
+          fields?: Json
+          icon?: string | null
+          id?: string
+          name?: string
+          position?: number
+          subtitle?: string | null
+          theme?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          collection_id?: string
+          cover_url?: string | null
+          created_at?: string
+          fields?: Json
+          icon?: string | null
+          id?: string
+          name?: string
+          position?: number
+          subtitle?: string | null
+          theme?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "datagrids_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           banner_color: string | null

@@ -31,6 +31,13 @@ import {
   useRenameCollection,
 } from "@/data/collections";
 import {
+  useCreateDatagrid,
+  useDatagrids,
+  useDeleteDatagrid,
+  useMoveDatagrid,
+  useRenameDatagrid,
+} from "@/data/datagrids";
+import {
   useCreateEntry,
   useDeleteEntry,
   useEntries,
@@ -70,13 +77,15 @@ type DeleteTarget =
       docs: number;
     }
   | { kind: "book"; id: string; title: string }
-  | { kind: "entry"; id: string; title: string };
+  | { kind: "entry"; id: string; title: string }
+  | { kind: "datagrid"; id: string; title: string };
 
 export function SidebarTree() {
   const foldersQuery = useFolders();
   const booksQuery = useBooks();
   const collectionsQuery = useCollections();
   const entriesQuery = useEntries();
+  const datagridsQuery = useDatagrids();
 
   // Collections reuse the folder-expansion set: both are just "which container
   // rows are open", and their ids never collide (all UUIDs), so one set keeps
@@ -87,9 +96,11 @@ export function SidebarTree() {
   const activeBookId = useUIStore((s) => s.activeBookId);
   const activeCollectionId = useUIStore((s) => s.activeCollectionId);
   const activeEntryId = useUIStore((s) => s.activeEntryId);
+  const activeDatagridId = useUIStore((s) => s.activeDatagridId);
   const setActiveBook = useUIStore((s) => s.setActiveBook);
   const setActiveCollection = useUIStore((s) => s.setActiveCollection);
   const setActiveEntry = useUIStore((s) => s.setActiveEntry);
+  const setActiveDatagrid = useUIStore((s) => s.setActiveDatagrid);
   const navigateTo = useUIStore((s) => s.navigateTo);
 
   const renameFolder = useRenameFolder();
@@ -107,6 +118,10 @@ export function SidebarTree() {
   const renameEntry = useRenameEntry();
   const moveEntry = useMoveEntry();
   const deleteEntry = useDeleteEntry();
+  const createDatagrid = useCreateDatagrid();
+  const renameDatagrid = useRenameDatagrid();
+  const moveDatagrid = useMoveDatagrid();
+  const deleteDatagrid = useDeleteDatagrid();
   const createRootItem = useCreateRootItem();
 
   const panel = useTreePanel<DeleteTarget>();
@@ -121,6 +136,8 @@ export function SidebarTree() {
   const { mutate: createCollectionMutate } = createCollection;
   const { mutate: createEntryMutate } = createEntry;
   const { mutate: renameEntryMutate } = renameEntry;
+  const { mutate: createDatagridMutate } = createDatagrid;
+  const { mutate: renameDatagridMutate } = renameDatagrid;
   const { mutate: moveBookMutate } = moveBook;
   const { mutate: moveCollectionMutate } = moveCollection;
   const { mutate: moveEntryMutate } = moveEntry;
@@ -134,6 +151,10 @@ export function SidebarTree() {
     [collectionsQuery.data],
   );
   const entries = useMemo(() => entriesQuery.data ?? [], [entriesQuery.data]);
+  const datagrids = useMemo(
+    () => datagridsQuery.data ?? [],
+    [datagridsQuery.data],
+  );
   const expanded = useMemo(() => new Set(expandedArr), [expandedArr]);
   const collectionIds = useMemo(
     () => new Set(collections.map((c) => c.id)),
@@ -141,8 +162,8 @@ export function SidebarTree() {
   );
 
   const model = useMemo(
-    () => buildTree(folders, books, collections, entries),
-    [folders, books, collections, entries],
+    () => buildTree(folders, books, collections, entries, datagrids),
+    [folders, books, collections, entries, datagrids],
   );
   const flattened = useMemo(
     () => flattenTree(model, expanded),
@@ -194,6 +215,10 @@ export function SidebarTree() {
               },
             },
           );
+        } else if (node.kind === "datagrid" && parentId) {
+          // Datagrids, like entries, live in a collection only (enforced by
+          // getProjection); write the new container and position.
+          moveDatagrid.mutate({ id, collection_id: parentId, position });
         }
         if (parentId) setExpanded(parentId, true);
       },
@@ -265,6 +290,23 @@ export function SidebarTree() {
     [setExpanded, createEntryMutate, model, setActiveEntry, startRename],
   );
 
+  const onNewDatagridInside = useCallback(
+    (collectionId: string) => {
+      setExpanded(collectionId, true);
+      const id = crypto.randomUUID();
+      createDatagridMutate({
+        id,
+        collection_id: collectionId,
+        name: "Untitled",
+        position: endPositionFor(childrenOf(model, collectionId)),
+        viewId: crypto.randomUUID(),
+      });
+      setActiveDatagrid(id);
+      startRename(id);
+    },
+    [setExpanded, createDatagridMutate, model, setActiveDatagrid, startRename],
+  );
+
   const onMoveToCollection = useCallback(
     (node: FlatNode, targetCollectionId: string | null) => {
       const position = endPositionFor(
@@ -333,6 +375,8 @@ export function SidebarTree() {
         renameCollectionMutate({ id: node.id, name: value });
       else if (node.kind === "book")
         renameBookMutate({ id: node.id, title: value });
+      else if (node.kind === "datagrid")
+        renameDatagridMutate({ id: node.id, name: value });
       else renameEntryMutate({ id: node.id, title: value });
     },
     [
@@ -340,6 +384,7 @@ export function SidebarTree() {
       renameFolderMutate,
       renameCollectionMutate,
       renameBookMutate,
+      renameDatagridMutate,
       renameEntryMutate,
     ],
   );
@@ -373,11 +418,17 @@ export function SidebarTree() {
           id: node.id,
           title: node.child.book.title,
         });
-      } else {
+      } else if (node.child.kind === "entry") {
         requestDelete({
           kind: "entry",
           id: node.id,
           title: node.child.entry.title,
+        });
+      } else if (node.child.kind === "datagrid") {
+        requestDelete({
+          kind: "datagrid",
+          id: node.id,
+          title: node.child.datagrid.name,
         });
       }
     },
@@ -395,6 +446,9 @@ export function SidebarTree() {
     } else if (target.kind === "book") {
       if (activeBookId === target.id) setActiveBook(null);
       deleteBook.mutate({ id: target.id });
+    } else if (target.kind === "datagrid") {
+      if (activeDatagridId === target.id) setActiveDatagrid(null);
+      deleteDatagrid.mutate({ id: target.id });
     } else {
       if (activeEntryId === target.id) {
         navigateTo({ collectionId: activeCollectionId });
@@ -407,17 +461,20 @@ export function SidebarTree() {
     foldersQuery.isLoading ||
     booksQuery.isLoading ||
     collectionsQuery.isLoading ||
-    entriesQuery.isLoading;
+    entriesQuery.isLoading ||
+    datagridsQuery.isLoading;
   const isError =
     foldersQuery.isError ||
     booksQuery.isError ||
     collectionsQuery.isError ||
-    entriesQuery.isError;
+    entriesQuery.isError ||
+    datagridsQuery.isError;
   const isEmpty =
     folders.length === 0 &&
     books.length === 0 &&
     collections.length === 0 &&
-    entries.length === 0;
+    entries.length === 0 &&
+    datagrids.length === 0;
 
   const renderRow = (node: FlatNode) => (
     <TreeRow
@@ -426,7 +483,8 @@ export function SidebarTree() {
       selected={
         (node.kind === "book" && node.id === activeBookId) ||
         (node.kind === "collection" && node.id === activeCollectionId) ||
-        (node.kind === "entry" && node.id === activeEntryId)
+        (node.kind === "entry" && node.id === activeEntryId) ||
+        (node.kind === "datagrid" && node.id === activeDatagridId)
       }
       editing={panel.editingId === node.id}
       expanded={expanded.has(node.id)}
@@ -436,6 +494,7 @@ export function SidebarTree() {
       onSelectBook={setActiveBook}
       onSelectCollection={setActiveCollection}
       onSelectEntry={setActiveEntry}
+      onSelectDatagrid={setActiveDatagrid}
       onStartRename={startRename}
       onCommitRename={onCommitRename}
       onCancelRename={cancelRename}
@@ -445,6 +504,7 @@ export function SidebarTree() {
       onNewBookInCollection={onNewBookInCollection}
       onNewCollectionInside={onNewCollectionInside}
       onNewEntryInside={onNewEntryInside}
+      onNewDatagridInside={onNewDatagridInside}
       onMoveToCollection={onMoveToCollection}
     />
   );
@@ -539,6 +599,7 @@ export function SidebarTree() {
                 void booksQuery.refetch();
                 void collectionsQuery.refetch();
                 void entriesQuery.refetch();
+                void datagridsQuery.refetch();
               }}
             >
               Try again
@@ -577,7 +638,11 @@ export function SidebarTree() {
 
 function deleteTitle(target: DeleteTarget | null): string {
   if (!target) return "";
-  if (target.kind === "book" || target.kind === "entry")
+  if (
+    target.kind === "book" ||
+    target.kind === "entry" ||
+    target.kind === "datagrid"
+  )
     return `Delete "${target.title}"?`;
   return `Delete "${target.name}"?`;
 }
@@ -589,6 +654,9 @@ function deleteDescription(target: DeleteTarget | null): string {
     return describeCollectionDelete(target.movableChildren, target.docs);
   }
   if (target.kind === "entry") return "This permanently deletes the doc.";
+  if (target.kind === "datagrid") {
+    return "This permanently deletes the datagrid and all its rows.";
+  }
   return "This permanently deletes the book and everything inside it.";
 }
 

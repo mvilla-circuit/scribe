@@ -1,4 +1,5 @@
 import { screen } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { makeBook } from "@/test/fixtures";
@@ -41,16 +42,44 @@ vi.mock("./book/book-view", () => ({
 vi.mock("./main-empty-state", () => ({
   MainEmptyState: () => <div data-testid="empty-state" />,
 }));
+vi.mock("./datagrid/datagrid-page", () => ({
+  DatagridPage: ({ datagridId }: { datagridId: string }) => (
+    <div data-testid="datagrid-page" data-datagrid-id={datagridId} />
+  ),
+}));
+vi.mock("./datagrid/datagrid-row-full", () => ({
+  DatagridRowFull: ({
+    datagridId,
+    rowId,
+  }: {
+    datagridId: string;
+    rowId: string;
+  }) => (
+    <div
+      data-testid="datagrid-row-full"
+      data-datagrid-id={datagridId}
+      data-row-id={rowId}
+    />
+  ),
+}));
+
+// Only the props a given case exercises are set; the rest default to the
+// "nothing active" baseline so each test reads as a single routing decision.
+const props = (
+  over: Partial<ComponentProps<typeof MainPane>> = {},
+): ComponentProps<typeof MainPane> => ({
+  activeBook: null,
+  activeCollectionId: null,
+  activeEntryId: null,
+  activeDatagridId: null,
+  activeDatagridRowId: null,
+  rowOpenMode: "modal",
+  ...over,
+});
 
 describe("MainPane routing", () => {
   it("falls back to CollectionPage when only a collection is active", () => {
-    renderWithProviders(
-      <MainPane
-        activeBook={null}
-        activeCollectionId="c1"
-        activeEntryId={null}
-      />,
-    );
+    renderWithProviders(<MainPane {...props({ activeCollectionId: "c1" })} />);
     expect(screen.getByTestId("collection-page")).toHaveAttribute(
       "data-collection-id",
       "c1",
@@ -60,7 +89,9 @@ describe("MainPane routing", () => {
 
   it("renders EntryView when an entry is active", () => {
     renderWithProviders(
-      <MainPane activeBook={null} activeCollectionId="c1" activeEntryId="e1" />,
+      <MainPane
+        {...props({ activeCollectionId: "c1", activeEntryId: "e1" })}
+      />,
     );
 
     expect(screen.getByTestId("entry-view")).toHaveAttribute(
@@ -77,9 +108,10 @@ describe("MainPane routing", () => {
   it("prefers the collection surface over an active book", () => {
     renderWithProviders(
       <MainPane
-        activeBook={makeBook({ id: "b1" })}
-        activeCollectionId="c1"
-        activeEntryId={null}
+        {...props({
+          activeBook: makeBook({ id: "b1" }),
+          activeCollectionId: "c1",
+        })}
       />,
     );
     expect(screen.getByTestId("collection-page")).toBeInTheDocument();
@@ -88,24 +120,68 @@ describe("MainPane routing", () => {
 
   it("renders the book view when only a book is active", () => {
     renderWithProviders(
-      <MainPane
-        activeBook={makeBook({ id: "b1" })}
-        activeCollectionId={null}
-        activeEntryId={null}
-      />,
+      <MainPane {...props({ activeBook: makeBook({ id: "b1" }) })} />,
     );
     expect(screen.getByTestId("book-view")).toBeInTheDocument();
     expect(screen.queryByTestId("collection-page")).toBeNull();
   });
 
   it("shows the empty state when nothing is active", () => {
+    renderWithProviders(<MainPane {...props()} />);
+    expect(screen.getByTestId("empty-state")).toBeInTheDocument();
+  });
+
+  it("renders the datagrid page when a datagrid is active", () => {
+    renderWithProviders(<MainPane {...props({ activeDatagridId: "dg1" })} />);
+    expect(screen.getByTestId("datagrid-page")).toHaveAttribute(
+      "data-datagrid-id",
+      "dg1",
+    );
+  });
+
+  it("prefers the datagrid page over collection and entry surfaces", () => {
     renderWithProviders(
       <MainPane
-        activeBook={null}
-        activeCollectionId={null}
-        activeEntryId={null}
+        {...props({
+          activeDatagridId: "dg1",
+          activeCollectionId: "c1",
+          activeEntryId: "e1",
+        })}
       />,
     );
-    expect(screen.getByTestId("empty-state")).toBeInTheDocument();
+    expect(screen.getByTestId("datagrid-page")).toBeInTheDocument();
+    expect(screen.queryByTestId("entry-view")).toBeNull();
+    expect(screen.queryByTestId("collection-page")).toBeNull();
+  });
+
+  it("renders the full-row surface when a row is open in full mode", () => {
+    renderWithProviders(
+      <MainPane
+        {...props({
+          activeDatagridId: "dg1",
+          activeDatagridRowId: "r1",
+          rowOpenMode: "full",
+        })}
+      />,
+    );
+    expect(screen.getByTestId("datagrid-row-full")).toHaveAttribute(
+      "data-row-id",
+      "r1",
+    );
+    expect(screen.queryByTestId("datagrid-page")).toBeNull();
+  });
+
+  it("keeps the datagrid page (not the full row) for modal/split open modes", () => {
+    renderWithProviders(
+      <MainPane
+        {...props({
+          activeDatagridId: "dg1",
+          activeDatagridRowId: "r1",
+          rowOpenMode: "split",
+        })}
+      />,
+    );
+    expect(screen.getByTestId("datagrid-page")).toBeInTheDocument();
+    expect(screen.queryByTestId("datagrid-row-full")).toBeNull();
   });
 });

@@ -101,3 +101,59 @@ export function makeEntry(overrides: Partial<Entry> = {}): Entry {
     ...overrides,
   };
 }
+
+export function makeDatagrid(
+  overrides: Partial<Tables<"datagrids">> = {},
+): Tables<"datagrids"> {
+  return {
+    id: "datagrid-1",
+    user_id: "user-1",
+    collection_id: "collection-1",
+    name: "Untitled",
+    icon: null,
+    cover_url: null,
+    subtitle: null,
+    theme: {},
+    fields: [],
+    position: 1024,
+    created_at: "2026-01-01T00:00:00.000Z",
+    updated_at: "2026-01-01T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
+export function makeDatagridRow(
+  overrides: Partial<Tables<"datagrid_rows">> = {},
+): Tables<"datagrid_rows"> {
+  return {
+    id: "datagrid-row-1",
+    user_id: "user-1",
+    datagrid_id: "datagrid-1",
+    title: "Untitled",
+    icon: null,
+    cover_url: null,
+    properties: {},
+    content: {},
+    position: 1024,
+    created_at: "2026-01-01T00:00:00.000Z",
+    updated_at: "2026-01-01T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
+export function makeDatagridView(
+  overrides: Partial<Tables<"datagrid_views">> = {},
+): Tables<"datagrid_views"> {
+  return {
+    id: "datagrid-view-1",
+    user_id: "user-1",
+    datagrid_id: "datagrid-1",
+    name: "Table",
+    config: {},
+    position: 1024,
+    is_default: false,
+    created_at: "2026-01-01T00:00:00.000Z",
+    updated_at: "2026-01-01T00:00:00.000Z",
+    ...overrides,
+  };
+}

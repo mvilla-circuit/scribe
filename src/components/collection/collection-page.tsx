@@ -9,6 +9,7 @@ import {
   BookPlusIcon,
   CollectionIcon,
   CollectionPlusIcon,
+  DatagridIcon,
   PlusIcon,
   RemoveFromCollectionIcon,
   TrashIcon,
@@ -34,6 +35,7 @@ import {
   useUpdateCollection,
 } from "@/data/collections";
 import { deleteCoverObject, useUploadCover } from "@/data/cover-upload";
+import { useCreateDatagrid, useDatagrids } from "@/data/datagrids";
 import { useCreateEntry, useDeleteEntry, useEntries } from "@/data/entries";
 import { useFolders } from "@/data/folders";
 import { endPositionFor } from "@/data/ordering";
@@ -63,6 +65,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   const foldersQuery = useFolders();
   const booksQuery = useBooks();
   const entriesQuery = useEntries();
+  const datagridsQuery = useDatagrids();
 
   const collections = useMemo(
     () => collectionsQuery.data ?? [],
@@ -71,12 +74,16 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   const folders = useMemo(() => foldersQuery.data ?? [], [foldersQuery.data]);
   const books = useMemo(() => booksQuery.data ?? [], [booksQuery.data]);
   const entries = useMemo(() => entriesQuery.data ?? [], [entriesQuery.data]);
+  const datagrids = useMemo(
+    () => datagridsQuery.data ?? [],
+    [datagridsQuery.data],
+  );
 
   const collection = collections.find((c) => c.id === collectionId) ?? null;
 
   const model = useMemo(
-    () => buildTree(folders, books, collections, entries),
-    [folders, books, collections, entries],
+    () => buildTree(folders, books, collections, entries, datagrids),
+    [folders, books, collections, entries, datagrids],
   );
   const children = useMemo(
     () => childrenOf(model, collectionId),
@@ -90,6 +97,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   const setActiveCollection = useUIStore((s) => s.setActiveCollection);
   const setActiveBook = useUIStore((s) => s.setActiveBook);
   const setActiveEntry = useUIStore((s) => s.setActiveEntry);
+  const setActiveDatagrid = useUIStore((s) => s.setActiveDatagrid);
   const setFolderExpanded = useUIStore((s) => s.setFolderExpanded);
 
   const renameCollection = useRenameCollection();
@@ -100,6 +108,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   const moveCollection = useMoveCollection();
   const createEntry = useCreateEntry();
   const deleteEntry = useDeleteEntry();
+  const createDatagrid = useCreateDatagrid();
   const uploadCover = useUploadCover();
   const [query, setQuery] = useState("");
 
@@ -113,6 +122,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   );
   const childBooks = visibleChildren.filter((c) => c.kind === "book");
   const childEntries = visibleChildren.filter((c) => c.kind === "entry");
+  const childDatagrids = visibleChildren.filter((c) => c.kind === "datagrid");
 
   const rootPosition = () => endPositionFor(childrenOf(model, ROOT));
 
@@ -173,6 +183,19 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
     });
     setFolderExpanded(collectionId, true);
     setActiveEntry(id, collectionId);
+  };
+
+  const handleNewDatagrid = () => {
+    const id = crypto.randomUUID();
+    createDatagrid.mutate({
+      id,
+      collection_id: collectionId,
+      name: "Untitled",
+      position: endPositionFor(children),
+      viewId: crypto.randomUUID(),
+    });
+    setFolderExpanded(collectionId, true);
+    setActiveDatagrid(id);
   };
 
   const bookActions = (id: string): RowAction[] => [
@@ -269,6 +292,9 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
       case "entry":
         setActiveEntry(child.id, collectionId);
         break;
+      case "datagrid":
+        setActiveDatagrid(child.id);
+        break;
     }
   };
 
@@ -280,6 +306,9 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
         return bookActions(child.id);
       case "entry":
         return entryActions(child.id);
+      case "datagrid":
+        // Track D wires datagrid row actions; none in the gallery yet.
+        return [];
     }
   };
 
@@ -320,6 +349,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
             onNewBook={handleNewBook}
             onNewDoc={handleNewEntry}
             onNewCollection={handleNewCollection}
+            onNewDatagrid={handleNewDatagrid}
           />
         </span>
       </nav>
@@ -388,6 +418,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                 onNewBook={handleNewBook}
                 onNewDoc={handleNewEntry}
                 onNewCollection={handleNewCollection}
+                onNewDatagrid={handleNewDatagrid}
               />
             </div>
           </div>
@@ -464,6 +495,20 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                     ))}
                   </CardGrid>
                 )}
+                {childDatagrids.length > 0 && (
+                  <CardGrid heading="Datagrids">
+                    {childDatagrids.map((child) => (
+                      <GalleryCoverCard
+                        key={child.id}
+                        child={child}
+                        onOpen={() => {
+                          openChild(child);
+                        }}
+                        actions={actionsFor(child)}
+                      />
+                    ))}
+                  </CardGrid>
+                )}
               </>
             ) : (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -513,6 +558,8 @@ function galleryFallback(child: GalleryChild) {
       return <BookIcon size={28} />;
     case "entry":
       return <PageIcon size={28} />;
+    case "datagrid":
+      return <DatagridIcon size={28} />;
   }
 }
 
@@ -547,10 +594,12 @@ function CollectionCreateSplitButton({
   onNewBook,
   onNewDoc,
   onNewCollection,
+  onNewDatagrid,
 }: {
   onNewBook: () => void;
   onNewDoc: () => void;
   onNewCollection: () => void;
+  onNewDatagrid: () => void;
 }) {
   const segment =
     "inline-flex items-center justify-center gap-1.5 text-sm font-medium " +
@@ -585,6 +634,10 @@ function CollectionCreateSplitButton({
           <DropdownMenuItem onSelect={onNewCollection}>
             <CollectionPlusIcon size={15} />
             New collection
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={onNewDatagrid}>
+            <DatagridIcon size={15} />
+            New datagrid
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

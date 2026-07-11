@@ -12,6 +12,8 @@ function itemTitle(child: TreeChild): string {
       return child.book.title;
     case "entry":
       return child.entry.title;
+    case "datagrid":
+      return child.datagrid.name;
     case "folder":
       return child.folder.name;
   }
@@ -50,6 +52,13 @@ export function galleryChildMeta(child: GalleryChild): {
         kindLabel: "Doc",
         icon: child.entry.icon,
         coverUrl: child.entry.cover_url,
+      };
+    case "datagrid":
+      return {
+        title: child.datagrid.name,
+        kindLabel: "Datagrid",
+        icon: child.datagrid.icon,
+        coverUrl: child.datagrid.cover_url,
       };
   }
 }

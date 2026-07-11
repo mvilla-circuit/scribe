@@ -8,9 +8,9 @@ import { childrenOf, ROOT, type TreeChild, type TreeModel } from "@/data/tree";
 export { type Projection };
 
 export type FlatNode = DndNode & {
-  // entity UUID (unique across folders + collections + books + entries);
-  // inherited `id` from DndNode.
-  kind: "folder" | "collection" | "book" | "entry";
+  // entity UUID (unique across folders + collections + books + entries +
+  // datagrids); inherited `id` from DndNode.
+  kind: "folder" | "collection" | "book" | "entry" | "datagrid";
   draggable: boolean;
   child: TreeChild;
 };
@@ -48,13 +48,14 @@ export function flattenTree(
   return out;
 }
 
-// Projection rules for the mixed folder/collection/book/entry tree:
+// Projection rules for the mixed folder/collection/book/entry/datagrid tree:
 // - Folders are root-only (they never gain a parent).
 // - A book may nest under a folder or a collection (one level below the
 //   preceding container), or sit at the root.
 // - A collection may nest under another collection, or sit at the root, but
 //   never inside a folder -- neither ever nests under a book or entry.
-// - An entry may nest under a collection only (never root or a folder).
+// - An entry or a datagrid may nest under a collection only (never root or a
+//   folder); both behave identically as collection-scoped leaves.
 export function getProjection(
   nodes: FlatNode[],
   activeId: string,
@@ -71,8 +72,8 @@ export function getProjection(
         // sit at the preceding row's own level (resolved parent validated below).
         return prev.kind === "collection" ? prev.depth + 1 : prev.depth;
       }
-      if (a.kind === "entry") {
-        // Entries only nest under collections.
+      if (a.kind === "entry" || a.kind === "datagrid") {
+        // Entries and datagrids only nest under collections.
         return prev.kind === "collection" ? prev.depth + 1 : prev.depth;
       }
       // Books nest one level under a folder or collection, else sit as a sibling.
@@ -82,7 +83,7 @@ export function getProjection(
       );
     },
     parentWhenNestedUnder: (prev, a) => {
-      if (a.kind === "entry") {
+      if (a.kind === "entry" || a.kind === "datagrid") {
         return prev.kind === "collection" ? prev.id : prev.parentId;
       }
       return prev.kind === "folder" || prev.kind === "collection"
@@ -101,8 +102,8 @@ export function getProjection(
     if (parent?.kind === "folder") return { depth: 0, parentId: null };
   }
 
-  // Entries require a collection parent — cancel root or folder drops.
-  if (active.kind === "entry") {
+  // Entries and datagrids require a collection parent — cancel root/folder drops.
+  if (active.kind === "entry" || active.kind === "datagrid") {
     if (!projection.parentId) return null;
     const parent = nodes.find((n) => n.id === projection.parentId);
     if (parent?.kind !== "collection") return null;

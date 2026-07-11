@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   booksKey,
   collectionsKey,
+  datagridsKey,
   entriesKey,
   foldersKey,
 } from "@/data/query-keys";
@@ -57,6 +58,7 @@ function seedClient() {
   ]);
   client.setQueryData(collectionsKey, []);
   client.setQueryData(entriesKey, []);
+  client.setQueryData(datagridsKey, []);
   return client;
 }
 
@@ -114,6 +116,7 @@ describe("SidebarTree collections", () => {
       makeCollection({ id: "c1", name: "The Realm" }),
     ]);
     client.setQueryData(entriesKey, []);
+    client.setQueryData(datagridsKey, []);
     return client;
   }
 
@@ -163,6 +166,7 @@ describe("SidebarTree collection docs", () => {
         title: "Opening scene",
       }),
     ]);
+    client.setQueryData(datagridsKey, []);
     return client;
   }
 
@@ -220,6 +224,7 @@ describe("SidebarTree collection docs", () => {
         title: "Opening scene",
       }),
     ]);
+    client.setQueryData(datagridsKey, []);
     renderWithProviders(<SidebarTree />, { client });
 
     const collection = screen.getByRole("treeitem", { name: /The Realm/ });
