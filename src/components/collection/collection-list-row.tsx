@@ -3,6 +3,7 @@ import {
   BookIcon,
   CollectionIcon,
   DatagridIcon,
+  WhiteboardIcon,
 } from "@/components/sidebar/icons";
 import { DocumentIcon } from "@/components/ui/document-icon";
 import {
@@ -29,6 +30,8 @@ function galleryFallback(child: GalleryChild) {
       return <PageIcon size={18} />;
     case "datagrid":
       return <DatagridIcon size={18} />;
+    case "whiteboard":
+      return <WhiteboardIcon size={18} />;
   }
 }
 

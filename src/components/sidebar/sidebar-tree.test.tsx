@@ -9,6 +9,7 @@ import {
   datagridsKey,
   entriesKey,
   foldersKey,
+  whiteboardsKey,
 } from "@/data/query-keys";
 import { useUIStore } from "@/store/ui";
 import {
@@ -16,6 +17,7 @@ import {
   makeCollection,
   makeEntry,
   makeFolder,
+  makeWhiteboard,
 } from "@/test/fixtures";
 import { server } from "@/test/msw/server";
 import {
@@ -44,6 +46,7 @@ beforeEach(() => {
     activeBookId: null,
     activeCollectionId: null,
     activeEntryId: null,
+    activeWhiteboardId: null,
     expandedFolderIds: [],
   });
 });
@@ -59,6 +62,7 @@ function seedClient() {
   client.setQueryData(collectionsKey, []);
   client.setQueryData(entriesKey, []);
   client.setQueryData(datagridsKey, []);
+  client.setQueryData(whiteboardsKey, []);
   return client;
 }
 
@@ -117,6 +121,7 @@ describe("SidebarTree collections", () => {
     ]);
     client.setQueryData(entriesKey, []);
     client.setQueryData(datagridsKey, []);
+    client.setQueryData(whiteboardsKey, []);
     return client;
   }
 
@@ -167,6 +172,7 @@ describe("SidebarTree collection docs", () => {
       }),
     ]);
     client.setQueryData(datagridsKey, []);
+    client.setQueryData(whiteboardsKey, []);
     return client;
   }
 
@@ -207,7 +213,7 @@ describe("SidebarTree collection docs", () => {
     expect(client.getQueryData<unknown[]>(entriesKey)).toHaveLength(2);
   });
 
-  it("warns that deleting a collection permanently deletes its docs", async () => {
+  it("describes collection children according to their cascade behavior", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const client = createTestQueryClient();
     client.setQueryData(foldersKey, []);
@@ -225,6 +231,13 @@ describe("SidebarTree collection docs", () => {
       }),
     ]);
     client.setQueryData(datagridsKey, []);
+    client.setQueryData(whiteboardsKey, [
+      makeWhiteboard({
+        id: "wb1",
+        collection_id: "c1",
+        name: "Story map",
+      }),
+    ]);
     renderWithProviders(<SidebarTree />, { client });
 
     const collection = screen.getByRole("treeitem", { name: /The Realm/ });
@@ -236,6 +249,7 @@ describe("SidebarTree collection docs", () => {
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toHaveTextContent(/move to the top level/i);
     expect(dialog).toHaveTextContent(/doc.*permanently deleted/i);
+    expect(dialog).toHaveTextContent(/whiteboard.*permanently deleted/i);
     expect(dialog).not.toHaveTextContent(
       /The 2 items inside will move to the top level/,
     );
@@ -254,5 +268,82 @@ describe("SidebarTree collection docs", () => {
     expect(dialog).toHaveTextContent('Delete "Opening scene"?');
     expect(dialog).toHaveTextContent("This permanently deletes the doc.");
     expect(dialog).not.toHaveTextContent(/book and everything inside/i);
+  });
+});
+
+describe("SidebarTree collection whiteboards", () => {
+  function seedWithWhiteboard() {
+    const client = createTestQueryClient();
+    client.setQueryData(foldersKey, []);
+    client.setQueryData(booksKey, []);
+    client.setQueryData(collectionsKey, [
+      makeCollection({ id: "c1", name: "The Realm" }),
+    ]);
+    client.setQueryData(entriesKey, []);
+    client.setQueryData(datagridsKey, []);
+    client.setQueryData(whiteboardsKey, [
+      makeWhiteboard({
+        id: "wb1",
+        collection_id: "c1",
+        name: "Story map",
+      }),
+    ]);
+    return client;
+  }
+
+  it("renders a whiteboard under its collection and opens it", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    useUIStore.setState({ expandedFolderIds: ["c1"] });
+    renderWithProviders(<SidebarTree />, { client: seedWithWhiteboard() });
+
+    await user.click(screen.getByRole("treeitem", { name: /Story map/ }));
+
+    expect(useUIStore.getState().activeWhiteboardId).toBe("wb1");
+  });
+
+  it("creates and opens a whiteboard from the collection menu", async () => {
+    server.use(
+      http.post(
+        "http://supabase.test/rest/v1/whiteboards",
+        () => new HttpResponse(null, { status: 201 }),
+      ),
+    );
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = seedWithWhiteboard();
+    renderWithProviders(<SidebarTree />, { client });
+
+    const collection = screen.getByRole("treeitem", { name: /The Realm/ });
+    await user.click(
+      within(collection).getByRole("button", { name: "More actions" }),
+    );
+    await user.click(
+      await screen.findByRole("menuitem", { name: "New whiteboard" }),
+    );
+
+    expect(useUIStore.getState().activeWhiteboardId).not.toBeNull();
+    expect(screen.getByRole("textbox")).toHaveValue("Untitled");
+    expect(client.getQueryData<unknown[]>(whiteboardsKey)).toHaveLength(2);
+  });
+
+  it("clears the active whiteboard when deleting its collection", async () => {
+    server.use(
+      http.delete(
+        "http://supabase.test/rest/v1/collections",
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    );
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = seedWithWhiteboard();
+    useUIStore.getState().setActiveWhiteboard("wb1");
+    renderWithProviders(<SidebarTree />, { client });
+
+    const collection = screen.getByRole("treeitem", { name: /The Realm/ });
+    await user.click(
+      within(collection).getByRole("button", { name: "More actions" }),
+    );
+    await user.click(await screen.findByRole("menuitem", { name: "Delete" }));
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+
+    expect(useUIStore.getState().activeWhiteboardId).toBeNull();
   });
 });

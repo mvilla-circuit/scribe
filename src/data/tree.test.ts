@@ -6,6 +6,7 @@ import {
   makeDatagrid,
   makeEntry,
   makeFolder,
+  makeWhiteboard,
 } from "@/test/fixtures";
 
 import {
@@ -117,6 +118,23 @@ describe("buildTree", () => {
 
     expect(childrenOf(model, ROOT)).toEqual([]);
     expect(childrenOf(model, "c1").map((child) => child.id)).toEqual(["dg1"]);
+  });
+
+  it("nests whiteboard under collection", () => {
+    const collection = makeCollection({ id: "c1" });
+    const whiteboard = makeWhiteboard({
+      id: "wb1",
+      collection_id: "c1",
+    });
+    const model = buildTree([], [], [collection], [], [], [whiteboard]);
+
+    expect(
+      childrenOf(model, "c1").map((child) => ({
+        kind: child.kind,
+        id: child.id,
+      })),
+    ).toEqual([{ kind: "whiteboard", id: "wb1" }]);
+    expect(childrenOf(model, ROOT).map((child) => child.id)).toEqual(["c1"]);
   });
 
   it("returns an empty list for an unknown container", () => {

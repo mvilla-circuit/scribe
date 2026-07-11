@@ -40,6 +40,7 @@ export interface SeedData {
   collections?: Row[];
   entries?: Row[];
   datagrids?: Row[];
+  whiteboards?: Row[];
   datagrid_views?: Row[];
   datagrid_rows?: Row[];
 }
@@ -165,6 +166,7 @@ export const test = base.extend<{ seed: SeedData; authedPage: Page }>({
       collections: [...(seed.collections ?? [])],
       entries: [...(seed.entries ?? [])],
       datagrids: [...(seed.datagrids ?? [])],
+      whiteboards: [...(seed.whiteboards ?? [])],
       datagrid_views: [...(seed.datagrid_views ?? [])],
       datagrid_rows: [...(seed.datagrid_rows ?? [])],
     };

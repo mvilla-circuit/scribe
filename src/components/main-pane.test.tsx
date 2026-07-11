@@ -62,6 +62,11 @@ vi.mock("./datagrid/datagrid-row-full", () => ({
     />
   ),
 }));
+vi.mock("./whiteboard/whiteboard-page", () => ({
+  WhiteboardPage: ({ whiteboardId }: { whiteboardId: string }) => (
+    <div data-testid="whiteboard-page" data-whiteboard-id={whiteboardId} />
+  ),
+}));
 
 // Only the props a given case exercises are set; the rest default to the
 // "nothing active" baseline so each test reads as a single routing decision.
@@ -73,6 +78,7 @@ const props = (
   activeEntryId: null,
   activeDatagridId: null,
   activeDatagridRowId: null,
+  activeWhiteboardId: null,
   rowOpenMode: "modal",
   ...over,
 });
@@ -137,6 +143,19 @@ describe("MainPane routing", () => {
       "data-datagrid-id",
       "dg1",
     );
+  });
+
+  it("renders WhiteboardPage for activeWhiteboardId", () => {
+    renderWithProviders(
+      <MainPane {...props({ activeWhiteboardId: "whiteboard-1" })} />,
+    );
+
+    expect(screen.getByTestId("whiteboard-page")).toHaveAttribute(
+      "data-whiteboard-id",
+      "whiteboard-1",
+    );
+    expect(screen.queryByTestId("collection-page")).toBeNull();
+    expect(screen.queryByTestId("book-view")).toBeNull();
   });
 
   it("prefers the datagrid page over collection and entry surfaces", () => {

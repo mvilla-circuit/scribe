@@ -122,6 +122,24 @@ export function makeDatagrid(
   };
 }
 
+export function makeWhiteboard(
+  overrides: Partial<Tables<"whiteboards">> = {},
+): Tables<"whiteboards"> {
+  return {
+    id: "whiteboard-1",
+    user_id: "user-1",
+    collection_id: "collection-1",
+    name: "Untitled",
+    icon: null,
+    cover_url: null,
+    scene: {},
+    position: 1024,
+    created_at: "2026-01-01T00:00:00.000Z",
+    updated_at: "2026-01-01T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
 export function makeDatagridRow(
   overrides: Partial<Tables<"datagrid_rows">> = {},
 ): Tables<"datagrid_rows"> {

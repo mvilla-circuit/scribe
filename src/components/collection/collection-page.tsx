@@ -13,6 +13,7 @@ import {
   PlusIcon,
   RemoveFromCollectionIcon,
   TrashIcon,
+  WhiteboardIcon,
 } from "@/components/sidebar/icons";
 import {
   DropdownMenu,
@@ -40,6 +41,11 @@ import { useCreateEntry, useDeleteEntry, useEntries } from "@/data/entries";
 import { useFolders } from "@/data/folders";
 import { endPositionFor } from "@/data/ordering";
 import { buildTree, childrenOf, collectionAncestors, ROOT } from "@/data/tree";
+import {
+  useCreateWhiteboard,
+  useDeleteWhiteboard,
+  useWhiteboards,
+} from "@/data/whiteboards";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
 
@@ -66,6 +72,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   const booksQuery = useBooks();
   const entriesQuery = useEntries();
   const datagridsQuery = useDatagrids();
+  const whiteboardsQuery = useWhiteboards();
 
   const collections = useMemo(
     () => collectionsQuery.data ?? [],
@@ -78,12 +85,17 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
     () => datagridsQuery.data ?? [],
     [datagridsQuery.data],
   );
+  const whiteboards = useMemo(
+    () => whiteboardsQuery.data ?? [],
+    [whiteboardsQuery.data],
+  );
 
   const collection = collections.find((c) => c.id === collectionId) ?? null;
 
   const model = useMemo(
-    () => buildTree(folders, books, collections, entries, datagrids),
-    [folders, books, collections, entries, datagrids],
+    () =>
+      buildTree(folders, books, collections, entries, datagrids, whiteboards),
+    [folders, books, collections, entries, datagrids, whiteboards],
   );
   const children = useMemo(
     () => childrenOf(model, collectionId),
@@ -98,6 +110,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   const setActiveBook = useUIStore((s) => s.setActiveBook);
   const setActiveEntry = useUIStore((s) => s.setActiveEntry);
   const setActiveDatagrid = useUIStore((s) => s.setActiveDatagrid);
+  const setActiveWhiteboard = useUIStore((s) => s.setActiveWhiteboard);
   const setFolderExpanded = useUIStore((s) => s.setFolderExpanded);
 
   const renameCollection = useRenameCollection();
@@ -109,6 +122,8 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   const createEntry = useCreateEntry();
   const deleteEntry = useDeleteEntry();
   const createDatagrid = useCreateDatagrid();
+  const createWhiteboard = useCreateWhiteboard();
+  const deleteWhiteboard = useDeleteWhiteboard();
   const uploadCover = useUploadCover();
   const [query, setQuery] = useState("");
 
@@ -123,6 +138,9 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   const childBooks = visibleChildren.filter((c) => c.kind === "book");
   const childEntries = visibleChildren.filter((c) => c.kind === "entry");
   const childDatagrids = visibleChildren.filter((c) => c.kind === "datagrid");
+  const childWhiteboards = visibleChildren.filter(
+    (c) => c.kind === "whiteboard",
+  );
 
   const rootPosition = () => endPositionFor(childrenOf(model, ROOT));
 
@@ -196,6 +214,18 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
     });
     setFolderExpanded(collectionId, true);
     setActiveDatagrid(id);
+  };
+
+  const handleNewWhiteboard = () => {
+    const id = crypto.randomUUID();
+    createWhiteboard.mutate({
+      id,
+      collection_id: collectionId,
+      name: "Untitled",
+      position: endPositionFor(children),
+    });
+    setFolderExpanded(collectionId, true);
+    setActiveWhiteboard(id);
   };
 
   const bookActions = (id: string): RowAction[] => [
@@ -295,6 +325,9 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
       case "datagrid":
         setActiveDatagrid(child.id);
         break;
+      case "whiteboard":
+        setActiveWhiteboard(child.id);
+        break;
     }
   };
 
@@ -309,6 +342,17 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
       case "datagrid":
         // Track D wires datagrid row actions; none in the gallery yet.
         return [];
+      case "whiteboard":
+        return [
+          {
+            icon: <TrashIcon size={15} />,
+            label: "Delete",
+            danger: true,
+            onSelect: () => {
+              deleteWhiteboard.mutate({ id: child.id });
+            },
+          },
+        ];
     }
   };
 
@@ -350,6 +394,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
             onNewDoc={handleNewEntry}
             onNewCollection={handleNewCollection}
             onNewDatagrid={handleNewDatagrid}
+            onNewWhiteboard={handleNewWhiteboard}
           />
         </span>
       </nav>
@@ -419,6 +464,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                 onNewDoc={handleNewEntry}
                 onNewCollection={handleNewCollection}
                 onNewDatagrid={handleNewDatagrid}
+                onNewWhiteboard={handleNewWhiteboard}
               />
             </div>
           </div>
@@ -509,6 +555,20 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                     ))}
                   </CardGrid>
                 )}
+                {childWhiteboards.length > 0 && (
+                  <CardGrid heading="Whiteboards">
+                    {childWhiteboards.map((child) => (
+                      <GalleryCoverCard
+                        key={child.id}
+                        child={child}
+                        onOpen={() => {
+                          openChild(child);
+                        }}
+                        actions={actionsFor(child)}
+                      />
+                    ))}
+                  </CardGrid>
+                )}
               </>
             ) : (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -560,6 +620,8 @@ function galleryFallback(child: GalleryChild) {
       return <PageIcon size={28} />;
     case "datagrid":
       return <DatagridIcon size={28} />;
+    case "whiteboard":
+      return <WhiteboardIcon size={28} />;
   }
 }
 
@@ -572,10 +634,11 @@ function GalleryCoverCard({
   onOpen: () => void;
   actions: RowAction[];
 }) {
-  const { title, icon, coverUrl } = galleryChildMeta(child);
+  const { title, subtitle, icon, coverUrl } = galleryChildMeta(child);
   return (
     <CoverCard
       title={title}
+      subtitle={subtitle}
       icon={icon}
       coverUrl={coverUrl}
       fallback={galleryFallback(child)}
@@ -595,11 +658,13 @@ function CollectionCreateSplitButton({
   onNewDoc,
   onNewCollection,
   onNewDatagrid,
+  onNewWhiteboard,
 }: {
   onNewBook: () => void;
   onNewDoc: () => void;
   onNewCollection: () => void;
   onNewDatagrid: () => void;
+  onNewWhiteboard: () => void;
 }) {
   const segment =
     "inline-flex items-center justify-center gap-1.5 text-sm font-medium " +
@@ -638,6 +703,10 @@ function CollectionCreateSplitButton({
           <DropdownMenuItem onSelect={onNewDatagrid}>
             <DatagridIcon size={15} />
             New datagrid
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={onNewWhiteboard}>
+            <WhiteboardIcon size={15} />
+            New whiteboard
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

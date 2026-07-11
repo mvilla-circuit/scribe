@@ -19,6 +19,7 @@ const reset = () =>
     activeEntryId: null,
     activeDatagridId: null,
     activeDatagridRowId: null,
+    activeWhiteboardId: null,
     rowOpenMode: "modal",
     rowOpenModeByDatagridId: {},
     expandedFolderIds: [],
@@ -36,6 +37,7 @@ const loc = (over: {
   entryId?: string | null;
   datagridId?: string | null;
   rowId?: string | null;
+  whiteboardId?: string | null;
 }) => ({
   bookId: null,
   docId: null,
@@ -43,6 +45,7 @@ const loc = (over: {
   entryId: null,
   datagridId: null,
   rowId: null,
+  whiteboardId: null,
   ...over,
 });
 
@@ -363,6 +366,36 @@ describe("active datagrid/row selection", () => {
     expect(persisted).not.toHaveProperty("activeDatagridRowId");
     expect(persisted).not.toHaveProperty("rowOpenMode");
     expect(persisted).not.toHaveProperty("rowOpenModeByDatagridId");
+  });
+});
+
+describe("active whiteboard selection", () => {
+  it("setActiveWhiteboard clears book/entry and datagrid axes", () => {
+    const store = useUIStore.getState();
+    store.setActiveBook("b1");
+    store.setActiveEntry("e1", "c1");
+    store.setActiveDatagrid("dg1");
+
+    useUIStore.getState().setActiveWhiteboard("wb1");
+
+    const state = useUIStore.getState();
+    expect(state.activeWhiteboardId).toBe("wb1");
+    expect(state.activeBookId).toBeNull();
+    expect(state.activeDocId).toBeNull();
+    expect(state.activeCollectionId).toBeNull();
+    expect(state.activeEntryId).toBeNull();
+    expect(state.activeDatagridId).toBeNull();
+    expect(state.activeDatagridRowId).toBeNull();
+    expect(state.history.at(-1)).toMatchObject({ whiteboardId: "wb1" });
+  });
+
+  it("activeWhiteboardId not in partialize", () => {
+    expect(useUIStore.getState().activeWhiteboardId).toBeNull();
+    useUIStore.getState().setActiveWhiteboard("wb1");
+
+    const partialize = useUIStore.persist.getOptions().partialize;
+    const persisted = partialize?.(useUIStore.getState());
+    expect(persisted).not.toHaveProperty("activeWhiteboardId");
   });
 });
 

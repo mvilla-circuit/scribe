@@ -14,6 +14,7 @@ import {
   Link,
   Pencil,
   Plus,
+  Presentation,
   Table2,
   Trash2,
   TriangleAlert,
@@ -26,6 +27,8 @@ export const FolderOpenIcon = makeIcon(FolderOpen);
 export const BookIcon = makeIcon(Book);
 export const CollectionIcon = makeIcon(Library);
 export const DatagridIcon = makeIcon(Table2);
+/** Board / presentation glyph — distinct from sticky-note item chrome. */
+export const WhiteboardIcon = makeIcon(Presentation);
 export const PlusIcon = makeIcon(Plus);
 export const PencilIcon = makeIcon(Pencil);
 export const TrashIcon = makeIcon(Trash2);

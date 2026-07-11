@@ -8,6 +8,7 @@ import {
   makeDatagrid,
   makeEntry,
   makeFolder,
+  makeWhiteboard,
 } from "@/test/fixtures";
 
 import { flattenTree, getProjection } from "./dnd-tree";
@@ -249,5 +250,36 @@ describe("datagrids in the tree", () => {
     // Root-level and folder drops are illegal for datagrids.
     expect(getProjection(nodes, "dg1", "c1", 0)).toBeNull();
     expect(getProjection(nodes, "dg1", "bf1", INDENT)).toBeNull();
+  });
+});
+
+describe("whiteboards in the tree", () => {
+  it("whiteboard drop rejects root/folder; accepts collection", () => {
+    const model = buildTree(
+      [makeFolder({ id: "f1", position: 1024 })],
+      [
+        makeBook({ id: "bf1", folder_id: "f1", position: 1024 }),
+        makeBook({ id: "b1", collection_id: "c1", position: 1024 }),
+      ],
+      [
+        makeCollection({ id: "c1", position: 2048 }),
+        makeCollection({ id: "c2", position: 3072 }),
+      ],
+      [],
+      [],
+      [makeWhiteboard({ id: "wb1", collection_id: "c1", position: 2048 })],
+    );
+    const nodes = flattenTree(model, new Set(["c1", "f1", "c2"]));
+
+    expect(getProjection(nodes, "wb1", "b1", INDENT)).toEqual({
+      depth: 1,
+      parentId: "c1",
+    });
+    expect(getProjection(nodes, "wb1", "c2", INDENT)).toEqual({
+      depth: 1,
+      parentId: "c2",
+    });
+    expect(getProjection(nodes, "wb1", "c1", 0)).toBeNull();
+    expect(getProjection(nodes, "wb1", "bf1", INDENT)).toBeNull();
   });
 });

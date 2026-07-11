@@ -125,6 +125,19 @@
      chosen. Kept a calm stone gray — not the blue UI accent — so an untinted
      block reads as quietly neutral rather than coloured. */
   --block-accent: #8c857c;
+  /* Whiteboard sticky-note palette: quiet warm pastels on the light paper, each
+     paired with a readable near-ink text tone. Named colors map 1:1 to the
+     scene's StickyColor union so a saved sticky retints with the theme. */
+  --sticky-yellow: #fbf0c2;
+  --sticky-pink: #f7dde3;
+  --sticky-blue: #dbe7f3;
+  --sticky-green: #dcebd5;
+  --sticky-orange: #f8e3cb;
+  --sticky-text: #35322c;
+  /* The whiteboard's own recessed surface (a touch below the paper page) and a
+     faint grid dot, so the canvas reads as a workspace distinct from chrome. */
+  --wb-surface: #f2efea;
+  --wb-dot: rgba(0, 0, 0, 0.06);
 }
 
 .dark {
@@ -166,6 +179,16 @@
   --swatch-banner-ink: #34322d;
   /* A touch lighter on the dark surface so the neutral rule stays visible. */
   --block-accent: #9c958b;
+  /* Sticky notes flip to muted, low-luminance tints on the dark canvas, keeping
+     their hue identity while staying calm; text lightens to stay legible. */
+  --sticky-yellow: #4a4326;
+  --sticky-pink: #48323a;
+  --sticky-blue: #2b3a4a;
+  --sticky-green: #313f2d;
+  --sticky-orange: #4a3a28;
+  --sticky-text: #e8e6e3;
+  --wb-surface: #131417;
+  --wb-dot: rgba(255, 255, 255, 0.05);
 }
 
 html,

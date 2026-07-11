@@ -30,6 +30,7 @@ interface HistoryEntry {
   entryId: string | null;
   datagridId: string | null;
   rowId: string | null;
+  whiteboardId: string | null;
 }
 
 // A partial location accepted by `navigateTo`; omitted axes default to `null`.
@@ -42,6 +43,7 @@ const EMPTY_LOCATION: HistoryEntry = {
   entryId: null,
   datagridId: null,
   rowId: null,
+  whiteboardId: null,
 };
 
 interface UIState {
@@ -53,6 +55,7 @@ interface UIState {
   activeEntryId: string | null;
   activeDatagridId: string | null;
   activeDatagridRowId: string | null;
+  activeWhiteboardId: string | null;
   rowOpenMode: RowOpenMode;
   // Per-datagrid memory of the last chosen row-open mode, so reopening a
   // datagrid restores how its rows opened. Ephemeral (never persisted).
@@ -70,6 +73,7 @@ interface UIState {
   setActiveEntry: (id: string, collectionId: string) => void;
   setActiveDatagrid: (id: string | null) => void;
   setActiveDatagridRow: (rowId: string, datagridId: string) => void;
+  setActiveWhiteboard: (id: string | null) => void;
   setRowOpenMode: (mode: RowOpenMode) => void;
   navigateTo: (location: Location) => void;
   goBack: () => void;
@@ -102,6 +106,7 @@ const locationState = (loc: HistoryEntry) => ({
   activeEntryId: loc.entryId,
   activeDatagridId: loc.datagridId,
   activeDatagridRowId: loc.rowId,
+  activeWhiteboardId: loc.whiteboardId,
 });
 
 // Whether two locations point at the same surface (all axes match).
@@ -112,7 +117,8 @@ const sameLocation = (a: HistoryEntry | undefined, b: HistoryEntry): boolean =>
   a.collectionId === b.collectionId &&
   a.entryId === b.entryId &&
   a.datagridId === b.datagridId &&
-  a.rowId === b.rowId;
+  a.rowId === b.rowId &&
+  a.whiteboardId === b.whiteboardId;
 
 // Append the freshly-visited location to the navigation history, returning the
 // updated `history`/`historyIndex` slice. Consecutive duplicates of the current
@@ -232,6 +238,7 @@ export const useUIStore = create<UIState>()(
       activeEntryId: null,
       activeDatagridId: null,
       activeDatagridRowId: null,
+      activeWhiteboardId: null,
       rowOpenMode: "modal",
       rowOpenModeByDatagridId: {},
       expandedFolderIds: [],
@@ -312,6 +319,14 @@ export const useUIStore = create<UIState>()(
             ...EMPTY_LOCATION,
             datagridId,
             rowId,
+          };
+          return { ...locationState(loc), ...recordLocation(s, loc) };
+        }),
+      setActiveWhiteboard: (id) =>
+        set((s) => {
+          const loc: HistoryEntry = {
+            ...EMPTY_LOCATION,
+            whiteboardId: id,
           };
           return { ...locationState(loc), ...recordLocation(s, loc) };
         }),

@@ -53,6 +53,13 @@ import {
 import { endPositionFor } from "@/data/ordering";
 import { buildTree, childrenOf, countBooksInFolder, ROOT } from "@/data/tree";
 import { useCreateRootItem } from "@/data/use-create-root-item";
+import {
+  useCreateWhiteboard,
+  useDeleteWhiteboard,
+  useMoveWhiteboard,
+  useRenameWhiteboard,
+  useWhiteboards,
+} from "@/data/whiteboards";
 import { copyPageLink } from "@/editor/copy-page-link";
 import { useUIStore } from "@/store/ui";
 
@@ -75,10 +82,13 @@ type DeleteTarget =
       name: string;
       movableChildren: number;
       docs: number;
+      datagrids: number;
+      whiteboards: number;
     }
   | { kind: "book"; id: string; title: string }
   | { kind: "entry"; id: string; title: string }
-  | { kind: "datagrid"; id: string; title: string };
+  | { kind: "datagrid"; id: string; title: string }
+  | { kind: "whiteboard"; id: string; title: string };
 
 export function SidebarTree() {
   const foldersQuery = useFolders();
@@ -86,6 +96,7 @@ export function SidebarTree() {
   const collectionsQuery = useCollections();
   const entriesQuery = useEntries();
   const datagridsQuery = useDatagrids();
+  const whiteboardsQuery = useWhiteboards();
 
   // Collections reuse the folder-expansion set: both are just "which container
   // rows are open", and their ids never collide (all UUIDs), so one set keeps
@@ -97,10 +108,12 @@ export function SidebarTree() {
   const activeCollectionId = useUIStore((s) => s.activeCollectionId);
   const activeEntryId = useUIStore((s) => s.activeEntryId);
   const activeDatagridId = useUIStore((s) => s.activeDatagridId);
+  const activeWhiteboardId = useUIStore((s) => s.activeWhiteboardId);
   const setActiveBook = useUIStore((s) => s.setActiveBook);
   const setActiveCollection = useUIStore((s) => s.setActiveCollection);
   const setActiveEntry = useUIStore((s) => s.setActiveEntry);
   const setActiveDatagrid = useUIStore((s) => s.setActiveDatagrid);
+  const setActiveWhiteboard = useUIStore((s) => s.setActiveWhiteboard);
   const navigateTo = useUIStore((s) => s.navigateTo);
 
   const renameFolder = useRenameFolder();
@@ -122,6 +135,10 @@ export function SidebarTree() {
   const renameDatagrid = useRenameDatagrid();
   const moveDatagrid = useMoveDatagrid();
   const deleteDatagrid = useDeleteDatagrid();
+  const createWhiteboard = useCreateWhiteboard();
+  const renameWhiteboard = useRenameWhiteboard();
+  const moveWhiteboard = useMoveWhiteboard();
+  const deleteWhiteboard = useDeleteWhiteboard();
   const createRootItem = useCreateRootItem();
 
   const panel = useTreePanel<DeleteTarget>();
@@ -138,9 +155,13 @@ export function SidebarTree() {
   const { mutate: renameEntryMutate } = renameEntry;
   const { mutate: createDatagridMutate } = createDatagrid;
   const { mutate: renameDatagridMutate } = renameDatagrid;
+  const { mutate: createWhiteboardMutate } = createWhiteboard;
+  const { mutate: renameWhiteboardMutate } = renameWhiteboard;
   const { mutate: moveBookMutate } = moveBook;
   const { mutate: moveCollectionMutate } = moveCollection;
   const { mutate: moveEntryMutate } = moveEntry;
+  const { mutate: moveDatagridMutate } = moveDatagrid;
+  const { mutate: moveWhiteboardMutate } = moveWhiteboard;
   const { createCollection: createRootCollectionFn } = createRootItem;
   const { startRename, cancelRename, requestDelete } = panel;
 
@@ -155,6 +176,10 @@ export function SidebarTree() {
     () => datagridsQuery.data ?? [],
     [datagridsQuery.data],
   );
+  const whiteboards = useMemo(
+    () => whiteboardsQuery.data ?? [],
+    [whiteboardsQuery.data],
+  );
   const expanded = useMemo(() => new Set(expandedArr), [expandedArr]);
   const collectionIds = useMemo(
     () => new Set(collections.map((c) => c.id)),
@@ -162,8 +187,9 @@ export function SidebarTree() {
   );
 
   const model = useMemo(
-    () => buildTree(folders, books, collections, entries, datagrids),
-    [folders, books, collections, entries, datagrids],
+    () =>
+      buildTree(folders, books, collections, entries, datagrids, whiteboards),
+    [folders, books, collections, entries, datagrids, whiteboards],
   );
   const flattened = useMemo(
     () => flattenTree(model, expanded),
@@ -218,7 +244,9 @@ export function SidebarTree() {
         } else if (node.kind === "datagrid" && parentId) {
           // Datagrids, like entries, live in a collection only (enforced by
           // getProjection); write the new container and position.
-          moveDatagrid.mutate({ id, collection_id: parentId, position });
+          moveDatagridMutate({ id, collection_id: parentId, position });
+        } else if (node.kind === "whiteboard" && parentId) {
+          moveWhiteboardMutate({ id, collection_id: parentId, position });
         }
         if (parentId) setExpanded(parentId, true);
       },
@@ -307,6 +335,28 @@ export function SidebarTree() {
     [setExpanded, createDatagridMutate, model, setActiveDatagrid, startRename],
   );
 
+  const onNewWhiteboardInside = useCallback(
+    (collectionId: string) => {
+      setExpanded(collectionId, true);
+      const id = crypto.randomUUID();
+      createWhiteboardMutate({
+        id,
+        collection_id: collectionId,
+        name: "Untitled",
+        position: endPositionFor(childrenOf(model, collectionId)),
+      });
+      setActiveWhiteboard(id);
+      startRename(id);
+    },
+    [
+      setExpanded,
+      createWhiteboardMutate,
+      model,
+      setActiveWhiteboard,
+      startRename,
+    ],
+  );
+
   const onMoveToCollection = useCallback(
     (node: FlatNode, targetCollectionId: string | null) => {
       const position = endPositionFor(
@@ -340,6 +390,18 @@ export function SidebarTree() {
             },
           },
         );
+      } else if (node.kind === "datagrid" && targetCollectionId) {
+        moveDatagridMutate({
+          id: node.id,
+          collection_id: targetCollectionId,
+          position,
+        });
+      } else if (node.kind === "whiteboard" && targetCollectionId) {
+        moveWhiteboardMutate({
+          id: node.id,
+          collection_id: targetCollectionId,
+          position,
+        });
       }
       if (targetCollectionId) setExpanded(targetCollectionId, true);
     },
@@ -351,6 +413,8 @@ export function SidebarTree() {
       activeEntryId,
       setActiveEntry,
       setExpanded,
+      moveDatagridMutate,
+      moveWhiteboardMutate,
     ],
   );
 
@@ -377,6 +441,8 @@ export function SidebarTree() {
         renameBookMutate({ id: node.id, title: value });
       else if (node.kind === "datagrid")
         renameDatagridMutate({ id: node.id, name: value });
+      else if (node.kind === "whiteboard")
+        renameWhiteboardMutate({ id: node.id, name: value });
       else renameEntryMutate({ id: node.id, title: value });
     },
     [
@@ -385,6 +451,7 @@ export function SidebarTree() {
       renameCollectionMutate,
       renameBookMutate,
       renameDatagridMutate,
+      renameWhiteboardMutate,
       renameEntryMutate,
     ],
   );
@@ -405,12 +472,20 @@ export function SidebarTree() {
       } else if (node.child.kind === "collection") {
         const kids = childrenOf(model, node.id);
         const docs = kids.filter((child) => child.kind === "entry").length;
+        const datagrids = kids.filter(
+          (child) => child.kind === "datagrid",
+        ).length;
+        const whiteboards = kids.filter(
+          (child) => child.kind === "whiteboard",
+        ).length;
         requestDelete({
           kind: "collection",
           id: node.id,
           name: node.child.collection.name,
-          movableChildren: kids.length - docs,
+          movableChildren: kids.length - docs - datagrids - whiteboards,
           docs,
+          datagrids,
+          whiteboards,
         });
       } else if (node.child.kind === "book") {
         requestDelete({
@@ -430,6 +505,12 @@ export function SidebarTree() {
           id: node.id,
           title: node.child.datagrid.name,
         });
+      } else if (node.child.kind === "whiteboard") {
+        requestDelete({
+          kind: "whiteboard",
+          id: node.id,
+          title: node.child.whiteboard.name,
+        });
       }
     },
     [requestDelete, model],
@@ -442,6 +523,15 @@ export function SidebarTree() {
       deleteFolder.mutate({ id: target.id });
     } else if (target.kind === "collection") {
       if (activeCollectionId === target.id) setActiveCollection(null);
+      if (
+        whiteboards.some(
+          (whiteboard) =>
+            whiteboard.id === activeWhiteboardId &&
+            whiteboard.collection_id === target.id,
+        )
+      ) {
+        setActiveWhiteboard(null);
+      }
       deleteCollection.mutate({ id: target.id });
     } else if (target.kind === "book") {
       if (activeBookId === target.id) setActiveBook(null);
@@ -449,6 +539,9 @@ export function SidebarTree() {
     } else if (target.kind === "datagrid") {
       if (activeDatagridId === target.id) setActiveDatagrid(null);
       deleteDatagrid.mutate({ id: target.id });
+    } else if (target.kind === "whiteboard") {
+      if (activeWhiteboardId === target.id) setActiveWhiteboard(null);
+      deleteWhiteboard.mutate({ id: target.id });
     } else {
       if (activeEntryId === target.id) {
         navigateTo({ collectionId: activeCollectionId });
@@ -462,19 +555,22 @@ export function SidebarTree() {
     booksQuery.isLoading ||
     collectionsQuery.isLoading ||
     entriesQuery.isLoading ||
-    datagridsQuery.isLoading;
+    datagridsQuery.isLoading ||
+    whiteboardsQuery.isLoading;
   const isError =
     foldersQuery.isError ||
     booksQuery.isError ||
     collectionsQuery.isError ||
     entriesQuery.isError ||
-    datagridsQuery.isError;
+    datagridsQuery.isError ||
+    whiteboardsQuery.isError;
   const isEmpty =
     folders.length === 0 &&
     books.length === 0 &&
     collections.length === 0 &&
     entries.length === 0 &&
-    datagrids.length === 0;
+    datagrids.length === 0 &&
+    whiteboards.length === 0;
 
   const renderRow = (node: FlatNode) => (
     <TreeRow
@@ -484,7 +580,8 @@ export function SidebarTree() {
         (node.kind === "book" && node.id === activeBookId) ||
         (node.kind === "collection" && node.id === activeCollectionId) ||
         (node.kind === "entry" && node.id === activeEntryId) ||
-        (node.kind === "datagrid" && node.id === activeDatagridId)
+        (node.kind === "datagrid" && node.id === activeDatagridId) ||
+        (node.kind === "whiteboard" && node.id === activeWhiteboardId)
       }
       editing={panel.editingId === node.id}
       expanded={expanded.has(node.id)}
@@ -495,6 +592,7 @@ export function SidebarTree() {
       onSelectCollection={setActiveCollection}
       onSelectEntry={setActiveEntry}
       onSelectDatagrid={setActiveDatagrid}
+      onSelectWhiteboard={setActiveWhiteboard}
       onStartRename={startRename}
       onCommitRename={onCommitRename}
       onCancelRename={cancelRename}
@@ -505,6 +603,7 @@ export function SidebarTree() {
       onNewCollectionInside={onNewCollectionInside}
       onNewEntryInside={onNewEntryInside}
       onNewDatagridInside={onNewDatagridInside}
+      onNewWhiteboardInside={onNewWhiteboardInside}
       onMoveToCollection={onMoveToCollection}
     />
   );
@@ -600,6 +699,7 @@ export function SidebarTree() {
                 void collectionsQuery.refetch();
                 void entriesQuery.refetch();
                 void datagridsQuery.refetch();
+                void whiteboardsQuery.refetch();
               }}
             >
               Try again
@@ -641,7 +741,8 @@ function deleteTitle(target: DeleteTarget | null): string {
   if (
     target.kind === "book" ||
     target.kind === "entry" ||
-    target.kind === "datagrid"
+    target.kind === "datagrid" ||
+    target.kind === "whiteboard"
   )
     return `Delete "${target.title}"?`;
   return `Delete "${target.name}"?`;
@@ -651,11 +752,19 @@ function deleteDescription(target: DeleteTarget | null): string {
   if (!target) return "";
   if (target.kind === "folder") return describeFolderDelete(target.books);
   if (target.kind === "collection") {
-    return describeCollectionDelete(target.movableChildren, target.docs);
+    return describeCollectionDelete(
+      target.movableChildren,
+      target.docs,
+      target.datagrids,
+      target.whiteboards,
+    );
   }
   if (target.kind === "entry") return "This permanently deletes the doc.";
   if (target.kind === "datagrid") {
     return "This permanently deletes the datagrid and all its rows.";
+  }
+  if (target.kind === "whiteboard") {
+    return "This permanently deletes the whiteboard.";
   }
   return "This permanently deletes the book and everything inside it.";
 }
@@ -665,8 +774,13 @@ function describeFolderDelete(books: number): string {
   return `The ${books} book${books === 1 ? "" : "s"} inside will move to the top level.`;
 }
 
-function describeCollectionDelete(movable: number, docs: number): string {
-  if (movable === 0 && docs === 0) {
+function describeCollectionDelete(
+  movable: number,
+  docs: number,
+  datagrids: number,
+  whiteboards: number,
+): string {
+  if (movable === 0 && docs === 0 && datagrids === 0 && whiteboards === 0) {
     return "This collection is empty and will be removed.";
   }
   const parts: string[] = [];
@@ -678,6 +792,16 @@ function describeCollectionDelete(movable: number, docs: number): string {
   if (docs > 0) {
     parts.push(
       `The ${docs} doc${docs === 1 ? "" : "s"} inside will be permanently deleted.`,
+    );
+  }
+  if (datagrids > 0) {
+    parts.push(
+      `The ${datagrids} datagrid${datagrids === 1 ? "" : "s"} inside will be permanently deleted.`,
+    );
+  }
+  if (whiteboards > 0) {
+    parts.push(
+      `The ${whiteboards} whiteboard${whiteboards === 1 ? "" : "s"} inside will be permanently deleted.`,
     );
   }
   return parts.join(" ");

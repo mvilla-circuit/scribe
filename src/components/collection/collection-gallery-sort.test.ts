@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 import type { TreeChild } from "@/data/tree";
 import { makeBook, makeCollection, makeEntry } from "@/test/fixtures";
 
+import type { GalleryChild } from "./collection-gallery";
 import {
   filterGalleryChildren,
+  galleryChildMeta,
   sortGalleryChildren,
 } from "./collection-gallery";
 
@@ -62,6 +64,26 @@ function entryChild(
     entry,
   };
 }
+
+describe("galleryChildMeta", () => {
+  it("exposes book subtitle and collection description as subtitle", () => {
+    expect(
+      galleryChildMeta(
+        bookChild({ subtitle: "Notes from the road" }) as GalleryChild,
+      ).subtitle,
+    ).toBe("Notes from the road");
+    expect(
+      galleryChildMeta(
+        collectionChild({ description: "An epic cycle" }) as GalleryChild,
+      ).subtitle,
+    ).toBe("An epic cycle");
+  });
+
+  it("returns null subtitle when none is set", () => {
+    expect(galleryChildMeta(bookChild() as GalleryChild).subtitle).toBeNull();
+    expect(galleryChildMeta(entryChild() as GalleryChild).subtitle).toBeNull();
+  });
+});
 
 describe("sortGalleryChildren", () => {
   it("orders children alphabetically by title", () => {

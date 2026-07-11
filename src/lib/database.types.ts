@@ -635,6 +635,53 @@ export type Database = {
         }
         Relationships: []
       }
+      whiteboards: {
+        Row: {
+          collection_id: string
+          cover_url: string | null
+          created_at: string
+          icon: string | null
+          id: string
+          name: string
+          position: number
+          scene: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          collection_id: string
+          cover_url?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          position?: number
+          scene?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          collection_id?: string
+          cover_url?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          position?: number
+          scene?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whiteboards_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

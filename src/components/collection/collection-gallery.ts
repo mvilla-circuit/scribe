@@ -14,6 +14,8 @@ function itemTitle(child: TreeChild): string {
       return child.entry.title;
     case "datagrid":
       return child.datagrid.name;
+    case "whiteboard":
+      return child.whiteboard.name;
     case "folder":
       return child.folder.name;
   }
@@ -27,6 +29,8 @@ export function isGalleryChild(child: TreeChild): child is GalleryChild {
 /** Display metadata for a gallery list/grid row. */
 export function galleryChildMeta(child: GalleryChild): {
   title: string;
+  /** Book/datagrid subtitle, or collection description when set. */
+  subtitle: string | null;
   kindLabel: string;
   icon: string | null;
   coverUrl: string | null;
@@ -35,6 +39,7 @@ export function galleryChildMeta(child: GalleryChild): {
     case "collection":
       return {
         title: child.collection.name,
+        subtitle: child.collection.description,
         kindLabel: "Collection",
         icon: child.collection.icon,
         coverUrl: child.collection.cover_url,
@@ -42,6 +47,7 @@ export function galleryChildMeta(child: GalleryChild): {
     case "book":
       return {
         title: child.book.title,
+        subtitle: child.book.subtitle,
         kindLabel: "Book",
         icon: child.book.icon,
         coverUrl: child.book.cover_url,
@@ -49,6 +55,7 @@ export function galleryChildMeta(child: GalleryChild): {
     case "entry":
       return {
         title: child.entry.title,
+        subtitle: null,
         kindLabel: "Doc",
         icon: child.entry.icon,
         coverUrl: child.entry.cover_url,
@@ -56,9 +63,18 @@ export function galleryChildMeta(child: GalleryChild): {
     case "datagrid":
       return {
         title: child.datagrid.name,
+        subtitle: child.datagrid.subtitle,
         kindLabel: "Datagrid",
         icon: child.datagrid.icon,
         coverUrl: child.datagrid.cover_url,
+      };
+    case "whiteboard":
+      return {
+        title: child.whiteboard.name,
+        subtitle: null,
+        kindLabel: "Whiteboard",
+        icon: child.whiteboard.icon,
+        coverUrl: child.whiteboard.cover_url,
       };
   }
 }

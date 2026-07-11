@@ -9,8 +9,8 @@ export { type Projection };
 
 export type FlatNode = DndNode & {
   // entity UUID (unique across folders + collections + books + entries +
-  // datagrids); inherited `id` from DndNode.
-  kind: "folder" | "collection" | "book" | "entry" | "datagrid";
+  // datagrids + whiteboards); inherited `id` from DndNode.
+  kind: "folder" | "collection" | "book" | "entry" | "datagrid" | "whiteboard";
   draggable: boolean;
   child: TreeChild;
 };
@@ -72,8 +72,12 @@ export function getProjection(
         // sit at the preceding row's own level (resolved parent validated below).
         return prev.kind === "collection" ? prev.depth + 1 : prev.depth;
       }
-      if (a.kind === "entry" || a.kind === "datagrid") {
-        // Entries and datagrids only nest under collections.
+      if (
+        a.kind === "entry" ||
+        a.kind === "datagrid" ||
+        a.kind === "whiteboard"
+      ) {
+        // Collection-scoped leaves only nest under collections.
         return prev.kind === "collection" ? prev.depth + 1 : prev.depth;
       }
       // Books nest one level under a folder or collection, else sit as a sibling.
@@ -83,7 +87,11 @@ export function getProjection(
       );
     },
     parentWhenNestedUnder: (prev, a) => {
-      if (a.kind === "entry" || a.kind === "datagrid") {
+      if (
+        a.kind === "entry" ||
+        a.kind === "datagrid" ||
+        a.kind === "whiteboard"
+      ) {
         return prev.kind === "collection" ? prev.id : prev.parentId;
       }
       return prev.kind === "folder" || prev.kind === "collection"
@@ -102,8 +110,12 @@ export function getProjection(
     if (parent?.kind === "folder") return { depth: 0, parentId: null };
   }
 
-  // Entries and datagrids require a collection parent — cancel root/folder drops.
-  if (active.kind === "entry" || active.kind === "datagrid") {
+  // Collection-scoped leaves require a collection parent.
+  if (
+    active.kind === "entry" ||
+    active.kind === "datagrid" ||
+    active.kind === "whiteboard"
+  ) {
     if (!projection.parentId) return null;
     const parent = nodes.find((n) => n.id === projection.parentId);
     if (parent?.kind !== "collection") return null;

@@ -4,6 +4,7 @@ import type { Datagrid } from "./datagrids";
 import type { EntryMeta } from "./entries";
 import type { Folder } from "./folders";
 import { byPosition } from "./ordering";
+import type { WhiteboardMeta } from "./whiteboards";
 
 /**
  * Sentinel container id for the sidebar's top level — the bucket that holds
@@ -54,6 +55,13 @@ export type TreeChild =
       position: number;
       created_at: string;
       datagrid: Datagrid;
+    }
+  | {
+      kind: "whiteboard";
+      id: string;
+      position: number;
+      created_at: string;
+      whiteboard: WhiteboardMeta;
     };
 
 /** The sidebar tree: a map from container id (folder/collection id or ROOT) to its children. */
@@ -74,6 +82,7 @@ export function buildTree(
   collections: Collection[] = [],
   entries: EntryMeta[] = [],
   datagrids: Datagrid[] = [],
+  whiteboards: WhiteboardMeta[] = [],
 ): TreeModel {
   const children = new Map<string, TreeChild[]>();
   const push = (key: string, child: TreeChild) => {
@@ -126,6 +135,16 @@ export function buildTree(
       position: d.position,
       created_at: d.created_at,
       datagrid: d,
+    });
+  }
+  // Whiteboards nest under their collection only — never the root or a folder.
+  for (const whiteboard of whiteboards) {
+    push(whiteboard.collection_id, {
+      kind: "whiteboard",
+      id: whiteboard.id,
+      position: whiteboard.position,
+      created_at: whiteboard.created_at,
+      whiteboard,
     });
   }
 

@@ -62,6 +62,9 @@ export function InlineRename({
         e.stopPropagation();
       }}
       onKeyDown={(e) => {
+        // Keep keystrokes inside the field so row-level dnd-kit listeners (Space
+        // to pick up, arrows to move) never see them while renaming.
+        e.stopPropagation();
         if (e.key === "Enter") {
           e.preventDefault();
           commit();

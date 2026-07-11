@@ -9,6 +9,8 @@ import {
 
 interface CoverCardProps {
   title: string;
+  /** Optional secondary line under the title (book subtitle / collection description). */
+  subtitle?: string | null;
   icon: string | null;
   coverUrl: string | null;
   // Rendered in the cover area when there's no cover image and no stored icon —
@@ -21,6 +23,7 @@ interface CoverCardProps {
 
 function CoverCardComponent({
   title,
+  subtitle,
   icon,
   coverUrl,
   fallback,
@@ -28,6 +31,7 @@ function CoverCardComponent({
   actions,
 }: CoverCardProps) {
   const label = title || "Untitled";
+  const subtitleText = subtitle?.trim() ? subtitle.trim() : null;
   const card = (
     <div className="group relative">
       <button
@@ -46,10 +50,21 @@ function CoverCardComponent({
             {icon ? <DocumentIcon icon={icon} size={28} /> : fallback}
           </div>
         )}
-        <div className="flex items-center gap-1.5 px-3 py-2.5">
-          {coverUrl && icon && <DocumentIcon icon={icon} size={16} />}
-          <span className="truncate text-sm font-medium text-text">
-            {label}
+        <div className="flex items-start gap-1.5 px-3 py-2.5">
+          {coverUrl && icon && (
+            <span className="mt-0.5 shrink-0">
+              <DocumentIcon icon={icon} size={16} />
+            </span>
+          )}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium text-text">
+              {label}
+            </span>
+            {subtitleText && (
+              <span className="mt-0.5 block truncate text-xs text-muted">
+                {subtitleText}
+              </span>
+            )}
           </span>
         </div>
       </button>
@@ -67,9 +82,9 @@ function CoverCardComponent({
 
 /**
  * A single library item rendered as a gallery card: an optional cover image (or
- * the item's icon / a default glyph fallback) above its title, with optional
- * hover/right-click actions. Shared by the collection page's book and
- * sub-collection grids. Memoized so a grid re-render doesn't churn every card —
- * pass referentially-stable handler props.
+ * the item's icon / a default glyph fallback) above its title and optional
+ * subtitle, with optional hover/right-click actions. Shared by the collection
+ * page's book and sub-collection grids. Memoized so a grid re-render doesn't
+ * churn every card — pass referentially-stable handler props.
  */
 export const CoverCard = memo(CoverCardComponent);

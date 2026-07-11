@@ -54,6 +54,15 @@ export const entriesKey = ["entries"] as const;
 export const entryContentKey = (entryId: string) =>
   ["entry-content", entryId] as const;
 
+/** Cache key for the signed-in user's whiteboard metadata. */
+export const whiteboardsKey = ["whiteboards"] as const;
+
+/**
+ * Cache key for a single whiteboard's scene, separate from the metadata list.
+ */
+export const whiteboardSceneKey = (whiteboardId: string) =>
+  ["whiteboard-scene", whiteboardId] as const;
+
 /**
  * Sentinel datagrid id used to key the rows/views queries when no datagrid is
  * selected, so the (disabled) query still has a stable key.

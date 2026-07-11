@@ -21,6 +21,7 @@ import {
   PencilIcon,
   RemoveFromCollectionIcon,
   TrashIcon,
+  WhiteboardIcon,
 } from "./icons";
 import { SIDEBAR_ICON_SIZE, SidebarRowOverlay } from "./sidebar-row";
 
@@ -33,6 +34,7 @@ interface TreeRowHandlers {
   onSelectCollection: (id: string) => void;
   onSelectEntry: (id: string, collectionId: string) => void;
   onSelectDatagrid: (id: string) => void;
+  onSelectWhiteboard: (id: string) => void;
   onStartRename: (id: string) => void;
   onCommitRename: (node: FlatNode, value: string) => void;
   onCancelRename: () => void;
@@ -43,6 +45,7 @@ interface TreeRowHandlers {
   onNewCollectionInside: (id: string) => void;
   onNewEntryInside: (id: string) => void;
   onNewDatagridInside: (id: string) => void;
+  onNewWhiteboardInside: (id: string) => void;
   // Reparent this node into a collection, or back to the top level (null).
   onMoveToCollection: (
     node: FlatNode,
@@ -73,6 +76,7 @@ export const TreeRow = memo(function TreeRow({
   onSelectCollection,
   onSelectEntry,
   onSelectDatagrid,
+  onSelectWhiteboard,
   onStartRename,
   onCommitRename,
   onCancelRename,
@@ -83,6 +87,7 @@ export const TreeRow = memo(function TreeRow({
   onNewCollectionInside,
   onNewEntryInside,
   onNewDatagridInside,
+  onNewWhiteboardInside,
   onMoveToCollection,
 }: TreeRowProps) {
   const child = node.child;
@@ -90,6 +95,7 @@ export const TreeRow = memo(function TreeRow({
   const isCollection = child.kind === "collection";
   const isEntry = child.kind === "entry";
   const isDatagrid = child.kind === "datagrid";
+  const isWhiteboard = child.kind === "whiteboard";
   const label =
     child.kind === "folder"
       ? child.folder.name
@@ -99,7 +105,9 @@ export const TreeRow = memo(function TreeRow({
           ? child.book.title
           : child.kind === "entry"
             ? child.entry.title
-            : child.datagrid.name;
+            : child.kind === "datagrid"
+              ? child.datagrid.name
+              : child.whiteboard.name;
 
   // The set of collections this node may move into: never itself, never one of
   // its own descendants (which would form a cycle), and never its current
@@ -180,10 +188,14 @@ export const TreeRow = memo(function TreeRow({
         <DocumentIcon icon={child.entry.icon} size={SIDEBAR_ICON_SIZE} />
       ) : child.kind === "datagrid" && child.datagrid.icon ? (
         <DocumentIcon icon={child.datagrid.icon} size={SIDEBAR_ICON_SIZE} />
+      ) : child.kind === "whiteboard" && child.whiteboard.icon ? (
+        <DocumentIcon icon={child.whiteboard.icon} size={SIDEBAR_ICON_SIZE} />
       ) : isEntry ? (
         <PageIcon size={SIDEBAR_ICON_SIZE} />
       ) : child.kind === "datagrid" ? (
         <DatagridIcon size={SIDEBAR_ICON_SIZE} />
+      ) : child.kind === "whiteboard" ? (
+        <WhiteboardIcon size={SIDEBAR_ICON_SIZE} />
       ) : (
         <BookIcon size={SIDEBAR_ICON_SIZE} />
       )}
@@ -233,6 +245,13 @@ export const TreeRow = memo(function TreeRow({
           },
         },
         {
+          icon: <WhiteboardIcon size={15} />,
+          label: "New whiteboard",
+          onSelect: () => {
+            onNewWhiteboardInside(node.id);
+          },
+        },
+        {
           icon: <PencilIcon size={15} />,
           label: "Rename",
           onSelect: () => {
@@ -251,7 +270,7 @@ export const TreeRow = memo(function TreeRow({
           separatorBefore: true,
         },
       ]
-    : isEntry || isDatagrid
+    : isEntry || isDatagrid || isWhiteboard
       ? [
           {
             icon: <PencilIcon size={15} />,
@@ -335,6 +354,7 @@ export const TreeRow = memo(function TreeRow({
         else if (child.kind === "entry")
           onSelectEntry(node.id, child.entry.collection_id);
         else if (child.kind === "datagrid") onSelectDatagrid(node.id);
+        else if (child.kind === "whiteboard") onSelectWhiteboard(node.id);
         else onSelectBook(node.id);
       }}
       onStartRename={() => {
@@ -373,6 +393,12 @@ export function DragRowOverlay({ node }: { node: FlatNode }) {
       ) : (
         <DatagridIcon size={SIDEBAR_ICON_SIZE} />
       )
+    ) : child.kind === "whiteboard" ? (
+      child.whiteboard.icon ? (
+        <DocumentIcon icon={child.whiteboard.icon} size={SIDEBAR_ICON_SIZE} />
+      ) : (
+        <WhiteboardIcon size={SIDEBAR_ICON_SIZE} />
+      )
     ) : child.entry.icon ? (
       <DocumentIcon icon={child.entry.icon} size={SIDEBAR_ICON_SIZE} />
     ) : (
@@ -387,6 +413,8 @@ export function DragRowOverlay({ node }: { node: FlatNode }) {
           ? child.book.title
           : child.kind === "entry"
             ? child.entry.title
-            : child.datagrid.name;
+            : child.kind === "datagrid"
+              ? child.datagrid.name
+              : child.whiteboard.name;
   return <SidebarRowOverlay icon={icon} label={label} />;
 }

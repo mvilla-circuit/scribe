@@ -2,5 +2,6 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "ignore": ["src/lib/database.types.ts", "src/css-custom-properties.d.ts"],
   "ignoreBinaries": ["rustfmt"],
-  "ignoreDependencies": ["@fontsource/.*"]
+  "ignoreDependencies": ["@fontsource/.*"],
+  "tags": ["-lintignore"]
 }

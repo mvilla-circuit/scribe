@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useAuth } from "@/lib/auth";
-import type { Tables, TablesUpdate } from "@/lib/database.types";
+import type { Json, Tables, TablesUpdate } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
 
 import { execWrite, requireUserId } from "./crud";
@@ -13,7 +13,14 @@ import {
   removeById,
 } from "./optimistic-list";
 import { byPosition } from "./ordering";
-import { booksKey, collectionsKey, entriesKey } from "./query-keys";
+import {
+  booksKey,
+  collectionsKey,
+  entriesKey,
+  whiteboardSceneKey,
+  whiteboardsKey,
+} from "./query-keys";
+import type { WhiteboardMeta } from "./whiteboards";
 
 /** A single collection row from the `collections` table. */
 export type Collection = Tables<"collections">;
@@ -209,7 +216,7 @@ export function useDeleteCollection() {
           : c,
       ),
     errorMessage: "Couldn't delete collection",
-    invalidateKeys: [collectionsKey, booksKey, entriesKey],
+    invalidateKeys: [collectionsKey, booksKey, entriesKey, whiteboardsKey],
   });
 
   type BookRow = Tables<"books">;
@@ -222,9 +229,24 @@ export function useDeleteCollection() {
       await Promise.all([
         qc.cancelQueries({ queryKey: booksKey }),
         qc.cancelQueries({ queryKey: entriesKey }),
+        qc.cancelQueries({ queryKey: whiteboardsKey }),
       ]);
       const previousBooks = qc.getQueryData<BookRow[]>(booksKey);
       const previousEntries = qc.getQueryData<EntryMeta[]>(entriesKey);
+      const previousWhiteboards =
+        qc.getQueryData<WhiteboardMeta[]>(whiteboardsKey);
+      const deletedWhiteboardIds = (previousWhiteboards ?? [])
+        .filter((whiteboard) => whiteboard.collection_id === input.id)
+        .map((whiteboard) => whiteboard.id);
+      await Promise.all(
+        deletedWhiteboardIds.map((id) =>
+          qc.cancelQueries({ queryKey: whiteboardSceneKey(id) }),
+        ),
+      );
+      const previousWhiteboardScenes = deletedWhiteboardIds.map((id) => ({
+        id,
+        scene: qc.getQueryData<Json>(whiteboardSceneKey(id)),
+      }));
       qc.setQueryData<BookRow[]>(booksKey, (prev) =>
         (prev ?? []).map((b) =>
           b.collection_id === input.id ? { ...b, collection_id: null } : b,
@@ -233,8 +255,22 @@ export function useDeleteCollection() {
       qc.setQueryData<EntryMeta[]>(entriesKey, (prev) =>
         (prev ?? []).filter((entry) => entry.collection_id !== input.id),
       );
+      qc.setQueryData<WhiteboardMeta[]>(whiteboardsKey, (prev) =>
+        (prev ?? []).filter(
+          (whiteboard) => whiteboard.collection_id !== input.id,
+        ),
+      );
+      deletedWhiteboardIds.forEach((id) => {
+        qc.removeQueries({ queryKey: whiteboardSceneKey(id) });
+      });
       const collectionsContext = await base.onMutate(input);
-      return { ...collectionsContext, previousBooks, previousEntries };
+      return {
+        ...collectionsContext,
+        previousBooks,
+        previousEntries,
+        previousWhiteboards,
+        previousWhiteboardScenes,
+      };
     },
     onError: (error, input, context) => {
       if (context?.previousBooks) {
@@ -243,6 +279,14 @@ export function useDeleteCollection() {
       if (context?.previousEntries) {
         qc.setQueryData(entriesKey, context.previousEntries);
       }
+      if (context?.previousWhiteboards) {
+        qc.setQueryData(whiteboardsKey, context.previousWhiteboards);
+      }
+      context?.previousWhiteboardScenes.forEach(({ id, scene }) => {
+        if (scene !== undefined) {
+          qc.setQueryData(whiteboardSceneKey(id), scene);
+        }
+      });
       base.onError(error, input, context);
     },
   });

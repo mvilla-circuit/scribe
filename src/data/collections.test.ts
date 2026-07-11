@@ -2,7 +2,12 @@ import { waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
 
-import { makeBook, makeCollection, makeEntry } from "@/test/fixtures";
+import {
+  makeBook,
+  makeCollection,
+  makeEntry,
+  makeWhiteboard,
+} from "@/test/fixtures";
 import { server } from "@/test/msw/server";
 import {
   createTestQueryClient,
@@ -212,6 +217,15 @@ describe("useDeleteCollection", () => {
         makeEntry({ id: "e2", collection_id: "keep" }),
       ],
     );
+    client.setQueryData(
+      ["whiteboards"],
+      [
+        makeWhiteboard({ id: "wb1", collection_id: "c1" }),
+        makeWhiteboard({ id: "wb2", collection_id: "keep" }),
+      ],
+    );
+    client.setQueryData(["whiteboard-scene", "wb1"], { version: 1 });
+    client.setQueryData(["whiteboard-scene", "wb2"], { version: 1 });
 
     const { result } = renderHookWithQuery(() => useDeleteCollection(), {
       client,
@@ -245,10 +259,20 @@ describe("useDeleteCollection", () => {
         .getQueryData<{ id: string }[]>(["entries"])
         ?.map((entry) => entry.id),
     ).toEqual(["e2"]);
+    expect(
+      client
+        .getQueryData<{ id: string }[]>(["whiteboards"])
+        ?.map((whiteboard) => whiteboard.id),
+    ).toEqual(["wb2"]);
+    expect(client.getQueryData(["whiteboard-scene", "wb1"])).toBeUndefined();
+    expect(client.getQueryData(["whiteboard-scene", "wb2"])).toEqual({
+      version: 1,
+    });
 
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["collections"] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["books"] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["entries"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["whiteboards"] });
   });
 
   it("rolls back both caches when the server rejects the delete", async () => {

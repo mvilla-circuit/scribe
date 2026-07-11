@@ -9,6 +9,7 @@ import {
   datagridsKey,
   entriesKey,
   foldersKey,
+  whiteboardsKey,
 } from "@/data/query-keys";
 import { useUIStore } from "@/store/ui";
 import {
@@ -16,6 +17,7 @@ import {
   makeCollection,
   makeDatagrid,
   makeEntry,
+  makeWhiteboard,
 } from "@/test/fixtures";
 import { server } from "@/test/msw/server";
 import {
@@ -64,6 +66,7 @@ function seed() {
     }),
   ]);
   client.setQueryData(datagridsKey, []);
+  client.setQueryData(whiteboardsKey, []);
   return client;
 }
 
@@ -76,6 +79,7 @@ beforeEach(() => {
     activeBookId: null,
     activeCollectionId: "c1",
     activeEntryId: null,
+    activeWhiteboardId: null,
   });
 });
 
@@ -118,6 +122,26 @@ describe("CollectionPage", () => {
     expect(
       screen.getByRole("heading", { name: "Datagrids" }),
     ).toBeInTheDocument();
+  });
+
+  it("shows and opens whiteboards belonging to the collection", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = seed();
+    client.setQueryData(whiteboardsKey, [
+      makeWhiteboard({
+        id: "wb1",
+        collection_id: "c1",
+        name: "Story map",
+      }),
+    ]);
+
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+    await user.click(screen.getByRole("button", { name: "Story map" }));
+
+    expect(
+      screen.getByRole("heading", { name: "Whiteboards" }),
+    ).toBeInTheDocument();
+    expect(useUIStore.getState().activeWhiteboardId).toBe("wb1");
   });
 
   it("shows the collection and child cover images", () => {
@@ -268,6 +292,7 @@ describe("CollectionPage", () => {
     client.setQueryData(collectionsKey, [makeCollection({ id: "c1" })]);
     client.setQueryData(entriesKey, []);
     client.setQueryData(datagridsKey, []);
+    client.setQueryData(whiteboardsKey, []);
 
     renderWithProviders(<CollectionPage collectionId="c1" />, { client });
 
@@ -327,6 +352,29 @@ describe("CollectionPage", () => {
     expect(useUIStore.getState().activeCollectionId).toBe("c1");
     expect(useUIStore.getState().activeEntryId).not.toBeNull();
     expect(client.getQueryData<unknown[]>(entriesKey)).toHaveLength(2);
+  });
+
+  it("creates and opens a whiteboard", async () => {
+    server.use(
+      http.post(
+        "http://supabase.test/rest/v1/whiteboards",
+        () => new HttpResponse(null, { status: 201 }),
+      ),
+    );
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = seed();
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+
+    const toolbar = screen.getByRole("navigation", {
+      name: "Collection settings",
+    });
+    await user.click(
+      within(toolbar).getByRole("button", { name: "More create options" }),
+    );
+    await user.click(screen.getByRole("menuitem", { name: "New whiteboard" }));
+
+    expect(useUIStore.getState().activeWhiteboardId).not.toBeNull();
+    expect(client.getQueryData<unknown[]>(whiteboardsKey)).toHaveLength(1);
   });
 
   it("deletes a doc from the gallery", async () => {

@@ -65,7 +65,9 @@ export function TreeRowShell({
 }: TreeRowShellProps) {
   const { setNodeRef, style, dragHandleProps, isDragging } = useSortableRow(
     id,
-    !draggable,
+    // While renaming, drop listeners so Space/arrows in the field can't start a
+    // drag (dnd-kit's KeyboardSensor would cancel the rename mid-type).
+    !draggable || editing,
   );
 
   const activation = rowActivationHandlers({
