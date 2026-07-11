@@ -34,6 +34,7 @@ import {
   useCreateEntry,
   useDeleteEntry,
   useEntries,
+  useMoveEntry,
   useRenameEntry,
 } from "@/data/entries";
 import {
@@ -104,6 +105,7 @@ export function SidebarTree() {
   const deleteCollection = useDeleteCollection();
   const createEntry = useCreateEntry();
   const renameEntry = useRenameEntry();
+  const moveEntry = useMoveEntry();
   const deleteEntry = useDeleteEntry();
   const createRootItem = useCreateRootItem();
 
@@ -121,6 +123,7 @@ export function SidebarTree() {
   const { mutate: renameEntryMutate } = renameEntry;
   const { mutate: moveBookMutate } = moveBook;
   const { mutate: moveCollectionMutate } = moveCollection;
+  const { mutate: moveEntryMutate } = moveEntry;
   const { createCollection: createRootCollectionFn } = createRootItem;
   const { startRename, cancelRename, requestDelete } = panel;
 
@@ -175,6 +178,14 @@ export function SidebarTree() {
             collection_id: intoCollection ? parentId : null,
             position,
           });
+        } else if (node.kind === "entry" && parentId) {
+          // Entries can only live in a collection (enforced by getProjection).
+          moveEntry.mutate({
+            id,
+            collection_id: parentId,
+            position,
+          });
+          if (activeEntryId === id) setActiveEntry(id, parentId);
         }
         if (parentId) setExpanded(parentId, true);
       },
@@ -264,10 +275,27 @@ export function SidebarTree() {
           collection_id: targetCollectionId,
           position,
         });
+      } else if (node.kind === "entry" && targetCollectionId) {
+        moveEntryMutate({
+          id: node.id,
+          collection_id: targetCollectionId,
+          position,
+        });
+        if (activeEntryId === node.id) {
+          setActiveEntry(node.id, targetCollectionId);
+        }
       }
       if (targetCollectionId) setExpanded(targetCollectionId, true);
     },
-    [model, moveCollectionMutate, moveBookMutate, setExpanded],
+    [
+      model,
+      moveCollectionMutate,
+      moveBookMutate,
+      moveEntryMutate,
+      activeEntryId,
+      setActiveEntry,
+      setExpanded,
+    ],
   );
 
   const createRootBook = () => {

@@ -14,6 +14,7 @@ import {
   useDeleteEntry,
   useEntries,
   useEntryContent,
+  useMoveEntry,
   useRenameEntry,
   useUpdateEntryContent,
 } from "./entries";
@@ -151,6 +152,48 @@ describe("entries", () => {
     expect(client.getQueryData(entryContentKey("entry-1"))).toEqual({
       type: "doc",
       content: [{ type: "paragraph" }],
+    });
+  });
+
+  it("moves an entry to another collection and position", async () => {
+    let patched: Record<string, unknown> | undefined;
+    server.use(
+      http.patch(ENTRIES_URL, async ({ request }) => {
+        patched = (await request.json()) as Record<string, unknown>;
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const client = createTestQueryClient();
+    client.setQueryData(entriesKey, [
+      makeEntry({
+        id: "entry-1",
+        collection_id: "c1",
+        position: 1024,
+      }),
+    ]);
+    const { result } = renderHookWithQuery(() => useMoveEntry(), { client });
+
+    result.current.mutate({
+      id: "entry-1",
+      collection_id: "c2",
+      position: 2048,
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(patched).toMatchObject({
+      collection_id: "c2",
+      position: 2048,
+    });
+    expect(
+      client.getQueryData<
+        { id: string; collection_id: string; position: number }[]
+      >(entriesKey)?.[0],
+    ).toMatchObject({
+      id: "entry-1",
+      collection_id: "c2",
+      position: 2048,
     });
   });
 });

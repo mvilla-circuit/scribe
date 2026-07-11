@@ -40,6 +40,12 @@ interface DeleteEntryInput {
   id: string;
 }
 
+interface MoveEntryInput {
+  id: string;
+  collection_id: string;
+  position: number;
+}
+
 interface UpdateEntryContentInput {
   id: string;
   content: Json;
@@ -168,6 +174,33 @@ export function useDeleteEntry() {
       key: entriesKey,
       update: (prev, input) => removeById(prev, input.id),
       errorMessage: "Couldn't delete entry",
+    }),
+  });
+}
+
+/**
+ * Mutation hook that moves an entry into a (possibly different) collection
+ * and/or repositions it among that collection's children. Entries always
+ * require a `collection_id` — they cannot live at the library root or in a
+ * folder.
+ */
+export function useMoveEntry() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: MoveEntryInput) =>
+      updateEntryRow(input.id, {
+        collection_id: input.collection_id,
+        position: input.position,
+      }),
+    ...listHandlers<EntryMeta, MoveEntryInput>({
+      qc,
+      key: entriesKey,
+      update: (prev, input) =>
+        patchById(prev, input.id, {
+          collection_id: input.collection_id,
+          position: input.position,
+        }),
+      errorMessage: "Couldn't move entry",
     }),
   });
 }

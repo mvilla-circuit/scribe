@@ -154,11 +154,45 @@ describe("entries in the tree", () => {
     ]);
   });
 
-  it("marks entry rows as unavailable as drag sources", () => {
+  it("marks entry rows as draggable leaves", () => {
     const entry = flattenTree(entryModel, new Set(["c1"])).find(
       (node) => node.id === "e1",
     );
 
-    expect(entry?.draggable).toBe(false);
+    expect(entry?.draggable).toBe(true);
+  });
+
+  it("projects an entry under a collection, not the root or a folder", () => {
+    const model = buildTree(
+      [makeFolder({ id: "f1", position: 1024 })],
+      [
+        makeBook({ id: "bf1", folder_id: "f1", position: 1024 }),
+        makeBook({ id: "b1", collection_id: "c1", position: 1024 }),
+      ],
+      [
+        makeCollection({ id: "c1", position: 2048 }),
+        makeCollection({ id: "c2", position: 3072 }),
+      ],
+      [
+        makeEntry({
+          id: "e1",
+          collection_id: "c1",
+          position: 2048,
+        }),
+      ],
+    );
+    const nodes = flattenTree(model, new Set(["c1", "f1", "c2"]));
+
+    expect(getProjection(nodes, "e1", "b1", INDENT)).toEqual({
+      depth: 1,
+      parentId: "c1",
+    });
+    expect(getProjection(nodes, "e1", "c2", INDENT)).toEqual({
+      depth: 1,
+      parentId: "c2",
+    });
+    // Root-level and folder drops are illegal for entries (collection_id is required).
+    expect(getProjection(nodes, "e1", "c1", 0)).toBeNull();
+    expect(getProjection(nodes, "e1", "bf1", INDENT)).toBeNull();
   });
 });

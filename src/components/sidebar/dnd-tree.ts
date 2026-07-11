@@ -8,15 +8,15 @@ import { childrenOf, ROOT, type TreeChild, type TreeModel } from "@/data/tree";
 export { type Projection };
 
 export type FlatNode = DndNode & {
-  // entity UUID (unique across folders + collections + books); inherited `id`
-  // from DndNode.
+  // entity UUID (unique across folders + collections + books + entries);
+  // inherited `id` from DndNode.
   kind: "folder" | "collection" | "book" | "entry";
   draggable: boolean;
   child: TreeChild;
 };
 
 // Depth-first flatten that only descends into expanded containers (folders and
-// collections). Books are always leaves.
+// collections). Books and entries are always leaves.
 export function flattenTree(
   model: TreeModel,
   expanded: Set<string>,
@@ -34,7 +34,7 @@ export function flattenTree(
         depth,
         parentId,
         position: child.position,
-        draggable: child.kind !== "entry",
+        draggable: true,
         child,
       });
       const isContainer =
@@ -48,12 +48,13 @@ export function flattenTree(
   return out;
 }
 
-// Projection rules for the mixed folder/collection/book tree:
+// Projection rules for the mixed folder/collection/book/entry tree:
 // - Folders are root-only (they never gain a parent).
 // - A book may nest under a folder or a collection (one level below the
 //   preceding container), or sit at the root.
 // - A collection may nest under another collection, or sit at the root, but
-//   never inside a folder -- neither ever nests under a book.
+//   never inside a folder -- neither ever nests under a book or entry.
+// - An entry may nest under a collection only (never root or a folder).
 export function getProjection(
   nodes: FlatNode[],
   activeId: string,
@@ -61,7 +62,6 @@ export function getProjection(
   dragOffsetX: number,
 ): Projection | null {
   const active = nodes.find((n) => n.id === activeId);
-  if (active?.kind === "entry") return null;
   const projection = projectDrop(nodes, activeId, overId, dragOffsetX, {
     fixedProjection: (a) =>
       a.kind === "folder" ? { depth: 0, parentId: null } : null,
@@ -71,16 +71,24 @@ export function getProjection(
         // sit at the preceding row's own level (resolved parent validated below).
         return prev.kind === "collection" ? prev.depth + 1 : prev.depth;
       }
+      if (a.kind === "entry") {
+        // Entries only nest under collections.
+        return prev.kind === "collection" ? prev.depth + 1 : prev.depth;
+      }
       // Books nest one level under a folder or collection, else sit as a sibling.
       return (
         prev.depth +
         (prev.kind === "folder" || prev.kind === "collection" ? 1 : 0)
       );
     },
-    parentWhenNestedUnder: (prev) =>
-      prev.kind === "folder" || prev.kind === "collection"
+    parentWhenNestedUnder: (prev, a) => {
+      if (a.kind === "entry") {
+        return prev.kind === "collection" ? prev.id : prev.parentId;
+      }
+      return prev.kind === "folder" || prev.kind === "collection"
         ? prev.id
-        : prev.parentId,
+        : prev.parentId;
+    },
   });
 
   if (!projection || !active) return projection;
@@ -91,6 +99,13 @@ export function getProjection(
   if (active.kind === "collection" && projection.parentId) {
     const parent = nodes.find((n) => n.id === projection.parentId);
     if (parent?.kind === "folder") return { depth: 0, parentId: null };
+  }
+
+  // Entries require a collection parent — cancel root or folder drops.
+  if (active.kind === "entry") {
+    if (!projection.parentId) return null;
+    const parent = nodes.find((n) => n.id === projection.parentId);
+    if (parent?.kind !== "collection") return null;
   }
 
   return projection;
