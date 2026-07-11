@@ -180,12 +180,20 @@ export function SidebarTree() {
           });
         } else if (node.kind === "entry" && parentId) {
           // Entries can only live in a collection (enforced by getProjection).
-          moveEntry.mutate({
-            id,
-            collection_id: parentId,
-            position,
-          });
-          if (activeEntryId === id) setActiveEntry(id, parentId);
+          // Defer selection updates until the move succeeds so a failed mutation
+          // doesn't leave history/breadcrumb on the wrong collection.
+          moveEntry.mutate(
+            {
+              id,
+              collection_id: parentId,
+              position,
+            },
+            {
+              onSuccess: () => {
+                if (activeEntryId === id) setActiveEntry(id, parentId);
+              },
+            },
+          );
         }
         if (parentId) setExpanded(parentId, true);
       },
@@ -276,14 +284,20 @@ export function SidebarTree() {
           position,
         });
       } else if (node.kind === "entry" && targetCollectionId) {
-        moveEntryMutate({
-          id: node.id,
-          collection_id: targetCollectionId,
-          position,
-        });
-        if (activeEntryId === node.id) {
-          setActiveEntry(node.id, targetCollectionId);
-        }
+        moveEntryMutate(
+          {
+            id: node.id,
+            collection_id: targetCollectionId,
+            position,
+          },
+          {
+            onSuccess: () => {
+              if (activeEntryId === node.id) {
+                setActiveEntry(node.id, targetCollectionId);
+              }
+            },
+          },
+        );
       }
       if (targetCollectionId) setExpanded(targetCollectionId, true);
     },

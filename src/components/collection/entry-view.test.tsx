@@ -10,6 +10,7 @@ const hooks = vi.hoisted(() => ({
   rename: { mutate: vi.fn() },
   update: { mutate: vi.fn() },
   updateContent: { mutateAsync: vi.fn() },
+  entryCollectionId: "c1",
 }));
 
 vi.mock("@/data/entries", () => ({
@@ -18,7 +19,7 @@ vi.mock("@/data/entries", () => ({
       {
         id: "e1",
         user_id: "user-1",
-        collection_id: "c1",
+        collection_id: hooks.entryCollectionId,
         title: "Field notes",
         icon: null,
         cover_url: null,
@@ -39,7 +40,10 @@ vi.mock("@/data/entries", () => ({
 
 vi.mock("@/data/collections", () => ({
   useCollections: () => ({
-    data: [{ id: "c1", name: "Research" }],
+    data: [
+      { id: "c1", name: "Research" },
+      { id: "c2", name: "Archive" },
+    ],
   }),
 }));
 
@@ -61,6 +65,7 @@ vi.mock("@/components/book/masthead", () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  hooks.entryCollectionId = "c1";
 });
 
 describe("EntryView", () => {
@@ -84,5 +89,15 @@ describe("EntryView", () => {
       id: "e1",
       title: "Archive notes",
     });
+  });
+
+  it("breadcrumbs the entry's collection even when the store prop is stale", () => {
+    hooks.entryCollectionId = "c2";
+    renderWithProviders(<EntryView collectionId="c1" entryId="e1" />);
+
+    expect(screen.getByRole("button", { name: "Archive" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Research" }),
+    ).not.toBeInTheDocument();
   });
 });

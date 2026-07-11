@@ -44,8 +44,12 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
   const titleRef = useRef<EditableTextHandle>(null);
 
   const entry = entriesQuery.data?.find((item) => item.id === entryId) ?? null;
+  // Prefer the entry row's collection_id so a successful (or optimistic) move
+  // keeps the breadcrumb honest even if the store axis hasn't caught up yet.
+  const resolvedCollectionId = entry?.collection_id ?? collectionId;
   const collection =
-    collectionsQuery.data?.find((item) => item.id === collectionId) ?? null;
+    collectionsQuery.data?.find((item) => item.id === resolvedCollectionId) ??
+    null;
 
   if (!entry) {
     const status = entriesQuery.isLoading
@@ -59,7 +63,7 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
           collectionName={collection?.name}
           saveState={saveState}
           onOpenCollection={() => {
-            navigateTo({ collectionId, entryId: null });
+            navigateTo({ collectionId: resolvedCollectionId, entryId: null });
           }}
         />
         <div className="flex flex-1 items-center justify-center px-8 pb-16">
@@ -75,7 +79,10 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
         collectionName={collection?.name}
         saveState={saveState}
         onOpenCollection={() => {
-          navigateTo({ collectionId, entryId: null });
+          navigateTo({
+            collectionId: entry.collection_id,
+            entryId: null,
+          });
         }}
       />
 

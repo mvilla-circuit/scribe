@@ -81,7 +81,11 @@ test.describe("collections with seeded data", () => {
   }) => {
     await authedPage.goto("/");
     await authedPage.getByRole("treeitem", { name: /The Realm/ }).click();
-    await authedPage.getByRole("button", { name: "New doc" }).first().click();
+    await authedPage
+      .getByRole("button", { name: "More create options" })
+      .first()
+      .click();
+    await authedPage.getByRole("menuitem", { name: "New doc" }).click();
 
     const title = authedPage.getByRole("textbox", { name: "Document title" });
     await title.fill("Lore notes");
