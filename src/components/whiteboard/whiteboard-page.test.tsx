@@ -207,6 +207,7 @@ describe("WhiteboardPage", () => {
             items: [expect.objectContaining({ type: "sticky" })],
           }),
         }),
+        expect.objectContaining({ onSettled: expect.any(Function) }),
       );
     });
 
@@ -228,9 +229,10 @@ describe("WhiteboardPage", () => {
       expect(updateSceneMutate).toHaveBeenCalledTimes(1);
 
       const firstOptions = updateSceneMutate.mock.calls[0]?.[1] as
-        { onSettled?: () => void } | undefined;
+        | { onSettled?: (data: unknown, error: Error | null) => void }
+        | undefined;
       act(() => {
-        firstOptions?.onSettled?.();
+        firstOptions?.onSettled?.(undefined, null);
       });
 
       expect(updateSceneMutate).toHaveBeenCalledTimes(2);
@@ -238,6 +240,116 @@ describe("WhiteboardPage", () => {
         scene: WhiteboardScene;
       };
       expect(latest.scene.items).toHaveLength(2);
+    });
+
+    it("does not start a concurrent save on unmount while a save is in flight", () => {
+      const { unmount } = renderWithProviders(
+        <WhiteboardPage whiteboardId="whiteboard-1" />,
+        {
+          client: seededClient(sceneToJson(emptyScene())),
+        },
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Add sticky note" }));
+      act(() => {
+        vi.advanceTimersByTime(400);
+      });
+      expect(updateSceneMutate).toHaveBeenCalledTimes(1);
+
+      fireEvent.click(screen.getByRole("button", { name: "Add text" }));
+      act(() => {
+        vi.advanceTimersByTime(400);
+      });
+      expect(updateSceneMutate).toHaveBeenCalledTimes(1);
+
+      unmount();
+      // Must not race a second PATCH while the first is still in flight.
+      expect(updateSceneMutate).toHaveBeenCalledTimes(1);
+
+      const firstOptions = updateSceneMutate.mock.calls[0]?.[1] as
+        | { onSettled?: (data: unknown, error: Error | null) => void }
+        | undefined;
+      act(() => {
+        firstOptions?.onSettled?.(undefined, null);
+      });
+
+      expect(updateSceneMutate).toHaveBeenCalledTimes(2);
+      const latest = updateSceneMutate.mock.calls[1]?.[0] as {
+        scene: WhiteboardScene;
+      };
+      expect(latest.scene.items).toHaveLength(2);
+    });
+
+    it("flushes a re-queued scene on unmount after a failed save", () => {
+      const { unmount } = renderWithProviders(
+        <WhiteboardPage whiteboardId="whiteboard-1" />,
+        {
+          client: seededClient(sceneToJson(emptyScene())),
+        },
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Add sticky note" }));
+      act(() => {
+        vi.advanceTimersByTime(400);
+      });
+      expect(updateSceneMutate).toHaveBeenCalledTimes(1);
+
+      const firstOptions = updateSceneMutate.mock.calls[0]?.[1] as
+        | { onSettled?: (data: unknown, error: Error | null) => void }
+        | undefined;
+      act(() => {
+        firstOptions?.onSettled?.(undefined, new Error("network"));
+      });
+
+      // Do not spin-retry while still mounted; keep the dirty scene queued.
+      expect(updateSceneMutate).toHaveBeenCalledTimes(1);
+
+      unmount();
+
+      expect(updateSceneMutate).toHaveBeenCalledTimes(2);
+      const retry = updateSceneMutate.mock.calls[1]?.[0] as {
+        scene: WhiteboardScene;
+      };
+      expect(retry.scene.items).toEqual([
+        expect.objectContaining({ type: "sticky" }),
+      ]);
+    });
+
+    it("retries once when an in-flight save fails after unmount", () => {
+      const { unmount } = renderWithProviders(
+        <WhiteboardPage whiteboardId="whiteboard-1" />,
+        {
+          client: seededClient(sceneToJson(emptyScene())),
+        },
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Add sticky note" }));
+      act(() => {
+        vi.advanceTimersByTime(400);
+      });
+      expect(updateSceneMutate).toHaveBeenCalledTimes(1);
+
+      unmount();
+      expect(updateSceneMutate).toHaveBeenCalledTimes(1);
+
+      const firstOptions = updateSceneMutate.mock.calls[0]?.[1] as
+        | { onSettled?: (data: unknown, error: Error | null) => void }
+        | undefined;
+      act(() => {
+        firstOptions?.onSettled?.(undefined, new Error("network"));
+      });
+
+      expect(updateSceneMutate).toHaveBeenCalledTimes(2);
+
+      const retryOptions = updateSceneMutate.mock.calls[1]?.[1] as
+        | { onSettled?: (data: unknown, error: Error | null) => void }
+        | undefined;
+      act(() => {
+        retryOptions?.onSettled?.(undefined, new Error("network"));
+      });
+
+      // Cap post-unmount retries so a hard failure does not spin forever.
+      expect(updateSceneMutate).toHaveBeenCalledTimes(2);
     });
   });
 });

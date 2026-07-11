@@ -31,6 +31,7 @@ export function CanvasText({
   const [draft, setDraft] = useState(value);
   const [lastValue, setLastValue] = useState(value);
   const ref = useRef<HTMLTextAreaElement>(null);
+  const settled = useRef(false);
 
   // Adopt external changes while not editing by adjusting state during render
   // (React's "reset state from props" pattern), so we never clobber in-progress
@@ -41,13 +42,24 @@ export function CanvasText({
   }
 
   useEffect(() => {
-    if (!editing) return;
+    if (!editing) {
+      settled.current = false;
+      return;
+    }
     const el = ref.current;
     if (!el) return;
     el.focus();
     const end = el.value.length;
     el.setSelectionRange(end, end);
   }, [editing]);
+
+  const finish = (commit: boolean) => {
+    if (settled.current) return;
+    settled.current = true;
+    if (commit && draft !== value) onCommit(draft);
+    else setDraft(value);
+    onStopEditing();
+  };
 
   return (
     <textarea
@@ -63,8 +75,7 @@ export function CanvasText({
         setDraft(e.target.value);
       }}
       onBlur={() => {
-        if (draft !== value) onCommit(draft);
-        onStopEditing();
+        finish(true);
       }}
       onKeyDown={(e) => {
         // While editing, keep keys local so the canvas-level Delete/Backspace
@@ -72,7 +83,8 @@ export function CanvasText({
         e.stopPropagation();
         if (e.key === "Escape") {
           e.preventDefault();
-          setDraft(value);
+          finish(false);
+          // Blur after settling so a trailing onBlur is a no-op.
           ref.current?.blur();
         }
       }}

@@ -168,11 +168,15 @@ function WhiteboardEditor({
 
   // Debounced persistence coalesces bursts before entering a single-flight
   // queue. While one PATCH is running, only the newest pending scene is kept.
+  // Failed saves re-queue without spinning; unmount always drains through the
+  // same queue so it never races an in-flight PATCH.
   const { mutate: saveScene } = updateScene;
   const firstRun = useRef(true);
+  const mountedRef = useRef(true);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingSave = useRef<WhiteboardScene | null>(null);
   const saveInFlight = useRef(false);
+  const postUnmountRetryUsed = useRef(false);
   const flushSaveRef = useRef<() => void>(() => undefined);
   const flushSave = useCallback(() => {
     if (saveInFlight.current || !pendingSave.current) return;
@@ -182,8 +186,25 @@ function WhiteboardEditor({
     saveScene(
       { id: whiteboardId, scene: sceneToJson(pending) },
       {
-        onSettled: () => {
+        onSettled: (_data, error) => {
           saveInFlight.current = false;
+          if (error) {
+            const hadNewerPending = pendingSave.current != null;
+            pendingSave.current ??= pending;
+            // Avoid a retry spin while mounted; leave dirty state for the next
+            // edit debounce or unmount. Chain when a newer scene arrived, or
+            // allow a single post-unmount attempt so navigate-away doesn't drop
+            // edits if the in-flight PATCH failed after teardown.
+            if (hadNewerPending) {
+              flushSaveRef.current();
+              return;
+            }
+            if (!mountedRef.current && !postUnmountRetryUsed.current) {
+              postUnmountRetryUsed.current = true;
+              flushSaveRef.current();
+            }
+            return;
+          }
           flushSaveRef.current();
         },
       },
@@ -192,6 +213,13 @@ function WhiteboardEditor({
   useEffect(() => {
     flushSaveRef.current = flushSave;
   }, [flushSave]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (firstRun.current) {
@@ -211,12 +239,10 @@ function WhiteboardEditor({
   useEffect(
     () => () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
-      const pending = pendingSave.current;
-      if (!pending) return;
-      pendingSave.current = null;
-      saveScene({ id: whiteboardId, scene: sceneToJson(pending) });
+      // Drain through the single-flight queue — never fire a concurrent PATCH.
+      flushSaveRef.current();
     },
-    [saveScene, whiteboardId],
+    [],
   );
 
   // Drop new items near the top-left of the current viewport so they land in
