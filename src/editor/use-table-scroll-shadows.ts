@@ -15,7 +15,7 @@ import { useEffect } from "react";
  */
 export function useTableScrollShadows(editor: Editor | null) {
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || editor.isDestroyed) return;
     const root = editor.view.dom;
 
     // Where scroll-driven animations exist, the CSS pins the overlays on the

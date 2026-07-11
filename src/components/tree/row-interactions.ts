@@ -29,7 +29,7 @@ export function useSortableRow(id: string, disabled = false) {
   return {
     setNodeRef,
     style,
-    dragHandleProps: { ...attributes, ...listeners },
+    dragHandleProps: disabled ? undefined : { ...attributes, ...listeners },
     isDragging,
   };
 }

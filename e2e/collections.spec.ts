@@ -33,6 +33,7 @@ test.describe("collections with seeded data", () => {
     seed: {
       folders: [],
       documents: [],
+      entries: [],
       collections: [
         {
           id: "c1",
@@ -73,5 +74,25 @@ test.describe("collections with seeded data", () => {
     await expect(
       authedPage.getByRole("button", { name: "First Light", exact: true }),
     ).toBeVisible();
+  });
+
+  test("creates an entry in a collection and edits it", async ({
+    authedPage,
+  }) => {
+    await authedPage.goto("/");
+    await authedPage.getByRole("treeitem", { name: /The Realm/ }).click();
+    await authedPage.getByRole("button", { name: "New doc" }).first().click();
+
+    const title = authedPage.getByRole("textbox", { name: "Document title" });
+    await title.fill("Lore notes");
+    await title.press("Enter");
+
+    const entryRow = authedPage.getByRole("treeitem", { name: /Lore notes/ });
+    await expect(entryRow).toBeVisible();
+    await entryRow.click();
+
+    const editor = authedPage.locator(".ProseMirror");
+    await editor.fill("The old road winds north.");
+    await expect(editor).toContainText("The old road winds north.");
   });
 });

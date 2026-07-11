@@ -33,3 +33,4 @@ blob-report
 *.njsproj
 *.sln
 *.sw?
+.worktrees/

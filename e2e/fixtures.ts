@@ -31,13 +31,14 @@ type Row = Record<string, unknown>;
 
 /**
  * Rows seeded into the in-memory Supabase REST stand-in, keyed by table.
- * `collections` is optional so existing specs stay terse.
+ * Collection-only tables are optional so existing book specs stay terse.
  */
 export interface SeedData {
   books: Row[];
   folders: Row[];
   documents: Row[];
   collections?: Row[];
+  entries?: Row[];
 }
 
 const EMPTY_SEED: SeedData = { books: [], folders: [], documents: [] };
@@ -128,6 +129,7 @@ export const test = base.extend<{ seed: SeedData; authedPage: Page }>({
       folders: [...seed.folders],
       documents: [...seed.documents],
       collections: [...(seed.collections ?? [])],
+      entries: [...(seed.entries ?? [])],
     };
 
     await page.route("**/rest/v1/**", (route) => handleRest(store, route));

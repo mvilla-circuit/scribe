@@ -316,13 +316,15 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
 
   // Reflect read/edit mode onto the live instance without recreating it.
   useEffect(() => {
-    editor?.setEditable(editable);
+    if (!editor || editor.isDestroyed) return;
+    editor.setEditable(editable);
   }, [editor, editable]);
 
   // Keep the native spellcheck attribute in sync with the per-document toggle
   // (editorProps are captured once at creation, so a later toggle needs this).
   useEffect(() => {
-    editor?.view.dom.setAttribute("spellcheck", String(!spellcheckEnabled));
+    if (!editor || editor.isDestroyed) return;
+    editor.view.dom.setAttribute("spellcheck", String(!spellcheckEnabled));
   }, [editor, spellcheckEnabled]);
 
   // Trigger one debounced recompute of the squiggles whenever an input the
@@ -332,7 +334,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   const ignoresKey = docIgnores.join("\u0000");
   const dictionaryKey = dictionary.join("\u0000");
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || editor.isDestroyed) return;
     editor.view.dispatch(
       editor.state.tr.setMeta(spellcheckPluginKey, { recompute: true }),
     );
