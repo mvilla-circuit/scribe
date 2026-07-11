@@ -375,6 +375,39 @@ describe("useMoveDocument", () => {
 });
 
 describe("useUpdateDocument", () => {
+  it("patches a cover URL", async () => {
+    let patch: { cover_url?: unknown } | undefined;
+    server.use(
+      http.patch(DOCUMENTS_URL, async ({ request }) => {
+        patch = (await request.json()) as { cover_url?: unknown };
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    const client = createTestQueryClient();
+    client.setQueryData(documentsKey("book-1"), [
+      makeDocument({ id: "d1", cover_url: null }),
+    ]);
+
+    const { result } = renderHookWithQuery(() => useUpdateDocument("book-1"), {
+      client,
+    });
+    result.current.mutate({
+      id: "d1",
+      cover_url: "https://example.test/cover.png",
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(patch?.cover_url).toBe("https://example.test/cover.png");
+    expect(
+      client.getQueryData<{ cover_url: string | null }[]>(
+        documentsKey("book-1"),
+      )?.[0]?.cover_url,
+    ).toBe("https://example.test/cover.png");
+  });
+
   it("invalidates the page index when the patch touches an indexed field (icon)", async () => {
     server.use(
       http.patch(DOCUMENTS_URL, () => new HttpResponse(null, { status: 204 })),

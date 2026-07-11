@@ -13,9 +13,58 @@ import { renderWithProviders } from "@/test/render-with-query";
 
 import { DocumentView } from "./document-view";
 
+const cover = vi.hoisted(() => ({
+  upload: { mutateAsync: vi.fn() },
+  update: { mutate: vi.fn(), mutateAsync: vi.fn() },
+}));
+
 vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
+
+vi.mock("@/components/ui/page-cover", () => ({
+  PageCover: ({
+    coverUrl,
+    onRemove,
+  }: {
+    coverUrl: string | null;
+    onUpload: (file: File) => Promise<string>;
+    onRemove: () => void;
+  }) =>
+    coverUrl ? (
+      <section aria-label="Page cover">
+        <img src={coverUrl} alt="Page cover" />
+        <button type="button" onClick={onRemove}>
+          Remove cover
+        </button>
+      </section>
+    ) : null,
+  AddCoverButton: ({
+    onUpload,
+  }: {
+    onUpload: (file: File) => Promise<string>;
+  }) => (
+    <button
+      type="button"
+      aria-label="Add cover"
+      onClick={() => {
+        void onUpload(new File(["cover"], "cover.png", { type: "image/png" }));
+      }}
+    >
+      Add cover
+    </button>
+  ),
+}));
+
+vi.mock("@/data/cover-upload", () => ({
+  useUploadCover: () => cover.upload,
+  deleteCoverObject: vi.fn(),
+}));
+
+vi.mock("@/data/documents", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/data/documents")>();
+  return { ...actual, useUpdateDocument: () => cover.update };
+});
 
 // DocumentView's mutation hooks read the session via useAuth; a lightweight,
 // mutable stub avoids standing up the real (Tauri/Supabase-backed) AuthProvider.
@@ -41,6 +90,7 @@ const PROFILE_URL = "http://supabase.test/rest/v1/profiles";
 
 afterEach(() => {
   auth.session = null;
+  vi.clearAllMocks();
 });
 
 // A client that never refetches, so seeded cache entries stand in for the
@@ -84,6 +134,52 @@ describe("DocumentView copy link", () => {
     await user.click(screen.getByRole("button", { name: "Copy link to page" }));
 
     expect(writeText).toHaveBeenCalledWith("scribe://page/d1");
+  });
+});
+
+describe("DocumentView cover and banner", () => {
+  it("sets a cover and clears the existing banner", async () => {
+    const user = userEvent.setup();
+    cover.upload.mutateAsync.mockResolvedValue("https://example.com/cover.png");
+    cover.update.mutateAsync.mockResolvedValue(undefined);
+    const doc = meta({
+      banner_color: "var(--swatch-stone)",
+      banner_text: "A quiet preface",
+    });
+
+    renderWithProviders(
+      <DocumentView book={BOOK} document={doc} documents={[doc]} />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Add cover" }));
+
+    expect(cover.update.mutateAsync).toHaveBeenCalledWith({
+      id: "d1",
+      cover_url: "https://example.com/cover.png",
+      banner_color: null,
+      banner_text: null,
+    });
+  });
+
+  it("sets a banner and clears the existing cover", async () => {
+    const user = userEvent.setup();
+    const doc = meta({ cover_url: "https://example.com/cover.png" });
+
+    renderWithProviders(
+      <DocumentView book={BOOK} document={doc} documents={[doc]} />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Add banner" }));
+    await user.click(screen.getByRole("button", { name: "Stone" }));
+
+    expect(cover.update.mutate).toHaveBeenCalledWith(
+      {
+        id: "d1",
+        banner_color: "var(--swatch-stone)",
+        cover_url: null,
+      },
+      expect.any(Object),
+    );
   });
 });
 

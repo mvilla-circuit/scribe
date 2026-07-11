@@ -40,6 +40,7 @@ test.describe("collections with seeded data", () => {
           user_id: "user-1",
           name: "The Realm",
           icon: null,
+          cover_url: "https://example.com/cover.jpg",
           description: null,
           parent_collection_id: null,
           fields: [],
@@ -53,7 +54,7 @@ test.describe("collections with seeded data", () => {
         {
           id: "b1",
           user_id: "user-1",
-          title: "First Light",
+          title: "Alpha Book",
           subtitle: null,
           cover_url: null,
           icon: null,
@@ -61,6 +62,20 @@ test.describe("collections with seeded data", () => {
           folder_id: null,
           collection_id: "c1",
           position: 1024,
+          created_at: TS,
+          updated_at: TS,
+        },
+        {
+          id: "b2",
+          user_id: "user-1",
+          title: "Zeta Book",
+          subtitle: null,
+          cover_url: null,
+          icon: null,
+          theme: {},
+          folder_id: null,
+          collection_id: "c1",
+          position: 2048,
           created_at: TS,
           updated_at: TS,
         },
@@ -72,7 +87,44 @@ test.describe("collections with seeded data", () => {
     await authedPage.goto("/");
     await authedPage.getByRole("treeitem", { name: /The Realm/ }).click();
     await expect(
-      authedPage.getByRole("button", { name: "First Light", exact: true }),
+      authedPage.getByRole("button", { name: "Alpha Book", exact: true }),
+    ).toBeVisible();
+  });
+
+  test("displays the seeded collection cover", async ({ authedPage }) => {
+    await authedPage.goto("/");
+    await authedPage.getByRole("treeitem", { name: /The Realm/ }).click();
+
+    await expect(
+      authedPage.getByRole("img", { name: "Page cover" }),
+    ).toHaveAttribute("src", "https://example.com/cover.jpg");
+  });
+
+  test("filters the gallery and switches to list view", async ({
+    authedPage,
+  }) => {
+    await authedPage.goto("/");
+    await authedPage.getByRole("treeitem", { name: /The Realm/ }).click();
+
+    const search = authedPage.getByRole("searchbox", {
+      name: "Search collection",
+    });
+    await search.fill("Alpha");
+    await expect(
+      authedPage.getByRole("button", { name: "Alpha Book", exact: true }),
+    ).toBeVisible();
+    await expect(
+      authedPage.getByRole("button", { name: "Zeta Book", exact: true }),
+    ).toBeHidden();
+
+    await search.fill("");
+    await expect(
+      authedPage.getByRole("button", { name: "Zeta Book", exact: true }),
+    ).toBeVisible();
+
+    await authedPage.getByRole("button", { name: "List view" }).click();
+    await expect(
+      authedPage.getByText("Book", { exact: true }).first(),
     ).toBeVisible();
   });
 

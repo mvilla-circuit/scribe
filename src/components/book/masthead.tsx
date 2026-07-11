@@ -12,6 +12,11 @@ interface MastheadProps {
   onRemoveIcon: () => void;
   /** Accessible label for the change-icon trigger, e.g. "Change page icon". */
   changeIconLabel: string;
+  /**
+   * Extra hover affordances shown beside "Add icon" above the title
+   * (e.g. "Add cover"). Revealed with the same masthead hover/focus group.
+   */
+  actions?: ReactNode;
   /** The title block (title, subtitle, and any meta) shown with the icon. */
   children: ReactNode;
 }
@@ -24,28 +29,40 @@ interface MastheadProps {
 // divider needed to reconcile their left edges. On narrower viewports there's no
 // room in the margin, so the icon drops onto its own row directly above the
 // title (the classic stacked layout). The empty "Add icon" affordance always
-// stays stacked, since a wide pill doesn't belong in the margin.
+// stays stacked, since a wide pill doesn't belong in the margin. Optional
+// `actions` (Add cover, …) stay in the stacked row next to Add icon.
 export function Masthead({
   icon,
   onSelectIcon,
   onRemoveIcon,
   changeIconLabel,
+  actions,
   children,
 }: MastheadProps) {
+  // Keep mb-2 for the stacked (non-xl) icon row; only clear it at xl when the
+  // icon hangs in the margin and there are no in-flow actions (no phantom gap).
   return (
     <header className="group/masthead relative">
       <div
+        data-testid="masthead-actions-row"
         className={cn(
-          "mb-2",
-          icon && "xl:absolute xl:right-full xl:top-0 xl:mr-3 xl:mb-0",
+          "mb-2 flex items-center gap-1",
+          icon && !actions && "xl:mb-0",
         )}
       >
-        <MastheadIconControl
-          icon={icon}
-          onSelect={onSelectIcon}
-          onRemove={onRemoveIcon}
-          changeLabel={changeIconLabel}
-        />
+        <div
+          className={cn(
+            icon && "xl:absolute xl:right-full xl:top-0 xl:mr-3 xl:mb-0",
+          )}
+        >
+          <MastheadIconControl
+            icon={icon}
+            onSelect={onSelectIcon}
+            onRemove={onRemoveIcon}
+            changeLabel={changeIconLabel}
+          />
+        </div>
+        {actions}
       </div>
       {children}
     </header>

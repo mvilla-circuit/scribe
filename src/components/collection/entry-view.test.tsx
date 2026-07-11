@@ -8,9 +8,49 @@ import { EntryView } from "./entry-view";
 
 const hooks = vi.hoisted(() => ({
   rename: { mutate: vi.fn() },
-  update: { mutate: vi.fn() },
+  update: { mutate: vi.fn(), mutateAsync: vi.fn() },
   updateContent: { mutateAsync: vi.fn() },
+  upload: { mutateAsync: vi.fn() },
   entryCollectionId: "c1",
+  entryCoverUrl: null as string | null,
+}));
+
+vi.mock("@/components/ui/page-cover", () => ({
+  PageCover: ({
+    coverUrl,
+    onRemove,
+  }: {
+    coverUrl: string | null;
+    onRemove: () => void;
+  }) =>
+    coverUrl ? (
+      <section aria-label="Page cover">
+        <img src={coverUrl} alt="Page cover" />
+        <button type="button" onClick={onRemove}>
+          Remove cover
+        </button>
+      </section>
+    ) : null,
+  AddCoverButton: ({
+    onUpload,
+  }: {
+    onUpload: (file: File) => Promise<string>;
+  }) => (
+    <button
+      type="button"
+      aria-label="Add cover"
+      onClick={() => {
+        void onUpload(new File(["cover"], "cover.png", { type: "image/png" }));
+      }}
+    >
+      Add cover
+    </button>
+  ),
+}));
+
+vi.mock("@/data/cover-upload", () => ({
+  useUploadCover: () => hooks.upload,
+  deleteCoverObject: vi.fn(),
 }));
 
 vi.mock("@/data/entries", () => ({
@@ -22,7 +62,7 @@ vi.mock("@/data/entries", () => ({
         collection_id: hooks.entryCollectionId,
         title: "Field notes",
         icon: null,
-        cover_url: null,
+        cover_url: hooks.entryCoverUrl,
         properties: {},
         position: 1024,
         created_at: "2026-01-01T00:00:00.000Z",
@@ -58,14 +98,24 @@ vi.mock("@/components/book/editor-bridge-host", () => ({
 }));
 
 vi.mock("@/components/book/masthead", () => ({
-  Masthead: ({ children }: { children: ReactNode }) => (
-    <header>{children}</header>
+  Masthead: ({
+    children,
+    actions,
+  }: {
+    children: ReactNode;
+    actions?: ReactNode;
+  }) => (
+    <header>
+      {actions}
+      {children}
+    </header>
   ),
 }));
 
 beforeEach(() => {
   vi.clearAllMocks();
   hooks.entryCollectionId = "c1";
+  hooks.entryCoverUrl = null;
 });
 
 describe("EntryView", () => {
@@ -99,5 +149,42 @@ describe("EntryView", () => {
     expect(
       screen.queryByRole("button", { name: "Research" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows the entry cover when one is set", () => {
+    hooks.entryCoverUrl = "https://example.com/field-notes.jpg";
+    renderWithProviders(<EntryView collectionId="c1" entryId="e1" />);
+
+    expect(screen.getByRole("img", { name: "Page cover" })).toHaveAttribute(
+      "src",
+      "https://example.com/field-notes.jpg",
+    );
+  });
+
+  it("uploads a cover through Add cover", async () => {
+    hooks.upload.mutateAsync.mockResolvedValue("https://example.com/new.png");
+    hooks.update.mutateAsync.mockResolvedValue(undefined);
+    renderWithProviders(<EntryView collectionId="c1" entryId="e1" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Add cover" }));
+
+    await vi.waitFor(() => {
+      expect(hooks.update.mutateAsync).toHaveBeenCalledWith({
+        id: "e1",
+        cover_url: "https://example.com/new.png",
+      });
+    });
+  });
+
+  it("removes the entry cover", () => {
+    hooks.entryCoverUrl = "https://example.com/field-notes.jpg";
+    renderWithProviders(<EntryView collectionId="c1" entryId="e1" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove cover" }));
+
+    expect(hooks.update.mutate).toHaveBeenCalledWith(
+      { id: "e1", cover_url: null },
+      expect.any(Object),
+    );
   });
 });

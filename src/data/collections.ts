@@ -36,7 +36,7 @@ interface MoveCollectionInput {
   position: number;
 }
 type UpdateCollectionInput = { id: string } & Partial<
-  Pick<Collection, "name" | "icon" | "description">
+  Pick<Collection, "name" | "icon" | "description" | "cover_url" | "view">
 >;
 interface DeleteCollectionInput {
   id: string;
@@ -82,6 +82,7 @@ function newCollectionRow(
     user_id: userId,
     name: input.name,
     icon: input.icon ?? null,
+    cover_url: null,
     description: null,
     parent_collection_id: input.parent_collection_id ?? null,
     fields: [],
@@ -163,8 +164,8 @@ export function useMoveCollection() {
 }
 
 /**
- * Generic patch for a collection's editable fields (name, icon, description).
- * Kept separate from rename so callers stay explicit about what they touch.
+ * Generic patch for a collection's editable fields. Kept separate from rename
+ * so callers stay explicit about what they touch.
  */
 export function useUpdateCollection() {
   const qc = useQueryClient();

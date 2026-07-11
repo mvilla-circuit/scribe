@@ -301,6 +301,66 @@ describe("useDeleteCollection", () => {
 });
 
 describe("useUpdateCollection", () => {
+  it("patches a cover URL", async () => {
+    let patch: { cover_url?: unknown } | undefined;
+    server.use(
+      http.patch(COLLECTIONS_URL, async ({ request }) => {
+        patch = (await request.json()) as { cover_url?: unknown };
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    const client = createTestQueryClient();
+    client.setQueryData(
+      ["collections"],
+      [makeCollection({ id: "c1", cover_url: null })],
+    );
+
+    const { result } = renderHookWithQuery(() => useUpdateCollection(), {
+      client,
+    });
+    result.current.mutate({
+      id: "c1",
+      cover_url: "https://example.test/cover.png",
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(patch?.cover_url).toBe("https://example.test/cover.png");
+    expect(
+      client.getQueryData<{ cover_url: string | null }[]>(["collections"])?.[0]
+        ?.cover_url,
+    ).toBe("https://example.test/cover.png");
+  });
+
+  it("patches the collection view", async () => {
+    const view = { layout: "list" };
+    let patch: { view?: unknown } | undefined;
+    server.use(
+      http.patch(COLLECTIONS_URL, async ({ request }) => {
+        patch = (await request.json()) as { view?: unknown };
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    const client = createTestQueryClient();
+    client.setQueryData(["collections"], [makeCollection({ id: "c1" })]);
+
+    const { result } = renderHookWithQuery(() => useUpdateCollection(), {
+      client,
+    });
+    result.current.mutate({ id: "c1", view });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(patch?.view).toEqual(view);
+    expect(
+      client.getQueryData<{ view: unknown }[]>(["collections"])?.[0]?.view,
+    ).toEqual(view);
+  });
+
   it("persists a description change to the cache", async () => {
     server.use(
       http.patch(

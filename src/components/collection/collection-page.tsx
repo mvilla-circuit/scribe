@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { EditableText } from "@/components/book/editable-text";
 import { PageIcon } from "@/components/book/icons";
@@ -19,8 +19,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { type RowAction } from "@/components/ui/row-action-menu";
 import { useBooks, useCreateBook, useMoveBook } from "@/data/books";
+import {
+  parseCollectionView,
+  serializeCollectionView,
+} from "@/data/collection-view";
 import {
   useCollections,
   useCreateCollection,
@@ -28,19 +33,23 @@ import {
   useRenameCollection,
   useUpdateCollection,
 } from "@/data/collections";
+import { deleteCoverObject, useUploadCover } from "@/data/cover-upload";
 import { useCreateEntry, useDeleteEntry, useEntries } from "@/data/entries";
 import { useFolders } from "@/data/folders";
 import { endPositionFor } from "@/data/ordering";
-import {
-  buildTree,
-  childrenOf,
-  collectionAncestors,
-  ROOT,
-  type TreeChild,
-} from "@/data/tree";
+import { buildTree, childrenOf, collectionAncestors, ROOT } from "@/data/tree";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
 
+import {
+  filterGalleryChildren,
+  type GalleryChild,
+  galleryChildMeta,
+  isGalleryChild,
+  sortGalleryChildren,
+} from "./collection-gallery";
+import { CollectionListRow } from "./collection-list-row";
+import { CollectionToolbar } from "./collection-toolbar";
 import { CoverCard } from "./cover-card";
 
 /**
@@ -91,12 +100,44 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   const moveCollection = useMoveCollection();
   const createEntry = useCreateEntry();
   const deleteEntry = useDeleteEntry();
+  const uploadCover = useUploadCover();
+  const [query, setQuery] = useState("");
 
-  const childCollections = children.filter((c) => c.kind === "collection");
-  const childBooks = children.filter((c) => c.kind === "book");
-  const childEntries = children.filter((c) => c.kind === "entry");
+  const view = parseCollectionView(collection?.view);
+  const visibleChildren = useMemo(
+    () => sortGalleryChildren(filterGalleryChildren(children, query)),
+    [children, query],
+  );
+  const childCollections = visibleChildren.filter(
+    (c) => c.kind === "collection",
+  );
+  const childBooks = visibleChildren.filter((c) => c.kind === "book");
+  const childEntries = visibleChildren.filter((c) => c.kind === "entry");
 
   const rootPosition = () => endPositionFor(childrenOf(model, ROOT));
+
+  const setCover = async (file: File) => {
+    const previous = collection?.cover_url ?? null;
+    const coverUrl = await uploadCover.mutateAsync(file);
+    await updateCollection.mutateAsync({
+      id: collectionId,
+      cover_url: coverUrl,
+    });
+    void deleteCoverObject(previous);
+    return coverUrl;
+  };
+
+  const clearCover = () => {
+    const previous = collection?.cover_url ?? null;
+    updateCollection.mutate(
+      { id: collectionId, cover_url: null },
+      {
+        onSuccess: () => {
+          void deleteCoverObject(previous);
+        },
+      },
+    );
+  };
 
   const handleNewBook = () => {
     const id = crypto.randomUUID();
@@ -214,6 +255,33 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   }
 
   const isEmpty = children.length === 0;
+  const galleryChildren = visibleChildren.filter(isGalleryChild);
+  const showSections = view.layout === "grid" && query === "";
+
+  const openChild = (child: GalleryChild) => {
+    switch (child.kind) {
+      case "collection":
+        setActiveCollection(child.id);
+        break;
+      case "book":
+        setActiveBook(child.id);
+        break;
+      case "entry":
+        setActiveEntry(child.id, collectionId);
+        break;
+    }
+  };
+
+  const actionsFor = (child: GalleryChild): RowAction[] => {
+    switch (child.kind) {
+      case "collection":
+        return collectionActions(child.id);
+      case "book":
+        return bookActions(child.id);
+      case "entry":
+        return entryActions(child.id);
+    }
+  };
 
   return (
     <div className="h-full overflow-y-auto bg-bg">
@@ -256,6 +324,12 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
         </span>
       </nav>
 
+      <PageCover
+        coverUrl={collection.cover_url}
+        onUpload={setCover}
+        onRemove={clearCover}
+      />
+
       <div className="mx-auto w-full max-w-5xl px-8 pb-16 pt-8 sm:pb-24">
         <Masthead
           icon={collection.icon}
@@ -266,6 +340,11 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
             updateCollection.mutate({ id: collection.id, icon: null });
           }}
           changeIconLabel="Change collection icon"
+          actions={
+            collection.cover_url ? undefined : (
+              <AddCoverButton onUpload={setCover} />
+            )
+          }
         >
           <EditableText
             value={collection.name}
@@ -314,43 +393,91 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
           </div>
         ) : (
           <div className="mt-10 flex flex-col gap-10">
-            {childCollections.length > 0 && (
-              <CardGrid heading="Collections">
-                {childCollections.map((child) => (
-                  <CollectionCoverCard
+            <CollectionToolbar
+              query={query}
+              layout={view.layout}
+              onQueryChange={setQuery}
+              onLayoutChange={(layout) => {
+                const next = serializeCollectionView({ ...view, layout });
+                updateCollection.mutate({
+                  id: collection.id,
+                  view: { layout: next.layout },
+                });
+              }}
+            />
+            {galleryChildren.length === 0 ? (
+              <p className="py-10 text-center text-sm text-muted">No matches</p>
+            ) : view.layout === "list" ? (
+              <div className="flex flex-col gap-1.5">
+                {galleryChildren.map((child) => (
+                  <CollectionListRow
                     key={child.id}
                     child={child}
-                    onOpen={setActiveCollection}
-                    actions={collectionActions}
-                  />
-                ))}
-              </CardGrid>
-            )}
-            {childBooks.length > 0 && (
-              <CardGrid heading="Books">
-                {childBooks.map((child) => (
-                  <BookCoverCard
-                    key={child.id}
-                    child={child}
-                    onOpen={setActiveBook}
-                    actions={bookActions}
-                  />
-                ))}
-              </CardGrid>
-            )}
-            {childEntries.length > 0 && (
-              <CardGrid heading="Docs">
-                {childEntries.map((child) => (
-                  <EntryCoverCard
-                    key={child.id}
-                    child={child}
-                    onOpen={(id) => {
-                      setActiveEntry(id, collectionId);
+                    onOpen={() => {
+                      openChild(child);
                     }}
-                    actions={entryActions}
+                    actions={actionsFor(child)}
                   />
                 ))}
-              </CardGrid>
+              </div>
+            ) : showSections ? (
+              <>
+                {childCollections.length > 0 && (
+                  <CardGrid heading="Collections">
+                    {childCollections.map((child) => (
+                      <GalleryCoverCard
+                        key={child.id}
+                        child={child}
+                        onOpen={() => {
+                          openChild(child);
+                        }}
+                        actions={actionsFor(child)}
+                      />
+                    ))}
+                  </CardGrid>
+                )}
+                {childBooks.length > 0 && (
+                  <CardGrid heading="Books">
+                    {childBooks.map((child) => (
+                      <GalleryCoverCard
+                        key={child.id}
+                        child={child}
+                        onOpen={() => {
+                          openChild(child);
+                        }}
+                        actions={actionsFor(child)}
+                      />
+                    ))}
+                  </CardGrid>
+                )}
+                {childEntries.length > 0 && (
+                  <CardGrid heading="Docs">
+                    {childEntries.map((child) => (
+                      <GalleryCoverCard
+                        key={child.id}
+                        child={child}
+                        onOpen={() => {
+                          openChild(child);
+                        }}
+                        actions={actionsFor(child)}
+                      />
+                    ))}
+                  </CardGrid>
+                )}
+              </>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                {galleryChildren.map((child) => (
+                  <GalleryCoverCard
+                    key={child.id}
+                    child={child}
+                    onOpen={() => {
+                      openChild(child);
+                    }}
+                    actions={actionsFor(child)}
+                  />
+                ))}
+              </div>
             )}
           </div>
         )}
@@ -378,71 +505,35 @@ function CardGrid({
   );
 }
 
-function CollectionCoverCard({
-  child,
-  onOpen,
-  actions,
-}: {
-  child: Extract<TreeChild, { kind: "collection" }>;
-  onOpen: (id: string) => void;
-  actions: (id: string) => RowAction[];
-}) {
-  return (
-    <CoverCard
-      title={child.collection.name}
-      icon={child.collection.icon}
-      coverUrl={null}
-      fallback={<CollectionIcon size={28} />}
-      onOpen={() => {
-        onOpen(child.id);
-      }}
-      actions={actions(child.id)}
-    />
-  );
+function galleryFallback(child: GalleryChild) {
+  switch (child.kind) {
+    case "collection":
+      return <CollectionIcon size={28} />;
+    case "book":
+      return <BookIcon size={28} />;
+    case "entry":
+      return <PageIcon size={28} />;
+  }
 }
 
-function BookCoverCard({
+function GalleryCoverCard({
   child,
   onOpen,
   actions,
 }: {
-  child: Extract<TreeChild, { kind: "book" }>;
-  onOpen: (id: string) => void;
-  actions: (id: string) => RowAction[];
+  child: GalleryChild;
+  onOpen: () => void;
+  actions: RowAction[];
 }) {
+  const { title, icon, coverUrl } = galleryChildMeta(child);
   return (
     <CoverCard
-      title={child.book.title}
-      icon={child.book.icon}
-      coverUrl={child.book.cover_url}
-      fallback={<BookIcon size={28} />}
-      onOpen={() => {
-        onOpen(child.id);
-      }}
-      actions={actions(child.id)}
-    />
-  );
-}
-
-function EntryCoverCard({
-  child,
-  onOpen,
-  actions,
-}: {
-  child: Extract<TreeChild, { kind: "entry" }>;
-  onOpen: (id: string) => void;
-  actions: (id: string) => RowAction[];
-}) {
-  return (
-    <CoverCard
-      title={child.entry.title}
-      icon={child.entry.icon}
-      coverUrl={null}
-      fallback={<PageIcon size={28} />}
-      onOpen={() => {
-        onOpen(child.id);
-      }}
-      actions={actions(child.id)}
+      title={title}
+      icon={icon}
+      coverUrl={coverUrl}
+      fallback={galleryFallback(child)}
+      onOpen={onOpen}
+      actions={actions}
     />
   );
 }

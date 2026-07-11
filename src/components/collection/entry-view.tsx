@@ -7,8 +7,10 @@ import {
 import { EditorBridgeHost } from "@/components/book/editor-bridge-host";
 import { Masthead } from "@/components/book/masthead";
 import { NavHistoryControls } from "@/components/book/nav-history-controls";
+import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { SkeletonText } from "@/components/ui/skeleton";
 import { useCollections } from "@/data/collections";
+import { deleteCoverObject, useUploadCover } from "@/data/cover-upload";
 import {
   useEntries,
   useEntryContent,
@@ -37,6 +39,7 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
   const collectionsQuery = useCollections();
   const renameEntry = useRenameEntry();
   const updateEntry = useUpdateEntry();
+  const uploadCover = useUploadCover();
   const updateContent = useUpdateEntryContent();
   const navigateTo = useUIStore((state) => state.navigateTo);
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -73,6 +76,26 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
     );
   }
 
+  const setCover = async (file: File) => {
+    const previous = entry.cover_url;
+    const coverUrl = await uploadCover.mutateAsync(file);
+    await updateEntry.mutateAsync({ id: entry.id, cover_url: coverUrl });
+    void deleteCoverObject(previous);
+    return coverUrl;
+  };
+
+  const clearCover = () => {
+    const previous = entry.cover_url;
+    updateEntry.mutate(
+      { id: entry.id, cover_url: null },
+      {
+        onSuccess: () => {
+          void deleteCoverObject(previous);
+        },
+      },
+    );
+  };
+
   return (
     <div className="h-full overflow-y-auto bg-bg">
       <EntryBar
@@ -86,6 +109,12 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
         }}
       />
 
+      <PageCover
+        coverUrl={entry.cover_url}
+        onUpload={setCover}
+        onRemove={clearCover}
+      />
+
       <article className="mx-auto w-full max-w-[68ch] px-8 py-12 sm:py-16">
         <Masthead
           icon={entry.icon}
@@ -96,6 +125,9 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
             updateEntry.mutate({ id: entry.id, icon: null });
           }}
           changeIconLabel="Change document icon"
+          actions={
+            entry.cover_url ? undefined : <AddCoverButton onUpload={setCover} />
+          }
         >
           <EditableText
             ref={titleRef}

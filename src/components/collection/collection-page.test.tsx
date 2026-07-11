@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -28,14 +28,25 @@ function seed() {
   const client = createTestQueryClient();
   client.setQueryData(foldersKey, []);
   client.setQueryData(booksKey, [
-    makeBook({ id: "b1", title: "First Light", collection_id: "c1" }),
+    makeBook({
+      id: "b1",
+      title: "First Light",
+      collection_id: "c1",
+      cover_url: "https://example.test/first-light.jpg",
+    }),
   ]);
   client.setQueryData(collectionsKey, [
-    makeCollection({ id: "c1", name: "The Realm", description: "An epic" }),
+    makeCollection({
+      id: "c1",
+      name: "The Realm",
+      description: "An epic",
+      cover_url: "https://example.test/realm.jpg",
+    }),
     makeCollection({
       id: "c2",
       name: "Side Tales",
       parent_collection_id: "c1",
+      cover_url: "https://example.test/tales.jpg",
     }),
   ]);
   client.setQueryData(entriesKey, [
@@ -43,6 +54,7 @@ function seed() {
       id: "e1",
       collection_id: "c1",
       title: "Opening scene",
+      cover_url: "https://example.test/opening.jpg",
     }),
   ]);
   return client;
@@ -79,6 +91,136 @@ describe("CollectionPage", () => {
     expect(
       screen.getByRole("button", { name: "Opening scene" }),
     ).toBeInTheDocument();
+  });
+
+  it("shows the collection and child cover images", () => {
+    renderWithProviders(<CollectionPage collectionId="c1" />, {
+      client: seed(),
+    });
+
+    expect(screen.getByAltText("Page cover")).toHaveAttribute(
+      "src",
+      "https://example.test/realm.jpg",
+    );
+    expect(screen.getAllByRole("presentation")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ src: "https://example.test/tales.jpg" }),
+        expect.objectContaining({
+          src: "https://example.test/first-light.jpg",
+        }),
+        expect.objectContaining({ src: "https://example.test/opening.jpg" }),
+      ]),
+    );
+  });
+
+  it("filters gallery items by search", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    renderWithProviders(<CollectionPage collectionId="c1" />, {
+      client: seed(),
+    });
+
+    await user.type(
+      screen.getByRole("searchbox", { name: "Search collection" }),
+      "opening",
+    );
+    expect(
+      screen.getByRole("button", { name: "Opening scene" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "First Light" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("switches to a flat list and persists its layout preference", async () => {
+    let patchBody: unknown;
+    server.use(
+      http.patch(
+        "http://supabase.test/rest/v1/collections",
+        async ({ request }) => {
+          patchBody = await request.json();
+          return new HttpResponse(null, { status: 204 });
+        },
+      ),
+    );
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = seed();
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+
+    await user.click(screen.getByRole("button", { name: "List view" }));
+
+    expect(screen.getByText("Collection")).toBeInTheDocument();
+    expect(screen.getByText("Book")).toBeInTheDocument();
+    expect(screen.getByText("Doc")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(patchBody).toEqual({ view: { layout: "list" } });
+    });
+    expect(
+      client
+        .getQueryData<{ id: string; view: unknown }[]>(collectionsKey)
+        ?.find((collection) => collection.id === "c1")?.view,
+    ).toEqual({ layout: "list" });
+  });
+
+  it("orders list items alphabetically by default", async () => {
+    server.use(
+      http.patch(
+        "http://supabase.test/rest/v1/collections",
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    );
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    renderWithProviders(<CollectionPage collectionId="c1" />, {
+      client: seed(),
+    });
+
+    await user.click(screen.getByRole("button", { name: "List view" }));
+
+    const rows = screen.getAllByRole("button", {
+      name: /^(First LightBook|Opening sceneDoc|Side TalesCollection)$/,
+    });
+    expect(rows[0]).toHaveAccessibleName("First LightBook");
+    expect(rows[1]).toHaveAccessibleName("Opening sceneDoc");
+    expect(rows[2]).toHaveAccessibleName("Side TalesCollection");
+  });
+
+  it("orders sectioned grid cards alphabetically by default", () => {
+    const client = seed();
+    client.setQueryData(booksKey, [
+      makeBook({
+        id: "b-zeta",
+        title: "Zeta Book",
+        collection_id: "c1",
+        position: 100,
+      }),
+      makeBook({
+        id: "b-alpha",
+        title: "Alpha Book",
+        collection_id: "c1",
+        position: 200,
+      }),
+    ]);
+
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+
+    const bookCards = screen.getAllByRole("button", {
+      name: /^(Alpha Book|Zeta Book)$/,
+    });
+    expect(bookCards[0]).toHaveAccessibleName("Alpha Book");
+    expect(bookCards[1]).toHaveAccessibleName("Zeta Book");
+  });
+
+  it("shows a no matches message for an empty filter", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    renderWithProviders(<CollectionPage collectionId="c1" />, {
+      client: seed(),
+    });
+
+    await user.type(
+      screen.getByRole("searchbox", { name: "Search collection" }),
+      "missing",
+    );
+
+    expect(screen.getByText("No matches")).toBeInTheDocument();
   });
 
   it("opens a child collection when its card is clicked", async () => {

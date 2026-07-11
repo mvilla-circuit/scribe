@@ -1,9 +1,11 @@
 import { useRef, useState } from "react";
 
 import { LinkIcon } from "@/components/sidebar/icons";
+import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { SkeletonText } from "@/components/ui/skeleton";
 import { Tooltip } from "@/components/ui/tooltip";
 import type { Book } from "@/data/books";
+import { deleteCoverObject, useUploadCover } from "@/data/cover-upload";
 import {
   docSpellcheckIgnores,
   type DocumentMeta,
@@ -47,6 +49,7 @@ interface DocumentViewProps {
 export function DocumentView({ book, document, documents }: DocumentViewProps) {
   const renameDocument = useRenameDocument(book.id);
   const updateDocument = useUpdateDocument(book.id);
+  const uploadCover = useUploadCover();
   const updateContent = useUpdateDocumentContent();
   const updateFontOverrides = useUpdateDocumentFontOverrides(book.id);
   const contentQuery = useDocumentContent(document.id);
@@ -111,6 +114,31 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
   });
   const titleFont = "var(--font-display)";
   const bodyFont = "var(--font-text)";
+
+  const setCover = async (file: File) => {
+    const previous = document.cover_url;
+    const coverUrl = await uploadCover.mutateAsync(file);
+    await updateDocument.mutateAsync({
+      id: document.id,
+      cover_url: coverUrl,
+      banner_color: null,
+      banner_text: null,
+    });
+    void deleteCoverObject(previous);
+    return coverUrl;
+  };
+
+  const clearCover = () => {
+    const previous = document.cover_url;
+    updateDocument.mutate(
+      { id: document.id, cover_url: null },
+      {
+        onSuccess: () => {
+          void deleteCoverObject(previous);
+        },
+      },
+    );
+  };
 
   const titleBlock = (
     <>
@@ -212,28 +240,47 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
             });
           }}
           onBannerChange={(bannerColor) => {
-            updateDocument.mutate({
-              id: document.id,
-              banner_color: bannerColor,
-              // Clear any caption when the banner is removed so a re-added
-              // banner starts fresh instead of resurfacing old text.
-              ...(bannerColor === null ? { banner_text: null } : {}),
-            });
+            const previousCover = document.cover_url;
+            updateDocument.mutate(
+              {
+                id: document.id,
+                banner_color: bannerColor,
+                ...(bannerColor !== null ? { cover_url: null } : {}),
+                // Clear any caption when the banner is removed so a re-added
+                // banner starts fresh instead of resurfacing old text.
+                ...(bannerColor === null ? { banner_text: null } : {}),
+              },
+              {
+                onSuccess: () => {
+                  if (bannerColor !== null) {
+                    void deleteCoverObject(previousCover);
+                  }
+                },
+              },
+            );
           }}
         />
       </nav>
 
-      <PageBanner
-        color={document.banner_color}
-        text={document.banner_text}
-        reserveOutline={reserveOutline}
-        onCommitText={(bannerText) => {
-          updateDocument.mutate({
-            id: document.id,
-            banner_text: bannerText || null,
-          });
-        }}
+      <PageCover
+        coverUrl={document.cover_url}
+        onUpload={setCover}
+        onRemove={clearCover}
       />
+
+      {!document.cover_url && (
+        <PageBanner
+          color={document.banner_color}
+          text={document.banner_text}
+          reserveOutline={reserveOutline}
+          onCommitText={(bannerText) => {
+            updateDocument.mutate({
+              id: document.id,
+              banner_text: bannerText || null,
+            });
+          }}
+        />
+      )}
 
       <div className="mx-auto flex w-full max-w-[1120px] justify-center gap-12 px-8 py-12 sm:py-16">
         <article className="w-full min-w-0 max-w-[68ch]">
@@ -246,6 +293,11 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
               updateDocument.mutate({ id: document.id, icon: null });
             }}
             changeIconLabel="Change page icon"
+            actions={
+              document.cover_url ? undefined : (
+                <AddCoverButton onUpload={setCover} />
+              )
+            }
           >
             {titleBlock}
           </Masthead>

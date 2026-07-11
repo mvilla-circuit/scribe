@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 
+import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { SubtitleToggle } from "@/components/ui/subtitle-toggle";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
@@ -10,6 +11,7 @@ import {
   useUpdateBook,
 } from "@/data/books";
 import { useCollections } from "@/data/collections";
+import { deleteCoverObject, useUploadCover } from "@/data/cover-upload";
 import { buildDocTree, expandableDocIds } from "@/data/doc-tree";
 import { type DocumentMeta, useCreateDocument } from "@/data/documents";
 import { endPositionFor } from "@/data/ordering";
@@ -35,6 +37,7 @@ interface TitlePageProps {
 export function TitlePage({ book, documents, loading }: TitlePageProps) {
   const renameBook = useRenameBook();
   const updateBook = useUpdateBook();
+  const uploadCover = useUploadCover();
   const createDocument = useCreateDocument(book.id);
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
   const setActiveCollection = useUIStore((s) => s.setActiveCollection);
@@ -113,6 +116,26 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
       position: endPositionFor(siblings),
     });
     setActiveDoc(id);
+  };
+
+  const setCover = async (file: File) => {
+    const previous = book.cover_url;
+    const coverUrl = await uploadCover.mutateAsync(file);
+    await updateBook.mutateAsync({ id: book.id, cover_url: coverUrl });
+    void deleteCoverObject(previous);
+    return coverUrl;
+  };
+
+  const clearCover = () => {
+    const previous = book.cover_url;
+    updateBook.mutate(
+      { id: book.id, cover_url: null },
+      {
+        onSuccess: () => {
+          void deleteCoverObject(previous);
+        },
+      },
+    );
   };
 
   const titleBlock = (
@@ -209,6 +232,12 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
         </span>
       </nav>
 
+      <PageCover
+        coverUrl={book.cover_url}
+        onUpload={setCover}
+        onRemove={clearCover}
+      />
+
       <article className="mx-auto w-full max-w-[68ch] px-8 pb-16 pt-8 sm:pb-24 sm:pt-12">
         <Masthead
           icon={book.icon}
@@ -219,6 +248,9 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
             updateBook.mutate({ id: book.id, icon: null });
           }}
           changeIconLabel="Change book icon"
+          actions={
+            book.cover_url ? undefined : <AddCoverButton onUpload={setCover} />
+          }
         >
           {titleBlock}
         </Masthead>

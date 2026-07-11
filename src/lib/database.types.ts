@@ -101,6 +101,7 @@ export type Database = {
       }
       collections: {
         Row: {
+          cover_url: string | null
           created_at: string
           description: string | null
           fields: Json
@@ -114,6 +115,7 @@ export type Database = {
           view: Json
         }
         Insert: {
+          cover_url?: string | null
           created_at?: string
           description?: string | null
           fields?: Json
@@ -127,6 +129,7 @@ export type Database = {
           view?: Json
         }
         Update: {
+          cover_url?: string | null
           created_at?: string
           description?: string | null
           fields?: Json
@@ -155,6 +158,7 @@ export type Database = {
           banner_text: string | null
           book_id: string
           content: Json
+          cover_url: string | null
           created_at: string
           font_overrides: Json | null
           icon: string | null
@@ -177,6 +181,7 @@ export type Database = {
           banner_text?: string | null
           book_id: string
           content?: Json
+          cover_url?: string | null
           created_at?: string
           font_overrides?: Json | null
           icon?: string | null
@@ -199,6 +204,7 @@ export type Database = {
           banner_text?: string | null
           book_id?: string
           content?: Json
+          cover_url?: string | null
           created_at?: string
           font_overrides?: Json | null
           icon?: string | null
