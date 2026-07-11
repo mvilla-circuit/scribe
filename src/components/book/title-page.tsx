@@ -9,9 +9,11 @@ import {
   useRenameBook,
   useUpdateBook,
 } from "@/data/books";
+import { useCollections } from "@/data/collections";
 import { buildDocTree, expandableDocIds } from "@/data/doc-tree";
 import { type DocumentMeta, useCreateDocument } from "@/data/documents";
 import { endPositionFor } from "@/data/ordering";
+import { collectionAncestors } from "@/data/tree";
 import { useCascadedFonts } from "@/fonts/use-cascaded-fonts";
 import { useUIStore } from "@/store/ui";
 
@@ -35,6 +37,19 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
   const updateBook = useUpdateBook();
   const createDocument = useCreateDocument(book.id);
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
+  const setActiveCollection = useUIStore((s) => s.setActiveCollection);
+
+  // When the book lives in a collection, surface the full collection chain
+  // (ancestors + the immediate parent) as a clickable breadcrumb so the reader
+  // can climb back out to where the book is filed.
+  const collectionsQuery = useCollections();
+  const collectionCrumbs = useMemo(() => {
+    const collections = collectionsQuery.data ?? [];
+    if (!book.collection_id) return [];
+    const parent = collections.find((c) => c.id === book.collection_id);
+    if (!parent) return [];
+    return [...collectionAncestors(collections, parent.id), parent];
+  }, [collectionsQuery.data, book.collection_id]);
 
   // Fonts cascade global -> book; the Title Page has no page-level layer.
   const {
@@ -136,9 +151,33 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
       <nav
         aria-label="Book settings"
         data-tauri-drag-region
-        className="sticky top-0 z-20 flex items-center bg-bg px-8 py-3"
+        className="sticky top-0 z-20 flex items-center gap-3 bg-bg px-8 py-3"
       >
         <NavHistoryControls />
+        {collectionCrumbs.length > 0 && (
+          <div
+            aria-label="Breadcrumb"
+            className="flex min-w-0 flex-1 items-center gap-1 text-sm text-muted"
+          >
+            {collectionCrumbs.map((crumb) => (
+              <span key={crumb.id} className="flex min-w-0 items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveCollection(crumb.id);
+                  }}
+                  className="min-w-0 shrink truncate rounded-sm px-1 outline-none hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {crumb.name || "Untitled"}
+                </button>
+                <span className="shrink-0 select-none text-muted/50">/</span>
+              </span>
+            ))}
+            <span className="min-w-0 shrink truncate px-1 text-text">
+              {book.title || "Untitled"}
+            </span>
+          </div>
+        )}
         <span className="ml-auto flex items-center gap-1">
           {expandable.length > 0 && (
             <Tooltip content={allExpanded ? "Collapse all" : "Expand all"}>

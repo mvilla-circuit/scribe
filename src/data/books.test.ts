@@ -16,6 +16,7 @@ import {
   useBooks,
   useCreateBook,
   useDeleteBook,
+  useMoveBook,
   useRenameBook,
 } from "./books";
 import { pageIndexKey } from "./query-keys";
@@ -133,6 +134,121 @@ describe("useCreateBook", () => {
     // The optimistic row must carry the signed-in user id (never ""), matching
     // the row the mutationFn inserts so RLS-bound ids never diverge.
     expect(books?.find((b) => b.id === "b2")?.user_id).toBe("user-1");
+  });
+
+  it("persists a collection_id when creating a book inside a collection", async () => {
+    let inserted: { collection_id?: unknown } | undefined;
+    server.use(
+      http.post(BOOKS_URL, async ({ request }) => {
+        inserted = (await request.json()) as { collection_id?: unknown };
+        return new HttpResponse(null, { status: 201 });
+      }),
+    );
+
+    const client = createTestQueryClient();
+    client.setQueryData(["books"], []);
+
+    const { result } = renderHookWithQuery(() => useCreateBook(), { client });
+    result.current.mutate({
+      id: "b1",
+      title: "New",
+      folder_id: null,
+      collection_id: "c1",
+      position: 1024,
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(inserted?.collection_id).toBe("c1");
+    expect(
+      client.getQueryData<{ collection_id: string | null }[]>(["books"])?.[0]
+        ?.collection_id,
+    ).toBe("c1");
+  });
+});
+
+describe("useMoveBook", () => {
+  it("moves a book into a collection, nulling its folder_id", async () => {
+    let patch: { folder_id?: unknown; collection_id?: unknown } | undefined;
+    server.use(
+      http.patch(BOOKS_URL, async ({ request }) => {
+        patch = (await request.json()) as {
+          folder_id?: unknown;
+          collection_id?: unknown;
+        };
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    const client = createTestQueryClient();
+    client.setQueryData(
+      ["books"],
+      [makeBook({ id: "b1", folder_id: "f1", collection_id: null })],
+    );
+
+    const { result } = renderHookWithQuery(() => useMoveBook(), { client });
+    result.current.mutate({
+      id: "b1",
+      folder_id: null,
+      collection_id: "c1",
+      position: 2048,
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(patch).toMatchObject({
+      folder_id: null,
+      collection_id: "c1",
+      position: 2048,
+    });
+    const book = client.getQueryData<
+      { folder_id: string | null; collection_id: string | null }[]
+    >(["books"])?.[0];
+    expect(book?.collection_id).toBe("c1");
+    expect(book?.folder_id).toBeNull();
+  });
+
+  it("moves a book into a folder, nulling its collection_id", async () => {
+    let patch: { folder_id?: unknown; collection_id?: unknown } | undefined;
+    server.use(
+      http.patch(BOOKS_URL, async ({ request }) => {
+        patch = (await request.json()) as {
+          folder_id?: unknown;
+          collection_id?: unknown;
+        };
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    const client = createTestQueryClient();
+    client.setQueryData(
+      ["books"],
+      [makeBook({ id: "b1", folder_id: null, collection_id: "c1" })],
+    );
+
+    const { result } = renderHookWithQuery(() => useMoveBook(), { client });
+    result.current.mutate({
+      id: "b1",
+      folder_id: "f1",
+      collection_id: null,
+      position: 512,
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(patch).toMatchObject({
+      folder_id: "f1",
+      collection_id: null,
+      position: 512,
+    });
+    const book = client.getQueryData<
+      { folder_id: string | null; collection_id: string | null }[]
+    >(["books"])?.[0];
+    expect(book?.folder_id).toBe("f1");
+    expect(book?.collection_id).toBeNull();
   });
 });
 

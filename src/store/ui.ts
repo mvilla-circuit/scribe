@@ -11,18 +11,35 @@ export const SIDEBAR_MIN_WIDTH = 200;
 export const SIDEBAR_MAX_WIDTH = 420;
 const SIDEBAR_DEFAULT_WIDTH = 260;
 
-// A single visited page in the navigation history — the book being read and the
-// document within it (or `null` for the book's Title Page / no active book).
+// A single visited location in the navigation history. The app shows exactly one
+// of two surfaces: a book's document (`bookId`/`docId`) or a collection's entry
+// (`collectionId`/`entryId`). The unused axis is `null`; an all-`null` entry is
+// the library home. Keeping both axes in one entry lets the browser-style
+// history step across the two surfaces uniformly.
 interface HistoryEntry {
   bookId: string | null;
   docId: string | null;
+  collectionId: string | null;
+  entryId: string | null;
 }
+
+// A partial location accepted by `navigateTo`; omitted axes default to `null`.
+type Location = Partial<HistoryEntry>;
+
+const EMPTY_LOCATION: HistoryEntry = {
+  bookId: null,
+  docId: null,
+  collectionId: null,
+  entryId: null,
+};
 
 interface UIState {
   sidebarCollapsed: boolean;
   sidebarWidth: number;
   activeBookId: string | null;
   activeDocId: string | null;
+  activeCollectionId: string | null;
+  activeEntryId: string | null;
   expandedFolderIds: string[];
   expandedDocIds: string[];
   history: HistoryEntry[];
@@ -32,7 +49,9 @@ interface UIState {
   setSidebarWidth: (width: number) => void;
   setActiveBook: (id: string | null) => void;
   setActiveDoc: (id: string | null) => void;
-  navigateTo: (entry: HistoryEntry) => void;
+  setActiveCollection: (id: string | null) => void;
+  setActiveEntry: (id: string | null) => void;
+  navigateTo: (location: Location) => void;
   goBack: () => void;
   goForward: () => void;
   toggleFolderExpanded: (id: string) => void;
@@ -54,24 +73,37 @@ const toggleIn = (arr: string[], id: string): string[] =>
 const setIn = (arr: string[], id: string, on: boolean): string[] =>
   on ? (arr.includes(id) ? arr : [...arr, id]) : arr.filter((x) => x !== id);
 
-// Append the freshly-visited `(bookId, docId)` location to the navigation
-// history, returning the updated `history`/`historyIndex` slice. Consecutive
-// duplicates of the current entry are dropped (re-selecting the same page is not
-// a navigation), and any forward entries are truncated — landing somewhere new
-// after going back abandons the old forward trail, exactly like a browser.
+// The four active-selection fields derived from a location, so every setter maps
+// a location onto the store the same way.
+const locationState = (loc: HistoryEntry) => ({
+  activeBookId: loc.bookId,
+  activeDocId: loc.docId,
+  activeCollectionId: loc.collectionId,
+  activeEntryId: loc.entryId,
+});
+
+// Whether two locations point at the same surface (all four axes match).
+const sameLocation = (a: HistoryEntry | undefined, b: HistoryEntry): boolean =>
+  !!a &&
+  a.bookId === b.bookId &&
+  a.docId === b.docId &&
+  a.collectionId === b.collectionId &&
+  a.entryId === b.entryId;
+
+// Append the freshly-visited location to the navigation history, returning the
+// updated `history`/`historyIndex` slice. Consecutive duplicates of the current
+// entry are dropped (re-selecting the same surface is not a navigation), and any
+// forward entries are truncated — landing somewhere new after going back
+// abandons the old forward trail, exactly like a browser.
 const recordLocation = (
   state: Pick<UIState, "history" | "historyIndex">,
-  bookId: string | null,
-  docId: string | null,
+  loc: HistoryEntry,
 ): Pick<UIState, "history" | "historyIndex"> => {
   const current = state.history[state.historyIndex];
-  if (current?.bookId === bookId && current?.docId === docId) {
+  if (sameLocation(current, loc)) {
     return { history: state.history, historyIndex: state.historyIndex };
   }
-  const history = [
-    ...state.history.slice(0, state.historyIndex + 1),
-    { bookId, docId },
-  ];
+  const history = [...state.history.slice(0, state.historyIndex + 1), loc];
   return { history, historyIndex: history.length - 1 };
 };
 
@@ -172,6 +204,8 @@ export const useUIStore = create<UIState>()(
       sidebarWidth: SIDEBAR_DEFAULT_WIDTH,
       activeBookId: null,
       activeDocId: null,
+      activeCollectionId: null,
+      activeEntryId: null,
       expandedFolderIds: [],
       expandedDocIds: [],
       history: [],
@@ -181,31 +215,61 @@ export const useUIStore = create<UIState>()(
       setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
       setSidebarWidth: (width) => set({ sidebarWidth: clampWidth(width) }),
       // Opening a different book always lands on its Title Page, never on a
-      // stale document carried over from the previously open book. The resulting
-      // location is recorded in the navigation history.
+      // stale document carried over from the previously open book, and leaves
+      // the collection surface. The resulting location is recorded in history.
       setActiveBook: (id) =>
         set((s) => {
           const docId = s.activeBookId === id ? s.activeDocId : null;
-          return {
-            activeBookId: id,
-            activeDocId: docId,
-            ...recordLocation(s, id, docId),
+          const loc: HistoryEntry = {
+            bookId: id,
+            docId,
+            collectionId: null,
+            entryId: null,
           };
+          return { ...locationState(loc), ...recordLocation(s, loc) };
         }),
       setActiveDoc: (id) =>
-        set((s) => ({
-          activeDocId: id,
-          ...recordLocation(s, s.activeBookId, id),
-        })),
-      // Set both the book and document in one step, recording a single history
-      // entry — used by cross-book navigation (e.g. editor page links) that would
-      // otherwise record a spurious intermediate Title Page location.
-      navigateTo: ({ bookId, docId }) =>
-        set((s) => ({
-          activeBookId: bookId,
-          activeDocId: docId,
-          ...recordLocation(s, bookId, docId),
-        })),
+        set((s) => {
+          const loc: HistoryEntry = {
+            bookId: s.activeBookId,
+            docId: id,
+            collectionId: null,
+            entryId: null,
+          };
+          return { ...locationState(loc), ...recordLocation(s, loc) };
+        }),
+      // Opening a different collection lands on its gallery (no entry), never a
+      // stale entry from the previously open collection, and leaves the book
+      // surface — mirroring `setActiveBook`.
+      setActiveCollection: (id) =>
+        set((s) => {
+          const entryId = s.activeCollectionId === id ? s.activeEntryId : null;
+          const loc: HistoryEntry = {
+            bookId: null,
+            docId: null,
+            collectionId: id,
+            entryId,
+          };
+          return { ...locationState(loc), ...recordLocation(s, loc) };
+        }),
+      setActiveEntry: (id) =>
+        set((s) => {
+          const loc: HistoryEntry = {
+            bookId: null,
+            docId: null,
+            collectionId: s.activeCollectionId,
+            entryId: id,
+          };
+          return { ...locationState(loc), ...recordLocation(s, loc) };
+        }),
+      // Set a whole location in one step, recording a single history entry — used
+      // by cross-surface navigation (e.g. editor page links) that would otherwise
+      // record a spurious intermediate location. Omitted axes default to null.
+      navigateTo: (location) =>
+        set((s) => {
+          const loc: HistoryEntry = { ...EMPTY_LOCATION, ...location };
+          return { ...locationState(loc), ...recordLocation(s, loc) };
+        }),
       // Restore the previous/next visited location without recording a new
       // entry, so the history trail is preserved as the cursor moves along it.
       goBack: () =>
@@ -213,22 +277,14 @@ export const useUIStore = create<UIState>()(
           const index = s.historyIndex - 1;
           const entry = s.history[index];
           if (!entry) return {};
-          return {
-            historyIndex: index,
-            activeBookId: entry.bookId,
-            activeDocId: entry.docId,
-          };
+          return { historyIndex: index, ...locationState(entry) };
         }),
       goForward: () =>
         set((s) => {
           const index = s.historyIndex + 1;
           const entry = s.history[index];
           if (!entry) return {};
-          return {
-            historyIndex: index,
-            activeBookId: entry.bookId,
-            activeDocId: entry.docId,
-          };
+          return { historyIndex: index, ...locationState(entry) };
         }),
       toggleFolderExpanded: (id) =>
         set((s) => ({ expandedFolderIds: toggleIn(s.expandedFolderIds, id) })),

@@ -41,6 +41,7 @@ export type Database = {
     Tables: {
       books: {
         Row: {
+          collection_id: string | null
           cover_url: string | null
           created_at: string
           folder_id: string | null
@@ -54,6 +55,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          collection_id?: string | null
           cover_url?: string | null
           created_at?: string
           folder_id?: string | null
@@ -67,6 +69,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          collection_id?: string | null
           cover_url?: string | null
           created_at?: string
           folder_id?: string | null
@@ -81,10 +84,67 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "books_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "books_folder_id_fkey"
             columns: ["folder_id"]
             isOneToOne: false
             referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collections: {
+        Row: {
+          created_at: string
+          description: string | null
+          fields: Json
+          icon: string | null
+          id: string
+          name: string
+          parent_collection_id: string | null
+          position: number
+          updated_at: string
+          user_id: string
+          view: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          fields?: Json
+          icon?: string | null
+          id?: string
+          name?: string
+          parent_collection_id?: string | null
+          position?: number
+          updated_at?: string
+          user_id: string
+          view?: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          fields?: Json
+          icon?: string | null
+          id?: string
+          name?: string
+          parent_collection_id?: string | null
+          position?: number
+          updated_at?: string
+          user_id?: string
+          view?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collections_parent_collection_id_fkey"
+            columns: ["parent_collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
             referencedColumns: ["id"]
           },
         ]
@@ -173,6 +233,56 @@ export type Database = {
           },
         ]
       }
+      entries: {
+        Row: {
+          collection_id: string
+          content: Json
+          cover_url: string | null
+          created_at: string
+          icon: string | null
+          id: string
+          position: number
+          properties: Json
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          collection_id: string
+          content?: Json
+          cover_url?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          position?: number
+          properties?: Json
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          collection_id?: string
+          content?: Json
+          cover_url?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          position?: number
+          properties?: Json
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entries_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       folders: {
         Row: {
           created_at: string
@@ -241,6 +351,39 @@ export type Database = {
         }
         Relationships: []
       }
+      links: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          source_id: string
+          source_type: string
+          target_id: string
+          target_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          source_id: string
+          source_type: string
+          target_id: string
+          target_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          source_id?: string
+          source_type?: string
+          target_id?: string
+          target_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -271,6 +414,71 @@ export type Database = {
           id?: string
           theme?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      taggables: {
+        Row: {
+          created_at: string
+          id: string
+          tag_id: string
+          target_id: string
+          target_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tag_id: string
+          target_id: string
+          target_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tag_id?: string
+          target_id?: string
+          target_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "taggables_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tags: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          position: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

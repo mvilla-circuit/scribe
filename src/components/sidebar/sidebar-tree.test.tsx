@@ -2,8 +2,9 @@ import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { booksKey, foldersKey } from "@/data/query-keys";
-import { makeBook, makeFolder } from "@/test/fixtures";
+import { booksKey, collectionsKey, foldersKey } from "@/data/query-keys";
+import { useUIStore } from "@/store/ui";
+import { makeBook, makeCollection, makeFolder } from "@/test/fixtures";
 import {
   createTestQueryClient,
   renderWithProviders,
@@ -29,6 +30,7 @@ beforeEach(() => {
   Element.prototype.setPointerCapture = vi.fn();
   Element.prototype.releasePointerCapture = vi.fn();
   Element.prototype.scrollIntoView = vi.fn();
+  useUIStore.setState({ activeBookId: null, activeCollectionId: null });
 });
 
 function seedClient() {
@@ -39,6 +41,7 @@ function seedClient() {
   client.setQueryData(booksKey, [
     makeBook({ id: "bk1", title: "My Book", folder_id: null }),
   ]);
+  client.setQueryData(collectionsKey, []);
   return client;
 }
 
@@ -83,6 +86,48 @@ describe("SidebarTree copy link", () => {
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("menuitem", { name: "Copy link" }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("SidebarTree collections", () => {
+  function seedWithCollection() {
+    const client = createTestQueryClient();
+    client.setQueryData(foldersKey, []);
+    client.setQueryData(booksKey, []);
+    client.setQueryData(collectionsKey, [
+      makeCollection({ id: "c1", name: "The Realm" }),
+    ]);
+    return client;
+  }
+
+  it("renders a collection row and opens it on click", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    renderWithProviders(<SidebarTree />, { client: seedWithCollection() });
+
+    const row = screen.getByRole("treeitem", { name: /The Realm/ });
+    await user.click(row);
+
+    expect(useUIStore.getState().activeCollectionId).toBe("c1");
+  });
+
+  it("offers create-inside and move actions on a collection row menu", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    renderWithProviders(<SidebarTree />, { client: seedWithCollection() });
+
+    const row = screen.getByRole("treeitem", { name: /The Realm/ });
+    await user.click(within(row).getByRole("button", { name: "More actions" }));
+
+    expect(
+      await screen.findByRole("menuitem", { name: "New book" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitem", { name: "New collection" }),
+    ).toBeInTheDocument();
+    // A lone root collection has no other collection to move into and is already
+    // at the top level, so the "Move to" submenu is omitted.
+    expect(
+      screen.queryByRole("menuitem", { name: "Move to" }),
     ).not.toBeInTheDocument();
   });
 });

@@ -24,35 +24,61 @@ import {
   useRenameBook,
 } from "@/data/books";
 import {
+  useCollections,
+  useCreateCollection,
+  useDeleteCollection,
+  useMoveCollection,
+  useRenameCollection,
+} from "@/data/collections";
+import {
   useDeleteFolder,
   useFolders,
   useMoveFolder,
   useRenameFolder,
 } from "@/data/folders";
 import { endPositionFor } from "@/data/ordering";
-import { buildTree, childrenOf, countBooksInFolder } from "@/data/tree";
+import {
+  buildTree,
+  childrenOf,
+  countBooksInFolder,
+  countChildren,
+  ROOT,
+} from "@/data/tree";
 import { useCreateRootItem } from "@/data/use-create-root-item";
 import { copyPageLink } from "@/editor/copy-page-link";
 import { useUIStore } from "@/store/ui";
 
 import { type FlatNode, flattenTree, getProjection } from "./dnd-tree";
-import { BookIcon, BookPlusIcon, FolderPlusIcon, PlusIcon } from "./icons";
+import {
+  BookIcon,
+  BookPlusIcon,
+  CollectionPlusIcon,
+  FolderPlusIcon,
+  PlusIcon,
+} from "./icons";
 import { DragRowOverlay, TreeRow } from "./tree-row";
 import { TreeSkeleton } from "./tree-skeleton";
 
 type DeleteTarget =
   | { kind: "folder"; id: string; name: string; books: number }
+  | { kind: "collection"; id: string; name: string; children: number }
   | { kind: "book"; id: string; title: string };
 
 export function SidebarTree() {
   const foldersQuery = useFolders();
   const booksQuery = useBooks();
+  const collectionsQuery = useCollections();
 
+  // Collections reuse the folder-expansion set: both are just "which container
+  // rows are open", and their ids never collide (all UUIDs), so one set keeps
+  // the tree state simple and persisted the same way.
   const expandedArr = useUIStore((s) => s.expandedFolderIds);
-  const toggleFolderExpanded = useUIStore((s) => s.toggleFolderExpanded);
-  const setFolderExpanded = useUIStore((s) => s.setFolderExpanded);
+  const toggleExpanded = useUIStore((s) => s.toggleFolderExpanded);
+  const setExpanded = useUIStore((s) => s.setFolderExpanded);
   const activeBookId = useUIStore((s) => s.activeBookId);
+  const activeCollectionId = useUIStore((s) => s.activeCollectionId);
   const setActiveBook = useUIStore((s) => s.setActiveBook);
+  const setActiveCollection = useUIStore((s) => s.setActiveCollection);
 
   const renameFolder = useRenameFolder();
   const moveFolder = useMoveFolder();
@@ -61,6 +87,10 @@ export function SidebarTree() {
   const renameBook = useRenameBook();
   const moveBook = useMoveBook();
   const deleteBook = useDeleteBook();
+  const renameCollection = useRenameCollection();
+  const createCollection = useCreateCollection();
+  const moveCollection = useMoveCollection();
+  const deleteCollection = useDeleteCollection();
   const createRootItem = useCreateRootItem();
 
   const panel = useTreePanel<DeleteTarget>();
@@ -71,13 +101,29 @@ export function SidebarTree() {
   const { mutate: createBookMutate } = createBook;
   const { mutate: renameFolderMutate } = renameFolder;
   const { mutate: renameBookMutate } = renameBook;
+  const { mutate: renameCollectionMutate } = renameCollection;
+  const { mutate: createCollectionMutate } = createCollection;
+  const { mutate: moveBookMutate } = moveBook;
+  const { mutate: moveCollectionMutate } = moveCollection;
+  const { createCollection: createRootCollectionFn } = createRootItem;
   const { startRename, cancelRename, requestDelete } = panel;
 
   const folders = useMemo(() => foldersQuery.data ?? [], [foldersQuery.data]);
   const books = useMemo(() => booksQuery.data ?? [], [booksQuery.data]);
+  const collections = useMemo(
+    () => collectionsQuery.data ?? [],
+    [collectionsQuery.data],
+  );
   const expanded = useMemo(() => new Set(expandedArr), [expandedArr]);
+  const collectionIds = useMemo(
+    () => new Set(collections.map((c) => c.id)),
+    [collections],
+  );
 
-  const model = useMemo(() => buildTree(folders, books), [folders, books]);
+  const model = useMemo(
+    () => buildTree(folders, books, collections),
+    [folders, books, collections],
+  );
   const flattened = useMemo(
     () => flattenTree(model, expanded),
     [model, expanded],
@@ -95,10 +141,25 @@ export function SidebarTree() {
       onMove: ({ id, parentId, position, node }) => {
         if (node.kind === "folder") {
           moveFolder.mutate({ id, parent_folder_id: parentId, position });
+        } else if (node.kind === "collection") {
+          moveCollection.mutate({
+            id,
+            parent_collection_id: parentId,
+            position,
+          });
         } else {
-          moveBook.mutate({ id, folder_id: parentId, position });
+          // A book's projected parent is a folder or a collection; write the
+          // matching column and null the other (they're mutually exclusive).
+          const intoCollection =
+            parentId !== null && collectionIds.has(parentId);
+          moveBook.mutate({
+            id,
+            folder_id: intoCollection ? null : parentId,
+            collection_id: intoCollection ? parentId : null,
+            position,
+          });
         }
-        if (parentId) setFolderExpanded(parentId, true);
+        if (parentId) setExpanded(parentId, true);
       },
     });
 
@@ -108,7 +169,7 @@ export function SidebarTree() {
   // the memoized rows only re-render when their own data changes.
   const onNewBookInside = useCallback(
     (folderId: string) => {
-      setFolderExpanded(folderId, true);
+      setExpanded(folderId, true);
       const id = crypto.randomUUID();
       createBookMutate({
         id,
@@ -118,7 +179,62 @@ export function SidebarTree() {
       });
       startRename(id);
     },
-    [setFolderExpanded, createBookMutate, model, startRename],
+    [setExpanded, createBookMutate, model, startRename],
+  );
+
+  const onNewBookInCollection = useCallback(
+    (collectionId: string) => {
+      setExpanded(collectionId, true);
+      const id = crypto.randomUUID();
+      createBookMutate({
+        id,
+        title: "Untitled",
+        folder_id: null,
+        collection_id: collectionId,
+        position: endPositionFor(childrenOf(model, collectionId)),
+      });
+      startRename(id);
+    },
+    [setExpanded, createBookMutate, model, startRename],
+  );
+
+  const onNewCollectionInside = useCallback(
+    (parentId: string) => {
+      setExpanded(parentId, true);
+      const id = crypto.randomUUID();
+      createCollectionMutate({
+        id,
+        name: "Untitled",
+        parent_collection_id: parentId,
+        position: endPositionFor(childrenOf(model, parentId)),
+      });
+      startRename(id);
+    },
+    [setExpanded, createCollectionMutate, model, startRename],
+  );
+
+  const onMoveToCollection = useCallback(
+    (node: FlatNode, targetCollectionId: string | null) => {
+      const position = endPositionFor(
+        childrenOf(model, targetCollectionId ?? ROOT),
+      );
+      if (node.kind === "collection") {
+        moveCollectionMutate({
+          id: node.id,
+          parent_collection_id: targetCollectionId,
+          position,
+        });
+      } else if (node.kind === "book") {
+        moveBookMutate({
+          id: node.id,
+          folder_id: null,
+          collection_id: targetCollectionId,
+          position,
+        });
+      }
+      if (targetCollectionId) setExpanded(targetCollectionId, true);
+    },
+    [model, moveCollectionMutate, moveBookMutate, setExpanded],
   );
 
   const createRootBook = () => {
@@ -129,14 +245,25 @@ export function SidebarTree() {
     startRename(createRootItem.createFolder());
   };
 
+  const createRootCollection = () => {
+    startRename(createRootCollectionFn());
+  };
+
   const onCommitRename = useCallback(
     (node: FlatNode, value: string) => {
       cancelRename();
       if (node.kind === "folder")
         renameFolderMutate({ id: node.id, name: value });
+      else if (node.kind === "collection")
+        renameCollectionMutate({ id: node.id, name: value });
       else renameBookMutate({ id: node.id, title: value });
     },
-    [cancelRename, renameFolderMutate, renameBookMutate],
+    [
+      cancelRename,
+      renameFolderMutate,
+      renameCollectionMutate,
+      renameBookMutate,
+    ],
   );
 
   const onCopyLink = useCallback((id: string) => {
@@ -151,6 +278,13 @@ export function SidebarTree() {
           id: node.id,
           name: node.child.folder.name,
           books: countBooksInFolder(model, node.id),
+        });
+      } else if (node.child.kind === "collection") {
+        requestDelete({
+          kind: "collection",
+          id: node.id,
+          name: node.child.collection.name,
+          children: countChildren(model, node.id),
         });
       } else {
         requestDelete({
@@ -168,43 +302,62 @@ export function SidebarTree() {
     if (!target) return;
     if (target.kind === "folder") {
       deleteFolder.mutate({ id: target.id });
+    } else if (target.kind === "collection") {
+      if (activeCollectionId === target.id) setActiveCollection(null);
+      deleteCollection.mutate({ id: target.id });
     } else {
       if (activeBookId === target.id) setActiveBook(null);
       deleteBook.mutate({ id: target.id });
     }
   };
 
-  const isLoading = foldersQuery.isLoading || booksQuery.isLoading;
-  const isError = foldersQuery.isError || booksQuery.isError;
-  const isEmpty = folders.length === 0 && books.length === 0;
+  const isLoading =
+    foldersQuery.isLoading ||
+    booksQuery.isLoading ||
+    collectionsQuery.isLoading;
+  const isError =
+    foldersQuery.isError || booksQuery.isError || collectionsQuery.isError;
+  const isEmpty =
+    folders.length === 0 && books.length === 0 && collections.length === 0;
 
   const renderRow = (node: FlatNode) => (
     <TreeRow
       key={node.id}
       node={node}
-      selected={node.kind === "book" && node.id === activeBookId}
+      selected={
+        (node.kind === "book" && node.id === activeBookId) ||
+        (node.kind === "collection" && node.id === activeCollectionId)
+      }
       editing={panel.editingId === node.id}
       expanded={expanded.has(node.id)}
+      collections={collections}
       projectionDepth={projectionDepthFor(node.id)}
-      onToggleExpand={toggleFolderExpanded}
+      onToggleExpand={toggleExpanded}
       onSelectBook={setActiveBook}
+      onSelectCollection={setActiveCollection}
       onStartRename={startRename}
       onCommitRename={onCommitRename}
       onCancelRename={cancelRename}
       onDelete={onDelete}
       onCopyLink={onCopyLink}
       onNewBookInside={onNewBookInside}
+      onNewBookInCollection={onNewBookInCollection}
+      onNewCollectionInside={onNewCollectionInside}
+      onMoveToCollection={onMoveToCollection}
     />
   );
 
-  // Render standalone rows directly; wrap an expanded folder and its books in a
-  // shared surface "card" so the grouping reads clearly with breathing room.
+  // Render standalone rows directly; wrap an expanded container (folder or
+  // collection) and its descendants in a shared surface "card" so the grouping
+  // reads clearly with breathing room.
   const treeElements: ReactNode[] = [];
   for (let i = 0; i < visibleNodes.length; i++) {
     const node = visibleNodes[i];
     if (!node) continue;
-    const isOpenFolder = node.kind === "folder" && expanded.has(node.id);
-    if (isOpenFolder) {
+    const isOpenContainer =
+      (node.kind === "folder" || node.kind === "collection") &&
+      expanded.has(node.id);
+    if (isOpenContainer) {
       const group = [node];
       let j = i + 1;
       while (j < visibleNodes.length) {
@@ -236,7 +389,7 @@ export function SidebarTree() {
           Library
         </span>
         <DropdownMenu>
-          <Tooltip content="New book or folder" side="right">
+          <Tooltip content="New book, collection, or folder" side="right">
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
@@ -256,6 +409,10 @@ export function SidebarTree() {
             <DropdownMenuItem onSelect={createRootBook}>
               <BookPlusIcon size={15} />
               New book
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={createRootCollection}>
+              <CollectionPlusIcon size={15} />
+              New collection
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={createRootFolder}>
               <FolderPlusIcon size={15} />
@@ -278,6 +435,7 @@ export function SidebarTree() {
               onClick={() => {
                 void foldersQuery.refetch();
                 void booksQuery.refetch();
+                void collectionsQuery.refetch();
               }}
             >
               Try again
@@ -290,7 +448,7 @@ export function SidebarTree() {
             sensors={sensors}
             dndHandlers={handlers}
             items={visibleNodes.map((n) => n.id)}
-            ariaLabel="Books and folders"
+            ariaLabel="Books, collections, and folders"
             className="gap-1.5"
             overlay={activeNode ? <DragRowOverlay node={activeNode} /> : null}
           >
@@ -304,18 +462,8 @@ export function SidebarTree() {
         onOpenChange={(open) => {
           if (!open) panel.clearDelete();
         }}
-        title={
-          panel.deleteTarget?.kind === "folder"
-            ? `Delete "${panel.deleteTarget.name}"?`
-            : panel.deleteTarget
-              ? `Delete "${panel.deleteTarget.title}"?`
-              : ""
-        }
-        description={
-          panel.deleteTarget?.kind === "folder"
-            ? describeFolderDelete(panel.deleteTarget.books)
-            : "This permanently deletes the book and everything inside it."
-        }
+        title={deleteTitle(panel.deleteTarget)}
+        description={deleteDescription(panel.deleteTarget)}
         confirmLabel="Delete"
         danger
         onConfirm={confirmDelete}
@@ -324,9 +472,28 @@ export function SidebarTree() {
   );
 }
 
+function deleteTitle(target: DeleteTarget | null): string {
+  if (!target) return "";
+  if (target.kind === "book") return `Delete "${target.title}"?`;
+  return `Delete "${target.name}"?`;
+}
+
+function deleteDescription(target: DeleteTarget | null): string {
+  if (!target) return "";
+  if (target.kind === "folder") return describeFolderDelete(target.books);
+  if (target.kind === "collection")
+    return describeCollectionDelete(target.children);
+  return "This permanently deletes the book and everything inside it.";
+}
+
 function describeFolderDelete(books: number): string {
   if (books === 0) return "This folder is empty and will be removed.";
   return `The ${books} book${books === 1 ? "" : "s"} inside will move to the top level.`;
+}
+
+function describeCollectionDelete(children: number): string {
+  if (children === 0) return "This collection is empty and will be removed.";
+  return `The ${children} item${children === 1 ? "" : "s"} inside will move to the top level.`;
 }
 
 function EmptyState({ onCreateBook }: { onCreateBook: () => void }) {

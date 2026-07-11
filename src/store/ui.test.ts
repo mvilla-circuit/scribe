@@ -15,11 +15,28 @@ const reset = () =>
     sidebarWidth: 260,
     activeBookId: null,
     activeDocId: null,
+    activeCollectionId: null,
+    activeEntryId: null,
     expandedFolderIds: [],
     expandedDocIds: [],
     history: [],
     historyIndex: -1,
   });
+
+// A full four-axis history location with only the given axes set, matching the
+// store's HistoryEntry shape so assertions stay concise.
+const loc = (over: {
+  bookId?: string | null;
+  docId?: string | null;
+  collectionId?: string | null;
+  entryId?: string | null;
+}) => ({
+  bookId: null,
+  docId: null,
+  collectionId: null,
+  entryId: null,
+  ...over,
+});
 
 beforeEach(reset);
 
@@ -104,8 +121,8 @@ describe("navigation history", () => {
     useUIStore.getState().setActiveDoc("d1");
 
     expect(useUIStore.getState().history).toEqual([
-      { bookId: "b1", docId: null },
-      { bookId: "b1", docId: "d1" },
+      loc({ bookId: "b1" }),
+      loc({ bookId: "b1", docId: "d1" }),
     ]);
     expect(useUIStore.getState().historyIndex).toBe(1);
   });
@@ -123,9 +140,9 @@ describe("navigation history", () => {
     useUIStore.getState().setActiveDoc("d3");
     expect(useUIStore.getState().historyIndex).toBe(2);
     expect(useUIStore.getState().history).toEqual([
-      { bookId: "b1", docId: null },
-      { bookId: "b1", docId: "d1" },
-      { bookId: "b1", docId: "d3" },
+      loc({ bookId: "b1" }),
+      loc({ bookId: "b1", docId: "d1" }),
+      loc({ bookId: "b1", docId: "d3" }),
     ]);
 
     // Forward is now exhausted.
@@ -143,9 +160,9 @@ describe("navigation history", () => {
     expect(useUIStore.getState().activeBookId).toBe("b2");
     expect(useUIStore.getState().activeDocId).toBe("d9");
     expect(useUIStore.getState().history).toEqual([
-      { bookId: "b1", docId: null },
-      { bookId: "b1", docId: "d1" },
-      { bookId: "b2", docId: "d9" },
+      loc({ bookId: "b1" }),
+      loc({ bookId: "b1", docId: "d1" }),
+      loc({ bookId: "b2", docId: "d9" }),
     ]);
   });
 
@@ -166,6 +183,74 @@ describe("navigation history", () => {
     expect(useUIStore.getState().historyIndex).toBe(0);
     expect(useUIStore.getState().activeBookId).toBe("b1");
     expect(useUIStore.getState().activeDocId).toBeNull();
+  });
+});
+
+describe("active collection/entry selection", () => {
+  it("switching to a collection clears the active book and doc", () => {
+    const store = useUIStore.getState();
+    store.setActiveBook("b1");
+    store.setActiveDoc("d1");
+
+    useUIStore.getState().setActiveCollection("c1");
+
+    const state = useUIStore.getState();
+    expect(state.activeCollectionId).toBe("c1");
+    expect(state.activeEntryId).toBeNull();
+    expect(state.activeBookId).toBeNull();
+    expect(state.activeDocId).toBeNull();
+  });
+
+  it("clears the active entry when switching to a different collection", () => {
+    const store = useUIStore.getState();
+    store.setActiveCollection("c1");
+    store.setActiveEntry("e1");
+
+    useUIStore.getState().setActiveCollection("c2");
+
+    expect(useUIStore.getState().activeEntryId).toBeNull();
+    expect(useUIStore.getState().activeCollectionId).toBe("c2");
+  });
+
+  it("keeps the active entry when re-selecting the same collection", () => {
+    const store = useUIStore.getState();
+    store.setActiveCollection("c1");
+    store.setActiveEntry("e1");
+
+    useUIStore.getState().setActiveCollection("c1");
+
+    expect(useUIStore.getState().activeEntryId).toBe("e1");
+  });
+
+  it("records collection/entry locations and steps back across surfaces", () => {
+    const store = useUIStore.getState();
+    store.setActiveBook("b1");
+    store.setActiveCollection("c1");
+    store.setActiveEntry("e1");
+
+    expect(useUIStore.getState().history).toEqual([
+      loc({ bookId: "b1" }),
+      loc({ collectionId: "c1" }),
+      loc({ collectionId: "c1", entryId: "e1" }),
+    ]);
+
+    // Stepping back returns to the book surface, clearing the collection axis.
+    useUIStore.getState().goBack();
+    useUIStore.getState().goBack();
+    const state = useUIStore.getState();
+    expect(state.activeBookId).toBe("b1");
+    expect(state.activeCollectionId).toBeNull();
+    expect(state.activeEntryId).toBeNull();
+  });
+
+  it("does not persist the active collection/entry selection", () => {
+    useUIStore.getState().setActiveCollection("c1");
+    useUIStore.getState().setActiveEntry("e1");
+
+    const partialize = useUIStore.persist.getOptions().partialize;
+    const persisted = partialize?.(useUIStore.getState());
+    expect(persisted).not.toHaveProperty("activeCollectionId");
+    expect(persisted).not.toHaveProperty("activeEntryId");
   });
 });
 

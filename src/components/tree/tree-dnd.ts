@@ -29,10 +29,12 @@ export interface ProjectionConfig<T extends DndNode> {
   // Some kinds project to a fixed slot regardless of cursor (e.g. folders, which
   // only ever live at the root). Return null to fall through to depth maths.
   fixedProjection?: (active: T) => Projection | null;
-  // Max nesting depth allowed given the row that precedes the drop target.
-  maxDepthForPrev: (prev: T) => number;
+  // Max nesting depth allowed given the row that precedes the drop target and
+  // the dragged (`active`) row -- the two together decide legal parenting (e.g.
+  // a collection may nest under a collection but not under a folder).
+  maxDepthForPrev: (prev: T, active: T) => number;
   // The parent id contributed when nesting one level deeper under `prev`.
-  parentWhenNestedUnder: (prev: T) => string | null;
+  parentWhenNestedUnder: (prev: T, active: T) => string | null;
 }
 
 // Drops the descendants of the given ids so a dragged node can't be dropped
@@ -75,19 +77,20 @@ export function projectDrop<T extends DndNode>(
   const dragDepth = Math.round(dragOffsetX / INDENT);
   const projected = active.depth + dragDepth;
 
-  const maxDepth = prev ? config.maxDepthForPrev(prev) : 0;
+  const maxDepth = prev ? config.maxDepthForPrev(prev, active) : 0;
   const minDepth = next ? next.depth : 0;
 
   let depth = projected;
   if (depth > maxDepth) depth = maxDepth;
   else if (depth < minDepth) depth = minDepth;
 
-  return { depth, parentId: getParentId() };
+  return { depth, parentId: getParentId(active) };
 
-  function getParentId(): string | null {
+  function getParentId(activeNode: T): string | null {
     if (depth === 0 || !prev) return null;
     if (depth === prev.depth) return prev.parentId;
-    if (depth > prev.depth) return config.parentWhenNestedUnder(prev);
+    if (depth > prev.depth)
+      return config.parentWhenNestedUnder(prev, activeNode);
     const ancestor = moved
       .slice(0, overIndex)
       .reverse()

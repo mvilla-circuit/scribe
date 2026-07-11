@@ -29,11 +29,15 @@ function fakeSession(): string {
 
 type Row = Record<string, unknown>;
 
-/** Rows seeded into the in-memory Supabase REST stand-in, keyed by table. */
+/**
+ * Rows seeded into the in-memory Supabase REST stand-in, keyed by table.
+ * `collections` is optional so existing specs stay terse.
+ */
 export interface SeedData {
   books: Row[];
   folders: Row[];
   documents: Row[];
+  collections?: Row[];
 }
 
 const EMPTY_SEED: SeedData = { books: [], folders: [], documents: [] };
@@ -62,9 +66,12 @@ function handleRest(store: Record<string, Row[]>, route: Route): Promise<void> {
   switch (request.method()) {
     case "GET": {
       const bookId = eqParam(url, "book_id");
+      const collectionId = eqParam(url, "collection_id");
       const id = eqParam(url, "id");
       let result = rows;
       if (bookId) result = result.filter((r) => r.book_id === bookId);
+      if (collectionId)
+        result = result.filter((r) => r.collection_id === collectionId);
       if (id) result = result.filter((r) => r.id === id);
       // `.single()`/`.maybeSingle()` request a lone object via this Accept type;
       // mirror PostgREST by returning the matching row (or null) rather than an
@@ -120,6 +127,7 @@ export const test = base.extend<{ seed: SeedData; authedPage: Page }>({
       books: [...seed.books],
       folders: [...seed.folders],
       documents: [...seed.documents],
+      collections: [...(seed.collections ?? [])],
     };
 
     await page.route("**/rest/v1/**", (route) => handleRest(store, route));

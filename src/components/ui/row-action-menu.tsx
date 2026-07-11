@@ -13,6 +13,9 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from "./context-menu";
 import {
@@ -20,6 +23,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "./dropdown-menu";
 import { Tooltip } from "./tooltip";
@@ -41,10 +47,18 @@ const stopRowClick = (e: React.MouseEvent) => {
 export interface RowAction {
   icon: ReactNode;
   label: string;
-  onSelect: () => void;
+  // Stable React key, used when labels aren't unique within a menu (e.g. a
+  // "Move to" submenu of several "Untitled" collections). Defaults to `label`.
+  key?: string;
+  // Fired when the item is chosen. Optional because a `submenu` parent item
+  // opens its submenu instead of firing an action of its own.
+  onSelect?: () => void;
   danger?: boolean;
   // Render a separator above this item (ignored when it would lead the menu).
   separatorBefore?: boolean;
+  // When present and non-empty, this action opens a nested submenu of these
+  // actions instead of firing its own `onSelect` (which is ignored).
+  submenu?: RowAction[];
 }
 
 interface MenuItemComponentProps {
@@ -53,29 +67,70 @@ interface MenuItemComponentProps {
   children?: ReactNode;
 }
 
+interface MenuSubTriggerProps {
+  children?: ReactNode;
+}
+
+// The menu item primitives for one surface (context menu or dropdown menu), so
+// `renderActions` can build an identical action list against either family.
+interface MenuPrimitives {
+  Item: ComponentType<MenuItemComponentProps>;
+  Separator: ComponentType;
+  Sub: ComponentType<{ children?: ReactNode }>;
+  SubTrigger: ComponentType<MenuSubTriggerProps>;
+  SubContent: ComponentType<{ children?: ReactNode }>;
+}
+
 // Renders an action list against either the context-menu or dropdown-menu item
 // primitives so each surface declares its items once. A leading separator is
-// suppressed so a section break never opens the menu.
-function renderActions(
-  actions: RowAction[],
-  Item: ComponentType<MenuItemComponentProps>,
-  Separator: ComponentType,
-) {
+// suppressed so a section break never opens the menu. Actions carrying a
+// non-empty `submenu` render as a nested submenu whose own `onSelect` is ignored.
+function renderActions(actions: RowAction[], primitives: MenuPrimitives) {
+  const { Item, Separator, Sub, SubTrigger, SubContent } = primitives;
   return actions.map((action, i) => (
-    <Fragment key={action.label}>
+    // Prefer an explicit `key` so duplicate/blank labels (e.g. several
+    // "Untitled" collections in a "Move to" submenu) can't collide and misroute
+    // clicks; fall back to the label for the common unique-label case.
+    <Fragment key={action.key ?? action.label}>
       {action.separatorBefore && i > 0 && <Separator />}
-      <Item
-        danger={action.danger}
-        onSelect={() => {
-          action.onSelect();
-        }}
-      >
-        {action.icon}
-        {action.label}
-      </Item>
+      {action.submenu && action.submenu.length > 0 ? (
+        <Sub>
+          <SubTrigger>
+            {action.icon}
+            {action.label}
+          </SubTrigger>
+          <SubContent>{renderActions(action.submenu, primitives)}</SubContent>
+        </Sub>
+      ) : (
+        <Item
+          danger={action.danger}
+          onSelect={() => {
+            action.onSelect?.();
+          }}
+        >
+          {action.icon}
+          {action.label}
+        </Item>
+      )}
     </Fragment>
   ));
 }
+
+const contextMenuPrimitives: MenuPrimitives = {
+  Item: ContextMenuItem,
+  Separator: ContextMenuSeparator,
+  Sub: ContextMenuSub,
+  SubTrigger: ContextMenuSubTrigger,
+  SubContent: ContextMenuSubContent,
+};
+
+const dropdownMenuPrimitives: MenuPrimitives = {
+  Item: DropdownMenuItem,
+  Separator: DropdownMenuSeparator,
+  Sub: DropdownMenuSub,
+  SubTrigger: DropdownMenuSubTrigger,
+  SubContent: DropdownMenuSubContent,
+};
 
 // Wraps a row so right-clicking it opens a context menu of the given actions.
 export function RowContextMenu({
@@ -94,7 +149,7 @@ export function RowContextMenu({
           e.preventDefault();
         }}
       >
-        {renderActions(actions, ContextMenuItem, ContextMenuSeparator)}
+        {renderActions(actions, contextMenuPrimitives)}
       </ContextMenuContent>
     </ContextMenu>
   );
@@ -138,7 +193,7 @@ export function RowActionDropdown({
           e.preventDefault();
         }}
       >
-        {renderActions(actions, DropdownMenuItem, DropdownMenuSeparator)}
+        {renderActions(actions, dropdownMenuPrimitives)}
       </DropdownMenuContent>
     </DropdownMenu>
   );

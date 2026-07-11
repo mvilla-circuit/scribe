@@ -36,3 +36,6 @@ export const documentsKey = (bookId: string) => ["documents", bookId] as const;
  */
 export const documentContentKey = (documentId: string) =>
   ["document-content", documentId] as const;
+
+/** Cache key for the signed-in user's collections. */
+export const collectionsKey = ["collections"] as const;

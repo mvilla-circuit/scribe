@@ -14,6 +14,7 @@ import { ScribeLogo } from "./scribe-logo";
 import { SettingsDialog } from "./settings/settings-dialog";
 import { CollapsedSidebarNav } from "./sidebar/collapsed-sidebar-nav";
 import { SidebarTree } from "./sidebar/sidebar-tree";
+import { useBookBackTarget } from "./sidebar/use-book-back-target";
 import { Avatar } from "./ui/avatar";
 import {
   DropdownMenu,
@@ -48,8 +49,8 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
   const storedWidth = useUIStore((s) => s.sidebarWidth);
   const setSidebarWidth = useUIStore((s) => s.setSidebarWidth);
-  const setActiveBook = useUIStore((s) => s.setActiveBook);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const backTarget = useBookBackTarget(activeBook);
 
   // During a drag the width is driven locally (one update per frame) so the
   // persisted store — and thus localStorage — isn't written on every mousemove;
@@ -79,17 +80,15 @@ export function Sidebar({ activeBook }: { activeBook: Book | null }) {
       <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-0.5">
         {!collapsed &&
           (activeBook ? (
-            <Tooltip content="Back to library" side="right">
+            <Tooltip content={backTarget.tooltip} side="right">
               <button
                 type="button"
-                onClick={() => {
-                  setActiveBook(null);
-                }}
-                aria-label="Back to library"
+                onClick={backTarget.goBack}
+                aria-label={backTarget.tooltip}
                 className="group -ml-1 flex min-w-0 items-center gap-0.5 rounded-md px-1 py-0.5 text-sm text-muted outline-none transition hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <ChevronLeftIcon size={16} className="shrink-0" />
-                <span className="truncate">Library</span>
+                <span className="truncate">{backTarget.label}</span>
               </button>
             </Tooltip>
           ) : (

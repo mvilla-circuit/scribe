@@ -1,8 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { makeBook, makeFolder } from "@/test/fixtures";
+import { makeBook, makeCollection, makeFolder } from "@/test/fixtures";
 
-import { buildTree, childrenOf, countBooksInFolder, ROOT } from "./tree";
+import {
+  buildTree,
+  childrenOf,
+  collectionAncestors,
+  collectionDescendants,
+  countBooksInFolder,
+  countChildren,
+  ROOT,
+} from "./tree";
 
 describe("buildTree", () => {
   it("buckets folders and root-level books under ROOT, sorted by position", () => {
@@ -25,6 +33,29 @@ describe("buildTree", () => {
 
     expect(childrenOf(model, "f1").map((c) => c.id)).toEqual(["b2", "b1"]);
     expect(childrenOf(model, ROOT).map((c) => c.id)).toEqual(["f1"]);
+  });
+
+  it("buckets root collections and nests child collections under their parent", () => {
+    const parent = makeCollection({ id: "c1", parent_collection_id: null });
+    const child = makeCollection({ id: "c2", parent_collection_id: "c1" });
+    const model = buildTree([], [], [parent, child]);
+
+    expect(
+      childrenOf(model, ROOT).map((c) => ({ kind: c.kind, id: c.id })),
+    ).toEqual([{ kind: "collection", id: "c1" }]);
+    expect(childrenOf(model, "c1").map((c) => c.id)).toEqual(["c2"]);
+  });
+
+  it("nests a book under its collection, preferring collection over folder", () => {
+    const collection = makeCollection({ id: "c1" });
+    const folder = makeFolder({ id: "f1" });
+    // A book that names both lands in the collection (mutually exclusive in the
+    // UI, but the model must pick a single container deterministically).
+    const book = makeBook({ id: "b1", collection_id: "c1", folder_id: "f1" });
+    const model = buildTree([folder], [book], [collection]);
+
+    expect(childrenOf(model, "c1").map((c) => c.id)).toEqual(["b1"]);
+    expect(childrenOf(model, "f1")).toEqual([]);
   });
 
   it("returns an empty list for an unknown container", () => {
@@ -50,5 +81,72 @@ describe("countBooksInFolder", () => {
   it("is zero for an empty folder", () => {
     const model = buildTree([makeFolder({ id: "f1" })], []);
     expect(countBooksInFolder(model, "f1")).toBe(0);
+  });
+});
+
+describe("countChildren", () => {
+  it("counts the direct children (books + collections) of a collection", () => {
+    const model = buildTree(
+      [],
+      [
+        makeBook({ id: "b1", collection_id: "c1" }),
+        makeBook({ id: "b2", collection_id: "c1" }),
+      ],
+      [
+        makeCollection({ id: "c1" }),
+        makeCollection({ id: "c2", parent_collection_id: "c1" }),
+      ],
+    );
+    expect(countChildren(model, "c1")).toBe(3);
+  });
+});
+
+describe("collectionAncestors", () => {
+  it("returns the root-first ancestor chain, excluding the collection itself", () => {
+    const collections = [
+      makeCollection({ id: "c1", parent_collection_id: null }),
+      makeCollection({ id: "c2", parent_collection_id: "c1" }),
+      makeCollection({ id: "c3", parent_collection_id: "c2" }),
+    ];
+    expect(collectionAncestors(collections, "c3").map((c) => c.id)).toEqual([
+      "c1",
+      "c2",
+    ]);
+  });
+
+  it("is empty for a root collection and guards against cycles", () => {
+    const collections = [
+      makeCollection({ id: "c1", parent_collection_id: null }),
+      // A defensive cycle (c2 -> c3 -> c2) must not loop forever.
+      makeCollection({ id: "c2", parent_collection_id: "c3" }),
+      makeCollection({ id: "c3", parent_collection_id: "c2" }),
+    ];
+    expect(collectionAncestors(collections, "c1")).toEqual([]);
+    expect(collectionAncestors(collections, "c2").length).toBeLessThanOrEqual(
+      2,
+    );
+  });
+});
+
+describe("collectionDescendants", () => {
+  it("returns every nested descendant id, excluding the collection itself", () => {
+    const collections = [
+      makeCollection({ id: "c1", parent_collection_id: null }),
+      makeCollection({ id: "c2", parent_collection_id: "c1" }),
+      makeCollection({ id: "c3", parent_collection_id: "c2" }),
+      makeCollection({ id: "other", parent_collection_id: null }),
+    ];
+    const descendants = collectionDescendants(collections, "c1");
+    expect(descendants).toEqual(new Set(["c2", "c3"]));
+    expect(descendants.has("c1")).toBe(false);
+    expect(descendants.has("other")).toBe(false);
+  });
+
+  it("is empty for a leaf collection", () => {
+    const collections = [
+      makeCollection({ id: "c1", parent_collection_id: null }),
+      makeCollection({ id: "c2", parent_collection_id: "c1" }),
+    ];
+    expect(collectionDescendants(collections, "c2")).toEqual(new Set());
   });
 });

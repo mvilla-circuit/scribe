@@ -6,9 +6,11 @@ import {
   Book,
   BookPlus,
   Copy,
+  CornerUpLeft,
   Folder,
   FolderOpen,
   FolderPlus,
+  Library,
   Link,
   Pencil,
   Plus,
@@ -21,11 +23,14 @@ import { makeIcon } from "@/lib/make-icon";
 export const FolderIcon = makeIcon(Folder);
 export const FolderOpenIcon = makeIcon(FolderOpen);
 export const BookIcon = makeIcon(Book);
+export const CollectionIcon = makeIcon(Library);
 export const PlusIcon = makeIcon(Plus);
 export const PencilIcon = makeIcon(Pencil);
 export const TrashIcon = makeIcon(Trash2);
 export const DuplicateIcon = makeIcon(Copy);
 export const FolderPlusIcon = makeIcon(FolderPlus);
+export const CollectionPlusIcon = makeIcon(Library);
 export const BookPlusIcon = makeIcon(BookPlus);
 export const LinkIcon = makeIcon(Link);
+export const RemoveFromCollectionIcon = makeIcon(CornerUpLeft);
 export const AlertIcon = makeIcon(TriangleAlert);

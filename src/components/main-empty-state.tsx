@@ -1,14 +1,21 @@
 import { Feather } from "lucide-react";
 import { useMemo } from "react";
 
-import { type Book, useBooks } from "@/data/books";
+import { useBooks } from "@/data/books";
+import { useCollections } from "@/data/collections";
 import { useCreateRootItem } from "@/data/use-create-root-item";
 import { makeIcon } from "@/lib/make-icon";
 import { useSessionUser } from "@/lib/session-user";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
 
-import { BookIcon, BookPlusIcon, FolderPlusIcon } from "./sidebar/icons";
+import {
+  BookIcon,
+  BookPlusIcon,
+  CollectionIcon,
+  CollectionPlusIcon,
+  FolderPlusIcon,
+} from "./sidebar/icons";
 import { Button } from "./ui/button";
 import { DocumentIcon } from "./ui/document-icon";
 import { Skeleton } from "./ui/skeleton";
@@ -19,30 +26,70 @@ const BrandIcon = makeIcon(Feather);
 
 const MAX_RECENT = 6;
 
+// A recently-touched library surface the user can jump back into. Books and
+// collections normalize onto the same shape (title/subtitle/icon) so the Recent
+// list can interleave them by `updated_at`.
+interface RecentItem {
+  kind: "book" | "collection";
+  id: string;
+  title: string;
+  subtitle: string | null;
+  icon: string | null;
+  updated_at: string | null;
+}
+
 export function MainEmptyState() {
   const { firstName } = useSessionUser();
   const { data: books, isLoading: booksLoading } = useBooks();
+  const { data: collections, isLoading: collectionsLoading } = useCollections();
   const createRootItem = useCreateRootItem();
   const setActiveBook = useUIStore((s) => s.setActiveBook);
+  const setActiveCollection = useUIStore((s) => s.setActiveCollection);
 
   const greeting = useGreeting();
 
-  const recent = useMemo(() => {
-    const list = books ?? [];
-    return list
-      .slice()
+  const recent = useMemo<RecentItem[]>(() => {
+    const items: RecentItem[] = [
+      ...(books ?? []).map((b) => ({
+        kind: "book" as const,
+        id: b.id,
+        title: b.title,
+        subtitle: b.subtitle,
+        icon: b.icon,
+        updated_at: b.updated_at,
+      })),
+      ...(collections ?? []).map((c) => ({
+        kind: "collection" as const,
+        id: c.id,
+        title: c.name,
+        subtitle: c.description,
+        icon: c.icon,
+        updated_at: c.updated_at,
+      })),
+    ];
+    return items
       .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""))
       .slice(0, MAX_RECENT);
-  }, [books]);
+  }, [books, collections]);
 
-  const hasBooks = (books?.length ?? 0) > 0;
+  const isLoading = booksLoading || collectionsLoading;
+  const hasRecent = recent.length > 0;
 
   const handleNewBook = () => {
     setActiveBook(createRootItem.createBook());
   };
 
+  const handleNewCollection = () => {
+    setActiveCollection(createRootItem.createCollection());
+  };
+
   const handleNewFolder = () => {
     createRootItem.createFolder();
+  };
+
+  const openRecent = (item: RecentItem) => {
+    if (item.kind === "book") setActiveBook(item.id);
+    else setActiveCollection(item.id);
   };
 
   return (
@@ -74,13 +121,17 @@ export function MainEmptyState() {
               <BookPlusIcon size={15} />
               New book
             </Button>
+            <Button variant="secondary" onClick={handleNewCollection}>
+              <CollectionPlusIcon size={15} />
+              New collection
+            </Button>
             <Button variant="secondary" onClick={handleNewFolder}>
               <FolderPlusIcon size={15} />
               New folder
             </Button>
           </div>
 
-          {booksLoading ? (
+          {isLoading ? (
             <section className="mt-10">
               <h3 className="text-xs font-medium uppercase tracking-wide text-muted">
                 Recent
@@ -88,22 +139,22 @@ export function MainEmptyState() {
               <div className="mt-3 flex flex-col gap-1.5">
                 {Array.from({ length: 3 }).map((_, i) => (
                   // eslint-disable-next-line react/no-array-index-key -- decorative placeholder cards; fixed count, no stable id
-                  <RecentBookCardSkeleton key={i} />
+                  <RecentItemSkeleton key={i} />
                 ))}
               </div>
             </section>
-          ) : hasBooks ? (
+          ) : hasRecent ? (
             <section className="mt-10">
               <h3 className="text-xs font-medium uppercase tracking-wide text-muted">
                 Recent
               </h3>
               <div className="mt-3 flex flex-col gap-1.5">
-                {recent.map((book) => (
-                  <RecentBookCard
-                    key={book.id}
-                    book={book}
+                {recent.map((item) => (
+                  <RecentItemCard
+                    key={`${item.kind}-${item.id}`}
+                    item={item}
                     onSelect={() => {
-                      setActiveBook(book.id);
+                      openRecent(item);
                     }}
                   />
                 ))}
@@ -111,7 +162,7 @@ export function MainEmptyState() {
             </section>
           ) : (
             <p className="mt-10 text-sm leading-relaxed text-muted">
-              No books yet. Create your first book to start writing.
+              Nothing here yet. Create a book or collection to get started.
             </p>
           )}
         </div>
@@ -120,15 +171,16 @@ export function MainEmptyState() {
   );
 }
 
-function RecentBookCard({
-  book,
+function RecentItemCard({
+  item,
   onSelect,
 }: {
-  book: Book;
+  item: RecentItem;
   onSelect: () => void;
 }) {
+  const label = item.title || "Untitled";
   return (
-    <Tooltip content={book.title || "Untitled"}>
+    <Tooltip content={label}>
       <button
         type="button"
         onClick={onSelect}
@@ -138,25 +190,25 @@ function RecentBookCard({
         )}
       >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-tree-group text-muted">
-          {book.icon ? (
-            <DocumentIcon icon={book.icon} size={18} />
+          {item.icon ? (
+            <DocumentIcon icon={item.icon} size={18} />
+          ) : item.kind === "collection" ? (
+            <CollectionIcon size={18} />
           ) : (
             <BookIcon size={18} />
           )}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-text">
-            {book.title || "Untitled"}
-          </p>
-          {book.subtitle && (
+          <p className="truncate text-sm font-medium text-text">{label}</p>
+          {item.subtitle && (
             <p className="mt-0.5 truncate text-xs text-muted">
-              {book.subtitle}
+              {item.subtitle}
             </p>
           )}
         </div>
-        {book.updated_at && (
+        {item.updated_at && (
           <span className="shrink-0 text-xs text-muted tabular-nums">
-            {formatRelativeTime(book.updated_at, { compact: true })}
+            {formatRelativeTime(item.updated_at, { compact: true })}
           </span>
         )}
       </button>
@@ -164,8 +216,8 @@ function RecentBookCard({
   );
 }
 
-// Matches RecentBookCard's footprint so the recents list loads without a jump.
-function RecentBookCardSkeleton() {
+// Matches RecentItemCard's footprint so the recents list loads without a jump.
+function RecentItemSkeleton() {
   return (
     <div
       aria-hidden

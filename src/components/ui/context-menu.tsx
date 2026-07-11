@@ -13,6 +13,7 @@ import {
 
 export const ContextMenu = RContext.Root;
 export const ContextMenuTrigger = RContext.Trigger;
+export const ContextMenuSub = RContext.Sub;
 
 export const ContextMenuContent = forwardRef<
   React.ComponentRef<typeof RContext.Content>,
@@ -51,3 +52,29 @@ export const ContextMenuSeparator = forwardRef<
   />
 ));
 ContextMenuSeparator.displayName = "ContextMenuSeparator";
+
+export const ContextMenuSubTrigger = forwardRef<
+  React.ComponentRef<typeof RContext.SubTrigger>,
+  React.ComponentPropsWithoutRef<typeof RContext.SubTrigger>
+>(({ className, ...props }, ref) => (
+  <RContext.SubTrigger
+    ref={ref}
+    className={cn(menuItemClass, "data-[state=open]:bg-hover", className)}
+    {...props}
+  />
+));
+ContextMenuSubTrigger.displayName = "ContextMenuSubTrigger";
+
+export const ContextMenuSubContent = forwardRef<
+  React.ComponentRef<typeof RContext.SubContent>,
+  React.ComponentPropsWithoutRef<typeof RContext.SubContent>
+>(({ className, ...props }, ref) => (
+  <RContext.Portal>
+    <RContext.SubContent
+      ref={ref}
+      className={cn(menuContentClass, className)}
+      {...props}
+    />
+  </RContext.Portal>
+));
+ContextMenuSubContent.displayName = "ContextMenuSubContent";

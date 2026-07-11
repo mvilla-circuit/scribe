@@ -1,6 +1,7 @@
 import type { Book } from "@/data/books";
 import type { Document } from "@/data/documents";
 import type { Folder } from "@/data/folders";
+import type { Tables } from "@/lib/database.types";
 
 // Minimal-but-complete row factories so tests can build valid entities without
 // repeating every column. Override only the fields a given case cares about.
@@ -15,6 +16,7 @@ export function makeBook(overrides: Partial<Book> = {}): Book {
     icon: null,
     theme: {},
     folder_id: null,
+    collection_id: null,
     position: 1024,
     created_at: "2026-01-01T00:00:00.000Z",
     updated_at: "2026-01-01T00:00:00.000Z",
@@ -54,6 +56,25 @@ export function makeDocument(overrides: Partial<Document> = {}): Document {
     show_contents: false,
     spellcheck_enabled: true,
     spellcheck_ignores: [],
+    position: 1024,
+    created_at: "2026-01-01T00:00:00.000Z",
+    updated_at: "2026-01-01T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
+export function makeCollection(
+  overrides: Partial<Tables<"collections">> = {},
+): Tables<"collections"> {
+  return {
+    id: "collection-1",
+    user_id: "user-1",
+    name: "Untitled",
+    icon: null,
+    description: null,
+    parent_collection_id: null,
+    fields: [],
+    view: {},
     position: 1024,
     created_at: "2026-01-01T00:00:00.000Z",
     updated_at: "2026-01-01T00:00:00.000Z",

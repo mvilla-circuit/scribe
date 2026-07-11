@@ -20,6 +20,7 @@ interface CreateBookInput {
   id: string;
   title: string;
   folder_id: string | null;
+  collection_id?: string | null;
   position: number;
 }
 interface RenameBookInput {
@@ -32,6 +33,7 @@ type UpdateBookInput = { id: string } & Partial<
 interface MoveBookInput {
   id: string;
   folder_id: string | null;
+  collection_id: string | null;
   position: number;
 }
 interface DeleteBookInput {
@@ -107,6 +109,7 @@ function newBookRow(input: CreateBookInput, userId: string): Book {
     icon: null,
     theme: {},
     folder_id: input.folder_id,
+    collection_id: input.collection_id ?? null,
     position: input.position,
     created_at: now,
     updated_at: now,
@@ -177,13 +180,19 @@ export function useUpdateBook() {
   });
 }
 
-/** Mutation hook that moves a book to a folder and/or repositions it. */
+/**
+ * Mutation hook that moves a book into a folder or a collection (or the root)
+ * and/or repositions it. A book's two containers are mutually exclusive, so
+ * callers pass the winning container and null the other; both `folder_id` and
+ * `collection_id` are written on every move to enforce that invariant.
+ */
 export function useMoveBook() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: MoveBookInput) =>
       updateBookRow(input.id, {
         folder_id: input.folder_id,
+        collection_id: input.collection_id,
         position: input.position,
       }),
     ...listHandlers<Book, MoveBookInput>({
@@ -192,6 +201,7 @@ export function useMoveBook() {
       update: (prev, input) =>
         patchById(prev, input.id, {
           folder_id: input.folder_id,
+          collection_id: input.collection_id,
           position: input.position,
         }),
       errorMessage: "Couldn't move book",
