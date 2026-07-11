@@ -132,10 +132,9 @@ export function countBooksInFolder(model: TreeModel, folderId: string): number {
 }
 
 /**
- * Number of direct children (books + child collections) inside a container.
- * Used to describe what a collection delete will reparent to the top level —
- * only direct children move; deeper descendants stay with their surviving
- * parent (the `ON DELETE SET NULL` FKs null one level).
+ * Number of direct children (books, child collections, and entries) inside a
+ * container. Callers that need to distinguish reparented vs cascade-deleted
+ * children should filter by kind themselves.
  */
 export function countChildren(model: TreeModel, containerId: string): number {
   return childrenOf(model, containerId).length;

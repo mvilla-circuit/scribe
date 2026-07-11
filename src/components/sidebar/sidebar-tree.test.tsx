@@ -202,4 +202,52 @@ describe("SidebarTree collection docs", () => {
     expect(screen.getByRole("textbox")).toHaveValue("Untitled");
     expect(client.getQueryData<unknown[]>(entriesKey)).toHaveLength(2);
   });
+
+  it("warns that deleting a collection permanently deletes its docs", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = createTestQueryClient();
+    client.setQueryData(foldersKey, []);
+    client.setQueryData(booksKey, [
+      makeBook({ id: "b1", title: "First Light", collection_id: "c1" }),
+    ]);
+    client.setQueryData(collectionsKey, [
+      makeCollection({ id: "c1", name: "The Realm" }),
+    ]);
+    client.setQueryData(entriesKey, [
+      makeEntry({
+        id: "e1",
+        collection_id: "c1",
+        title: "Opening scene",
+      }),
+    ]);
+    renderWithProviders(<SidebarTree />, { client });
+
+    const collection = screen.getByRole("treeitem", { name: /The Realm/ });
+    await user.click(
+      within(collection).getByRole("button", { name: "More actions" }),
+    );
+    await user.click(await screen.findByRole("menuitem", { name: "Delete" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent(/move to the top level/i);
+    expect(dialog).toHaveTextContent(/doc.*permanently deleted/i);
+    expect(dialog).not.toHaveTextContent(
+      /The 2 items inside will move to the top level/,
+    );
+  });
+
+  it("uses doc wording when confirming entry delete", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    useUIStore.setState({ expandedFolderIds: ["c1"] });
+    renderWithProviders(<SidebarTree />, { client: seedWithEntry() });
+
+    const row = screen.getByRole("treeitem", { name: /Opening scene/ });
+    await user.click(within(row).getByRole("button", { name: "More actions" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Delete" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent('Delete "Opening scene"?');
+    expect(dialog).toHaveTextContent("This permanently deletes the doc.");
+    expect(dialog).not.toHaveTextContent(/book and everything inside/i);
+  });
 });

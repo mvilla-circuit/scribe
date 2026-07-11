@@ -44,13 +44,7 @@ import {
   useRenameFolder,
 } from "@/data/folders";
 import { endPositionFor } from "@/data/ordering";
-import {
-  buildTree,
-  childrenOf,
-  countBooksInFolder,
-  countChildren,
-  ROOT,
-} from "@/data/tree";
+import { buildTree, childrenOf, countBooksInFolder, ROOT } from "@/data/tree";
 import { useCreateRootItem } from "@/data/use-create-root-item";
 import { copyPageLink } from "@/editor/copy-page-link";
 import { useUIStore } from "@/store/ui";
@@ -68,7 +62,13 @@ import { TreeSkeleton } from "./tree-skeleton";
 
 type DeleteTarget =
   | { kind: "folder"; id: string; name: string; books: number }
-  | { kind: "collection"; id: string; name: string; children: number }
+  | {
+      kind: "collection";
+      id: string;
+      name: string;
+      movableChildren: number;
+      docs: number;
+    }
   | { kind: "book"; id: string; title: string }
   | { kind: "entry"; id: string; title: string };
 
@@ -344,11 +344,14 @@ export function SidebarTree() {
           books: countBooksInFolder(model, node.id),
         });
       } else if (node.child.kind === "collection") {
+        const kids = childrenOf(model, node.id);
+        const docs = kids.filter((child) => child.kind === "entry").length;
         requestDelete({
           kind: "collection",
           id: node.id,
           name: node.child.collection.name,
-          children: countChildren(model, node.id),
+          movableChildren: kids.length - docs,
+          docs,
         });
       } else if (node.child.kind === "book") {
         requestDelete({
@@ -568,8 +571,10 @@ function deleteTitle(target: DeleteTarget | null): string {
 function deleteDescription(target: DeleteTarget | null): string {
   if (!target) return "";
   if (target.kind === "folder") return describeFolderDelete(target.books);
-  if (target.kind === "collection")
-    return describeCollectionDelete(target.children);
+  if (target.kind === "collection") {
+    return describeCollectionDelete(target.movableChildren, target.docs);
+  }
+  if (target.kind === "entry") return "This permanently deletes the doc.";
   return "This permanently deletes the book and everything inside it.";
 }
 
@@ -578,9 +583,22 @@ function describeFolderDelete(books: number): string {
   return `The ${books} book${books === 1 ? "" : "s"} inside will move to the top level.`;
 }
 
-function describeCollectionDelete(children: number): string {
-  if (children === 0) return "This collection is empty and will be removed.";
-  return `The ${children} item${children === 1 ? "" : "s"} inside will move to the top level.`;
+function describeCollectionDelete(movable: number, docs: number): string {
+  if (movable === 0 && docs === 0) {
+    return "This collection is empty and will be removed.";
+  }
+  const parts: string[] = [];
+  if (movable > 0) {
+    parts.push(
+      `The ${movable} item${movable === 1 ? "" : "s"} inside will move to the top level.`,
+    );
+  }
+  if (docs > 0) {
+    parts.push(
+      `The ${docs} doc${docs === 1 ? "" : "s"} inside will be permanently deleted.`,
+    );
+  }
+  return parts.join(" ");
 }
 
 function EmptyState({ onCreateBook }: { onCreateBook: () => void }) {

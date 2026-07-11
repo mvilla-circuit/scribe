@@ -184,7 +184,8 @@ export function useUpdateCollection() {
 
 /**
  * Mutation hook that deletes a collection. Its books and child collections are
- * reparented to the top level by the `ON DELETE SET NULL` FKs, not destroyed.
+ * reparented to the top level by the `ON DELETE SET NULL` FKs; its entries are
+ * cascade-deleted with the collection.
  */
 export function useDeleteCollection() {
   const qc = useQueryClient();
