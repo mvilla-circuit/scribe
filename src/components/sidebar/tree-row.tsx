@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, type ReactNode, useMemo } from "react";
 
 import { PageIcon } from "@/components/book/icons";
 import { TreeRowShell } from "@/components/tree/tree-row-shell";
@@ -8,7 +8,7 @@ import type { Collection } from "@/data/collections";
 import { collectionDescendants } from "@/data/tree";
 import { cn } from "@/lib/utils";
 
-import { type FlatNode } from "./dnd-tree";
+import { type FlatNode, isCollectionLeaf } from "./dnd-tree";
 import {
   BookIcon,
   BookPlusIcon,
@@ -24,6 +24,72 @@ import {
   WhiteboardIcon,
 } from "./icons";
 import { SIDEBAR_ICON_SIZE, SidebarRowOverlay } from "./sidebar-row";
+
+function treeChildLabel(child: FlatNode["child"]): string {
+  switch (child.kind) {
+    case "folder":
+      return child.folder.name;
+    case "collection":
+      return child.collection.name;
+    case "book":
+      return child.book.title;
+    case "entry":
+      return child.entry.title;
+    case "datagrid":
+      return child.datagrid.name;
+    case "whiteboard":
+      return child.whiteboard.name;
+  }
+}
+
+function treeChildCustomIcon(child: FlatNode["child"]): string | null {
+  switch (child.kind) {
+    case "folder":
+      return null;
+    case "collection":
+      return child.collection.icon;
+    case "book":
+      return child.book.icon;
+    case "entry":
+      return child.entry.icon;
+    case "datagrid":
+      return child.datagrid.icon;
+    case "whiteboard":
+      return child.whiteboard.icon;
+  }
+}
+
+function treeChildDefaultIcon(
+  child: FlatNode["child"],
+  expanded: boolean,
+): ReactNode {
+  switch (child.kind) {
+    case "folder":
+      return expanded ? (
+        <FolderOpenIcon size={SIDEBAR_ICON_SIZE} />
+      ) : (
+        <FolderIcon size={SIDEBAR_ICON_SIZE} />
+      );
+    case "collection":
+      return <CollectionIcon size={SIDEBAR_ICON_SIZE} />;
+    case "book":
+      return <BookIcon size={SIDEBAR_ICON_SIZE} />;
+    case "entry":
+      return <PageIcon size={SIDEBAR_ICON_SIZE} />;
+    case "datagrid":
+      return <DatagridIcon size={SIDEBAR_ICON_SIZE} />;
+    case "whiteboard":
+      return <WhiteboardIcon size={SIDEBAR_ICON_SIZE} />;
+  }
+}
+
+function treeChildIcon(child: FlatNode["child"], expanded = false): ReactNode {
+  const custom = treeChildCustomIcon(child);
+  if (custom) {
+    return <DocumentIcon icon={custom} size={SIDEBAR_ICON_SIZE} />;
+  }
+  return treeChildDefaultIcon(child, expanded);
+}
 
 // Handlers take the row's id/node so the parent can pass one stable set of
 // callbacks for the whole tree (rather than a fresh closure per row per render),
@@ -93,21 +159,8 @@ export const TreeRow = memo(function TreeRow({
   const child = node.child;
   const isFolder = child.kind === "folder";
   const isCollection = child.kind === "collection";
-  const isEntry = child.kind === "entry";
-  const isDatagrid = child.kind === "datagrid";
-  const isWhiteboard = child.kind === "whiteboard";
-  const label =
-    child.kind === "folder"
-      ? child.folder.name
-      : child.kind === "collection"
-        ? child.collection.name
-        : child.kind === "book"
-          ? child.book.title
-          : child.kind === "entry"
-            ? child.entry.title
-            : child.kind === "datagrid"
-              ? child.datagrid.name
-              : child.whiteboard.name;
+  const isLeaf = isCollectionLeaf(child.kind);
+  const label = treeChildLabel(child);
 
   // The set of collections this node may move into: never itself, never one of
   // its own descendants (which would form a cycle), and never its current
@@ -161,11 +214,7 @@ export const TreeRow = memo(function TreeRow({
         expanded ? "text-accent" : "text-muted",
       )}
     >
-      {child.kind === "collection" && child.collection.icon ? (
-        <DocumentIcon icon={child.collection.icon} size={SIDEBAR_ICON_SIZE} />
-      ) : (
-        <CollectionIcon size={SIDEBAR_ICON_SIZE} />
-      )}
+      {treeChildIcon(child)}
     </button>
   ) : (
     <span
@@ -176,29 +225,7 @@ export const TreeRow = memo(function TreeRow({
         isFolder && "scribe-icon-pop",
       )}
     >
-      {isFolder ? (
-        expanded ? (
-          <FolderOpenIcon size={SIDEBAR_ICON_SIZE} />
-        ) : (
-          <FolderIcon size={SIDEBAR_ICON_SIZE} />
-        )
-      ) : child.kind === "book" && child.book.icon ? (
-        <DocumentIcon icon={child.book.icon} size={SIDEBAR_ICON_SIZE} />
-      ) : child.kind === "entry" && child.entry.icon ? (
-        <DocumentIcon icon={child.entry.icon} size={SIDEBAR_ICON_SIZE} />
-      ) : child.kind === "datagrid" && child.datagrid.icon ? (
-        <DocumentIcon icon={child.datagrid.icon} size={SIDEBAR_ICON_SIZE} />
-      ) : child.kind === "whiteboard" && child.whiteboard.icon ? (
-        <DocumentIcon icon={child.whiteboard.icon} size={SIDEBAR_ICON_SIZE} />
-      ) : isEntry ? (
-        <PageIcon size={SIDEBAR_ICON_SIZE} />
-      ) : child.kind === "datagrid" ? (
-        <DatagridIcon size={SIDEBAR_ICON_SIZE} />
-      ) : child.kind === "whiteboard" ? (
-        <WhiteboardIcon size={SIDEBAR_ICON_SIZE} />
-      ) : (
-        <BookIcon size={SIDEBAR_ICON_SIZE} />
-      )}
+      {treeChildIcon(child, expanded)}
     </span>
   );
 
@@ -214,123 +241,126 @@ export const TreeRow = memo(function TreeRow({
         ]
       : [];
 
-  const menuActions: RowAction[] = isCollection
-    ? [
-        {
-          icon: <BookPlusIcon size={15} />,
-          label: "New book",
-          onSelect: () => {
-            onNewBookInCollection(node.id);
-          },
+  let menuActions: RowAction[];
+  if (isCollection) {
+    menuActions = [
+      {
+        icon: <BookPlusIcon size={15} />,
+        label: "New book",
+        onSelect: () => {
+          onNewBookInCollection(node.id);
         },
-        {
-          icon: <CollectionPlusIcon size={15} />,
-          label: "New collection",
-          onSelect: () => {
-            onNewCollectionInside(node.id);
-          },
+      },
+      {
+        icon: <CollectionPlusIcon size={15} />,
+        label: "New collection",
+        onSelect: () => {
+          onNewCollectionInside(node.id);
         },
-        {
-          icon: <PageIcon size={15} />,
-          label: "New doc",
-          onSelect: () => {
-            onNewEntryInside(node.id);
-          },
+      },
+      {
+        icon: <PageIcon size={15} />,
+        label: "New doc",
+        onSelect: () => {
+          onNewEntryInside(node.id);
         },
-        {
-          icon: <DatagridIcon size={15} />,
-          label: "New datagrid",
-          onSelect: () => {
-            onNewDatagridInside(node.id);
-          },
+      },
+      {
+        icon: <DatagridIcon size={15} />,
+        label: "New datagrid",
+        onSelect: () => {
+          onNewDatagridInside(node.id);
         },
-        {
-          icon: <WhiteboardIcon size={15} />,
-          label: "New whiteboard",
-          onSelect: () => {
-            onNewWhiteboardInside(node.id);
-          },
+      },
+      {
+        icon: <WhiteboardIcon size={15} />,
+        label: "New whiteboard",
+        onSelect: () => {
+          onNewWhiteboardInside(node.id);
         },
-        {
-          icon: <PencilIcon size={15} />,
-          label: "Rename",
-          onSelect: () => {
-            onStartRename(node.id);
-          },
-          separatorBefore: true,
+      },
+      {
+        icon: <PencilIcon size={15} />,
+        label: "Rename",
+        onSelect: () => {
+          onStartRename(node.id);
         },
-        ...moveAction,
-        {
-          icon: <TrashIcon size={15} />,
-          label: "Delete",
-          onSelect: () => {
-            onDelete(node);
-          },
-          danger: true,
-          separatorBefore: true,
+        separatorBefore: true,
+      },
+      ...moveAction,
+      {
+        icon: <TrashIcon size={15} />,
+        label: "Delete",
+        onSelect: () => {
+          onDelete(node);
         },
-      ]
-    : isEntry || isDatagrid || isWhiteboard
-      ? [
-          {
-            icon: <PencilIcon size={15} />,
-            label: "Rename",
-            onSelect: () => {
-              onStartRename(node.id);
+        danger: true,
+        separatorBefore: true,
+      },
+    ];
+  } else if (isLeaf) {
+    menuActions = [
+      {
+        icon: <PencilIcon size={15} />,
+        label: "Rename",
+        onSelect: () => {
+          onStartRename(node.id);
+        },
+      },
+      {
+        icon: <TrashIcon size={15} />,
+        label: "Delete",
+        onSelect: () => {
+          onDelete(node);
+        },
+        danger: true,
+        separatorBefore: true,
+      },
+    ];
+  } else {
+    menuActions = [
+      ...(isFolder
+        ? [
+            {
+              icon: <BookPlusIcon size={15} />,
+              label: "New book",
+              onSelect: () => {
+                onNewBookInside(node.id);
+              },
             },
-          },
-          {
-            icon: <TrashIcon size={15} />,
-            label: "Delete",
-            onSelect: () => {
-              onDelete(node);
+          ]
+        : []),
+      {
+        icon: <PencilIcon size={15} />,
+        label: "Rename",
+        onSelect: () => {
+          onStartRename(node.id);
+        },
+        separatorBefore: isFolder,
+      },
+      ...(!isFolder
+        ? [
+            {
+              icon: <LinkIcon size={15} />,
+              label: "Copy link",
+              onSelect: () => {
+                onCopyLink(node.id);
+              },
             },
-            danger: true,
-            separatorBefore: true,
-          },
-        ]
-      : [
-          ...(isFolder
-            ? [
-                {
-                  icon: <BookPlusIcon size={15} />,
-                  label: "New book",
-                  onSelect: () => {
-                    onNewBookInside(node.id);
-                  },
-                },
-              ]
-            : []),
-          {
-            icon: <PencilIcon size={15} />,
-            label: "Rename",
-            onSelect: () => {
-              onStartRename(node.id);
-            },
-            separatorBefore: isFolder,
-          },
-          ...(!isFolder
-            ? [
-                {
-                  icon: <LinkIcon size={15} />,
-                  label: "Copy link",
-                  onSelect: () => {
-                    onCopyLink(node.id);
-                  },
-                },
-              ]
-            : []),
-          ...(isFolder ? [] : moveAction),
-          {
-            icon: <TrashIcon size={15} />,
-            label: "Delete",
-            onSelect: () => {
-              onDelete(node);
-            },
-            danger: true,
-            separatorBefore: true,
-          },
-        ];
+          ]
+        : []),
+      ...(isFolder ? [] : moveAction),
+      {
+        icon: <TrashIcon size={15} />,
+        label: "Delete",
+        onSelect: () => {
+          onDelete(node);
+        },
+        danger: true,
+        separatorBefore: true,
+      },
+    ];
+  }
 
   return (
     <TreeRowShell
@@ -371,50 +401,10 @@ export const TreeRow = memo(function TreeRow({
 // A lightweight, non-interactive copy of a row rendered inside the DragOverlay
 // so the lifted item reads as a single clean chip following the cursor.
 export function DragRowOverlay({ node }: { node: FlatNode }) {
-  const child = node.child;
-  const icon =
-    child.kind === "folder" ? (
-      <FolderIcon size={SIDEBAR_ICON_SIZE} />
-    ) : child.kind === "collection" ? (
-      child.collection.icon ? (
-        <DocumentIcon icon={child.collection.icon} size={SIDEBAR_ICON_SIZE} />
-      ) : (
-        <CollectionIcon size={SIDEBAR_ICON_SIZE} />
-      )
-    ) : child.kind === "book" ? (
-      child.book.icon ? (
-        <DocumentIcon icon={child.book.icon} size={SIDEBAR_ICON_SIZE} />
-      ) : (
-        <BookIcon size={SIDEBAR_ICON_SIZE} />
-      )
-    ) : child.kind === "datagrid" ? (
-      child.datagrid.icon ? (
-        <DocumentIcon icon={child.datagrid.icon} size={SIDEBAR_ICON_SIZE} />
-      ) : (
-        <DatagridIcon size={SIDEBAR_ICON_SIZE} />
-      )
-    ) : child.kind === "whiteboard" ? (
-      child.whiteboard.icon ? (
-        <DocumentIcon icon={child.whiteboard.icon} size={SIDEBAR_ICON_SIZE} />
-      ) : (
-        <WhiteboardIcon size={SIDEBAR_ICON_SIZE} />
-      )
-    ) : child.entry.icon ? (
-      <DocumentIcon icon={child.entry.icon} size={SIDEBAR_ICON_SIZE} />
-    ) : (
-      <PageIcon size={SIDEBAR_ICON_SIZE} />
-    );
-  const label =
-    child.kind === "folder"
-      ? child.folder.name
-      : child.kind === "collection"
-        ? child.collection.name
-        : child.kind === "book"
-          ? child.book.title
-          : child.kind === "entry"
-            ? child.entry.title
-            : child.kind === "datagrid"
-              ? child.datagrid.name
-              : child.whiteboard.name;
-  return <SidebarRowOverlay icon={icon} label={label} />;
+  return (
+    <SidebarRowOverlay
+      icon={treeChildIcon(node.child)}
+      label={treeChildLabel(node.child)}
+    />
+  );
 }

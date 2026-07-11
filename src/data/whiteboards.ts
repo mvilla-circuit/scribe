@@ -108,6 +108,10 @@ function newWhiteboardRow(
   };
 }
 
+function emptySceneJson(): Json {
+  return sceneToJson(emptyWhiteboardScene());
+}
+
 /** Mutation hook that creates a whiteboard in a collection. */
 export function useCreateWhiteboard() {
   const qc = useQueryClient();
@@ -131,7 +135,7 @@ export function useCreateWhiteboard() {
       await execWrite(
         supabase
           .from("whiteboards")
-          .insert({ ...row, scene: sceneToJson(emptyWhiteboardScene()) }),
+          .insert({ ...row, scene: emptySceneJson() }),
       );
     },
     ...handlers,
@@ -139,7 +143,7 @@ export function useCreateWhiteboard() {
       const context = await handlers.onMutate(input);
       const sceneKey = whiteboardSceneKey(input.id);
       const previousScene = qc.getQueryData<Json>(sceneKey);
-      qc.setQueryData(sceneKey, sceneToJson(emptyWhiteboardScene()));
+      qc.setQueryData(sceneKey, emptySceneJson());
       return { ...context, sceneKey, previousScene };
     },
     onError: (error, input, context) => {

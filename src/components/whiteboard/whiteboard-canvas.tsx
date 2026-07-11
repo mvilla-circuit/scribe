@@ -65,8 +65,47 @@ type Interaction =
       moved: boolean;
     };
 
-const clampZoom = (zoom: number) =>
-  Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom));
+function clampZoom(zoom: number): number {
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom));
+}
+
+function sceneDelta(
+  clientX: number,
+  clientY: number,
+  startX: number,
+  startY: number,
+  zoom: number,
+): { x: number; y: number } {
+  return {
+    x: (clientX - startX) / zoom,
+    y: (clientY - startY) / zoom,
+  };
+}
+
+function resizeSize(
+  startW: number,
+  startH: number,
+  delta: { x: number; y: number },
+): { w: number; h: number } {
+  return {
+    w: Math.max(MIN_ITEM_SIZE, startW + delta.x),
+    h: Math.max(MIN_ITEM_SIZE, startH + delta.y),
+  };
+}
+
+function panFrom(
+  startCam: Camera,
+  clientX: number,
+  clientY: number,
+  startX: number,
+  startY: number,
+): Camera {
+  return {
+    x: startCam.x + (clientX - startX),
+    y: startCam.y + (clientY - startY),
+    zoom: startCam.zoom,
+  };
+}
 
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -132,22 +171,16 @@ export function WhiteboardCanvas(props: WhiteboardCanvasProps) {
       const { x: cx, y: cy } = lastPointer.current;
       const zoom = cameraRef.current.zoom;
       if (it.kind === "drag") {
-        setDragOffset({
-          x: (cx - it.startX) / zoom,
-          y: (cy - it.startY) / zoom,
-        });
+        setDragOffset(sceneDelta(cx, cy, it.startX, it.startY, zoom));
       } else if (it.kind === "resize") {
-        setResizePreview({
-          id: it.id,
-          w: Math.max(MIN_ITEM_SIZE, it.startW + (cx - it.startX) / zoom),
-          h: Math.max(MIN_ITEM_SIZE, it.startH + (cy - it.startY) / zoom),
-        });
+        const size = resizeSize(
+          it.startW,
+          it.startH,
+          sceneDelta(cx, cy, it.startX, it.startY, zoom),
+        );
+        setResizePreview({ id: it.id, ...size });
       } else {
-        setPanCamera({
-          x: it.startCam.x + (cx - it.startX),
-          y: it.startCam.y + (cy - it.startY),
-          zoom: it.startCam.zoom,
-        });
+        setPanCamera(panFrom(it.startCam, cx, cy, it.startX, it.startY));
       }
     });
   }, []);
@@ -171,32 +204,33 @@ export function WhiteboardCanvas(props: WhiteboardCanvasProps) {
         frame.current = 0;
       }
       const zoom = cameraRef.current.zoom;
-      const cx = e.clientX;
-      const cy = e.clientY;
+      const { clientX: cx, clientY: cy } = e;
       if (it.kind === "drag") {
         setDragOffset(null);
         if (it.moved) {
-          const dx = (cx - it.startX) / zoom;
-          const dy = (cy - it.startY) / zoom;
-          if (dx !== 0 || dy !== 0)
-            propsRef.current.onMoveItems(it.ids, { x: dx, y: dy });
+          const delta = sceneDelta(cx, cy, it.startX, it.startY, zoom);
+          if (delta.x !== 0 || delta.y !== 0) {
+            propsRef.current.onMoveItems(it.ids, delta);
+          }
         }
       } else if (it.kind === "resize") {
         setResizePreview(null);
         if (it.moved) {
-          propsRef.current.onResizeItem(it.id, {
-            w: Math.max(MIN_ITEM_SIZE, it.startW + (cx - it.startX) / zoom),
-            h: Math.max(MIN_ITEM_SIZE, it.startH + (cy - it.startY) / zoom),
-          });
+          propsRef.current.onResizeItem(
+            it.id,
+            resizeSize(
+              it.startW,
+              it.startH,
+              sceneDelta(cx, cy, it.startX, it.startY, zoom),
+            ),
+          );
         }
       } else {
         setPanCamera(null);
         if (it.moved) {
-          propsRef.current.onCameraChange({
-            x: it.startCam.x + (cx - it.startX),
-            y: it.startCam.y + (cy - it.startY),
-            zoom: it.startCam.zoom,
-          });
+          propsRef.current.onCameraChange(
+            panFrom(it.startCam, cx, cy, it.startX, it.startY),
+          );
         }
       }
     };
@@ -450,6 +484,55 @@ interface ItemViewProps {
   onSendToBack: (id: string) => void;
 }
 
+function ItemBody({
+  item,
+  editing,
+  onCommitText,
+  onCommitTitle,
+  onStopEditing,
+}: {
+  item: WhiteboardItem;
+  editing: boolean;
+  onCommitText: (id: string, text: string) => void;
+  onCommitTitle: (id: string, title: string) => void;
+  onStopEditing: () => void;
+}) {
+  if (item.type === "sticky") {
+    return (
+      <WhiteboardSticky
+        item={item}
+        editing={editing}
+        onCommit={(text) => {
+          onCommitText(item.id, text);
+        }}
+        onStopEditing={onStopEditing}
+      />
+    );
+  }
+  if (item.type === "text") {
+    return (
+      <WhiteboardText
+        item={item}
+        editing={editing}
+        onCommit={(text) => {
+          onCommitText(item.id, text);
+        }}
+        onStopEditing={onStopEditing}
+      />
+    );
+  }
+  return (
+    <WhiteboardFrame
+      item={item}
+      editing={editing}
+      onCommit={(title) => {
+        onCommitTitle(item.id, title);
+      }}
+      onStopEditing={onStopEditing}
+    />
+  );
+}
+
 const ItemView = memo(function ItemView({
   item,
   selected,
@@ -469,42 +552,6 @@ const ItemView = memo(function ItemView({
 }: ItemViewProps) {
   const w = resizePreview?.w ?? item.w;
   const h = resizePreview?.h ?? item.h;
-
-  let body: React.ReactNode;
-  if (item.type === "sticky") {
-    body = (
-      <WhiteboardSticky
-        item={item}
-        editing={editing}
-        onCommit={(text) => {
-          onCommitText(item.id, text);
-        }}
-        onStopEditing={onStopEditing}
-      />
-    );
-  } else if (item.type === "text") {
-    body = (
-      <WhiteboardText
-        item={item}
-        editing={editing}
-        onCommit={(text) => {
-          onCommitText(item.id, text);
-        }}
-        onStopEditing={onStopEditing}
-      />
-    );
-  } else {
-    body = (
-      <WhiteboardFrame
-        item={item}
-        editing={editing}
-        onCommit={(title) => {
-          onCommitTitle(item.id, title);
-        }}
-        onStopEditing={onStopEditing}
-      />
-    );
-  }
 
   return (
     <ContextMenu>
@@ -535,7 +582,13 @@ const ItemView = memo(function ItemView({
               : undefined,
           }}
         >
-          {body}
+          <ItemBody
+            item={item}
+            editing={editing}
+            onCommitText={onCommitText}
+            onCommitTitle={onCommitTitle}
+            onStopEditing={onStopEditing}
+          />
           {showResize && (
             <button
               type="button"

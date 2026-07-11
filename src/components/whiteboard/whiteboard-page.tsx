@@ -31,7 +31,6 @@ import {
   setItemText,
   setStickyColor,
   setZOrder,
-  type StickyColor,
   type WhiteboardItem,
   type WhiteboardScene,
 } from "@/lib/whiteboard-scene";
@@ -134,6 +133,13 @@ function WhiteboardEditor({
     setHistory((h) => ({ past: h.past + 1, future: 0 }));
   }, []);
 
+  const edit = useCallback(
+    (transform: (current: WhiteboardScene) => WhiteboardScene) => {
+      apply(transform(sceneRef.current));
+    },
+    [apply],
+  );
+
   // Camera changes are persisted but not undoable — nudging the viewport
   // shouldn't consume the undo history.
   const setCamera = useCallback((camera: WhiteboardScene["camera"]) => {
@@ -213,6 +219,17 @@ function WhiteboardEditor({
     [saveScene, whiteboardId],
   );
 
+  // Drop new items near the top-left of the current viewport so they land in
+  // view regardless of how the camera has been panned/zoomed.
+  const spawnPoint = useCallback(() => {
+    const { camera, items } = sceneRef.current;
+    const stagger = (items.length % 6) * 16;
+    return {
+      x: Math.round(-camera.x / camera.zoom) + 60 + stagger,
+      y: Math.round(-camera.y / camera.zoom) + 60 + stagger,
+    };
+  }, []);
+
   const addAndSelect = useCallback(
     (make: (z: number) => WhiteboardItem) => {
       const cur = sceneRef.current;
@@ -221,17 +238,6 @@ function WhiteboardEditor({
     },
     [apply],
   );
-
-  // Drop new items near the top-left of the current viewport so they land in
-  // view regardless of how the camera has been panned/zoomed.
-  const spawnPoint = useCallback(() => {
-    const { camera } = sceneRef.current;
-    const stagger = (sceneRef.current.items.length % 6) * 16;
-    return {
-      x: Math.round(-camera.x / camera.zoom) + 60 + stagger,
-      y: Math.round(-camera.y / camera.zoom) + 60 + stagger,
-    };
-  }, []);
 
   const addSticky = useCallback(() => {
     const { x, y } = spawnPoint();
@@ -264,19 +270,22 @@ function WhiteboardEditor({
 
   const addFrame = useCallback(() => {
     const { x, y } = spawnPoint();
+    const cur = sceneRef.current;
     // Frames sit behind everything else, so they take a low z rather than the
-    // next-on-top value the notes get.
-    addAndSelect(() => ({
-      id: crypto.randomUUID(),
-      type: "frame",
-      x,
-      y,
-      w: 420,
-      h: 300,
-      z: Math.min(0, ...sceneRef.current.items.map((i) => i.z)) - 1,
-      title: "Frame",
-    }));
-  }, [addAndSelect, spawnPoint]);
+    // next-on-top value notes get via addAndSelect.
+    apply(
+      addItem(cur, {
+        id: crypto.randomUUID(),
+        type: "frame",
+        x,
+        y,
+        w: 420,
+        h: 300,
+        z: Math.min(0, ...cur.items.map((i) => i.z)) - 1,
+        title: "Frame",
+      }),
+    );
+  }, [apply, spawnPoint]);
 
   return (
     <div
@@ -321,25 +330,25 @@ function WhiteboardEditor({
         <WhiteboardCanvas
           scene={scene}
           onMoveItems={(ids, offset) => {
-            apply(moveItems(sceneRef.current, ids, offset));
+            edit((cur) => moveItems(cur, ids, offset));
           }}
           onResizeItem={(id, size) => {
-            apply(resizeItem(sceneRef.current, id, size));
+            edit((cur) => resizeItem(cur, id, size));
           }}
           onRemoveItems={(ids) => {
-            apply(removeItems(sceneRef.current, ids));
+            edit((cur) => removeItems(cur, ids));
           }}
           onSetItemText={(id, text) => {
-            apply(setItemText(sceneRef.current, id, text));
+            edit((cur) => setItemText(cur, id, text));
           }}
           onSetFrameTitle={(id, title) => {
-            apply(setFrameTitle(sceneRef.current, id, title));
+            edit((cur) => setFrameTitle(cur, id, title));
           }}
-          onSetStickyColor={(id, color: StickyColor) => {
-            apply(setStickyColor(sceneRef.current, id, color));
+          onSetStickyColor={(id, color) => {
+            edit((cur) => setStickyColor(cur, id, color));
           }}
           onSetZOrder={(id, z) => {
-            apply(setZOrder(sceneRef.current, id, z));
+            edit((cur) => setZOrder(cur, id, z));
           }}
           onCameraChange={setCamera}
           onUndo={undo}

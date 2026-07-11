@@ -15,6 +15,13 @@ export type FlatNode = DndNode & {
   child: TreeChild;
 };
 
+/** Entries, datagrids, and whiteboards only nest under collections. */
+export function isCollectionLeaf(
+  kind: FlatNode["kind"],
+): kind is "entry" | "datagrid" | "whiteboard" {
+  return kind === "entry" || kind === "datagrid" || kind === "whiteboard";
+}
+
 // Depth-first flatten that only descends into expanded containers (folders and
 // collections). Books and entries are always leaves.
 export function flattenTree(
@@ -48,14 +55,15 @@ export function flattenTree(
   return out;
 }
 
-// Projection rules for the mixed folder/collection/book/entry/datagrid tree:
+// Projection rules for the mixed folder/collection/book/entry/datagrid/
+// whiteboard tree:
 // - Folders are root-only (they never gain a parent).
 // - A book may nest under a folder or a collection (one level below the
 //   preceding container), or sit at the root.
 // - A collection may nest under another collection, or sit at the root, but
 //   never inside a folder -- neither ever nests under a book or entry.
-// - An entry or a datagrid may nest under a collection only (never root or a
-//   folder); both behave identically as collection-scoped leaves.
+// - Collection-scoped leaves (entry/datagrid/whiteboard) nest under a
+//   collection only (never root or a folder).
 export function getProjection(
   nodes: FlatNode[],
   activeId: string,
@@ -67,31 +75,19 @@ export function getProjection(
     fixedProjection: (a) =>
       a.kind === "folder" ? { depth: 0, parentId: null } : null,
     maxDepthForPrev: (prev, a) => {
-      if (a.kind === "collection") {
-        // Collections only nest under collections; otherwise they can, at most,
-        // sit at the preceding row's own level (resolved parent validated below).
+      // Collections and collection-scoped leaves only nest under collections;
+      // otherwise they sit at the preceding row's own level (parent validated
+      // below). Books nest one level under a folder or collection.
+      if (a.kind === "collection" || isCollectionLeaf(a.kind)) {
         return prev.kind === "collection" ? prev.depth + 1 : prev.depth;
       }
-      if (
-        a.kind === "entry" ||
-        a.kind === "datagrid" ||
-        a.kind === "whiteboard"
-      ) {
-        // Collection-scoped leaves only nest under collections.
-        return prev.kind === "collection" ? prev.depth + 1 : prev.depth;
-      }
-      // Books nest one level under a folder or collection, else sit as a sibling.
       return (
         prev.depth +
         (prev.kind === "folder" || prev.kind === "collection" ? 1 : 0)
       );
     },
     parentWhenNestedUnder: (prev, a) => {
-      if (
-        a.kind === "entry" ||
-        a.kind === "datagrid" ||
-        a.kind === "whiteboard"
-      ) {
+      if (isCollectionLeaf(a.kind)) {
         return prev.kind === "collection" ? prev.id : prev.parentId;
       }
       return prev.kind === "folder" || prev.kind === "collection"
@@ -111,11 +107,7 @@ export function getProjection(
   }
 
   // Collection-scoped leaves require a collection parent.
-  if (
-    active.kind === "entry" ||
-    active.kind === "datagrid" ||
-    active.kind === "whiteboard"
-  ) {
+  if (isCollectionLeaf(active.kind)) {
     if (!projection.parentId) return null;
     const parent = nodes.find((n) => n.id === projection.parentId);
     if (parent?.kind !== "collection") return null;

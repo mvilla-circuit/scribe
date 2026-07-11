@@ -1,7 +1,19 @@
 import type { Json } from "@/lib/database.types";
 
+/**
+ * Named sticky colors in picker order. The {@link StickyColor} union is derived
+ * from this list so the palette and validators stay in lock-step.
+ */
+export const STICKY_COLOR_ORDER = [
+  "yellow",
+  "pink",
+  "blue",
+  "green",
+  "orange",
+] as const;
+
 /** Named colors available for sticky notes. */
-export type StickyColor = "yellow" | "pink" | "blue" | "green" | "orange";
+export type StickyColor = (typeof STICKY_COLOR_ORDER)[number];
 
 /**
  * Shared geometry and stacking fields for whiteboard items.
@@ -54,13 +66,7 @@ export interface WhiteboardUndoStack {
   redo: () => WhiteboardScene;
 }
 
-const STICKY_COLORS = new Set<StickyColor>([
-  "yellow",
-  "pink",
-  "blue",
-  "green",
-  "orange",
-]);
+const STICKY_COLORS = new Set<string>(STICKY_COLOR_ORDER);
 
 /** Returns a fresh versioned scene with no items. */
 export function emptyWhiteboardScene(): WhiteboardScene {
@@ -91,7 +97,7 @@ function hasGeometry(value: Record<string, unknown>): boolean {
 }
 
 function isStickyColor(value: unknown): value is StickyColor {
-  return typeof value === "string" && STICKY_COLORS.has(value as StickyColor);
+  return typeof value === "string" && STICKY_COLORS.has(value);
 }
 
 function isWhiteboardItem(value: unknown): value is WhiteboardItem {
@@ -145,6 +151,13 @@ export function parseWhiteboardScene(input: unknown): WhiteboardScene {
   return isValidWhiteboardScene(input) ? input : emptyWhiteboardScene();
 }
 
+function mapItems(
+  scene: WhiteboardScene,
+  map: (item: WhiteboardItem) => WhiteboardItem,
+): WhiteboardScene {
+  return { ...scene, items: scene.items.map(map) };
+}
+
 /** Returns a scene with an item appended, leaving the input scene unchanged. */
 export function addItem(
   scene: WhiteboardScene,
@@ -160,14 +173,11 @@ export function moveItems(
   offset: { x: number; y: number },
 ): WhiteboardScene {
   const selectedIds = new Set(ids);
-  return {
-    ...scene,
-    items: scene.items.map((item) =>
-      selectedIds.has(item.id)
-        ? { ...item, x: item.x + offset.x, y: item.y + offset.y }
-        : item,
-    ),
-  };
+  return mapItems(scene, (item) =>
+    selectedIds.has(item.id)
+      ? { ...item, x: item.x + offset.x, y: item.y + offset.y }
+      : item,
+  );
 }
 
 /** Replaces the width and height of one item. */
@@ -176,12 +186,9 @@ export function resizeItem(
   id: string,
   size: { w: number; h: number },
 ): WhiteboardScene {
-  return {
-    ...scene,
-    items: scene.items.map((item) =>
-      item.id === id ? { ...item, ...size } : item,
-    ),
-  };
+  return mapItems(scene, (item) =>
+    item.id === id ? { ...item, ...size } : item,
+  );
 }
 
 /** Changes the named color of one sticky note. */
@@ -190,12 +197,9 @@ export function setStickyColor(
   id: string,
   color: StickyColor,
 ): WhiteboardScene {
-  return {
-    ...scene,
-    items: scene.items.map((item) =>
-      item.id === id && item.type === "sticky" ? { ...item, color } : item,
-    ),
-  };
+  return mapItems(scene, (item) =>
+    item.id === id && item.type === "sticky" ? { ...item, color } : item,
+  );
 }
 
 /** Sets the stacking order of one item. */
@@ -204,10 +208,7 @@ export function setZOrder(
   id: string,
   z: number,
 ): WhiteboardScene {
-  return {
-    ...scene,
-    items: scene.items.map((item) => (item.id === id ? { ...item, z } : item)),
-  };
+  return mapItems(scene, (item) => (item.id === id ? { ...item, z } : item));
 }
 
 /** Removes every item whose id is in the requested set. */
@@ -228,12 +229,9 @@ export function setItemText(
   id: string,
   text: string,
 ): WhiteboardScene {
-  return {
-    ...scene,
-    items: scene.items.map((item) =>
-      item.id === id && item.type !== "frame" ? { ...item, text } : item,
-    ),
-  };
+  return mapItems(scene, (item) =>
+    item.id === id && item.type !== "frame" ? { ...item, text } : item,
+  );
 }
 
 /** Changes the title of one frame. */
@@ -242,12 +240,9 @@ export function setFrameTitle(
   id: string,
   title: string,
 ): WhiteboardScene {
-  return {
-    ...scene,
-    items: scene.items.map((item) =>
-      item.id === id && item.type === "frame" ? { ...item, title } : item,
-    ),
-  };
+  return mapItems(scene, (item) =>
+    item.id === id && item.type === "frame" ? { ...item, title } : item,
+  );
 }
 
 /**
