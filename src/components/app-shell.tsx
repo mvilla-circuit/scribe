@@ -10,6 +10,7 @@ export function AppShell() {
   useGlobalFonts();
   const activeBookId = useUIStore((s) => s.activeBookId);
   const activeCollectionId = useUIStore((s) => s.activeCollectionId);
+  const activeEntryId = useUIStore((s) => s.activeEntryId);
   const { data: books } = useBooks();
   const activeBook = books?.find((b) => b.id === activeBookId) ?? null;
 
@@ -22,6 +23,7 @@ export function AppShell() {
             <MainPane
               activeBook={activeBook}
               activeCollectionId={activeCollectionId}
+              activeEntryId={activeEntryId}
             />
           </div>
         </section>

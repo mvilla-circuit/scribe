@@ -2,6 +2,7 @@ import type { Book } from "@/data/books";
 
 import { BookView } from "./book/book-view";
 import { CollectionPage } from "./collection/collection-page";
+import { EntryView } from "./collection/entry-view";
 import { MainEmptyState } from "./main-empty-state";
 
 /**
@@ -15,10 +16,21 @@ import { MainEmptyState } from "./main-empty-state";
 export function MainPane({
   activeBook,
   activeCollectionId,
+  activeEntryId,
 }: {
   activeBook: Book | null;
   activeCollectionId: string | null;
+  activeEntryId: string | null;
 }) {
+  if (activeCollectionId && activeEntryId) {
+    return (
+      <EntryView
+        key={activeEntryId}
+        collectionId={activeCollectionId}
+        entryId={activeEntryId}
+      />
+    );
+  }
   if (activeCollectionId) {
     return (
       <CollectionPage

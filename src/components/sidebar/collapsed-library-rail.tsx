@@ -102,19 +102,24 @@ export function CollapsedLibraryRail() {
             </CollapsedRailButton>
           );
         }
-        return (
-          <CollapsedRailButton
-            key={child.id}
-            label={child.folder.name}
-            indicator
-            onClick={() => {
-              setFolderExpanded(child.id, true);
-              setSidebarCollapsed(false);
-            }}
-          >
-            <FolderIcon size={SIDEBAR_ICON_SIZE} />
-          </CollapsedRailButton>
-        );
+        if (child.kind === "folder") {
+          return (
+            <CollapsedRailButton
+              key={child.id}
+              label={child.folder.name}
+              indicator
+              onClick={() => {
+                setFolderExpanded(child.id, true);
+                setSidebarCollapsed(false);
+              }}
+            >
+              <FolderIcon size={SIDEBAR_ICON_SIZE} />
+            </CollapsedRailButton>
+          );
+        }
+        // Entries always belong to a collection and therefore cannot appear in
+        // the root-only collapsed rail.
+        return null;
       })}
     </div>
   );

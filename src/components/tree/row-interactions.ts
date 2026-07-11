@@ -11,7 +11,7 @@ import type { CSSProperties, KeyboardEvent, MouseEvent } from "react";
  * (which wants `setNodeRef`, an inline transform `style`, the merged drag-handle
  * props, and the `isDragging` flag).
  */
-export function useSortableRow(id: string) {
+export function useSortableRow(id: string, disabled = false) {
   const {
     attributes,
     listeners,
@@ -19,7 +19,7 @@ export function useSortableRow(id: string) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({ id, disabled });
 
   const style: CSSProperties = {
     transform: CSS.Translate.toString(transform),

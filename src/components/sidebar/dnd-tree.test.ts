@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { INDENT } from "@/components/tree/tree-dnd";
 import { buildTree } from "@/data/tree";
-import { makeBook, makeCollection, makeFolder } from "@/test/fixtures";
+import {
+  makeBook,
+  makeCollection,
+  makeEntry,
+  makeFolder,
+} from "@/test/fixtures";
 
 import { flattenTree, getProjection } from "./dnd-tree";
 
@@ -119,5 +124,41 @@ describe("collections in the tree", () => {
       depth: 0,
       parentId: null,
     });
+  });
+});
+
+describe("entries in the tree", () => {
+  const entryModel = buildTree(
+    [],
+    [],
+    [makeCollection({ id: "c1" })],
+    [
+      makeEntry({
+        id: "e1",
+        collection_id: "c1",
+        title: "Opening scene",
+      }),
+    ],
+  );
+
+  it("includes entries beneath an expanded collection", () => {
+    expect(
+      flattenTree(entryModel, new Set(["c1"])).map((node) => ({
+        id: node.id,
+        depth: node.depth,
+        kind: node.kind,
+      })),
+    ).toEqual([
+      { id: "c1", depth: 0, kind: "collection" },
+      { id: "e1", depth: 1, kind: "entry" },
+    ]);
+  });
+
+  it("marks entry rows as unavailable as drag sources", () => {
+    const entry = flattenTree(entryModel, new Set(["c1"])).find(
+      (node) => node.id === "e1",
+    );
+
+    expect(entry?.draggable).toBe(false);
   });
 });

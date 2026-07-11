@@ -2,7 +2,7 @@ import { waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
 
-import { makeBook, makeCollection } from "@/test/fixtures";
+import { makeBook, makeCollection, makeEntry } from "@/test/fixtures";
 import { server } from "@/test/msw/server";
 import {
   createTestQueryClient,
@@ -172,7 +172,7 @@ describe("useMoveCollection", () => {
 });
 
 describe("useDeleteCollection", () => {
-  it("optimistically reparents child collections and books to the top level, and invalidates both caches", async () => {
+  it("reparents surviving children, removes collection entries, and invalidates affected caches", async () => {
     server.use(
       http.delete(
         COLLECTIONS_URL,
@@ -205,6 +205,13 @@ describe("useDeleteCollection", () => {
         makeBook({ id: "b2", collection_id: null }),
       ],
     );
+    client.setQueryData(
+      ["entries"],
+      [
+        makeEntry({ id: "e1", collection_id: "c1" }),
+        makeEntry({ id: "e2", collection_id: "keep" }),
+      ],
+    );
 
     const { result } = renderHookWithQuery(() => useDeleteCollection(), {
       client,
@@ -233,8 +240,15 @@ describe("useDeleteCollection", () => {
     expect(books?.find((b) => b.id === "b1")?.collection_id).toBeNull();
     expect(books?.find((b) => b.id === "b2")?.collection_id).toBeNull();
 
+    expect(
+      client
+        .getQueryData<{ id: string }[]>(["entries"])
+        ?.map((entry) => entry.id),
+    ).toEqual(["e2"]);
+
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["collections"] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["books"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["entries"] });
   });
 
   it("rolls back both caches when the server rejects the delete", async () => {

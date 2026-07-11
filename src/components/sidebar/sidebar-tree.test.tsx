@@ -1,10 +1,22 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { booksKey, collectionsKey, foldersKey } from "@/data/query-keys";
+import {
+  booksKey,
+  collectionsKey,
+  entriesKey,
+  foldersKey,
+} from "@/data/query-keys";
 import { useUIStore } from "@/store/ui";
-import { makeBook, makeCollection, makeFolder } from "@/test/fixtures";
+import {
+  makeBook,
+  makeCollection,
+  makeEntry,
+  makeFolder,
+} from "@/test/fixtures";
+import { server } from "@/test/msw/server";
 import {
   createTestQueryClient,
   renderWithProviders,
@@ -16,11 +28,8 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-// SidebarTree's mutation hooks read the session via useAuth; a lightweight stub
-// avoids standing up the real (Tauri/Supabase-backed) AuthProvider in a test
-// that never triggers a mutation.
 vi.mock("@/lib/auth", () => ({
-  useAuth: () => ({ session: null }),
+  useAuth: () => ({ session: { user: { id: "user-1" } } }),
 }));
 
 // Radix menus probe pointer-capture and scroll their focused item into view;
@@ -30,7 +39,12 @@ beforeEach(() => {
   Element.prototype.setPointerCapture = vi.fn();
   Element.prototype.releasePointerCapture = vi.fn();
   Element.prototype.scrollIntoView = vi.fn();
-  useUIStore.setState({ activeBookId: null, activeCollectionId: null });
+  useUIStore.setState({
+    activeBookId: null,
+    activeCollectionId: null,
+    activeEntryId: null,
+    expandedFolderIds: [],
+  });
 });
 
 function seedClient() {
@@ -42,6 +56,7 @@ function seedClient() {
     makeBook({ id: "bk1", title: "My Book", folder_id: null }),
   ]);
   client.setQueryData(collectionsKey, []);
+  client.setQueryData(entriesKey, []);
   return client;
 }
 
@@ -98,6 +113,7 @@ describe("SidebarTree collections", () => {
     client.setQueryData(collectionsKey, [
       makeCollection({ id: "c1", name: "The Realm" }),
     ]);
+    client.setQueryData(entriesKey, []);
     return client;
   }
 
@@ -129,5 +145,61 @@ describe("SidebarTree collections", () => {
     expect(
       screen.queryByRole("menuitem", { name: "Move to" }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("SidebarTree collection docs", () => {
+  function seedWithEntry() {
+    const client = createTestQueryClient();
+    client.setQueryData(foldersKey, []);
+    client.setQueryData(booksKey, []);
+    client.setQueryData(collectionsKey, [
+      makeCollection({ id: "c1", name: "The Realm" }),
+    ]);
+    client.setQueryData(entriesKey, [
+      makeEntry({
+        id: "e1",
+        collection_id: "c1",
+        title: "Opening scene",
+      }),
+    ]);
+    return client;
+  }
+
+  it("renders an entry under an expanded collection and opens it on click", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    useUIStore.setState({ expandedFolderIds: ["c1"] });
+    renderWithProviders(<SidebarTree />, { client: seedWithEntry() });
+
+    const row = screen.getByRole("treeitem", { name: /Opening scene/ });
+    await user.click(row);
+
+    expect(useUIStore.getState()).toMatchObject({
+      activeCollectionId: "c1",
+      activeEntryId: "e1",
+    });
+  });
+
+  it("creates and opens a doc from the collection menu", async () => {
+    server.use(
+      http.post(
+        "http://supabase.test/rest/v1/entries",
+        () => new HttpResponse(null, { status: 201 }),
+      ),
+    );
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = seedWithEntry();
+    renderWithProviders(<SidebarTree />, { client });
+
+    const collection = screen.getByRole("treeitem", { name: /The Realm/ });
+    await user.click(
+      within(collection).getByRole("button", { name: "More actions" }),
+    );
+    await user.click(await screen.findByRole("menuitem", { name: "New doc" }));
+
+    expect(useUIStore.getState().activeCollectionId).toBe("c1");
+    expect(useUIStore.getState().activeEntryId).not.toBeNull();
+    expect(screen.getByRole("textbox")).toHaveValue("Untitled");
+    expect(client.getQueryData<unknown[]>(entriesKey)).toHaveLength(2);
   });
 });

@@ -1,5 +1,6 @@
 import type { Book } from "@/data/books";
 import type { Document } from "@/data/documents";
+import type { Entry } from "@/data/entries";
 import type { Folder } from "@/data/folders";
 import type { Tables } from "@/lib/database.types";
 
@@ -75,6 +76,23 @@ export function makeCollection(
     parent_collection_id: null,
     fields: [],
     view: {},
+    position: 1024,
+    created_at: "2026-01-01T00:00:00.000Z",
+    updated_at: "2026-01-01T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
+export function makeEntry(overrides: Partial<Entry> = {}): Entry {
+  return {
+    id: "entry-1",
+    user_id: "user-1",
+    collection_id: "collection-1",
+    title: "Untitled",
+    icon: null,
+    cover_url: null,
+    content: {},
+    properties: {},
     position: 1024,
     created_at: "2026-01-01T00:00:00.000Z",
     updated_at: "2026-01-01T00:00:00.000Z",

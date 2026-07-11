@@ -20,6 +20,21 @@ vi.mock("./collection/collection-page", () => ({
     <div data-testid="collection-page" data-collection-id={collectionId} />
   ),
 }));
+vi.mock("./collection/entry-view", () => ({
+  EntryView: ({
+    collectionId,
+    entryId,
+  }: {
+    collectionId: string;
+    entryId: string;
+  }) => (
+    <div
+      data-testid="entry-view"
+      data-collection-id={collectionId}
+      data-entry-id={entryId}
+    />
+  ),
+}));
 vi.mock("./book/book-view", () => ({
   BookView: () => <div data-testid="book-view" />,
 }));
@@ -28,8 +43,14 @@ vi.mock("./main-empty-state", () => ({
 }));
 
 describe("MainPane routing", () => {
-  it("renders the collection page when a collection is active", () => {
-    renderWithProviders(<MainPane activeBook={null} activeCollectionId="c1" />);
+  it("falls back to CollectionPage when only a collection is active", () => {
+    renderWithProviders(
+      <MainPane
+        activeBook={null}
+        activeCollectionId="c1"
+        activeEntryId={null}
+      />,
+    );
     expect(screen.getByTestId("collection-page")).toHaveAttribute(
       "data-collection-id",
       "c1",
@@ -37,9 +58,29 @@ describe("MainPane routing", () => {
     expect(screen.queryByTestId("book-view")).toBeNull();
   });
 
+  it("renders EntryView when an entry is active", () => {
+    renderWithProviders(
+      <MainPane activeBook={null} activeCollectionId="c1" activeEntryId="e1" />,
+    );
+
+    expect(screen.getByTestId("entry-view")).toHaveAttribute(
+      "data-collection-id",
+      "c1",
+    );
+    expect(screen.getByTestId("entry-view")).toHaveAttribute(
+      "data-entry-id",
+      "e1",
+    );
+    expect(screen.queryByTestId("collection-page")).toBeNull();
+  });
+
   it("prefers the collection surface over an active book", () => {
     renderWithProviders(
-      <MainPane activeBook={makeBook({ id: "b1" })} activeCollectionId="c1" />,
+      <MainPane
+        activeBook={makeBook({ id: "b1" })}
+        activeCollectionId="c1"
+        activeEntryId={null}
+      />,
     );
     expect(screen.getByTestId("collection-page")).toBeInTheDocument();
     expect(screen.queryByTestId("book-view")).toBeNull();
@@ -50,6 +91,7 @@ describe("MainPane routing", () => {
       <MainPane
         activeBook={makeBook({ id: "b1" })}
         activeCollectionId={null}
+        activeEntryId={null}
       />,
     );
     expect(screen.getByTestId("book-view")).toBeInTheDocument();
@@ -58,7 +100,11 @@ describe("MainPane routing", () => {
 
   it("shows the empty state when nothing is active", () => {
     renderWithProviders(
-      <MainPane activeBook={null} activeCollectionId={null} />,
+      <MainPane
+        activeBook={null}
+        activeCollectionId={null}
+        activeEntryId={null}
+      />,
     );
     expect(screen.getByTestId("empty-state")).toBeInTheDocument();
   });

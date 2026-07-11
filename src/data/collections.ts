@@ -5,6 +5,7 @@ import type { Tables, TablesUpdate } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
 
 import { execWrite, requireUserId } from "./crud";
+import type { EntryMeta } from "./entries";
 import {
   listHandlers,
   optimisticListHandlers,
@@ -12,7 +13,7 @@ import {
   removeById,
 } from "./optimistic-list";
 import { byPosition } from "./ordering";
-import { booksKey, collectionsKey } from "./query-keys";
+import { booksKey, collectionsKey, entriesKey } from "./query-keys";
 
 /** A single collection row from the `collections` table. */
 export type Collection = Tables<"collections">;
@@ -206,7 +207,7 @@ export function useDeleteCollection() {
           : c,
       ),
     errorMessage: "Couldn't delete collection",
-    invalidateKeys: [collectionsKey, booksKey],
+    invalidateKeys: [collectionsKey, booksKey, entriesKey],
   });
 
   type BookRow = Tables<"books">;
@@ -216,19 +217,29 @@ export function useDeleteCollection() {
       await execWrite(supabase.from("collections").delete().eq("id", input.id));
     },
     onMutate: async (input: DeleteCollectionInput) => {
-      await qc.cancelQueries({ queryKey: booksKey });
+      await Promise.all([
+        qc.cancelQueries({ queryKey: booksKey }),
+        qc.cancelQueries({ queryKey: entriesKey }),
+      ]);
       const previousBooks = qc.getQueryData<BookRow[]>(booksKey);
+      const previousEntries = qc.getQueryData<EntryMeta[]>(entriesKey);
       qc.setQueryData<BookRow[]>(booksKey, (prev) =>
         (prev ?? []).map((b) =>
           b.collection_id === input.id ? { ...b, collection_id: null } : b,
         ),
       );
+      qc.setQueryData<EntryMeta[]>(entriesKey, (prev) =>
+        (prev ?? []).filter((entry) => entry.collection_id !== input.id),
+      );
       const collectionsContext = await base.onMutate(input);
-      return { ...collectionsContext, previousBooks };
+      return { ...collectionsContext, previousBooks, previousEntries };
     },
     onError: (error, input, context) => {
       if (context?.previousBooks) {
         qc.setQueryData(booksKey, context.previousBooks);
+      }
+      if (context?.previousEntries) {
+        qc.setQueryData(entriesKey, context.previousEntries);
       }
       base.onError(error, input, context);
     },

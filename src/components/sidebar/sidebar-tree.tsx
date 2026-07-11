@@ -31,6 +31,12 @@ import {
   useRenameCollection,
 } from "@/data/collections";
 import {
+  useCreateEntry,
+  useDeleteEntry,
+  useEntries,
+  useRenameEntry,
+} from "@/data/entries";
+import {
   useDeleteFolder,
   useFolders,
   useMoveFolder,
@@ -62,12 +68,14 @@ import { TreeSkeleton } from "./tree-skeleton";
 type DeleteTarget =
   | { kind: "folder"; id: string; name: string; books: number }
   | { kind: "collection"; id: string; name: string; children: number }
-  | { kind: "book"; id: string; title: string };
+  | { kind: "book"; id: string; title: string }
+  | { kind: "entry"; id: string; title: string };
 
 export function SidebarTree() {
   const foldersQuery = useFolders();
   const booksQuery = useBooks();
   const collectionsQuery = useCollections();
+  const entriesQuery = useEntries();
 
   // Collections reuse the folder-expansion set: both are just "which container
   // rows are open", and their ids never collide (all UUIDs), so one set keeps
@@ -77,8 +85,11 @@ export function SidebarTree() {
   const setExpanded = useUIStore((s) => s.setFolderExpanded);
   const activeBookId = useUIStore((s) => s.activeBookId);
   const activeCollectionId = useUIStore((s) => s.activeCollectionId);
+  const activeEntryId = useUIStore((s) => s.activeEntryId);
   const setActiveBook = useUIStore((s) => s.setActiveBook);
   const setActiveCollection = useUIStore((s) => s.setActiveCollection);
+  const setActiveEntry = useUIStore((s) => s.setActiveEntry);
+  const navigateTo = useUIStore((s) => s.navigateTo);
 
   const renameFolder = useRenameFolder();
   const moveFolder = useMoveFolder();
@@ -91,6 +102,9 @@ export function SidebarTree() {
   const createCollection = useCreateCollection();
   const moveCollection = useMoveCollection();
   const deleteCollection = useDeleteCollection();
+  const createEntry = useCreateEntry();
+  const renameEntry = useRenameEntry();
+  const deleteEntry = useDeleteEntry();
   const createRootItem = useCreateRootItem();
 
   const panel = useTreePanel<DeleteTarget>();
@@ -103,6 +117,8 @@ export function SidebarTree() {
   const { mutate: renameBookMutate } = renameBook;
   const { mutate: renameCollectionMutate } = renameCollection;
   const { mutate: createCollectionMutate } = createCollection;
+  const { mutate: createEntryMutate } = createEntry;
+  const { mutate: renameEntryMutate } = renameEntry;
   const { mutate: moveBookMutate } = moveBook;
   const { mutate: moveCollectionMutate } = moveCollection;
   const { createCollection: createRootCollectionFn } = createRootItem;
@@ -114,6 +130,7 @@ export function SidebarTree() {
     () => collectionsQuery.data ?? [],
     [collectionsQuery.data],
   );
+  const entries = useMemo(() => entriesQuery.data ?? [], [entriesQuery.data]);
   const expanded = useMemo(() => new Set(expandedArr), [expandedArr]);
   const collectionIds = useMemo(
     () => new Set(collections.map((c) => c.id)),
@@ -121,8 +138,8 @@ export function SidebarTree() {
   );
 
   const model = useMemo(
-    () => buildTree(folders, books, collections),
-    [folders, books, collections],
+    () => buildTree(folders, books, collections, entries),
+    [folders, books, collections, entries],
   );
   const flattened = useMemo(
     () => flattenTree(model, expanded),
@@ -147,7 +164,7 @@ export function SidebarTree() {
             parent_collection_id: parentId,
             position,
           });
-        } else {
+        } else if (node.kind === "book") {
           // A book's projected parent is a folder or a collection; write the
           // matching column and null the other (they're mutually exclusive).
           const intoCollection =
@@ -213,6 +230,22 @@ export function SidebarTree() {
     [setExpanded, createCollectionMutate, model, startRename],
   );
 
+  const onNewEntryInside = useCallback(
+    (collectionId: string) => {
+      setExpanded(collectionId, true);
+      const id = crypto.randomUUID();
+      createEntryMutate({
+        id,
+        title: "Untitled",
+        collection_id: collectionId,
+        position: endPositionFor(childrenOf(model, collectionId)),
+      });
+      setActiveEntry(id, collectionId);
+      startRename(id);
+    },
+    [setExpanded, createEntryMutate, model, setActiveEntry, startRename],
+  );
+
   const onMoveToCollection = useCallback(
     (node: FlatNode, targetCollectionId: string | null) => {
       const position = endPositionFor(
@@ -256,13 +289,16 @@ export function SidebarTree() {
         renameFolderMutate({ id: node.id, name: value });
       else if (node.kind === "collection")
         renameCollectionMutate({ id: node.id, name: value });
-      else renameBookMutate({ id: node.id, title: value });
+      else if (node.kind === "book")
+        renameBookMutate({ id: node.id, title: value });
+      else renameEntryMutate({ id: node.id, title: value });
     },
     [
       cancelRename,
       renameFolderMutate,
       renameCollectionMutate,
       renameBookMutate,
+      renameEntryMutate,
     ],
   );
 
@@ -286,11 +322,17 @@ export function SidebarTree() {
           name: node.child.collection.name,
           children: countChildren(model, node.id),
         });
-      } else {
+      } else if (node.child.kind === "book") {
         requestDelete({
           kind: "book",
           id: node.id,
           title: node.child.book.title,
+        });
+      } else {
+        requestDelete({
+          kind: "entry",
+          id: node.id,
+          title: node.child.entry.title,
         });
       }
     },
@@ -305,20 +347,32 @@ export function SidebarTree() {
     } else if (target.kind === "collection") {
       if (activeCollectionId === target.id) setActiveCollection(null);
       deleteCollection.mutate({ id: target.id });
-    } else {
+    } else if (target.kind === "book") {
       if (activeBookId === target.id) setActiveBook(null);
       deleteBook.mutate({ id: target.id });
+    } else {
+      if (activeEntryId === target.id) {
+        navigateTo({ collectionId: activeCollectionId });
+      }
+      deleteEntry.mutate({ id: target.id });
     }
   };
 
   const isLoading =
     foldersQuery.isLoading ||
     booksQuery.isLoading ||
-    collectionsQuery.isLoading;
+    collectionsQuery.isLoading ||
+    entriesQuery.isLoading;
   const isError =
-    foldersQuery.isError || booksQuery.isError || collectionsQuery.isError;
+    foldersQuery.isError ||
+    booksQuery.isError ||
+    collectionsQuery.isError ||
+    entriesQuery.isError;
   const isEmpty =
-    folders.length === 0 && books.length === 0 && collections.length === 0;
+    folders.length === 0 &&
+    books.length === 0 &&
+    collections.length === 0 &&
+    entries.length === 0;
 
   const renderRow = (node: FlatNode) => (
     <TreeRow
@@ -326,7 +380,8 @@ export function SidebarTree() {
       node={node}
       selected={
         (node.kind === "book" && node.id === activeBookId) ||
-        (node.kind === "collection" && node.id === activeCollectionId)
+        (node.kind === "collection" && node.id === activeCollectionId) ||
+        (node.kind === "entry" && node.id === activeEntryId)
       }
       editing={panel.editingId === node.id}
       expanded={expanded.has(node.id)}
@@ -335,6 +390,7 @@ export function SidebarTree() {
       onToggleExpand={toggleExpanded}
       onSelectBook={setActiveBook}
       onSelectCollection={setActiveCollection}
+      onSelectEntry={setActiveEntry}
       onStartRename={startRename}
       onCommitRename={onCommitRename}
       onCancelRename={cancelRename}
@@ -343,6 +399,7 @@ export function SidebarTree() {
       onNewBookInside={onNewBookInside}
       onNewBookInCollection={onNewBookInCollection}
       onNewCollectionInside={onNewCollectionInside}
+      onNewEntryInside={onNewEntryInside}
       onMoveToCollection={onMoveToCollection}
     />
   );
@@ -436,6 +493,7 @@ export function SidebarTree() {
                 void foldersQuery.refetch();
                 void booksQuery.refetch();
                 void collectionsQuery.refetch();
+                void entriesQuery.refetch();
               }}
             >
               Try again
@@ -448,7 +506,7 @@ export function SidebarTree() {
             sensors={sensors}
             dndHandlers={handlers}
             items={visibleNodes.map((n) => n.id)}
-            ariaLabel="Books, collections, and folders"
+            ariaLabel="Books, docs, collections, and folders"
             className="gap-1.5"
             overlay={activeNode ? <DragRowOverlay node={activeNode} /> : null}
           >
@@ -474,7 +532,8 @@ export function SidebarTree() {
 
 function deleteTitle(target: DeleteTarget | null): string {
   if (!target) return "";
-  if (target.kind === "book") return `Delete "${target.title}"?`;
+  if (target.kind === "book" || target.kind === "entry")
+    return `Delete "${target.title}"?`;
   return `Delete "${target.name}"?`;
 }
 

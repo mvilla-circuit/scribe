@@ -1,5 +1,6 @@
 import type { Book } from "./books";
 import type { Collection } from "./collections";
+import type { EntryMeta } from "./entries";
 import type { Folder } from "./folders";
 import { byPosition } from "./ordering";
 
@@ -38,6 +39,13 @@ export type TreeChild =
       position: number;
       created_at: string;
       book: Book;
+    }
+  | {
+      kind: "entry";
+      id: string;
+      position: number;
+      created_at: string;
+      entry: EntryMeta;
     };
 
 /** The sidebar tree: a map from container id (folder/collection id or ROOT) to its children. */
@@ -56,6 +64,7 @@ export function buildTree(
   folders: Folder[],
   books: Book[],
   collections: Collection[] = [],
+  entries: EntryMeta[] = [],
 ): TreeModel {
   const children = new Map<string, TreeChild[]>();
   const push = (key: string, child: TreeChild) => {
@@ -89,6 +98,15 @@ export function buildTree(
       position: b.position,
       created_at: b.created_at,
       book: b,
+    });
+  }
+  for (const e of entries) {
+    push(e.collection_id, {
+      kind: "entry",
+      id: e.id,
+      position: e.position,
+      created_at: e.created_at,
+      entry: e,
     });
   }
 

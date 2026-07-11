@@ -1,5 +1,6 @@
 import { memo, useMemo } from "react";
 
+import { PageIcon } from "@/components/book/icons";
 import { TreeRowShell } from "@/components/tree/tree-row-shell";
 import { DocumentIcon } from "@/components/ui/document-icon";
 import { type RowAction } from "@/components/ui/row-action-menu";
@@ -29,6 +30,7 @@ interface TreeRowHandlers {
   onToggleExpand: (id: string) => void;
   onSelectBook: (id: string) => void;
   onSelectCollection: (id: string) => void;
+  onSelectEntry: (id: string, collectionId: string) => void;
   onStartRename: (id: string) => void;
   onCommitRename: (node: FlatNode, value: string) => void;
   onCancelRename: () => void;
@@ -37,6 +39,7 @@ interface TreeRowHandlers {
   onNewBookInside: (id: string) => void;
   onNewBookInCollection: (id: string) => void;
   onNewCollectionInside: (id: string) => void;
+  onNewEntryInside: (id: string) => void;
   // Reparent this node into a collection, or back to the top level (null).
   onMoveToCollection: (
     node: FlatNode,
@@ -65,6 +68,7 @@ export const TreeRow = memo(function TreeRow({
   onToggleExpand,
   onSelectBook,
   onSelectCollection,
+  onSelectEntry,
   onStartRename,
   onCommitRename,
   onCancelRename,
@@ -73,17 +77,21 @@ export const TreeRow = memo(function TreeRow({
   onNewBookInside,
   onNewBookInCollection,
   onNewCollectionInside,
+  onNewEntryInside,
   onMoveToCollection,
 }: TreeRowProps) {
   const child = node.child;
   const isFolder = child.kind === "folder";
   const isCollection = child.kind === "collection";
+  const isEntry = child.kind === "entry";
   const label =
     child.kind === "folder"
       ? child.folder.name
       : child.kind === "collection"
         ? child.collection.name
-        : child.book.title;
+        : child.kind === "book"
+          ? child.book.title
+          : child.entry.title;
 
   // The set of collections this node may move into: never itself, never one of
   // its own descendants (which would form a cycle), and never its current
@@ -160,6 +168,10 @@ export const TreeRow = memo(function TreeRow({
         )
       ) : child.kind === "book" && child.book.icon ? (
         <DocumentIcon icon={child.book.icon} size={SIDEBAR_ICON_SIZE} />
+      ) : child.kind === "entry" && child.entry.icon ? (
+        <DocumentIcon icon={child.entry.icon} size={SIDEBAR_ICON_SIZE} />
+      ) : isEntry ? (
+        <PageIcon size={SIDEBAR_ICON_SIZE} />
       ) : (
         <BookIcon size={SIDEBAR_ICON_SIZE} />
       )}
@@ -195,6 +207,13 @@ export const TreeRow = memo(function TreeRow({
           },
         },
         {
+          icon: <PageIcon size={15} />,
+          label: "New doc",
+          onSelect: () => {
+            onNewEntryInside(node.id);
+          },
+        },
+        {
           icon: <PencilIcon size={15} />,
           label: "Rename",
           onSelect: () => {
@@ -213,52 +232,72 @@ export const TreeRow = memo(function TreeRow({
           separatorBefore: true,
         },
       ]
-    : [
-        ...(isFolder
-          ? [
-              {
-                icon: <BookPlusIcon size={15} />,
-                label: "New book",
-                onSelect: () => {
-                  onNewBookInside(node.id);
-                },
-              },
-            ]
-          : []),
-        {
-          icon: <PencilIcon size={15} />,
-          label: "Rename",
-          onSelect: () => {
-            onStartRename(node.id);
+    : isEntry
+      ? [
+          {
+            icon: <PencilIcon size={15} />,
+            label: "Rename",
+            onSelect: () => {
+              onStartRename(node.id);
+            },
           },
-          separatorBefore: isFolder,
-        },
-        ...(!isFolder
-          ? [
-              {
-                icon: <LinkIcon size={15} />,
-                label: "Copy link",
-                onSelect: () => {
-                  onCopyLink(node.id);
-                },
-              },
-            ]
-          : []),
-        ...(isFolder ? [] : moveAction),
-        {
-          icon: <TrashIcon size={15} />,
-          label: "Delete",
-          onSelect: () => {
-            onDelete(node);
+          {
+            icon: <TrashIcon size={15} />,
+            label: "Delete",
+            onSelect: () => {
+              onDelete(node);
+            },
+            danger: true,
+            separatorBefore: true,
           },
-          danger: true,
-          separatorBefore: true,
-        },
-      ];
+        ]
+      : [
+          ...(isFolder
+            ? [
+                {
+                  icon: <BookPlusIcon size={15} />,
+                  label: "New book",
+                  onSelect: () => {
+                    onNewBookInside(node.id);
+                  },
+                },
+              ]
+            : []),
+          {
+            icon: <PencilIcon size={15} />,
+            label: "Rename",
+            onSelect: () => {
+              onStartRename(node.id);
+            },
+            separatorBefore: isFolder,
+          },
+          ...(!isFolder
+            ? [
+                {
+                  icon: <LinkIcon size={15} />,
+                  label: "Copy link",
+                  onSelect: () => {
+                    onCopyLink(node.id);
+                  },
+                },
+              ]
+            : []),
+          ...(isFolder ? [] : moveAction),
+          {
+            icon: <TrashIcon size={15} />,
+            label: "Delete",
+            onSelect: () => {
+              onDelete(node);
+            },
+            danger: true,
+            separatorBefore: true,
+          },
+        ];
 
   return (
     <TreeRowShell
       id={node.id}
+      draggable={node.draggable}
       depth={node.depth}
       projectionDepth={projectionDepth}
       selected={selected}
@@ -274,6 +313,8 @@ export const TreeRow = memo(function TreeRow({
       onActivate={() => {
         if (isFolder) onToggleExpand(node.id);
         else if (isCollection) onSelectCollection(node.id);
+        else if (child.kind === "entry")
+          onSelectEntry(node.id, child.entry.collection_id);
         else onSelectBook(node.id);
       }}
       onStartRename={() => {
@@ -300,16 +341,24 @@ export function DragRowOverlay({ node }: { node: FlatNode }) {
       ) : (
         <CollectionIcon size={SIDEBAR_ICON_SIZE} />
       )
-    ) : child.book.icon ? (
-      <DocumentIcon icon={child.book.icon} size={SIDEBAR_ICON_SIZE} />
+    ) : child.kind === "book" ? (
+      child.book.icon ? (
+        <DocumentIcon icon={child.book.icon} size={SIDEBAR_ICON_SIZE} />
+      ) : (
+        <BookIcon size={SIDEBAR_ICON_SIZE} />
+      )
+    ) : child.entry.icon ? (
+      <DocumentIcon icon={child.entry.icon} size={SIDEBAR_ICON_SIZE} />
     ) : (
-      <BookIcon size={SIDEBAR_ICON_SIZE} />
+      <PageIcon size={SIDEBAR_ICON_SIZE} />
     );
   const label =
     child.kind === "folder"
       ? child.folder.name
       : child.kind === "collection"
         ? child.collection.name
-        : child.book.title;
+        : child.kind === "book"
+          ? child.book.title
+          : child.entry.title;
   return <SidebarRowOverlay icon={icon} label={label} />;
 }

@@ -50,7 +50,7 @@ interface UIState {
   setActiveBook: (id: string | null) => void;
   setActiveDoc: (id: string | null) => void;
   setActiveCollection: (id: string | null) => void;
-  setActiveEntry: (id: string | null) => void;
+  setActiveEntry: (id: string, collectionId: string) => void;
   navigateTo: (location: Location) => void;
   goBack: () => void;
   goForward: () => void;
@@ -252,12 +252,12 @@ export const useUIStore = create<UIState>()(
           };
           return { ...locationState(loc), ...recordLocation(s, loc) };
         }),
-      setActiveEntry: (id) =>
+      setActiveEntry: (id, collectionId) =>
         set((s) => {
           const loc: HistoryEntry = {
             bookId: null,
             docId: null,
-            collectionId: s.activeCollectionId,
+            collectionId,
             entryId: id,
           };
           return { ...locationState(loc), ...recordLocation(s, loc) };

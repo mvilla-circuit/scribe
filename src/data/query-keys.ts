@@ -22,6 +22,11 @@ export const pageIndexKey = ["page-index"] as const;
 export const NO_BOOK = "__none__";
 
 /**
+ * Sentinel entry id used to key the content query when no entry is selected.
+ */
+export const NO_COLLECTION = "__none__";
+
+/**
  * Cache key for one book's pages. Documents are keyed per book so opening a book
  * loads only its own pages and optimistic mutations touch a single cache entry.
  * This list holds page *metadata* only (no editor body) so writing to a page
@@ -39,3 +44,12 @@ export const documentContentKey = (documentId: string) =>
 
 /** Cache key for the signed-in user's collections. */
 export const collectionsKey = ["collections"] as const;
+
+/** Cache key for the signed-in user's entry metadata. */
+export const entriesKey = ["entries"] as const;
+
+/**
+ * Cache key for a single entry's editor body, separate from the metadata list.
+ */
+export const entryContentKey = (entryId: string) =>
+  ["entry-content", entryId] as const;

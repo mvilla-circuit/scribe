@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import { EditableText } from "@/components/book/editable-text";
+import { PageIcon } from "@/components/book/icons";
 import { Masthead } from "@/components/book/masthead";
 import { NavHistoryControls } from "@/components/book/nav-history-controls";
 import {
@@ -9,6 +10,7 @@ import {
   CollectionIcon,
   CollectionPlusIcon,
   RemoveFromCollectionIcon,
+  TrashIcon,
 } from "@/components/sidebar/icons";
 import { Button } from "@/components/ui/button";
 import { type RowAction } from "@/components/ui/row-action-menu";
@@ -20,6 +22,7 @@ import {
   useRenameCollection,
   useUpdateCollection,
 } from "@/data/collections";
+import { useCreateEntry, useDeleteEntry, useEntries } from "@/data/entries";
 import { useFolders } from "@/data/folders";
 import { endPositionFor } from "@/data/ordering";
 import {
@@ -43,6 +46,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   const collectionsQuery = useCollections();
   const foldersQuery = useFolders();
   const booksQuery = useBooks();
+  const entriesQuery = useEntries();
 
   const collections = useMemo(
     () => collectionsQuery.data ?? [],
@@ -50,12 +54,13 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   );
   const folders = useMemo(() => foldersQuery.data ?? [], [foldersQuery.data]);
   const books = useMemo(() => booksQuery.data ?? [], [booksQuery.data]);
+  const entries = useMemo(() => entriesQuery.data ?? [], [entriesQuery.data]);
 
   const collection = collections.find((c) => c.id === collectionId) ?? null;
 
   const model = useMemo(
-    () => buildTree(folders, books, collections),
-    [folders, books, collections],
+    () => buildTree(folders, books, collections, entries),
+    [folders, books, collections, entries],
   );
   const children = useMemo(
     () => childrenOf(model, collectionId),
@@ -68,6 +73,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
 
   const setActiveCollection = useUIStore((s) => s.setActiveCollection);
   const setActiveBook = useUIStore((s) => s.setActiveBook);
+  const setActiveEntry = useUIStore((s) => s.setActiveEntry);
   const setFolderExpanded = useUIStore((s) => s.setFolderExpanded);
 
   const renameCollection = useRenameCollection();
@@ -76,9 +82,12 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   const createCollection = useCreateCollection();
   const moveBook = useMoveBook();
   const moveCollection = useMoveCollection();
+  const createEntry = useCreateEntry();
+  const deleteEntry = useDeleteEntry();
 
   const childCollections = children.filter((c) => c.kind === "collection");
   const childBooks = children.filter((c) => c.kind === "book");
+  const childEntries = children.filter((c) => c.kind === "entry");
 
   const rootPosition = () => endPositionFor(childrenOf(model, ROOT));
 
@@ -106,6 +115,18 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
     setActiveCollection(id);
   };
 
+  const handleNewEntry = () => {
+    const id = crypto.randomUUID();
+    createEntry.mutate({
+      id,
+      title: "Untitled",
+      collection_id: collectionId,
+      position: endPositionFor(children),
+    });
+    setFolderExpanded(collectionId, true);
+    setActiveEntry(id, collectionId);
+  };
+
   const bookActions = (id: string): RowAction[] => [
     {
       icon: <RemoveFromCollectionIcon size={15} />,
@@ -131,6 +152,17 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
           parent_collection_id: null,
           position: rootPosition(),
         });
+      },
+    },
+  ];
+
+  const entryActions = (id: string): RowAction[] => [
+    {
+      icon: <TrashIcon size={15} />,
+      label: "Delete",
+      danger: true,
+      onSelect: () => {
+        deleteEntry.mutate({ id });
       },
     },
   ];
@@ -208,10 +240,14 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
             </span>
           </div>
         )}
-        <span className="ml-auto flex shrink-0 items-center gap-2">
+        <span className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
           <Button variant="secondary" onClick={handleNewCollection}>
             <CollectionPlusIcon size={15} />
             New collection
+          </Button>
+          <Button variant="secondary" onClick={handleNewEntry}>
+            <PageIcon size={15} />
+            New doc
           </Button>
           <Button variant="primary" onClick={handleNewBook}>
             <BookPlusIcon size={15} />
@@ -265,13 +301,17 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
               This collection is empty
             </p>
             <p className="mt-1 max-w-[22rem] text-xs leading-relaxed text-muted">
-              Add books to gather your writing, or nest another collection
-              inside.
+              Add a doc to start writing, or gather books and nested collections
+              here.
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               <Button variant="primary" onClick={handleNewBook}>
                 <BookPlusIcon size={15} />
                 New book
+              </Button>
+              <Button variant="secondary" onClick={handleNewEntry}>
+                <PageIcon size={15} />
+                New doc
               </Button>
               <Button variant="secondary" onClick={handleNewCollection}>
                 <CollectionPlusIcon size={15} />
@@ -301,6 +341,20 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                     child={child}
                     onOpen={setActiveBook}
                     actions={bookActions}
+                  />
+                ))}
+              </CardGrid>
+            )}
+            {childEntries.length > 0 && (
+              <CardGrid heading="Docs">
+                {childEntries.map((child) => (
+                  <EntryCoverCard
+                    key={child.id}
+                    child={child}
+                    onOpen={(id) => {
+                      setActiveEntry(id, collectionId);
+                    }}
+                    actions={entryActions}
                   />
                 ))}
               </CardGrid>
@@ -369,6 +423,29 @@ function BookCoverCard({
       icon={child.book.icon}
       coverUrl={child.book.cover_url}
       fallback={<BookIcon size={28} />}
+      onOpen={() => {
+        onOpen(child.id);
+      }}
+      actions={actions(child.id)}
+    />
+  );
+}
+
+function EntryCoverCard({
+  child,
+  onOpen,
+  actions,
+}: {
+  child: Extract<TreeChild, { kind: "entry" }>;
+  onOpen: (id: string) => void;
+  actions: (id: string) => RowAction[];
+}) {
+  return (
+    <CoverCard
+      title={child.entry.title}
+      icon={child.entry.icon}
+      coverUrl={null}
+      fallback={<PageIcon size={28} />}
       onOpen={() => {
         onOpen(child.id);
       }}

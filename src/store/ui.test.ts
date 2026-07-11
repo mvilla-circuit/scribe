@@ -204,7 +204,7 @@ describe("active collection/entry selection", () => {
   it("clears the active entry when switching to a different collection", () => {
     const store = useUIStore.getState();
     store.setActiveCollection("c1");
-    store.setActiveEntry("e1");
+    store.setActiveEntry("e1", "c1");
 
     useUIStore.getState().setActiveCollection("c2");
 
@@ -215,18 +215,32 @@ describe("active collection/entry selection", () => {
   it("keeps the active entry when re-selecting the same collection", () => {
     const store = useUIStore.getState();
     store.setActiveCollection("c1");
-    store.setActiveEntry("e1");
+    store.setActiveEntry("e1", "c1");
 
     useUIStore.getState().setActiveCollection("c1");
 
     expect(useUIStore.getState().activeEntryId).toBe("e1");
   });
 
+  it("selecting an entry records its collection and clears the book axis", () => {
+    const store = useUIStore.getState();
+    store.setActiveBook("b1");
+    store.setActiveDoc("d1");
+
+    useUIStore.getState().setActiveEntry("e1", "c1");
+
+    const state = useUIStore.getState();
+    expect(state.activeCollectionId).toBe("c1");
+    expect(state.activeEntryId).toBe("e1");
+    expect(state.activeBookId).toBeNull();
+    expect(state.activeDocId).toBeNull();
+  });
+
   it("records collection/entry locations and steps back across surfaces", () => {
     const store = useUIStore.getState();
     store.setActiveBook("b1");
     store.setActiveCollection("c1");
-    store.setActiveEntry("e1");
+    store.setActiveEntry("e1", "c1");
 
     expect(useUIStore.getState().history).toEqual([
       loc({ bookId: "b1" }),
@@ -245,7 +259,7 @@ describe("active collection/entry selection", () => {
 
   it("does not persist the active collection/entry selection", () => {
     useUIStore.getState().setActiveCollection("c1");
-    useUIStore.getState().setActiveEntry("e1");
+    useUIStore.getState().setActiveEntry("e1", "c1");
 
     const partialize = useUIStore.persist.getOptions().partialize;
     const persisted = partialize?.(useUIStore.getState());

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { makeBook, makeCollection, makeFolder } from "@/test/fixtures";
+import {
+  makeBook,
+  makeCollection,
+  makeEntry,
+  makeFolder,
+} from "@/test/fixtures";
 
 import {
   buildTree,
@@ -56,6 +61,19 @@ describe("buildTree", () => {
 
     expect(childrenOf(model, "c1").map((c) => c.id)).toEqual(["b1"]);
     expect(childrenOf(model, "f1")).toEqual([]);
+  });
+
+  it("places an entry under its collection", () => {
+    const collection = makeCollection({ id: "c1" });
+    const entry = makeEntry({ id: "e1", collection_id: "c1" });
+    const model = buildTree([], [], [collection], [entry]);
+
+    expect(
+      childrenOf(model, "c1").map((child) => ({
+        kind: child.kind,
+        id: child.id,
+      })),
+    ).toEqual([{ kind: "entry", id: "e1" }]);
   });
 
   it("returns an empty list for an unknown container", () => {

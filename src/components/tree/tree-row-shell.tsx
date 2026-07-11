@@ -15,6 +15,8 @@ import {
 interface TreeRowShellProps {
   /** Entity id; wires up dnd-kit sortable state for this row. */
   id: string;
+  /** Whether this row may be used as a drag source. */
+  draggable?: boolean;
   depth: number;
   /** Projected depth while this row is being dragged; null otherwise. */
   projectionDepth: number | null;
@@ -44,6 +46,7 @@ interface TreeRowShellProps {
 // label, and action set.
 export function TreeRowShell({
   id,
+  draggable = true,
   depth,
   projectionDepth,
   selected,
@@ -60,7 +63,10 @@ export function TreeRowShell({
   onCommitRename,
   onCancelRename,
 }: TreeRowShellProps) {
-  const { setNodeRef, style, dragHandleProps, isDragging } = useSortableRow(id);
+  const { setNodeRef, style, dragHandleProps, isDragging } = useSortableRow(
+    id,
+    !draggable,
+  );
 
   const activation = rowActivationHandlers({
     editing,

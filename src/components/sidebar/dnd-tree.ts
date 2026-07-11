@@ -10,7 +10,8 @@ export { type Projection };
 export type FlatNode = DndNode & {
   // entity UUID (unique across folders + collections + books); inherited `id`
   // from DndNode.
-  kind: "folder" | "collection" | "book";
+  kind: "folder" | "collection" | "book" | "entry";
+  draggable: boolean;
   child: TreeChild;
 };
 
@@ -33,6 +34,7 @@ export function flattenTree(
         depth,
         parentId,
         position: child.position,
+        draggable: child.kind !== "entry",
         child,
       });
       const isContainer =
@@ -59,6 +61,7 @@ export function getProjection(
   dragOffsetX: number,
 ): Projection | null {
   const active = nodes.find((n) => n.id === activeId);
+  if (active?.kind === "entry") return null;
   const projection = projectDrop(nodes, activeId, overId, dragOffsetX, {
     fixedProjection: (a) =>
       a.kind === "folder" ? { depth: 0, parentId: null } : null,
