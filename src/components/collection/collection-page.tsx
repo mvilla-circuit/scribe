@@ -9,10 +9,16 @@ import {
   BookPlusIcon,
   CollectionIcon,
   CollectionPlusIcon,
+  PlusIcon,
   RemoveFromCollectionIcon,
   TrashIcon,
 } from "@/components/sidebar/icons";
-import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { type RowAction } from "@/components/ui/row-action-menu";
 import { useBooks, useCreateBook, useMoveBook } from "@/data/books";
 import {
@@ -32,6 +38,7 @@ import {
   ROOT,
   type TreeChild,
 } from "@/data/tree";
+import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
 
 import { CoverCard } from "./cover-card";
@@ -240,19 +247,12 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
             </span>
           </div>
         )}
-        <span className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
-          <Button variant="secondary" onClick={handleNewCollection}>
-            <CollectionPlusIcon size={15} />
-            New collection
-          </Button>
-          <Button variant="secondary" onClick={handleNewEntry}>
-            <PageIcon size={15} />
-            New doc
-          </Button>
-          <Button variant="primary" onClick={handleNewBook}>
-            <BookPlusIcon size={15} />
-            New book
-          </Button>
+        <span className="ml-auto flex shrink-0 items-center justify-end">
+          <CollectionCreateSplitButton
+            onNewBook={handleNewBook}
+            onNewDoc={handleNewEntry}
+            onNewCollection={handleNewCollection}
+          />
         </span>
       </nav>
 
@@ -304,19 +304,12 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
               Add a doc to start writing, or gather books and nested collections
               here.
             </p>
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
-              <Button variant="primary" onClick={handleNewBook}>
-                <BookPlusIcon size={15} />
-                New book
-              </Button>
-              <Button variant="secondary" onClick={handleNewEntry}>
-                <PageIcon size={15} />
-                New doc
-              </Button>
-              <Button variant="secondary" onClick={handleNewCollection}>
-                <CollectionPlusIcon size={15} />
-                New collection
-              </Button>
+            <div className="mt-4 flex justify-center">
+              <CollectionCreateSplitButton
+                onNewBook={handleNewBook}
+                onNewDoc={handleNewEntry}
+                onNewCollection={handleNewCollection}
+              />
             </div>
           </div>
         ) : (
@@ -451,5 +444,59 @@ function EntryCoverCard({
       }}
       actions={actions(child.id)}
     />
+  );
+}
+
+/**
+ * Segmented primary create control: the main face creates a book; the attached
+ * "+" opens a menu for the quieter options (doc, nested collection) so the
+ * toolbar stays one calm control instead of three equal CTAs.
+ */
+function CollectionCreateSplitButton({
+  onNewBook,
+  onNewDoc,
+  onNewCollection,
+}: {
+  onNewBook: () => void;
+  onNewDoc: () => void;
+  onNewCollection: () => void;
+}) {
+  const segment =
+    "inline-flex items-center justify-center gap-1.5 text-sm font-medium " +
+    "outline-none focus-visible:z-10 focus-visible:ring-2 " +
+    "focus-visible:ring-inset focus-visible:ring-ring";
+
+  return (
+    <div className="inline-flex overflow-hidden rounded-md bg-accent text-white transition-opacity hover:opacity-90">
+      <button
+        type="button"
+        onClick={onNewBook}
+        className={cn(segment, "px-3 py-1.5")}
+      >
+        <BookPlusIcon size={15} />
+        New book
+      </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label="More create options"
+            className={cn(segment, "border-l border-white/25 px-2 py-1.5")}
+          >
+            <PlusIcon size={15} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={onNewDoc}>
+            <PageIcon size={15} />
+            New doc
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={onNewCollection}>
+            <CollectionPlusIcon size={15} />
+            New collection
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }

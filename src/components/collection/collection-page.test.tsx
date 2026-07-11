@@ -104,6 +104,37 @@ describe("CollectionPage", () => {
     expect(screen.getByText("This collection is empty")).toBeInTheDocument();
   });
 
+  it("keeps New book as the primary action and nests other creates under +", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    renderWithProviders(<CollectionPage collectionId="c1" />, {
+      client: seed(),
+    });
+
+    const toolbar = screen.getByRole("navigation", {
+      name: "Collection settings",
+    });
+    expect(
+      within(toolbar).getByRole("button", { name: "New book" }),
+    ).toBeInTheDocument();
+    expect(
+      within(toolbar).queryByRole("button", { name: "New doc" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(toolbar).queryByRole("button", { name: "New collection" }),
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      within(toolbar).getByRole("button", { name: "More create options" }),
+    );
+    const menu = await screen.findByRole("menu");
+    expect(
+      within(menu).getByRole("menuitem", { name: "New doc" }),
+    ).toBeInTheDocument();
+    expect(
+      within(menu).getByRole("menuitem", { name: "New collection" }),
+    ).toBeInTheDocument();
+  });
+
   it("creates and opens a doc", async () => {
     server.use(
       http.post(
@@ -115,7 +146,13 @@ describe("CollectionPage", () => {
     const client = seed();
     renderWithProviders(<CollectionPage collectionId="c1" />, { client });
 
-    await user.click(screen.getByRole("button", { name: "New doc" }));
+    const toolbar = screen.getByRole("navigation", {
+      name: "Collection settings",
+    });
+    await user.click(
+      within(toolbar).getByRole("button", { name: "More create options" }),
+    );
+    await user.click(screen.getByRole("menuitem", { name: "New doc" }));
 
     expect(useUIStore.getState().activeCollectionId).toBe("c1");
     expect(useUIStore.getState().activeEntryId).not.toBeNull();
