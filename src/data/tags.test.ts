@@ -14,10 +14,13 @@ import {
 import {
   type Tag,
   type Taggable,
+  tagsByRecentUse,
   tagsForCollection,
   useAssignCollectionTag,
+  useDeleteTag,
   useUnassignCollectionTag,
   useUpdateTagColor,
+  useUpdateTagName,
 } from "./tags";
 
 // Avoid pulling auth.tsx (and its Tauri plugin imports) into the test runtime;
@@ -57,6 +60,48 @@ describe("tagsForCollection", () => {
       tags[0],
     ]);
     expect(tagsForCollection(tags, taggables, "collection-3")).toEqual([]);
+  });
+});
+
+describe("tagsByRecentUse", () => {
+  it("orders tags by most recent assignment, then by updated_at", () => {
+    const tags = [
+      makeTag({
+        id: "old",
+        name: "Old",
+        updated_at: "2026-01-01T00:00:00.000Z",
+      }),
+      makeTag({
+        id: "fresh",
+        name: "Fresh",
+        updated_at: "2026-06-01T00:00:00.000Z",
+      }),
+      makeTag({
+        id: "used",
+        name: "Used",
+        updated_at: "2026-02-01T00:00:00.000Z",
+      }),
+    ];
+    const taggables = [
+      makeTaggable({
+        id: "tg-1",
+        tag_id: "used",
+        target_id: "c1",
+        created_at: "2026-07-01T00:00:00.000Z",
+      }),
+      makeTaggable({
+        id: "tg-2",
+        tag_id: "old",
+        target_id: "c2",
+        created_at: "2026-03-01T00:00:00.000Z",
+      }),
+    ];
+
+    expect(tagsByRecentUse(tags, taggables).map((tag) => tag.id)).toEqual([
+      "used",
+      "old",
+      "fresh",
+    ]);
   });
 });
 
@@ -117,6 +162,37 @@ describe("useAssignCollectionTag", () => {
       target_type: "collection",
       target_id: "collection-1",
     });
+  });
+
+  it("creates a tag with an explicit palette color when provided", async () => {
+    let insertedTag: { name?: unknown; color?: unknown } | undefined;
+    server.use(
+      http.post(TAGS_URL, async ({ request }) => {
+        insertedTag = (await request.json()) as typeof insertedTag;
+        return new HttpResponse(null, { status: 201 });
+      }),
+      http.post(TAGGABLES_URL, () => new HttpResponse(null, { status: 201 })),
+    );
+
+    const client = createTestQueryClient();
+    client.setQueryData(tagsKey, []);
+    client.setQueryData(COLLECTION_TAGGABLES_KEY, []);
+
+    const { result } = renderHookWithQuery(() => useAssignCollectionTag(), {
+      client,
+    });
+    result.current.mutate({
+      collectionId: "collection-1",
+      name: "Draft",
+      color: "moss",
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(insertedTag).toMatchObject({ name: "Draft", color: "moss" });
+    expect(client.getQueryData<Tag[]>(tagsKey)?.[0]?.color).toBe("moss");
   });
 
   it("reuses an existing tag by case-insensitive name", async () => {
@@ -267,5 +343,68 @@ describe("useUpdateTagColor", () => {
 
     expect(patch?.color).toBe("moss");
     expect(client.getQueryData<Tag[]>(tagsKey)?.[0]?.color).toBe("moss");
+  });
+});
+
+describe("useUpdateTagName", () => {
+  it("renames a tag", async () => {
+    let patch: { name?: unknown } | undefined;
+    server.use(
+      http.patch(TAGS_URL, async ({ request }) => {
+        patch = (await request.json()) as { name?: unknown };
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    const client = createTestQueryClient();
+    client.setQueryData(tagsKey, [
+      makeTag({ id: "tag-1", name: "Fantasy", color: "sky" }),
+    ]);
+
+    const { result } = renderHookWithQuery(() => useUpdateTagName(), {
+      client,
+    });
+    result.current.mutate({ tagId: "tag-1", name: "Epic" });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(patch?.name).toBe("Epic");
+    expect(client.getQueryData<Tag[]>(tagsKey)?.[0]?.name).toBe("Epic");
+  });
+});
+
+describe("useDeleteTag", () => {
+  it("deletes the tag row and clears its taggable edges", async () => {
+    server.use(
+      http.delete(TAGS_URL, () => new HttpResponse(null, { status: 204 })),
+    );
+
+    const client = createTestQueryClient();
+    client.setQueryData(tagsKey, [
+      makeTag({ id: "tag-1", name: "Fantasy" }),
+      makeTag({ id: "tag-2", name: "Draft" }),
+    ]);
+    client.setQueryData(COLLECTION_TAGGABLES_KEY, [
+      makeTaggable({ id: "tg-1", tag_id: "tag-1", target_id: "c1" }),
+      makeTaggable({ id: "tg-2", tag_id: "tag-2", target_id: "c1" }),
+    ]);
+
+    const { result } = renderHookWithQuery(() => useDeleteTag(), { client });
+    result.current.mutate({ tagId: "tag-1" });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(client.getQueryData<Tag[]>(tagsKey)?.map((tag) => tag.id)).toEqual([
+      "tag-2",
+    ]);
+    expect(
+      client
+        .getQueryData<Taggable[]>(COLLECTION_TAGGABLES_KEY)
+        ?.map((row) => row.tag_id),
+    ).toEqual(["tag-2"]);
   });
 });
