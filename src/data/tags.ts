@@ -194,6 +194,10 @@ export function tagsByRecentUse(tags: Tag[], taggables: Taggable[]): Tag[] {
  * palette swatch and end position. A pairing that's already assigned — or
  * rejected by the database's unique constraint in a race — is a success
  * no-op rather than an error, so callers never need to pre-check membership.
+ *
+ * When creating a tag, `color` is applied only to the new row. Reusing an
+ * existing name keeps that tag's color; pass a separate recolor mutation to
+ * change it.
  */
 export function useAssignCollectionTag() {
   const qc = useQueryClient();
@@ -205,32 +209,39 @@ export function useAssignCollectionTag() {
       const name = input.name.trim();
       if (!name) throw new Error("Tag name is required");
 
-      const tags = await loadTags(qc);
-      const existingTag = findTagByName(tags, name);
+      let tags = await loadTags(qc);
+      let tag = findTagByName(tags, name);
       const now = new Date().toISOString();
-      const tag =
-        existingTag ??
-        buildTag({
+
+      if (!tag) {
+        const created = buildTag({
           userId,
           name,
           color: input.color ?? swatchForIndex(tags.length),
           position: endPositionFor(tags),
           now,
         });
-
-      if (!existingTag) {
-        await execWrite(
-          supabase.from("tags").insert({
-            id: tag.id,
-            user_id: tag.user_id,
-            name: tag.name,
-            color: tag.color,
-            position: tag.position,
-          }),
-        );
-        qc.setQueryData<Tag[]>(tagsKey, (prev) =>
-          [...(prev ?? []), tag].sort(byPosition),
-        );
+        const { error } = await supabase.from("tags").insert({
+          id: created.id,
+          user_id: created.user_id,
+          name: created.name,
+          color: created.color,
+          position: created.position,
+        });
+        if (error) {
+          // Another client (or a stale cache) already created this name —
+          // refetch and reuse rather than surfacing the unique violation.
+          if (error.code !== UNIQUE_VIOLATION) throw error;
+          tags = await fetchTags();
+          qc.setQueryData(tagsKey, tags);
+          tag = findTagByName(tags, name);
+          if (!tag) throw error;
+        } else {
+          tag = created;
+          qc.setQueryData<Tag[]>(tagsKey, (prev) =>
+            [...(prev ?? []), created].sort(byPosition),
+          );
+        }
       }
 
       const taggables =

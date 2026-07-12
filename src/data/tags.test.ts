@@ -228,6 +228,34 @@ describe("useAssignCollectionTag", () => {
     });
   });
 
+  it("ignores draft color when reusing an existing tag name", async () => {
+    server.use(
+      http.post(TAGGABLES_URL, () => new HttpResponse(null, { status: 201 })),
+    );
+
+    const client = createTestQueryClient();
+    client.setQueryData(tagsKey, [
+      makeTag({ id: "tag-1", name: "Fantasy", color: "sky" }),
+    ]);
+    client.setQueryData(COLLECTION_TAGGABLES_KEY, []);
+
+    const { result } = renderHookWithQuery(() => useAssignCollectionTag(), {
+      client,
+    });
+    result.current.mutate({
+      collectionId: "collection-1",
+      name: "Fantasy",
+      color: "moss",
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data?.color).toBe("sky");
+    expect(client.getQueryData<Tag[]>(tagsKey)?.[0]?.color).toBe("sky");
+  });
+
   it("does not double-assign the same tag", async () => {
     server.use(
       http.post(TAGS_URL, () => new HttpResponse(null, { status: 201 })),
@@ -279,6 +307,61 @@ describe("useAssignCollectionTag", () => {
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
+    });
+  });
+
+  it("recovers from a unique-violation race on the tags insert by reusing the server tag", async () => {
+    const serverTag = makeTag({
+      id: "tag-server",
+      name: "Fantasy",
+      color: "umber",
+    });
+    let insertedTaggable: { tag_id?: unknown } | undefined;
+
+    server.use(
+      http.post(TAGS_URL, () =>
+        HttpResponse.json(
+          { code: "23505", message: "duplicate key value" },
+          { status: 409 },
+        ),
+      ),
+      http.get(TAGS_URL, () => HttpResponse.json([serverTag])),
+      http.post(TAGGABLES_URL, async ({ request }) => {
+        insertedTaggable = (await request.json()) as typeof insertedTaggable;
+        return new HttpResponse(null, { status: 201 });
+      }),
+    );
+
+    // Stale/empty cache: the client thinks Fantasy doesn't exist yet.
+    const client = createTestQueryClient();
+    client.setQueryData(tagsKey, []);
+    client.setQueryData(COLLECTION_TAGGABLES_KEY, []);
+
+    const { result } = renderHookWithQuery(() => useAssignCollectionTag(), {
+      client,
+    });
+    result.current.mutate({
+      collectionId: "collection-1",
+      name: "Fantasy",
+      color: "moss",
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data).toMatchObject({
+      id: "tag-server",
+      name: "Fantasy",
+      color: "umber",
+    });
+    expect(insertedTaggable).toMatchObject({ tag_id: "tag-server" });
+    expect(client.getQueryData<Tag[]>(tagsKey)).toEqual([serverTag]);
+    expect(
+      client.getQueryData<Taggable[]>(COLLECTION_TAGGABLES_KEY)?.[0],
+    ).toMatchObject({
+      tag_id: "tag-server",
+      target_id: "collection-1",
     });
   });
 });
