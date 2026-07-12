@@ -2,9 +2,9 @@ import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { documentsKey } from "@/data/query-keys";
+import { documentsKey, whiteboardsKey } from "@/data/query-keys";
 import { useUIStore } from "@/store/ui";
-import { makeBook, makeDocument } from "@/test/fixtures";
+import { makeBook, makeDocument, makeWhiteboard } from "@/test/fixtures";
 import {
   createTestQueryClient,
   renderWithProviders,
@@ -45,6 +45,27 @@ function seedClient() {
 }
 
 describe("OutlinePanel copy link", () => {
+  it("renders and opens a whiteboard nested below a page", async () => {
+    useUIStore.setState({ expandedDocIds: ["d1"] });
+    const client = seedClient();
+    client.setQueryData(whiteboardsKey, [
+      makeWhiteboard({
+        id: "w1",
+        collection_id: null,
+        book_id: "b1",
+        parent_document_id: "d1",
+        name: "Character map",
+        position: 512,
+      }),
+    ]);
+
+    renderWithProviders(<OutlinePanel book={BOOK} />, { client });
+
+    await userEvent.click(screen.getByText("Character map"));
+
+    expect(useUIStore.getState().activeWhiteboardId).toBe("w1");
+  });
+
   it("copies the page link from the row menu", async () => {
     // userEvent.setup() installs its own clipboard stub, so override it after.
     const user = userEvent.setup({ pointerEventsCheck: 0 });

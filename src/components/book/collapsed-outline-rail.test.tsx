@@ -3,9 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { documentsKey } from "@/data/query-keys";
+import { documentsKey, whiteboardsKey } from "@/data/query-keys";
 import { useUIStore } from "@/store/ui";
-import { makeBook, makeDocument } from "@/test/fixtures";
+import { makeBook, makeDocument, makeWhiteboard } from "@/test/fixtures";
 import { server } from "@/test/msw/server";
 import {
   createTestQueryClient,
@@ -30,6 +30,7 @@ const resetStore = () =>
     sidebarWidth: 260,
     activeBookId: "b1",
     activeDocId: null,
+    activeWhiteboardId: null,
     expandedFolderIds: [],
     expandedDocIds: [],
   });
@@ -53,6 +54,29 @@ function seedDocs() {
 }
 
 describe("CollapsedOutlineRail", () => {
+  it("includes top-level whiteboards and does not select the title page", () => {
+    useUIStore.setState({ activeWhiteboardId: "w1" });
+    const client = seedDocs();
+    client.setQueryData(whiteboardsKey, [
+      makeWhiteboard({
+        id: "w1",
+        collection_id: null,
+        book_id: "b1",
+        name: "Storyboard",
+      }),
+    ]);
+
+    renderWithProviders(<CollapsedOutlineRail book={BOOK} />, { client });
+
+    expect(screen.getByRole("button", { name: "Storyboard" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("button", { name: "Genesis" })).not.toHaveAttribute(
+      "aria-current",
+    );
+  });
+
   it("renders the pinned Title Page first, then only top-level pages", () => {
     renderWithProviders(<CollapsedOutlineRail book={BOOK} />, {
       client: seedDocs(),

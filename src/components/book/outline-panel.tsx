@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 
-import { BookIcon, WhiteboardIcon } from "@/components/sidebar/icons";
+import { BookIcon } from "@/components/sidebar/icons";
 import {
   SIDEBAR_ICON_SIZE,
   SIDEBAR_ROW_GAP,
@@ -23,8 +23,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip } from "@/components/ui/tooltip";
+import { buildBookOutlineTree } from "@/data/book-outline-tree";
 import type { Book } from "@/data/books";
-import { buildDocTree, descendantCount } from "@/data/doc-tree";
+import { descendantCount } from "@/data/doc-tree";
 import {
   buildDocumentDuplicate,
   collectDocumentSubtree,
@@ -38,16 +39,23 @@ import {
   useRenameDocument,
 } from "@/data/documents";
 import { endPositionFor } from "@/data/ordering";
-import { useCreateWhiteboard, useWhiteboards } from "@/data/whiteboards";
+import {
+  useCreateWhiteboard,
+  useDeleteWhiteboard,
+  useMoveWhiteboard,
+  useRenameWhiteboard,
+  useWhiteboards,
+} from "@/data/whiteboards";
 import { copyPageLink } from "@/editor/copy-page-link";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
 
 import { PlusIcon } from "./icons";
 import {
+  type FlatBookOutlineNode,
   type FlatDocNode,
-  flattenDocTree,
-  getDocProjection,
+  flattenBookOutlineTree,
+  getBookOutlineProjection,
 } from "./outline-dnd";
 import { OutlineDragOverlay, OutlineRow } from "./outline-row";
 
@@ -55,6 +63,7 @@ interface DeleteTarget {
   id: string;
   title: string;
   descendants: number;
+  kind: "document" | "whiteboard";
 }
 
 // The in-book navigation that replaces the Library tree inside the main sidebar
@@ -90,6 +99,9 @@ export function OutlinePanel({ book }: { book: Book }) {
   const moveDocument = useMoveDocument(book.id);
   const deleteDocument = useDeleteDocument(book.id);
   const createWhiteboard = useCreateWhiteboard();
+  const moveWhiteboard = useMoveWhiteboard();
+  const renameWhiteboard = useRenameWhiteboard();
+  const deleteWhiteboard = useDeleteWhiteboard();
 
   const panel = useTreePanel<DeleteTarget>();
   // Pull out the stable members (react-query's `mutate`, the panel's
@@ -100,30 +112,43 @@ export function OutlinePanel({ book }: { book: Book }) {
   const { mutate: createWhiteboardMutate } = createWhiteboard;
   const { mutate: duplicateDocumentMutate } = duplicateDocument;
   const { mutate: renameDocumentMutate } = renameDocument;
+  const { mutate: renameWhiteboardMutate } = renameWhiteboard;
   const { startRename, cancelRename, requestDelete } = panel;
 
   const expanded = useMemo(() => new Set(expandedArr), [expandedArr]);
-  const tree = useMemo(() => buildDocTree(documents), [documents]);
+  const tree = useMemo(
+    () => buildBookOutlineTree(documents, whiteboards),
+    [documents, whiteboards],
+  );
   const flattened = useMemo(
-    () => flattenDocTree(tree, expanded),
+    () => flattenBookOutlineTree(tree, expanded),
     [tree, expanded],
   );
 
   const { sensors, visibleNodes, activeNode, projectionDepthFor, handlers } =
-    useTreeDnd<FlatDocNode>({
+    useTreeDnd<FlatBookOutlineNode>({
       flattened,
       removeDescendants,
-      project: getDocProjection,
+      project: getBookOutlineProjection,
       neighbours: neighbourPositions,
       onDragStart: () => {
         cancelRename();
       },
-      onMove: ({ id, parentId, position }) => {
-        moveDocument.mutate({
-          id,
-          parent_document_id: parentId,
-          position,
-        });
+      onMove: ({ id, parentId, position, node }) => {
+        if (node.kind === "whiteboard") {
+          moveWhiteboard.mutate({
+            id,
+            book_id: book.id,
+            parent_document_id: parentId,
+            position,
+          });
+        } else {
+          moveDocument.mutate({
+            id,
+            parent_document_id: parentId,
+            position,
+          });
+        }
         if (parentId) setDocExpanded(parentId, true);
       },
     });
@@ -139,11 +164,14 @@ export function OutlinePanel({ book }: { book: Book }) {
         id,
         title: "Untitled",
         parent_document_id: parentId,
-        position: endPositionFor(
-          documents.filter(
+        position: endPositionFor([
+          ...documents.filter(
             (d) => !d.is_title_page && d.parent_document_id === parentId,
           ),
-        ),
+          ...whiteboards.filter(
+            (whiteboard) => whiteboard.parent_document_id === parentId,
+          ),
+        ]),
       });
       setActiveDoc(id);
       startRename(id);
@@ -152,6 +180,7 @@ export function OutlinePanel({ book }: { book: Book }) {
       setDocExpanded,
       createDocumentMutate,
       documents,
+      whiteboards,
       setActiveDoc,
       startRename,
     ],
@@ -193,11 +222,15 @@ export function OutlinePanel({ book }: { book: Book }) {
   );
 
   const onCommitRename = useCallback(
-    (node: FlatDocNode, value: string) => {
+    (node: FlatBookOutlineNode, value: string) => {
       cancelRename();
-      renameDocumentMutate({ id: node.id, title: value });
+      if (node.kind === "document") {
+        renameDocumentMutate({ id: node.id, title: value });
+      } else {
+        renameWhiteboardMutate({ id: node.id, name: value });
+      }
     },
-    [cancelRename, renameDocumentMutate],
+    [cancelRename, renameDocumentMutate, renameWhiteboardMutate],
   );
 
   const onCopyLink = useCallback((id: string) => {
@@ -205,12 +238,22 @@ export function OutlinePanel({ book }: { book: Book }) {
   }, []);
 
   const onDelete = useCallback(
-    (node: FlatDocNode) => {
-      requestDelete({
-        id: node.id,
-        title: node.document.title || "Untitled",
-        descendants: descendantCount(documents, node.id),
-      });
+    (node: FlatBookOutlineNode) => {
+      if (node.kind === "document") {
+        requestDelete({
+          id: node.id,
+          title: node.document.title || "Untitled",
+          descendants: descendantCount(documents, node.id),
+          kind: "document",
+        });
+      } else {
+        requestDelete({
+          id: node.id,
+          title: node.whiteboard.name || "Untitled",
+          descendants: 0,
+          kind: "whiteboard",
+        });
+      }
     },
     [requestDelete, documents],
   );
@@ -218,6 +261,11 @@ export function OutlinePanel({ book }: { book: Book }) {
   const confirmDelete = () => {
     const target = panel.deleteTarget;
     if (!target) return;
+    if (target.kind === "whiteboard") {
+      if (activeWhiteboardId === target.id) setActiveDoc(null);
+      deleteWhiteboard.mutate({ id: target.id });
+      return;
+    }
     const subtree = collectDocumentSubtree(documents, target.id);
     if (activeDocId && subtree.has(activeDocId)) setActiveDoc(null);
     deleteDocument.mutate({ id: target.id });
@@ -326,12 +374,19 @@ export function OutlinePanel({ book }: { book: Book }) {
               <OutlineRow
                 key={node.id}
                 node={node}
-                selected={node.id === activeDocId}
+                selected={
+                  node.kind === "document"
+                    ? node.id === activeDocId
+                    : node.id === activeWhiteboardId
+                }
                 editing={panel.editingId === node.id}
                 expanded={expanded.has(node.id)}
                 projectionDepth={projectionDepthFor(node.id)}
                 onToggleExpand={toggleDocExpanded}
-                onSelect={setActiveDoc}
+                onSelectDocument={setActiveDoc}
+                onSelectWhiteboard={(id) => {
+                  navigateTo({ bookId: book.id, whiteboardId: id });
+                }}
                 onStartRename={startRename}
                 onCommitRename={onCommitRename}
                 onCancelRename={cancelRename}
@@ -344,32 +399,6 @@ export function OutlinePanel({ book }: { book: Book }) {
             ))}
           </TreeDndContainer>
         )}
-        {whiteboards
-          .filter((whiteboard) => whiteboard.parent_document_id === null)
-          .map((whiteboard) => (
-            <button
-              key={whiteboard.id}
-              type="button"
-              aria-current={
-                activeWhiteboardId === whiteboard.id ? "page" : undefined
-              }
-              onClick={() => {
-                navigateTo({ bookId: book.id, whiteboardId: whiteboard.id });
-              }}
-              style={{ paddingLeft: sidebarRowPadding(0) }}
-              className={cn(
-                "flex h-9 w-full items-center gap-2 rounded-md pr-1 text-left text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
-                activeWhiteboardId === whiteboard.id
-                  ? "bg-selected font-medium text-text"
-                  : "text-text hover:bg-hover",
-              )}
-            >
-              <WhiteboardIcon size={SIDEBAR_ICON_SIZE} />
-              <span className="min-w-0 flex-1 truncate">
-                {whiteboard.name || "Untitled"}
-              </span>
-            </button>
-          ))}
       </div>
 
       <ConfirmDialog
@@ -380,7 +409,7 @@ export function OutlinePanel({ book }: { book: Book }) {
         title={
           panel.deleteTarget ? `Delete "${panel.deleteTarget.title}"?` : ""
         }
-        description={describeDelete(panel.deleteTarget?.descendants ?? 0)}
+        description={describeDelete(panel.deleteTarget)}
         confirmLabel="Delete"
         danger
         onConfirm={confirmDelete}
@@ -389,7 +418,10 @@ export function OutlinePanel({ book }: { book: Book }) {
   );
 }
 
-function describeDelete(descendants: number): string {
+function describeDelete(target: DeleteTarget | null): string {
+  if (target?.kind === "whiteboard")
+    return "This permanently deletes the whiteboard.";
+  const descendants = target?.descendants ?? 0;
   if (descendants === 0) return "This permanently deletes the page.";
   return `This permanently deletes the page and its ${descendants} nested page${
     descendants === 1 ? "" : "s"
