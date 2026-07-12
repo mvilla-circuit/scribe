@@ -1,7 +1,5 @@
-import { Tooltip } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { SwatchGrid as UISwatchGrid } from "@/components/ui/swatch-grid";
 
-import { NoColorIcon } from "./icons";
 import { type Swatch } from "./palette";
 import { preserveSelection } from "./preserve-selection";
 
@@ -29,52 +27,13 @@ export function SwatchGrid({
   clearLabel: string;
 }) {
   return (
-    <div className="grid grid-cols-5 place-items-center gap-y-2.5">
-      <Tooltip content={clearLabel}>
-        <button
-          type="button"
-          aria-label={clearLabel}
-          aria-pressed={!value}
-          onMouseDown={preserveSelection}
-          onClick={() => {
-            onChange(null);
-          }}
-          className={cn(
-            "flex h-6 w-6 items-center justify-center rounded-full text-muted outline-none transition-all duration-150",
-            "focus-visible:ring-2 focus-visible:ring-ring",
-            !value
-              ? "ring-2 ring-ring ring-offset-2 ring-offset-elevated"
-              : "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] hover:scale-110 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]",
-          )}
-        >
-          <NoColorIcon size={16} />
-        </button>
-      </Tooltip>
-      {swatches.map((s) => {
-        const active = value === s.value;
-        return (
-          <Tooltip key={s.value} content={s.name}>
-            <button
-              type="button"
-              aria-label={s.name}
-              aria-pressed={active}
-              onMouseDown={preserveSelection}
-              onClick={() => {
-                onChange(s.value);
-              }}
-              className={cn(
-                "h-6 w-6 rounded-full outline-none transition-all duration-150",
-                "focus-visible:ring-2 focus-visible:ring-ring",
-                active
-                  ? "ring-2 ring-ring ring-offset-2 ring-offset-elevated"
-                  : "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] hover:scale-110 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]",
-              )}
-              style={{ background: s.value }}
-            />
-          </Tooltip>
-        );
-      })}
-    </div>
+    <UISwatchGrid
+      swatches={swatches.map((s) => ({ name: s.name, value: s.value }))}
+      value={value}
+      onChange={onChange}
+      clearLabel={clearLabel}
+      onSwatchMouseDown={preserveSelection}
+    />
   );
 }
 

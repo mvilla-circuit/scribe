@@ -44,6 +44,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { MorandiSwatchGrid } from "@/components/ui/morandi-swatch-grid";
 import {
   addField,
   deleteField,
@@ -63,7 +64,6 @@ import type {
 import { cn } from "@/lib/utils";
 
 import {
-  DATAGRID_SWATCHES,
   swatchChipStyle,
   swatchDotStyle,
   swatchForIndex,
@@ -491,27 +491,15 @@ function OptionEditor({
                 />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="start"
-              className="grid grid-cols-5 gap-1 p-2"
-            >
-              {DATAGRID_SWATCHES.map((hue) => (
-                <button
-                  key={hue}
-                  type="button"
-                  aria-label={`${hue} for ${option.name}`}
-                  aria-pressed={option.color === hue}
-                  onClick={() => {
-                    recolorOption(option.id, hue);
-                    setColorOptionId(null);
-                  }}
-                  style={swatchDotStyle(hue)}
-                  className={cn(
-                    "size-5 rounded-full outline-none transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-ring",
-                    option.color === hue && "ring-2 ring-ring",
-                  )}
-                />
-              ))}
+            <DropdownMenuContent align="start" className="p-2">
+              <MorandiSwatchGrid
+                value={option.color}
+                onChange={(hue) => {
+                  recolorOption(option.id, hue);
+                  setColorOptionId(null);
+                }}
+                ariaLabelForHue={(hue) => `${hue} for ${option.name}`}
+              />
             </DropdownMenuContent>
           </DropdownMenu>
 
