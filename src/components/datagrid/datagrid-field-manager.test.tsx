@@ -197,6 +197,54 @@ describe("FieldManager", () => {
     expect(screen.getByRole("button", { name: "Rename Woman" })).toBeVisible();
   });
 
+  it("cancels an option rename left blank, keeping the previous name", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const onChange = vi.fn();
+    renderWithProviders(
+      <Harness initial={[SELECT_FIELD]} onChange={onChange} />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Rename Female" }));
+    const input = screen.getByRole("textbox", { name: "Rename Female" });
+    await user.clear(input);
+    await user.keyboard("{Enter}");
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Rename Female" })).toBeVisible();
+  });
+
+  it("renames a field on blur, trimming surrounding whitespace", () => {
+    const onChange = vi.fn();
+    const field: DatagridField = {
+      id: "f1",
+      name: "Status",
+      type: "text",
+      config: {},
+    };
+    renderWithProviders(<Harness initial={[field]} onChange={onChange} />);
+    const input = screen.getByLabelText("Field name for Status");
+    fireEvent.change(input, { target: { value: "  Stage  " } });
+    fireEvent.blur(input);
+    const last = onChange.mock.calls.at(-1)?.[0] as DatagridField[];
+    expect(last[0]?.name).toBe("Stage");
+  });
+
+  it("cancels a field rename left blank, reverting to the previous name", () => {
+    const onChange = vi.fn();
+    const field: DatagridField = {
+      id: "f1",
+      name: "Status",
+      type: "text",
+      config: {},
+    };
+    renderWithProviders(<Harness initial={[field]} onChange={onChange} />);
+    const input = screen.getByLabelText("Field name for Status");
+    fireEvent.change(input, { target: { value: "   " } });
+    fireEvent.blur(input);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(input).toHaveValue("Status");
+  });
+
   it("deletes an option from the chip", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const onChange = vi.fn();

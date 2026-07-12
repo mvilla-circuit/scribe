@@ -2,7 +2,8 @@ import { fireEvent, screen } from "@testing-library/react";
 import { type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { makeBook } from "@/test/fixtures";
+import { useUIStore } from "@/store/ui";
+import { makeBook, makeCollection } from "@/test/fixtures";
 import { renderWithProviders } from "@/test/render-with-query";
 
 import { TitlePage } from "./title-page";
@@ -13,6 +14,7 @@ const hooks = vi.hoisted(() => ({
   upload: { mutateAsync: vi.fn() },
   createDocument: { mutate: vi.fn() },
   bookCoverUrl: null as string | null,
+  collections: [] as ReturnType<typeof makeCollection>[],
 }));
 
 vi.mock("@/components/ui/page-cover", () => ({
@@ -71,7 +73,7 @@ vi.mock("@/data/documents", async (importOriginal) => {
 });
 
 vi.mock("@/data/collections", () => ({
-  useCollections: () => ({ data: [] }),
+  useCollections: () => ({ data: hooks.collections }),
 }));
 
 vi.mock("@/fonts/use-cascaded-fonts", () => ({
@@ -83,7 +85,7 @@ vi.mock("@/fonts/use-cascaded-fonts", () => ({
   }),
 }));
 
-vi.mock("./masthead", () => ({
+vi.mock("@/components/ui/masthead", () => ({
   Masthead: ({
     children,
     actions,
@@ -113,6 +115,8 @@ vi.mock("./font-control", () => ({
 beforeEach(() => {
   vi.clearAllMocks();
   hooks.bookCoverUrl = null;
+  hooks.collections = [];
+  useUIStore.setState({ activeCollectionId: null });
 });
 
 describe("TitlePage covers", () => {
@@ -167,5 +171,23 @@ describe("TitlePage covers", () => {
       { id: "book-1", cover_url: null },
       expect.any(Object),
     );
+  });
+});
+
+describe("TitlePage breadcrumb", () => {
+  it("navigates to the parent collection when its crumb is clicked", () => {
+    hooks.collections = [makeCollection({ id: "c1", name: "Field Notes" })];
+
+    renderWithProviders(
+      <TitlePage
+        book={makeBook({ collection_id: "c1" })}
+        documents={[]}
+        loading={false}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Field Notes" }));
+
+    expect(useUIStore.getState().activeCollectionId).toBe("c1");
   });
 });

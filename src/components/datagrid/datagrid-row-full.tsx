@@ -1,8 +1,8 @@
 import { useState } from "react";
 
-import { EditableText } from "@/components/book/editable-text";
-import { Masthead } from "@/components/book/masthead";
 import { NavHistoryControls } from "@/components/book/nav-history-controls";
+import { EditableText } from "@/components/ui/editable-text";
+import { Masthead } from "@/components/ui/masthead";
 import { useCollections } from "@/data/collections";
 import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";

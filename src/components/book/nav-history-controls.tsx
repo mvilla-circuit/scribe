@@ -1,12 +1,7 @@
-import { Tooltip } from "@/components/ui/tooltip";
+import { IconButton } from "@/components/ui/icon-button";
 import { useUIStore } from "@/store/ui";
 
 import { ArrowLeftIcon, ArrowRightIcon } from "./icons";
-
-// Shared with the Title Page's top-bar chrome buttons: a quiet 7x7 square that
-// warms on hover and dims when there's nowhere to go.
-const BUTTON_CLASS =
-  "flex h-7 w-7 items-center justify-center rounded-md text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40";
 
 /**
  * Back/forward buttons that step through the app-wide navigation history in the
@@ -22,28 +17,17 @@ export function NavHistoryControls() {
 
   return (
     <div className="flex shrink-0 items-center gap-0.5">
-      <Tooltip content="Back">
-        <button
-          type="button"
-          aria-label="Back"
-          disabled={!canGoBack}
-          onClick={goBack}
-          className={BUTTON_CLASS}
-        >
-          <ArrowLeftIcon size={16} />
-        </button>
-      </Tooltip>
-      <Tooltip content="Forward">
-        <button
-          type="button"
-          aria-label="Forward"
-          disabled={!canGoForward}
-          onClick={goForward}
-          className={BUTTON_CLASS}
-        >
-          <ArrowRightIcon size={16} />
-        </button>
-      </Tooltip>
+      <IconButton label="Back" size="sm" disabled={!canGoBack} onClick={goBack}>
+        <ArrowLeftIcon size={16} />
+      </IconButton>
+      <IconButton
+        label="Forward"
+        size="sm"
+        disabled={!canGoForward}
+        onClick={goForward}
+      >
+        <ArrowRightIcon size={16} />
+      </IconButton>
     </div>
   );
 }

@@ -1,7 +1,11 @@
-import * as RPopover from "@radix-ui/react-popover";
 import { RotateCcw } from "lucide-react";
 
 import { FontPicker } from "@/components/settings/font-picker";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
   FONT_ROLES,
@@ -53,9 +57,9 @@ export function FontControl({
   const hasOverrides = FONT_ROLES.some((role) => overrides[role] != null);
 
   return (
-    <RPopover.Root>
+    <Popover>
       <Tooltip content="Fonts">
-        <RPopover.Trigger asChild>
+        <PopoverTrigger asChild>
           <button
             type="button"
             aria-label="Fonts"
@@ -68,57 +72,54 @@ export function FontControl({
               A<span className="text-[0.8em]">a</span>
             </span>
           </button>
-        </RPopover.Trigger>
+        </PopoverTrigger>
       </Tooltip>
-      <RPopover.Portal>
-        <RPopover.Content
-          align="end"
-          sideOffset={6}
-          collisionPadding={12}
-          className="scribe-pop z-50 w-[19rem] rounded-lg border border-border bg-elevated p-3 text-text shadow-popover outline-none"
-        >
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-text">{heading}</p>
-              <p className="text-xs text-muted">Overrides {inheritLabel}</p>
-            </div>
-            {hasOverrides && (
-              <button
-                type="button"
-                onClick={onClearAll}
-                className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-xs text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <ResetIcon size={12} />
-                Reset all
-              </button>
-            )}
+      <PopoverContent
+        align="end"
+        collisionPadding={12}
+        className="w-[19rem] p-3"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-text">{heading}</p>
+            <p className="text-xs text-muted">Overrides {inheritLabel}</p>
           </div>
+          {hasOverrides && (
+            <button
+              type="button"
+              onClick={onClearAll}
+              className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-xs text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ResetIcon size={12} />
+              Reset all
+            </button>
+          )}
+        </div>
 
-          <div className="mt-3 space-y-3">
-            {FONT_ROLES.map((role) => (
-              <div key={role}>
-                <div className="mb-1 flex items-baseline gap-2">
-                  <span className="text-xs font-medium text-text">
-                    {ROLE_META[role].label}
-                  </span>
-                </div>
-                <FontPicker
-                  role={role}
-                  value={overrides[role] ?? inherited[role]}
-                  overridden={overrides[role] != null}
-                  inheritLabel={inheritLabel}
-                  onSelect={(id) => {
-                    onSet(role, id);
-                  }}
-                  onInherit={() => {
-                    onClear(role);
-                  }}
-                />
+        <div className="mt-3 space-y-3">
+          {FONT_ROLES.map((role) => (
+            <div key={role}>
+              <div className="mb-1 flex items-baseline gap-2">
+                <span className="text-xs font-medium text-text">
+                  {ROLE_META[role].label}
+                </span>
               </div>
-            ))}
-          </div>
-        </RPopover.Content>
-      </RPopover.Portal>
-    </RPopover.Root>
+              <FontPicker
+                role={role}
+                value={overrides[role] ?? inherited[role]}
+                overridden={overrides[role] != null}
+                inheritLabel={inheritLabel}
+                onSelect={(id) => {
+                  onSet(role, id);
+                }}
+                onInherit={() => {
+                  onClear(role);
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }

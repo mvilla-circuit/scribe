@@ -1,5 +1,6 @@
 import { DatagridIcon } from "@/components/sidebar/icons";
-import { DocumentIcon } from "@/components/ui/document-icon";
+import { CoverCard } from "@/components/ui/cover-card";
+import { DashedAddTile } from "@/components/ui/dashed-add-tile";
 import type { DatagridField } from "@/lib/datagrid-schema";
 
 import { RowPropertyChips } from "./datagrid-cell";
@@ -31,52 +32,37 @@ export function DatagridGalleryView({
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {rows.map((row) => (
-        <button
+        <CoverCard
           key={row.id}
-          type="button"
-          onClick={() => {
+          title={row.title}
+          icon={row.icon}
+          coverUrl={row.cover_url}
+          fallback={<DatagridIcon size={26} />}
+          onOpen={() => {
             onOpenRow(row.id);
           }}
-          className="group flex flex-col overflow-hidden rounded-lg border border-border bg-surface text-left outline-none transition-shadow hover:shadow-popover focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {row.cover_url ? (
-            <img
-              src={row.cover_url}
-              alt=""
-              className="aspect-[4/3] w-full object-cover"
-            />
-          ) : (
-            <div className="flex aspect-[4/3] w-full items-center justify-center bg-hover text-muted">
-              {row.icon ? (
-                <DocumentIcon icon={row.icon} size={28} />
-              ) : (
-                <DatagridIcon size={26} />
-              )}
+          aspect="album"
+          footerExtra={
+            <div className="mt-1.5">
+              <RowPropertyChips
+                fields={fields}
+                row={row}
+                relationTargets={relationTargets}
+              />
             </div>
-          )}
-          <div className="flex flex-col gap-2 px-3 py-2.5">
-            <span className="truncate text-sm font-medium text-text">
-              {row.title || "Untitled"}
-            </span>
-            <RowPropertyChips
-              fields={fields}
-              row={row}
-              relationTargets={relationTargets}
-            />
-          </div>
-        </button>
+          }
+        />
       ))}
 
-      <button
-        type="button"
+      <DashedAddTile
         onClick={onCreateRow}
-        className="flex aspect-[4/3] min-h-32 w-full flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-border text-sm text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
+        className="aspect-[4/3] min-h-32 flex-col gap-1.5"
       >
         <span className="text-lg leading-none" aria-hidden="true">
           +
         </span>
         New row
-      </button>
+      </DashedAddTile>
     </div>
   );
 }

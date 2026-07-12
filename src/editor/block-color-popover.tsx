@@ -1,6 +1,11 @@
-import * as RPopover from "@radix-ui/react-popover";
+import type * as RPopover from "@radix-ui/react-popover";
 import type { ComponentType } from "react";
 
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Tooltip } from "@/components/ui/tooltip";
 
 import { PaletteIcon } from "./icons";
@@ -52,9 +57,9 @@ export function BlockColorPopover({
   align?: RPopover.PopoverContentProps["align"];
 }) {
   return (
-    <RPopover.Root open={open} onOpenChange={onOpenChange}>
+    <Popover open={open} onOpenChange={onOpenChange}>
       <Tooltip content={triggerLabel}>
-        <RPopover.Trigger asChild>
+        <PopoverTrigger asChild>
           <button
             type="button"
             aria-label={triggerAriaLabel ?? triggerLabel}
@@ -62,23 +67,17 @@ export function BlockColorPopover({
           >
             <TriggerIcon size={15} />
           </button>
-        </RPopover.Trigger>
+        </PopoverTrigger>
       </Tooltip>
-      <RPopover.Portal>
-        <RPopover.Content
-          align={align}
-          sideOffset={6}
-          className="scribe-pop z-50 w-[12rem] rounded-lg border border-border bg-elevated p-3 text-text shadow-popover outline-none"
-        >
-          <SwatchSection
-            label={label}
-            swatches={swatches}
-            value={value}
-            onChange={onChange}
-            clearLabel={clearLabel}
-          />
-        </RPopover.Content>
-      </RPopover.Portal>
-    </RPopover.Root>
+      <PopoverContent align={align} className="w-[12rem] p-3">
+        <SwatchSection
+          label={label}
+          swatches={swatches}
+          value={value}
+          onChange={onChange}
+          clearLabel={clearLabel}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }

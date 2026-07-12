@@ -27,11 +27,11 @@ import {
   Plus,
   Trash2,
   Type,
-  X,
 } from "lucide-react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { RemovableChip } from "@/components/ui/chip";
 import {
   Dialog,
   DialogContent,
@@ -44,6 +44,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { InlineRename } from "@/components/ui/inline-rename";
+import { Input } from "@/components/ui/input";
 import { MorandiSwatchGrid } from "@/components/ui/morandi-swatch-grid";
 import {
   addField,
@@ -61,13 +63,9 @@ import type {
   DatagridFieldType,
   DatagridSelectOption,
 } from "@/lib/datagrid-schema";
-import { cn } from "@/lib/utils";
+import { cn, resolveEditedValue } from "@/lib/utils";
 
-import {
-  swatchChipStyle,
-  swatchDotStyle,
-  swatchForIndex,
-} from "./datagrid-colors";
+import { swatchDotStyle, swatchForIndex } from "./datagrid-colors";
 
 const FIELD_TYPE_ICONS: Record<DatagridFieldType, typeof Type> = {
   text: Type,
@@ -94,9 +92,6 @@ const OPTION_TYPES = new Set<DatagridFieldType>([
   "multi_select",
   "status",
 ]);
-
-const INPUT_CLASS =
-  "min-w-0 w-full rounded-md border border-transparent bg-transparent px-2 py-1 text-sm text-text outline-none placeholder:text-muted hover:border-border focus-visible:border-border focus-visible:ring-2 focus-visible:ring-ring";
 
 interface FieldManagerProps {
   open: boolean;
@@ -304,9 +299,13 @@ function SortableFieldRow({
   );
 
   const commitRename = () => {
-    const next = draftName.trim() || field.name;
-    setDraftName(next);
-    if (next !== field.name) onRename(field.id, next);
+    const outcome = resolveEditedValue(draftName, { previous: field.name });
+    if (outcome.commit) {
+      setDraftName(outcome.value);
+      onRename(field.id, outcome.value);
+    } else {
+      setDraftName(field.name);
+    }
   };
 
   return (
@@ -345,7 +344,7 @@ function SortableFieldRow({
           <GripVertical className="size-4" aria-hidden="true" />
         </button>
 
-        <input
+        <Input
           ref={nameInputRef}
           aria-label={`Field name for ${field.name}`}
           value={draftName}
@@ -362,7 +361,7 @@ function SortableFieldRow({
               setDraftName(field.name);
             }
           }}
-          className={cn(INPUT_CLASS, "flex-1")}
+          className="h-auto flex-1 border-transparent bg-transparent px-2 py-1 hover:border-border focus-visible:border-border"
         />
 
         <FieldTypeMenu
@@ -416,19 +415,10 @@ function OptionEditor({
 }) {
   const options = field.config.options ?? [];
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [draftName, setDraftName] = useState("");
   const [colorOptionId, setColorOptionId] = useState<string | null>(null);
-  const renameInput = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!editingId) return;
-    renameInput.current?.focus();
-    renameInput.current?.select();
-  }, [editingId]);
 
   const addOption = () => {
     const id = crypto.randomUUID();
-    setDraftName("New option");
     setEditingId(id);
     onChange([
       ...options,
@@ -452,25 +442,20 @@ function OptionEditor({
     onChange(options.filter((o) => o.id !== id));
   };
 
-  const startRename = (option: DatagridSelectOption) => {
-    setDraftName(option.name);
-    setEditingId(option.id);
-  };
-
-  const commitRename = (option: DatagridSelectOption) => {
-    renameOption(option.id, draftName);
-    setEditingId(null);
-  };
-
   return (
     <div className="mt-1 ml-8 flex flex-col items-start gap-1.5 rounded-md bg-tree-group px-2 py-2">
       {options.map((option) => (
-        <div
+        <RemovableChip
           key={option.id}
-          style={swatchChipStyle(option.color)}
-          className={cn(
-            "group/option inline-flex min-h-7 max-w-full items-center gap-1 rounded-full px-1.5 py-0.5 text-xs font-medium",
-          )}
+          name={option.name}
+          color={option.color}
+          onRemove={() => {
+            removeOption(option.id);
+          }}
+          removeLabel={`Delete option ${option.name}`}
+          removeReveal="hover"
+          removeClassName="size-5 hover:bg-hover hover:opacity-100 hover:text-danger"
+          className="group/option min-h-7 max-w-full gap-1 px-1.5 py-0.5"
         >
           <DropdownMenu
             open={colorOptionId === option.id}
@@ -504,51 +489,31 @@ function OptionEditor({
           </DropdownMenu>
 
           {editingId === option.id ? (
-            <input
-              ref={renameInput}
-              aria-label={`Rename ${option.name}`}
-              value={draftName}
-              onChange={(event) => {
-                setDraftName(event.target.value);
+            <InlineRename
+              initialValue={option.name}
+              ariaLabel={`Rename ${option.name}`}
+              onCommit={(name) => {
+                renameOption(option.id, name);
+                setEditingId(null);
               }}
-              onBlur={() => {
-                commitRename(option);
+              onCancel={() => {
+                setEditingId(null);
               }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  event.currentTarget.blur();
-                } else if (event.key === "Escape") {
-                  event.preventDefault();
-                  setEditingId(null);
-                }
-              }}
-              className={cn(INPUT_CLASS, "min-w-[12rem] flex-1 py-0.5")}
+              className="min-w-[12rem] flex-1 py-0.5"
             />
           ) : (
             <button
               type="button"
               aria-label={`Rename ${option.name}`}
               onClick={() => {
-                startRename(option);
+                setEditingId(option.id);
               }}
               className="min-w-0 truncate rounded px-1 py-0.5 text-left outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring"
             >
               {option.name}
             </button>
           )}
-
-          <button
-            type="button"
-            aria-label={`Delete option ${option.name}`}
-            onClick={() => {
-              removeOption(option.id);
-            }}
-            className="flex size-5 shrink-0 items-center justify-center rounded-full opacity-0 outline-none transition-opacity hover:bg-hover hover:text-danger focus:opacity-100 focus-visible:ring-2 focus-visible:ring-ring group-hover/option:opacity-100 group-focus-within/option:opacity-100"
-          >
-            <X className="size-3.5" aria-hidden="true" />
-          </button>
-        </div>
+        </RemovableChip>
       ))}
       <button
         type="button"

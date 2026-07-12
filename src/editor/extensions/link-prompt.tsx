@@ -2,6 +2,7 @@ import { memo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 import { useLinkPrompt } from "./link-prompt-store";
 
@@ -46,7 +47,7 @@ export const LinkPrompt = memo(function LinkPrompt() {
           className="p-4"
         >
           <DialogTitle className="sr-only">Add a bookmark</DialogTitle>
-          <input
+          <Input
             autoFocus
             type="url"
             value={href}
@@ -55,7 +56,7 @@ export const LinkPrompt = memo(function LinkPrompt() {
             }}
             placeholder="Paste a link URL"
             aria-label="Bookmark URL"
-            className="h-9 w-full rounded-md border border-border bg-bg px-3 text-sm text-text outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-9"
           />
           <div className="mt-3 flex items-center justify-end gap-2">
             <Button

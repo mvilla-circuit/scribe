@@ -808,6 +808,17 @@ describe("CollectionPage", () => {
     expect(useUIStore.getState().activeCollectionId).toBe("c2");
   });
 
+  it("navigates to an ancestor via the breadcrumb", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    renderWithProviders(<CollectionPage collectionId="c2" />, {
+      client: seed(),
+    });
+
+    await user.click(screen.getByRole("button", { name: "The Realm" }));
+
+    expect(useUIStore.getState().activeCollectionId).toBe("c1");
+  });
+
   it("renders an empty state for a collection with no items", () => {
     const client = createTestQueryClient();
     client.setQueryData(foldersKey, []);

@@ -38,7 +38,6 @@ describe("TableOfContents", () => {
       <TableOfContents
         documents={DOCS}
         loading={false}
-        titleFont="var(--font-display)"
         rootId="ch1"
         expandedIds={new Set(["ch1a"])}
         onToggle={vi.fn()}
@@ -59,7 +58,6 @@ describe("TableOfContents", () => {
       <TableOfContents
         documents={DOCS}
         loading={false}
-        titleFont="var(--font-display)"
         rootId="ch1"
         expandedIds={new Set()}
         onToggle={vi.fn()}
@@ -69,5 +67,39 @@ describe("TableOfContents", () => {
     await user.click(screen.getByText("Section 1a"));
 
     expect(useUIStore.getState().activeDocId).toBe("ch1a");
+  });
+
+  it("renders the create-first-page CTA as a button when empty", () => {
+    renderWithProviders(
+      <TableOfContents
+        documents={[]}
+        loading={false}
+        expandedIds={new Set()}
+        onToggle={vi.fn()}
+        onCreateFirst={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /add your first page/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders the empty title in the book display font", () => {
+    renderWithProviders(
+      <TableOfContents
+        documents={[]}
+        loading={false}
+        expandedIds={new Set()}
+        onToggle={vi.fn()}
+        onCreateFirst={vi.fn()}
+        titleFont="var(--font-display)"
+      />,
+    );
+
+    expect(screen.getByText("No documents yet")).toHaveStyle({
+      fontFamily: "var(--font-display)",
+    });
+    expect(screen.getByText("No documents yet")).toHaveClass("text-base");
   });
 });

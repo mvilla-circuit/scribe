@@ -1,3 +1,5 @@
+import { Chip } from "@/components/ui/chip";
+import { Input } from "@/components/ui/input";
 import {
   asRelationRefs,
   asStringArray,
@@ -7,7 +9,6 @@ import {
 import { cn } from "@/lib/utils";
 
 import { CellValue } from "./datagrid-cell";
-import { swatchChipStyle } from "./datagrid-colors";
 import { RelationField } from "./datagrid-relation-picker";
 import type { RelationTargets } from "./datagrid-relations";
 
@@ -27,10 +28,10 @@ interface DatagridFieldEditorProps {
 }
 
 const DETAIL_INPUT_CLASS =
-  "min-w-0 w-full rounded-md border border-transparent bg-transparent px-2 py-1 text-sm text-text outline-none placeholder:text-muted hover:border-border focus-visible:border-border focus-visible:ring-2 focus-visible:ring-ring";
+  "h-auto min-w-0 rounded-md border-transparent bg-transparent px-2 py-1 hover:border-border focus-visible:border-border";
 
 const INLINE_INPUT_CLASS =
-  "min-w-0 w-full rounded bg-transparent px-1.5 py-1 text-sm text-text outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-ring";
+  "h-auto min-w-0 rounded border-transparent bg-transparent px-1.5 py-1";
 
 /** Stable identity for remounting uncontrolled inputs when the prop value changes. */
 function valueKey(value: DatagridPropertyValue): string {
@@ -62,7 +63,7 @@ export function DatagridFieldEditor({
     case "text":
     case "url":
       return (
-        <input
+        <Input
           key={valueKey(value)}
           type={field.type === "url" ? "url" : "text"}
           aria-label={field.name}
@@ -81,7 +82,7 @@ export function DatagridFieldEditor({
       );
     case "number":
       return (
-        <input
+        <Input
           key={valueKey(value)}
           type="number"
           aria-label={field.name}
@@ -105,7 +106,7 @@ export function DatagridFieldEditor({
       );
     case "date":
       return (
-        <input
+        <Input
           key={valueKey(value)}
           type="date"
           aria-label={field.name}
@@ -187,22 +188,16 @@ export function DatagridFieldEditor({
           {options.map((opt) => {
             const on = ids.includes(opt.id);
             return (
-              <button
+              <Chip
                 key={opt.id}
-                type="button"
-                aria-label={opt.name}
+                name={opt.name}
+                color={opt.color}
+                washed={on}
                 aria-pressed={on}
                 onClick={() => {
                   toggle(opt.id);
                 }}
-                style={on ? swatchChipStyle(opt.color) : undefined}
-                className={cn(
-                  "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
-                  on ? "" : "bg-tree-group text-muted hover:text-text",
-                )}
-              >
-                {opt.name}
-              </button>
+              />
             );
           })}
         </div>

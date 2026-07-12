@@ -8,14 +8,8 @@ import {
 } from "@/components/ui/row-action-menu";
 import { cn } from "@/lib/utils";
 
-import { type GalleryTag, TagChipsRow } from "./tag-chips-row";
-
 /** Portrait book cover vs landscape album cover for gallery media. */
 type CoverCardAspect = "book" | "album";
-
-// Grid cards are narrower than list rows, so a card caps at fewer chips
-// before collapsing the rest into a "+N".
-const MAX_VISIBLE_TAGS = 3;
 
 interface CoverCardProps {
   title: string;
@@ -35,11 +29,11 @@ interface CoverCardProps {
    */
   aspect?: CoverCardAspect;
   /**
-   * Tags to show under the title block, capped to `MAX_VISIBLE_TAGS` chips
-   * plus a muted overflow count. Omitted entirely for kinds that can't carry
-   * tags (only collections do today).
+   * Extra content rendered under the title block (e.g. a row of tag chips).
+   * Left to the caller so this design-system primitive doesn't depend on any
+   * feature-specific data shape.
    */
-  tags?: GalleryTag[];
+  footerExtra?: ReactNode;
 }
 
 function CoverCardComponent({
@@ -51,11 +45,12 @@ function CoverCardComponent({
   onOpen,
   actions,
   aspect = "book",
-  tags = [],
+  footerExtra,
 }: CoverCardProps) {
   const label = title || "Untitled";
   const subtitleText = subtitle?.trim() || null;
   const mediaAspect = aspect === "album" ? "aspect-[4/3]" : "aspect-[3/4]";
+  const actionsList = actions && actions.length > 0 ? actions : null;
   const card = (
     <div className="group relative h-full" data-testid="cover-card">
       <button
@@ -99,23 +94,18 @@ function CoverCardComponent({
                 {subtitleText}
               </span>
             )}
-            <TagChipsRow
-              tags={tags}
-              max={MAX_VISIBLE_TAGS}
-              className="mt-1.5"
-              data-testid="cover-card-tags"
-            />
+            {footerExtra}
           </span>
         </div>
       </button>
-      {actions && actions.length > 0 && (
-        <CoverCardActions actions={actions} label={label} />
-      )}
+      {actionsList ? (
+        <CoverCardActions actions={actionsList} label={label} />
+      ) : null}
     </div>
   );
 
-  if (!actions || actions.length === 0) return card;
-  return <RowContextMenu actions={actions}>{card}</RowContextMenu>;
+  if (!actionsList) return card;
+  return <RowContextMenu actions={actionsList}>{card}</RowContextMenu>;
 }
 
 // Hover chip for the more-actions control. Tracks menu open state in React

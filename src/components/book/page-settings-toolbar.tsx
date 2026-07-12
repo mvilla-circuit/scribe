@@ -1,12 +1,11 @@
 import { BannerControl } from "@/components/ui/banner-control";
+import { IconButton } from "@/components/ui/icon-button";
 import { SubtitleToggle } from "@/components/ui/subtitle-toggle";
-import { Tooltip } from "@/components/ui/tooltip";
 import type { DocumentMeta } from "@/data/documents";
 import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";
 import type { FontMap, ResolvedFonts } from "@/fonts/catalog";
 import type { FontOverrideHandlers } from "@/fonts/use-font-overrides";
-import { cn } from "@/lib/utils";
 
 import { FontControl } from "./font-control";
 import { ListIcon, ListTreeIcon, SpellCheckIcon } from "./icons";
@@ -52,45 +51,25 @@ export function PageSettingsToolbar({
         onToggle={onToggleSubtitle}
       />
       {hasChildren && (
-        <Tooltip
-          content={document.show_contents ? "Hide contents" : "Show contents"}
+        <IconButton
+          label={document.show_contents ? "Hide contents" : "Show contents"}
+          size="sm"
+          selected={document.show_contents}
+          aria-pressed={document.show_contents}
+          onClick={onToggleContents}
         >
-          <button
-            type="button"
-            onClick={onToggleContents}
-            aria-pressed={document.show_contents}
-            aria-label={
-              document.show_contents ? "Hide contents" : "Show contents"
-            }
-            className={cn(
-              "flex h-7 w-7 items-center justify-center rounded-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
-              document.show_contents
-                ? "bg-selected text-text"
-                : "text-muted hover:bg-hover hover:text-text",
-            )}
-          >
-            <ListTreeIcon size={16} />
-          </button>
-        </Tooltip>
+          <ListTreeIcon size={16} />
+        </IconButton>
       )}
-      <Tooltip
-        content={document.show_outline ? "Hide outline" : "Show outline"}
+      <IconButton
+        label={document.show_outline ? "Hide outline" : "Show outline"}
+        size="sm"
+        selected={document.show_outline}
+        aria-pressed={document.show_outline}
+        onClick={onToggleOutline}
       >
-        <button
-          type="button"
-          onClick={onToggleOutline}
-          aria-pressed={document.show_outline}
-          aria-label={document.show_outline ? "Hide outline" : "Show outline"}
-          className={cn(
-            "flex h-7 w-7 items-center justify-center rounded-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
-            document.show_outline
-              ? "bg-selected text-text"
-              : "text-muted hover:bg-hover hover:text-text",
-          )}
-        >
-          <ListIcon size={16} />
-        </button>
-      </Tooltip>
+        <ListIcon size={16} />
+      </IconButton>
       <FontControl
         heading="Page fonts"
         inheritLabel="book"
@@ -100,32 +79,19 @@ export function PageSettingsToolbar({
         onClear={fontHandlers.clearFont}
         onClearAll={fontHandlers.clearAll}
       />
-      <Tooltip
-        content={
+      <IconButton
+        label={
           document.spellcheck_enabled
             ? "Disable spellcheck"
             : "Enable spellcheck"
         }
+        size="sm"
+        selected={document.spellcheck_enabled}
+        aria-pressed={document.spellcheck_enabled}
+        onClick={onToggleSpellcheck}
       >
-        <button
-          type="button"
-          onClick={onToggleSpellcheck}
-          aria-pressed={document.spellcheck_enabled}
-          aria-label={
-            document.spellcheck_enabled
-              ? "Disable spellcheck"
-              : "Enable spellcheck"
-          }
-          className={cn(
-            "flex h-7 w-7 items-center justify-center rounded-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
-            document.spellcheck_enabled
-              ? "bg-selected text-text"
-              : "text-muted hover:bg-hover hover:text-text",
-          )}
-        >
-          <SpellCheckIcon size={16} />
-        </button>
-      </Tooltip>
+        <SpellCheckIcon size={16} />
+      </IconButton>
     </span>
   );
 }

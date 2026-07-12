@@ -2,8 +2,10 @@ import { Check, Link2, Plus, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { normalizeRelationRefs } from "@/lib/datagrid-relation";
 import type { DatagridRelationRef } from "@/lib/datagrid-schema";
+import { matchesNormalizedQuery } from "@/lib/text-match";
 import { cn } from "@/lib/utils";
 
 import type { RelationTargets } from "./datagrid-relations";
@@ -33,15 +35,15 @@ export function RelationField({
 
   const selectedKeys = useMemo(() => new Set(value.map(refKey)), [value]);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (q === "") return targets.options;
-    return targets.options.filter(
-      (o) =>
-        o.label.toLowerCase().includes(q) ||
-        o.subtitle.toLowerCase().includes(q),
-    );
-  }, [targets.options, query]);
+  const filtered = useMemo(
+    () =>
+      targets.options.filter(
+        (o) =>
+          matchesNormalizedQuery(o.label, query) ||
+          matchesNormalizedQuery(o.subtitle, query),
+      ),
+    [targets.options, query],
+  );
 
   const toggle = (ref: DatagridRelationRef) => {
     const key = refKey(ref);
@@ -105,14 +107,15 @@ export function RelationField({
         <DialogContent className="p-0">
           <DialogTitle className="sr-only">Add {fieldName}</DialogTitle>
           <div className="border-b border-border p-2.5">
-            <input
+            <Input
               autoFocus
+              type="search"
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
               }}
               placeholder="Search records…"
-              className="h-9 w-full rounded-md border border-border bg-bg px-3 text-sm text-text outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-9"
             />
           </div>
           <div className="max-h-[20rem] overflow-y-auto p-1.5">

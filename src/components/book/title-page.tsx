@@ -1,8 +1,15 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 
+import {
+  Breadcrumb,
+  BreadcrumbLink,
+  BreadcrumbSep,
+} from "@/components/ui/breadcrumb";
+import { EditableText } from "@/components/ui/editable-text";
+import { IconButton } from "@/components/ui/icon-button";
+import { Masthead } from "@/components/ui/masthead";
 import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { SubtitleToggle } from "@/components/ui/subtitle-toggle";
-import { Tooltip } from "@/components/ui/tooltip";
 import { outlinePositionSiblings } from "@/data/book-outline-tree";
 import {
   type Book,
@@ -21,10 +28,8 @@ import { useWhiteboards } from "@/data/whiteboards";
 import { useCascadedFonts } from "@/fonts/use-cascaded-fonts";
 import { useUIStore } from "@/store/ui";
 
-import { EditableText } from "./editable-text";
 import { FontControl } from "./font-control";
 import { ChevronsDownUpIcon, ChevronsUpDownIcon } from "./icons";
-import { Masthead } from "./masthead";
 import { NavHistoryControls } from "./nav-history-controls";
 import { TableOfContents } from "./table-of-contents";
 
@@ -183,46 +188,38 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
       >
         <NavHistoryControls />
         {collectionCrumbs.length > 0 && (
-          <div
-            aria-label="Breadcrumb"
-            className="flex min-w-0 flex-1 items-center gap-1 text-sm text-muted"
-          >
+          <Breadcrumb label="Breadcrumb" className="flex-1">
             {collectionCrumbs.map((crumb) => (
-              <span key={crumb.id} className="flex min-w-0 items-center gap-1">
-                <button
-                  type="button"
+              <Fragment key={crumb.id}>
+                <BreadcrumbLink
                   onClick={() => {
                     setActiveCollection(crumb.id);
                   }}
-                  className="min-w-0 shrink truncate rounded-sm px-1 outline-none hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {crumb.name || "Untitled"}
-                </button>
-                <span className="shrink-0 select-none text-muted/50">/</span>
-              </span>
+                </BreadcrumbLink>
+                <BreadcrumbSep />
+              </Fragment>
             ))}
             <span className="min-w-0 shrink truncate px-1 text-text">
               {book.title || "Untitled"}
             </span>
-          </div>
+          </Breadcrumb>
         )}
         <span className="ml-auto flex items-center gap-1">
           {expandable.length > 0 && (
-            <Tooltip content={allExpanded ? "Collapse all" : "Expand all"}>
-              <button
-                type="button"
-                onClick={toggleAll}
-                aria-pressed={allExpanded}
-                aria-label={allExpanded ? "Collapse all" : "Expand all"}
-                className="flex h-7 w-7 items-center justify-center rounded-md text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {allExpanded ? (
-                  <ChevronsDownUpIcon size={16} />
-                ) : (
-                  <ChevronsUpDownIcon size={16} />
-                )}
-              </button>
-            </Tooltip>
+            <IconButton
+              label={allExpanded ? "Collapse all" : "Expand all"}
+              size="sm"
+              aria-pressed={allExpanded}
+              onClick={toggleAll}
+            >
+              {allExpanded ? (
+                <ChevronsDownUpIcon size={16} />
+              ) : (
+                <ChevronsUpDownIcon size={16} />
+              )}
+            </IconButton>
           )}
           <SubtitleToggle active={showSubtitle} onToggle={toggleSubtitle} />
           <FontControl

@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 
-import { Tooltip } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { IconButton } from "@/components/ui/icon-button";
 
 interface CollapsedRailButtonProps {
   /** The item's name; used as the hover tooltip and the accessible label. */
@@ -22,7 +21,9 @@ interface CollapsedRailButtonProps {
 /**
  * A single icon-only entry in the collapsed sidebar rail: a square,
  * horizontally-centered button with a right-side name tooltip and the shared
- * selected/hover styling used by the expanded sidebar rows.
+ * selected/hover styling used by the expanded sidebar rows. Composes the
+ * shared {@link IconButton}, staying full-color (rather than `IconButton`'s
+ * default muted-until-hover) to match the rail's existing look.
  */
 export function CollapsedRailButton({
   label,
@@ -32,29 +33,24 @@ export function CollapsedRailButton({
   children,
 }: CollapsedRailButtonProps) {
   return (
-    <Tooltip content={label} side="right">
-      <button
-        type="button"
-        onClick={onClick}
-        aria-label={label}
-        aria-current={selected ? "page" : undefined}
-        className={cn(
-          "relative mx-auto flex h-9 w-9 items-center justify-center rounded-md outline-none",
-          "transition-colors focus-visible:ring-2 focus-visible:ring-ring",
-          selected ? "bg-selected text-text" : "text-text hover:bg-hover",
-        )}
-      >
-        <span className="flex h-5 w-5 items-center justify-center">
-          {children}
-        </span>
-        {indicator && (
-          <span
-            data-testid="rail-indicator"
-            aria-hidden
-            className="absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full bg-muted"
-          />
-        )}
-      </button>
-    </Tooltip>
+    <IconButton
+      label={label}
+      onClick={onClick}
+      selected={selected}
+      side="right"
+      aria-current={selected ? "page" : undefined}
+      className="relative mx-auto text-text"
+    >
+      <span className="flex h-5 w-5 items-center justify-center">
+        {children}
+      </span>
+      {indicator && (
+        <span
+          data-testid="rail-indicator"
+          aria-hidden
+          className="absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full bg-muted"
+        />
+      )}
+    </IconButton>
   );
 }

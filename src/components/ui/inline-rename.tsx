@@ -2,23 +2,36 @@ import { useEffect, useRef, useState } from "react";
 
 import { cn, resolveEditedValue } from "@/lib/utils";
 
+import { Input } from "./input";
+
 interface InlineRenameProps {
   initialValue: string;
   onCommit: (value: string) => void;
   onCancel: () => void;
   placeholder?: string;
   className?: string;
+  ariaLabel?: string;
 }
 
-// Inline editable field used for create/rename. Autofocuses and selects all on
-// mount, commits the trimmed value on Enter or blur, and cancels on Escape.
-// An empty commit falls back to cancelling so we never persist a blank name.
+/**
+ * Inline editable field used for create/rename. Autofocuses and selects all
+ * on mount, commits the trimmed value on Enter or blur, and cancels on
+ * Escape. An empty commit falls back to cancelling so we never persist a
+ * blank name.
+ *
+ * Compare to {@link EditableText}: `EditableText` is an always-on, auto-grow
+ * textarea used as the display text itself for titles/subtitles — it has no
+ * mount lifecycle, and blur simply commits (or reverts on an empty value)
+ * rather than cancelling. `InlineRename` is a one-shot field swapped in for a
+ * single tree-row rename and torn down on commit/cancel.
+ */
 export function InlineRename({
   initialValue,
   onCommit,
   onCancel,
   placeholder,
   className,
+  ariaLabel,
 }: InlineRenameProps) {
   const [value, setValue] = useState(initialValue);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,10 +60,11 @@ export function InlineRename({
   };
 
   return (
-    <input
+    <Input
       ref={inputRef}
       value={value}
       placeholder={placeholder}
+      aria-label={ariaLabel}
       spellCheck={false}
       onChange={(e) => {
         setValue(e.target.value);
@@ -75,8 +89,7 @@ export function InlineRename({
       }}
       onBlur={commit}
       className={cn(
-        "w-full min-w-0 rounded-sm border border-accent/60 bg-surface px-1.5 py-0.5 " +
-          "text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "h-auto min-w-0 rounded-sm border-accent/60 px-1.5 py-0.5",
         className,
       )}
     />

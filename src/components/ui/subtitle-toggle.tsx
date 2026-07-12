@@ -1,8 +1,8 @@
 import { Subtitles } from "lucide-react";
 
 import { makeIcon } from "@/lib/make-icon";
-import { cn } from "@/lib/utils";
 
+import { IconButton } from "./icon-button";
 import { Tooltip } from "./tooltip";
 
 const SubtitleGlyph = makeIcon(Subtitles);
@@ -24,26 +24,35 @@ export function SubtitleToggle({
   onToggle: () => void;
   variant?: SubtitleToggleVariant;
 }) {
+  const label = active ? "Hide subtitle" : "Show subtitle";
+
+  if (variant === "block") {
+    // Editor block chrome must stay on `scribe-block-btn` (selection-preserving
+    // bordered control), not the shared IconButton stack.
+    return (
+      <Tooltip content={label}>
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-pressed={active}
+          aria-label={label}
+          className="scribe-block-btn"
+        >
+          <SubtitleGlyph size={15} />
+        </button>
+      </Tooltip>
+    );
+  }
+
   return (
-    <Tooltip content={active ? "Hide subtitle" : "Show subtitle"}>
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-pressed={active}
-        aria-label={active ? "Hide subtitle" : "Show subtitle"}
-        className={
-          variant === "block"
-            ? "scribe-block-btn"
-            : cn(
-                "flex h-7 w-7 items-center justify-center rounded-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
-                active
-                  ? "bg-selected text-text"
-                  : "text-muted hover:bg-hover hover:text-text",
-              )
-        }
-      >
-        <SubtitleGlyph size={variant === "block" ? 15 : 16} />
-      </button>
-    </Tooltip>
+    <IconButton
+      label={label}
+      size="sm"
+      selected={active}
+      aria-pressed={active}
+      onClick={onToggle}
+    >
+      <SubtitleGlyph size={16} />
+    </IconButton>
   );
 }

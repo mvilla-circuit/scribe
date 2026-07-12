@@ -132,7 +132,7 @@ describe("CoverCard", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows truncated tags under the title block", () => {
+  it("renders caller-provided footer content under the title block", () => {
     render(
       <CoverCard
         title="The Realm"
@@ -140,23 +140,14 @@ describe("CoverCard", () => {
         coverUrl={null}
         fallback={<span>fallback</span>}
         onOpen={vi.fn()}
-        tags={[
-          { id: "t1", name: "Fantasy", color: "sky" },
-          { id: "t2", name: "Epic", color: "moss" },
-          { id: "t3", name: "Series", color: "clay" },
-          { id: "t4", name: "Draft", color: "plum" },
-        ]}
+        footerExtra={<span data-testid="footer-extra">extra</span>}
       />,
     );
 
-    expect(screen.getByText("Fantasy")).toBeInTheDocument();
-    expect(screen.getByText("Epic")).toBeInTheDocument();
-    expect(screen.getByText("Series")).toBeInTheDocument();
-    expect(screen.queryByText("Draft")).not.toBeInTheDocument();
-    expect(screen.getByText("+1")).toBeInTheDocument();
+    expect(screen.getByTestId("footer-extra")).toBeInTheDocument();
   });
 
-  it("hides the tag row when there are no tags", () => {
+  it("renders nothing extra when footerExtra is omitted", () => {
     render(
       <CoverCard
         title="The Realm"
@@ -164,11 +155,10 @@ describe("CoverCard", () => {
         coverUrl={null}
         fallback={<span>fallback</span>}
         onOpen={vi.fn()}
-        tags={[]}
       />,
     );
 
-    expect(screen.queryByTestId("cover-card-tags")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("footer-extra")).not.toBeInTheDocument();
   });
 
   it("keeps the more-actions chip visible while its menu is open", async () => {

@@ -1,8 +1,6 @@
-import { useId, useMemo, useState } from "react";
+import { Fragment, useId, useMemo, useState } from "react";
 
-import { EditableText } from "@/components/book/editable-text";
 import { PageIcon } from "@/components/book/icons";
-import { Masthead } from "@/components/book/masthead";
 import { NavHistoryControls } from "@/components/book/nav-history-controls";
 import {
   leafDeleteDescription,
@@ -20,13 +18,22 @@ import {
   TrashIcon,
   WhiteboardIcon,
 } from "@/components/sidebar/icons";
+import {
+  Breadcrumb,
+  BreadcrumbLink,
+  BreadcrumbSep,
+} from "@/components/ui/breadcrumb";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { CoverCard } from "@/components/ui/cover-card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EditableText } from "@/components/ui/editable-text";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Masthead } from "@/components/ui/masthead";
 import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { type RowAction } from "@/components/ui/row-action-menu";
 import { useBooks, useCreateBook, useMoveBook } from "@/data/books";
@@ -79,8 +86,7 @@ import {
 import { CollectionListRow } from "./collection-list-row";
 import { CollectionTagsSection } from "./collection-tags-section";
 import { CollectionToolbar } from "./collection-toolbar";
-import { CoverCard } from "./cover-card";
-import { type GalleryTag } from "./tag-chips-row";
+import { type GalleryTag, TagChipsRow } from "./tag-chips-row";
 
 interface LeafDeleteTarget {
   kind: LeafDeleteKind;
@@ -432,28 +438,23 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
       >
         <NavHistoryControls />
         {ancestors.length > 0 && (
-          <div
-            aria-label="Breadcrumb"
-            className="flex min-w-0 flex-1 items-center gap-1 text-sm text-muted"
-          >
+          <Breadcrumb label="Breadcrumb" className="flex-1">
             {ancestors.map((parent) => (
-              <span key={parent.id} className="flex min-w-0 items-center gap-1">
-                <button
-                  type="button"
+              <Fragment key={parent.id}>
+                <BreadcrumbLink
                   onClick={() => {
                     setActiveCollection(parent.id);
                   }}
-                  className="min-w-0 shrink truncate rounded-sm px-1 outline-none hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {parent.name || "Untitled"}
-                </button>
-                <span className="shrink-0 select-none text-muted/50">/</span>
-              </span>
+                </BreadcrumbLink>
+                <BreadcrumbSep />
+              </Fragment>
             ))}
             <span className="min-w-0 shrink truncate px-1 text-text">
               {collection.name || "Untitled"}
             </span>
-          </div>
+          </Breadcrumb>
         )}
         <span className="ml-auto flex shrink-0 items-center justify-end">
           <CollectionCreateSplitButton
@@ -515,18 +516,16 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
         </Masthead>
 
         {isEmpty ? (
-          <div className="mt-12 flex flex-col items-center rounded-lg border border-dashed border-border px-6 py-14 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-tree-group text-muted">
-              <CollectionIcon size={22} />
-            </div>
-            <p className="mt-4 text-sm font-medium text-text">
-              This collection is empty
-            </p>
-            <p className="mt-1 max-w-[22rem] text-xs leading-relaxed text-muted">
-              Add a doc to start writing, or gather books and nested collections
-              here.
-            </p>
-            <div className="mt-4 flex justify-center">
+          <EmptyState
+            className="mt-12"
+            icon={
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-tree-group text-muted">
+                <CollectionIcon size={22} />
+              </div>
+            }
+            title="This collection is empty"
+            body="Add a doc to start writing, or gather books and nested collections here."
+            cta={
               <CollectionCreateSplitButton
                 onNewBook={handleNewBook}
                 onNewDoc={handleNewEntry}
@@ -534,8 +533,8 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                 onNewDatagrid={handleNewDatagrid}
                 onNewWhiteboard={handleNewWhiteboard}
               />
-            </div>
-          </div>
+            }
+          />
         ) : (
           <div className="mt-10 flex flex-col gap-10">
             <CollectionToolbar
@@ -694,6 +693,10 @@ function galleryFallback(child: GalleryChild) {
   }
 }
 
+// Grid cards are narrower than list rows, so a card caps at fewer chips
+// before collapsing the rest into a "+N".
+const MAX_VISIBLE_GRID_TAGS = 3;
+
 function GalleryCoverCard({
   child,
   onOpen,
@@ -716,7 +719,14 @@ function GalleryCoverCard({
       onOpen={onOpen}
       actions={actions}
       aspect={galleryCoverAspect(child)}
-      tags={tags}
+      footerExtra={
+        <TagChipsRow
+          tags={tags ?? []}
+          max={MAX_VISIBLE_GRID_TAGS}
+          className="mt-1.5"
+          data-testid="cover-card-tags"
+        />
+      }
     />
   );
 }

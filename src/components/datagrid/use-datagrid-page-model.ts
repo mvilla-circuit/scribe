@@ -26,6 +26,7 @@ import {
   parseDatagridProperties,
   parseDatagridViewConfig,
 } from "@/lib/datagrid-schema";
+import { matchesNormalizedQuery } from "@/lib/text-match";
 
 import { useDatagridRelationTargets } from "./datagrid-relations";
 import type { DatagridDisplayRow } from "./datagrid-view-model";
@@ -96,10 +97,9 @@ export function useDatagridPageModel(datagridId: string) {
     [fields, rows],
   );
   const searched = useMemo(() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase();
-    if (normalizedQuery === "") return displayRows;
+    if (!query.trim()) return displayRows;
     return displayRows.filter((row) =>
-      row.title.toLocaleLowerCase().includes(normalizedQuery),
+      matchesNormalizedQuery(row.title, query),
     );
   }, [displayRows, query]);
   const orderedRows = useMemo(

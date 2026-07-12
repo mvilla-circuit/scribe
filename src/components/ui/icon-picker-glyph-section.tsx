@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import { type IconValue, serializeIcon } from "@/data/icon";
 import { NoColorIcon } from "@/editor/icons";
 import { TEXT_COLORS } from "@/editor/palette";
+import { matchesNormalizedQuery } from "@/lib/text-match";
 import { cn } from "@/lib/utils";
 
+import { SearchField } from "./search-field";
 import { Tooltip } from "./tooltip";
 import { useInfiniteReveal } from "./use-infinite-reveal";
 
@@ -31,10 +33,10 @@ export function GlyphSection({
     currentGlyph?.color ?? null,
   );
 
-  const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return q ? iconNames.filter((name) => name.includes(q)) : iconNames;
-  }, [query]);
+  const matches = useMemo(
+    () => iconNames.filter((name) => matchesNormalizedQuery(name, query)),
+    [query],
+  );
 
   const { visibleCount, hasMore, sentinelRef } = useInfiniteReveal({
     total: matches.length,
@@ -58,13 +60,11 @@ export function GlyphSection({
   return (
     <div className="flex h-full flex-col">
       <div className="border-b border-border p-2">
-        <input
+        <SearchField
+          label="Search icons"
           value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-          }}
+          onChange={setQuery}
           placeholder="Search icons…"
-          className="h-8 w-full rounded-md border border-border bg-bg px-2.5 text-sm text-text outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-ring"
         />
       </div>
 

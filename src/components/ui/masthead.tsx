@@ -98,7 +98,7 @@ function MastheadIconControl({
           <button
             type="button"
             aria-label={changeLabel}
-            className="rounded-md leading-none outline-none transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-ring"
+            className="rounded-md leading-none outline-none transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-ring motion-reduce:hover:scale-100"
           >
             <DocumentIcon icon={icon} size={48} />
           </button>

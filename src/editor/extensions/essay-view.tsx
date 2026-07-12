@@ -5,8 +5,8 @@ import {
 } from "@tiptap/react";
 import { type CSSProperties, useState } from "react";
 
-import { EditableText } from "@/components/book/editable-text";
 import { DocumentIcon } from "@/components/ui/document-icon";
+import { EditableText } from "@/components/ui/editable-text";
 import { IconPicker } from "@/components/ui/icon-picker";
 import { SubtitleToggle } from "@/components/ui/subtitle-toggle";
 import { Tooltip } from "@/components/ui/tooltip";

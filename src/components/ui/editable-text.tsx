@@ -34,9 +34,19 @@ interface EditableTextProps {
   onEnter?: () => void;
 }
 
-// An always-editable, auto-growing text field that reads as display text until
-// focused. Commits the trimmed value on blur or Enter and reverts on Escape.
-// Reused for the book title/subtitle and document titles on the reading surface.
+/**
+ * An always-editable, auto-growing text field that reads as display text
+ * until focused. Commits the trimmed value on blur or Enter and reverts on
+ * Escape. Reused for the book title/subtitle and document titles on the
+ * reading surface.
+ *
+ * Compare to {@link InlineRename}: `InlineRename` is a one-shot rename
+ * field — it autofocuses and selects all on mount, commits on Enter/blur,
+ * and cancels (rather than committing) on an empty value. `EditableText` has
+ * no such lifecycle; it's always present as the display text itself, grows
+ * with a textarea to fit multi-line titles, and only reverts to the previous
+ * value on an empty commit when `allowEmpty` is unset.
+ */
 export const EditableText = forwardRef<EditableTextHandle, EditableTextProps>(
   function EditableText(
     {

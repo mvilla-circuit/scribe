@@ -8,9 +8,9 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { EditableText } from "@/components/book/editable-text";
 import { NavHistoryControls } from "@/components/book/nav-history-controls";
-import { Tooltip } from "@/components/ui/tooltip";
+import { EditableText } from "@/components/ui/editable-text";
+import { IconButton } from "@/components/ui/icon-button";
 import {
   useRenameWhiteboard,
   useUpdateWhiteboardScene,
@@ -18,7 +18,6 @@ import {
   useWhiteboardScene,
   type WhiteboardMeta,
 } from "@/data/whiteboards";
-import { cn } from "@/lib/utils";
 import {
   addItem,
   createUndoStack,
@@ -450,20 +449,13 @@ function ToolbarButton({
   children: React.ReactNode;
 }) {
   return (
-    <Tooltip content={label}>
-      <button
-        type="button"
-        aria-label={label}
-        onClick={onClick}
-        disabled={disabled}
-        className={cn(
-          "inline-flex h-8 w-8 items-center justify-center rounded-md text-muted outline-none",
-          "transition-colors hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring",
-          "disabled:pointer-events-none disabled:opacity-40",
-        )}
-      >
-        {children}
-      </button>
-    </Tooltip>
+    <IconButton
+      label={label}
+      onClick={onClick}
+      disabled={disabled}
+      className="h-8 w-8"
+    >
+      {children}
+    </IconButton>
   );
 }

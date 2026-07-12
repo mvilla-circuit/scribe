@@ -1,4 +1,4 @@
-import { EditableText } from "./editable-text";
+import { EditableText } from "@/components/ui/editable-text";
 
 // The full-width banner band shown directly below the breadcrumbs when a page
 // has a `banner_color`. It bleeds to the section edges; an inner wrapper matches

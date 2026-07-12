@@ -1,12 +1,18 @@
 import { Plus, Upload } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 
-import { EditableText } from "@/components/book/editable-text";
 import { FontControl } from "@/components/book/font-control";
-import { Masthead } from "@/components/book/masthead";
 import { NavHistoryControls } from "@/components/book/nav-history-controls";
 import { DatagridIcon } from "@/components/sidebar/icons";
+import {
+  Breadcrumb,
+  BreadcrumbLink,
+  BreadcrumbSep,
+} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import { EditableText } from "@/components/ui/editable-text";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Masthead } from "@/components/ui/masthead";
 import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { SubtitleToggle } from "@/components/ui/subtitle-toggle";
 import { useCollections } from "@/data/collections";
@@ -194,33 +200,33 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
   let layoutView: ReactNode;
   if (isTrulyEmpty) {
     layoutView = (
-      <div className="mt-4 flex flex-col items-center rounded-lg border border-dashed border-border px-6 py-10 text-center">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-tree-group text-muted">
-          <DatagridIcon size={20} />
-        </div>
-        <p className="mt-3 text-sm font-medium text-text">
-          This datagrid is empty
-        </p>
-        <p className="mt-1 max-w-[24rem] text-xs leading-relaxed text-muted">
-          Add a row to start building records, or import existing data from a
-          CSV.
-        </p>
-        <div className="mt-3 flex gap-2">
-          <Button variant="primary" onClick={handleCreateRow}>
-            <Plus className="size-4" aria-hidden="true" />
-            New row
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setImportOpen(true);
-            }}
-          >
-            <Upload className="size-4" aria-hidden="true" />
-            Import CSV
-          </Button>
-        </div>
-      </div>
+      <EmptyState
+        className="mt-4"
+        icon={
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-tree-group text-muted">
+            <DatagridIcon size={20} />
+          </div>
+        }
+        title="This datagrid is empty"
+        body="Add a row to start building records, or import existing data from a CSV."
+        cta={
+          <div className="flex gap-2">
+            <Button variant="primary" onClick={handleCreateRow}>
+              <Plus className="size-4" aria-hidden="true" />
+              New row
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setImportOpen(true);
+              }}
+            >
+              <Upload className="size-4" aria-hidden="true" />
+              Import CSV
+            </Button>
+          </div>
+        }
+      />
     );
   } else if (orderedRows.length === 0 && layout !== "board") {
     layoutView = (
@@ -292,24 +298,19 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
           className="sticky top-0 z-20 flex items-center gap-3 bg-bg px-8 py-2"
         >
           <NavHistoryControls />
-          <div
-            aria-label="Breadcrumb"
-            className="flex min-w-0 flex-1 items-center gap-1 text-sm text-muted"
-          >
-            <button
-              type="button"
+          <Breadcrumb label="Breadcrumb" className="flex-1">
+            <BreadcrumbLink
               onClick={() => {
                 setActiveCollection(datagrid.collection_id);
               }}
-              className="min-w-0 shrink truncate rounded-sm px-1 outline-none hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
             >
               {collection?.name || "Collection"}
-            </button>
-            <span className="shrink-0 select-none text-muted/50">/</span>
+            </BreadcrumbLink>
+            <BreadcrumbSep />
             <span className="min-w-0 shrink truncate px-1 text-text">
               {datagrid.name || "Untitled"}
             </span>
-          </div>
+          </Breadcrumb>
           <span className="ml-auto flex items-center gap-1">
             <SubtitleToggle active={showSubtitle} onToggle={toggleSubtitle} />
             <FontControl

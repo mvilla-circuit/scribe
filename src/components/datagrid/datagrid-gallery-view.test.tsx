@@ -60,6 +60,19 @@ describe("DatagridGalleryView", () => {
     expect(screen.getByText("Doing")).toBeInTheDocument();
   });
 
+  it("renders rows as CoverCards with an album aspect", () => {
+    renderWithProviders(
+      <DatagridGalleryView
+        rows={rows}
+        fields={fields}
+        onOpenRow={vi.fn()}
+        onCreateRow={vi.fn()}
+      />,
+    );
+    expect(screen.getAllByTestId("cover-card")).toHaveLength(1);
+    expect(screen.getByTestId("cover-card-media")).toHaveClass("aspect-[4/3]");
+  });
+
   it("opens a row when its card is clicked", () => {
     const onOpenRow = vi.fn();
     renderWithProviders(

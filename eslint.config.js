@@ -189,6 +189,16 @@ export default defineConfig([
           message:
             "Use a theme token (bg-surface, text-muted, text-danger, bg-success) instead of a raw Tailwind palette color; every color needs a light/dark pair.",
         },
+        {
+          // Ban raw text `<input>`: use `<Input>` / `<SearchField>` from
+          // `components/ui` so field chrome stays consistent. Exempt
+          // file/checkbox/radio/hidden via :not(:has(...)). The Input
+          // primitive itself uses an eslint-disable (see input.tsx).
+          selector:
+            "JSXOpeningElement[name.name='input']:not(:has(JSXAttribute[name.name='type'][value.value=/^(file|checkbox|radio|hidden)$/]))",
+          message:
+            "Use <Input> or <SearchField> from @/components/ui instead of a raw <input>. File/checkbox/radio/hidden inputs are exempt.",
+        },
       ],
       // Native dialogs (`window.alert`/`confirm`/`prompt`) are jarring and
       // unstyled inside the desktop shell; use an in-app dialog/popover instead.

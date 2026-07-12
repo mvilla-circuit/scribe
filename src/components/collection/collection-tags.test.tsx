@@ -208,6 +208,49 @@ describe("CollectionTags", () => {
     expect(onRename).toHaveBeenCalledWith("t1", "Epic");
   });
 
+  it("cancels a rename left blank instead of committing an empty name", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const onRename = vi.fn();
+    renderWithProviders(
+      <CollectionTags
+        tags={[{ id: "t1", name: "Fantasy", color: "sky" }]}
+        onAdd={vi.fn()}
+        onRemove={vi.fn()}
+        onRecolor={vi.fn()}
+        onRename={onRename}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Fantasy" }));
+    const input = screen.getByLabelText("Tag name");
+    await user.clear(input);
+    await user.keyboard("{Enter}");
+
+    expect(onRename).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole("group", { name: "Color for Fantasy" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not commit a rename left unchanged", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const onRename = vi.fn();
+    renderWithProviders(
+      <CollectionTags
+        tags={[{ id: "t1", name: "Fantasy", color: "sky" }]}
+        onAdd={vi.fn()}
+        onRemove={vi.fn()}
+        onRecolor={vi.fn()}
+        onRename={onRename}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Fantasy" }));
+    await user.keyboard("{Enter}");
+
+    expect(onRename).not.toHaveBeenCalled();
+  });
+
   it("recolors from the chip dropdown", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const onRecolor = vi.fn();
