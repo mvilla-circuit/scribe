@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 
 import { EditableText } from "@/components/book/editable-text";
 import { PageIcon } from "@/components/book/icons";
@@ -590,16 +590,19 @@ function CardGrid({
   onCommit: (next: string) => void;
   children: React.ReactNode;
 }) {
+  const headingId = useId();
   return (
-    <section>
-      <EditableText
-        value={value}
-        ariaLabel={ariaLabel}
-        placeholder={placeholder}
-        allowEmpty
-        onCommit={onCommit}
-        className="mb-3 text-xs font-medium uppercase tracking-wide text-muted"
-      />
+    <section aria-labelledby={headingId}>
+      <h2 id={headingId} className="mb-3">
+        <EditableText
+          value={value}
+          ariaLabel={ariaLabel}
+          placeholder={placeholder}
+          allowEmpty
+          onCommit={onCommit}
+          className="text-xs font-medium uppercase tracking-wide text-muted"
+        />
+      </h2>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {children}
       </div>

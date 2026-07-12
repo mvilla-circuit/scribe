@@ -212,6 +212,9 @@ describe("CollectionPage", () => {
     });
 
     expect(
+      screen.getByRole("heading", { name: "Collections" }),
+    ).toBeInTheDocument();
+    expect(
       screen.getByRole("textbox", { name: "Collections section name" }),
     ).toHaveValue("Collections");
     expect(
@@ -268,6 +271,55 @@ describe("CollectionPage", () => {
     ).toEqual({ layout: "grid", sectionLabels: { book: "Novels" } });
   });
 
+  it("preserves other section label overrides when renaming one", async () => {
+    let patchBody: unknown;
+    server.use(
+      http.patch(
+        "http://supabase.test/rest/v1/collections",
+        async ({ request }) => {
+          patchBody = await request.json();
+          return new HttpResponse(null, { status: 204 });
+        },
+      ),
+    );
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = seed();
+    client.setQueryData(collectionsKey, [
+      makeCollection({
+        id: "c1",
+        name: "The Realm",
+        description: "An epic",
+        cover_url: "https://example.test/realm.jpg",
+        view: {
+          layout: "grid",
+          sectionLabels: { book: "Novels", entry: "Chapters" },
+        },
+      }),
+      makeCollection({
+        id: "c2",
+        name: "Side Tales",
+        parent_collection_id: "c1",
+        cover_url: "https://example.test/tales.jpg",
+      }),
+    ]);
+
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+
+    const books = screen.getByRole("textbox", { name: "Books section name" });
+    await user.clear(books);
+    await user.type(books, "Tales");
+    await user.tab();
+
+    await waitFor(() => {
+      expect(patchBody).toEqual({
+        view: {
+          layout: "grid",
+          sectionLabels: { book: "Tales", entry: "Chapters" },
+        },
+      });
+    });
+  });
+
   it("clearing a section heading restores the default label", async () => {
     let patchBody: unknown;
     server.use(
@@ -310,6 +362,48 @@ describe("CollectionPage", () => {
     expect(books).toHaveValue("Books");
   });
 
+  it("committing the default label clears the override", async () => {
+    let patchBody: unknown;
+    server.use(
+      http.patch(
+        "http://supabase.test/rest/v1/collections",
+        async ({ request }) => {
+          patchBody = await request.json();
+          return new HttpResponse(null, { status: 204 });
+        },
+      ),
+    );
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = seed();
+    client.setQueryData(collectionsKey, [
+      makeCollection({
+        id: "c1",
+        name: "The Realm",
+        description: "An epic",
+        cover_url: "https://example.test/realm.jpg",
+        view: { layout: "grid", sectionLabels: { book: "Novels" } },
+      }),
+      makeCollection({
+        id: "c2",
+        name: "Side Tales",
+        parent_collection_id: "c1",
+        cover_url: "https://example.test/tales.jpg",
+      }),
+    ]);
+
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+
+    const books = screen.getByRole("textbox", { name: "Books section name" });
+    await user.clear(books);
+    await user.type(books, "Books");
+    await user.tab();
+
+    await waitFor(() => {
+      expect(patchBody).toEqual({ view: { layout: "grid" } });
+    });
+    expect(books).toHaveValue("Books");
+  });
+
   it("hides section headings while searching", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     renderWithProviders(<CollectionPage collectionId="c1" />, {
@@ -323,6 +417,9 @@ describe("CollectionPage", () => {
 
     expect(
       screen.queryByRole("textbox", { name: "Books section name" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Books" }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("textbox", { name: "Docs section name" }),
@@ -370,6 +467,48 @@ describe("CollectionPage", () => {
     expect(
       screen.queryByRole("textbox", { name: "Books section name" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("restores custom section labels when switching back to grid", async () => {
+    server.use(
+      http.patch(
+        "http://supabase.test/rest/v1/collections",
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    );
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = seed();
+    client.setQueryData(collectionsKey, [
+      makeCollection({
+        id: "c1",
+        name: "The Realm",
+        description: "An epic",
+        cover_url: "https://example.test/realm.jpg",
+        view: { layout: "grid", sectionLabels: { book: "Novels" } },
+      }),
+      makeCollection({
+        id: "c2",
+        name: "Side Tales",
+        parent_collection_id: "c1",
+        cover_url: "https://example.test/tales.jpg",
+      }),
+    ]);
+
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+
+    await user.click(screen.getByRole("button", { name: "List view" }));
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("textbox", { name: "Books section name" }),
+      ).not.toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Grid view" }));
+
+    expect(
+      screen.getByRole("textbox", { name: "Books section name" }),
+    ).toHaveValue("Novels");
+    expect(screen.getByRole("heading", { name: "Novels" })).toBeInTheDocument();
   });
 
   it("shows the collection and child cover images", () => {
