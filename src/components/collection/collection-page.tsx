@@ -32,6 +32,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EditableText } from "@/components/ui/editable-text";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Masthead } from "@/components/ui/masthead";
 import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { type RowAction } from "@/components/ui/row-action-menu";
@@ -515,18 +516,16 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
         </Masthead>
 
         {isEmpty ? (
-          <div className="mt-12 flex flex-col items-center rounded-lg border border-dashed border-border px-6 py-14 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-tree-group text-muted">
-              <CollectionIcon size={22} />
-            </div>
-            <p className="mt-4 text-sm font-medium text-text">
-              This collection is empty
-            </p>
-            <p className="mt-1 max-w-[22rem] text-xs leading-relaxed text-muted">
-              Add a doc to start writing, or gather books and nested collections
-              here.
-            </p>
-            <div className="mt-4 flex justify-center">
+          <EmptyState
+            className="mt-12"
+            icon={
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-tree-group text-muted">
+                <CollectionIcon size={22} />
+              </div>
+            }
+            title="This collection is empty"
+            body="Add a doc to start writing, or gather books and nested collections here."
+            cta={
               <CollectionCreateSplitButton
                 onNewBook={handleNewBook}
                 onNewDoc={handleNewEntry}
@@ -534,8 +533,8 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                 onNewDatagrid={handleNewDatagrid}
                 onNewWhiteboard={handleNewWhiteboard}
               />
-            </div>
-          </div>
+            }
+          />
         ) : (
           <div className="mt-10 flex flex-col gap-10">
             <CollectionToolbar

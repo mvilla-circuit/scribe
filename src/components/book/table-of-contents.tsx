@@ -2,6 +2,7 @@ import { useMemo } from "react";
 
 import { Button } from "@/components/ui/button";
 import { DocumentIcon } from "@/components/ui/document-icon";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buildDocTree, flattenTocExpanded } from "@/data/doc-tree";
 import type { DocumentMeta } from "@/data/documents";
@@ -19,8 +20,6 @@ interface TableOfContentsProps {
    * Omitted when the list can't be empty (a parent page always has children).
    */
   onCreateFirst?: () => void;
-  /** The book's resolved title-role font, so the contents echo the cover. */
-  titleFont: string;
   /** Ids of expanded parents; collapsed parents hide their subtree. */
   expandedIds: Set<string>;
   /** Toggle a single parent's expansion. */
@@ -39,7 +38,6 @@ export function TableOfContents({
   documents,
   loading,
   onCreateFirst,
-  titleFont,
   expandedIds,
   onToggle,
   rootId = null,
@@ -64,18 +62,17 @@ export function TableOfContents({
     // it only renders when the page already has children, so stay silent.
     if (!onCreateFirst) return null;
     return (
-      <div className="mt-10 rounded-lg border border-dashed border-border px-6 py-8 text-center">
-        <p className="text-base text-text" style={{ fontFamily: titleFont }}>
-          No documents yet
-        </p>
-        <p className="mx-auto mt-1.5 max-w-sm text-sm leading-relaxed text-muted">
-          Add your first page to begin shaping this book.
-        </p>
-        <Button variant="primary" onClick={onCreateFirst} className="mt-4">
-          <PlusIcon size={15} />
-          Add your first page
-        </Button>
-      </div>
+      <EmptyState
+        className="mt-10"
+        title="No documents yet"
+        body="Add your first page to begin shaping this book."
+        cta={
+          <Button variant="primary" onClick={onCreateFirst}>
+            <PlusIcon size={15} />
+            Add your first page
+          </Button>
+        }
+      />
     );
   }
 

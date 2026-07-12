@@ -1,6 +1,8 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { DashedAddTile } from "@/components/ui/dashed-add-tile";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { DatagridField } from "@/lib/datagrid-schema";
 import { cn } from "@/lib/utils";
 
@@ -77,16 +79,15 @@ export function DatagridBoardView({
 
   if (!boardField) {
     return (
-      <div className="flex flex-col items-center rounded-lg border border-dashed border-border px-6 py-14 text-center">
-        <p className="text-sm font-medium text-text">No group field yet</p>
-        <p className="mt-1 max-w-[24rem] text-xs leading-relaxed text-muted">
-          Board view groups rows into columns by a select or status field. Add
-          one to organize this datagrid as a board.
-        </p>
-        <Button variant="primary" className="mt-4" onClick={onConfigureFields}>
-          Add a group field
-        </Button>
-      </div>
+      <EmptyState
+        title="No group field yet"
+        body="Board view groups rows into columns by a select or status field. Add one to organize this datagrid as a board."
+        cta={
+          <Button variant="primary" onClick={onConfigureFields}>
+            Add a group field
+          </Button>
+        }
+      />
     );
   }
 
@@ -156,16 +157,12 @@ export function DatagridBoardView({
         </section>
       ))}
       <div className="w-64 shrink-0">
-        <button
-          type="button"
-          onClick={onCreateRow}
-          className="flex w-full items-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-2.5 text-sm text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
-        >
+        <DashedAddTile onClick={onCreateRow} className="w-full px-3 py-2.5">
           <span className="text-base leading-none" aria-hidden="true">
             +
           </span>
           New row
-        </button>
+        </DashedAddTile>
       </div>
     </div>
   );

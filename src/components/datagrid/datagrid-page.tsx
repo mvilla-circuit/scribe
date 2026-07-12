@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { EditableText } from "@/components/ui/editable-text";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Masthead } from "@/components/ui/masthead";
 import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { SubtitleToggle } from "@/components/ui/subtitle-toggle";
@@ -199,33 +200,33 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
   let layoutView: ReactNode;
   if (isTrulyEmpty) {
     layoutView = (
-      <div className="mt-4 flex flex-col items-center rounded-lg border border-dashed border-border px-6 py-10 text-center">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-tree-group text-muted">
-          <DatagridIcon size={20} />
-        </div>
-        <p className="mt-3 text-sm font-medium text-text">
-          This datagrid is empty
-        </p>
-        <p className="mt-1 max-w-[24rem] text-xs leading-relaxed text-muted">
-          Add a row to start building records, or import existing data from a
-          CSV.
-        </p>
-        <div className="mt-3 flex gap-2">
-          <Button variant="primary" onClick={handleCreateRow}>
-            <Plus className="size-4" aria-hidden="true" />
-            New row
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setImportOpen(true);
-            }}
-          >
-            <Upload className="size-4" aria-hidden="true" />
-            Import CSV
-          </Button>
-        </div>
-      </div>
+      <EmptyState
+        className="mt-4"
+        icon={
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-tree-group text-muted">
+            <DatagridIcon size={20} />
+          </div>
+        }
+        title="This datagrid is empty"
+        body="Add a row to start building records, or import existing data from a CSV."
+        cta={
+          <div className="flex gap-2">
+            <Button variant="primary" onClick={handleCreateRow}>
+              <Plus className="size-4" aria-hidden="true" />
+              New row
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setImportOpen(true);
+              }}
+            >
+              <Upload className="size-4" aria-hidden="true" />
+              Import CSV
+            </Button>
+          </div>
+        }
+      />
     );
   } else if (orderedRows.length === 0 && layout !== "board") {
     layoutView = (

@@ -309,7 +309,6 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
             <TableOfContents
               documents={documents}
               loading={false}
-              titleFont={titleFont}
               rootId={document.id}
               expandedIds={expandedIds}
               onToggle={toggleContentsRow}

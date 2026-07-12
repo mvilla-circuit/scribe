@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
   useBooks,
@@ -710,7 +711,26 @@ export function SidebarTree() {
             </Button>
           </div>
         ) : isEmpty ? (
-          <EmptyState onCreateBook={createRootBook} />
+          <EmptyState
+            className="border-0 px-4 py-12"
+            icon={
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-tree-group text-muted">
+                <BookIcon size={22} />
+              </div>
+            }
+            title="No books yet"
+            body="Books hold your writing. Create one to get started."
+            cta={
+              <Button
+                variant="primary"
+                className="whitespace-nowrap"
+                onClick={createRootBook}
+              >
+                <BookPlusIcon size={15} />
+                New book
+              </Button>
+            }
+          />
         ) : (
           <TreeDndContainer
             sensors={sensors}
@@ -810,26 +830,4 @@ function describeCollectionDelete(
     );
   }
   return parts.join(" ");
-}
-
-function EmptyState({ onCreateBook }: { onCreateBook: () => void }) {
-  return (
-    <div className="flex flex-col items-center px-4 py-12 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-tree-group text-muted">
-        <BookIcon size={22} />
-      </div>
-      <p className="mt-4 text-sm font-medium text-text">No books yet</p>
-      <p className="mt-1 max-w-[15rem] text-xs leading-relaxed text-muted">
-        Books hold your writing. Create one to get started.
-      </p>
-      <Button
-        variant="primary"
-        className="mt-4 whitespace-nowrap"
-        onClick={onCreateBook}
-      >
-        <BookPlusIcon size={15} />
-        New book
-      </Button>
-    </div>
-  );
 }

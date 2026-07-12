@@ -38,7 +38,6 @@ describe("TableOfContents", () => {
       <TableOfContents
         documents={DOCS}
         loading={false}
-        titleFont="var(--font-display)"
         rootId="ch1"
         expandedIds={new Set(["ch1a"])}
         onToggle={vi.fn()}
@@ -59,7 +58,6 @@ describe("TableOfContents", () => {
       <TableOfContents
         documents={DOCS}
         loading={false}
-        titleFont="var(--font-display)"
         rootId="ch1"
         expandedIds={new Set()}
         onToggle={vi.fn()}
@@ -76,7 +74,6 @@ describe("TableOfContents", () => {
       <TableOfContents
         documents={[]}
         loading={false}
-        titleFont="var(--font-display)"
         expandedIds={new Set()}
         onToggle={vi.fn()}
         onCreateFirst={vi.fn()}

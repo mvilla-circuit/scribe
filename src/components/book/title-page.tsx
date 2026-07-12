@@ -264,7 +264,6 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
           documents={documents}
           loading={loading}
           onCreateFirst={createFirstPage}
-          titleFont={titleFont}
           expandedIds={expandedIds}
           onToggle={toggleDoc}
         />
