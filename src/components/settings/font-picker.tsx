@@ -11,6 +11,7 @@ import {
 } from "@/fonts/catalog";
 import { ensureFontLoaded } from "@/fonts/load-font";
 import { makeIcon } from "@/lib/make-icon";
+import { matchesNormalizedQuery } from "@/lib/text-match";
 import { cn } from "@/lib/utils";
 
 const CheckIcon = makeIcon(Check);
@@ -61,9 +62,8 @@ export function FontPicker({
   }, [current.id]);
 
   const groups = useMemo(() => {
-    const q = query.trim().toLowerCase();
     const options = ROLE_FONTS[role].filter((f) =>
-      q ? f.family.toLowerCase().includes(q) : true,
+      matchesNormalizedQuery(f.family, query),
     );
     return {
       system: options.filter((f) => f.system),

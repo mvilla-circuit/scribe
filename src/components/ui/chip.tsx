@@ -13,6 +13,13 @@ const CHIP_SHELL =
   "inline-flex max-w-full items-center rounded-full px-2 py-0.5 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring";
 const CHIP_CLASS = `${CHIP_SHELL} truncate`;
 
+const REMOVE_BUTTON_CLASS =
+  "flex size-3.5 shrink-0 items-center justify-center rounded-full outline-none transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none";
+
+/** Reveal the remove control on chip hover/focus (and whenever it itself is focused). */
+const REMOVE_REVEAL_HOVER =
+  "pointer-events-none opacity-0 group-hover/chip:pointer-events-auto group-hover/chip:opacity-100 group-focus-within/chip:pointer-events-auto group-focus-within/chip:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100";
+
 export interface ChipProps extends Omit<
   ComponentPropsWithoutRef<"button">,
   "color"
@@ -110,11 +117,7 @@ export function RemovableChip({
   return (
     <span
       style={swatchChipStyle(color)}
-      className={cn(
-        children ? CHIP_SHELL : CHIP_CLASS,
-        "group/chip gap-1 pr-1",
-        className,
-      )}
+      className={cn(CHIP_SHELL, "group/chip gap-1 pr-1", className)}
     >
       {children ?? <span className="truncate">{name}</span>}
       <button
@@ -126,9 +129,8 @@ export function RemovableChip({
           onRemove();
         }}
         className={cn(
-          "flex size-3.5 shrink-0 items-center justify-center rounded-full outline-none transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none",
-          removeReveal === "hover" &&
-            "pointer-events-none opacity-0 group-hover/chip:pointer-events-auto group-hover/chip:opacity-100 group-focus-within/chip:pointer-events-auto group-focus-within/chip:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100",
+          REMOVE_BUTTON_CLASS,
+          removeReveal === "hover" && REMOVE_REVEAL_HOVER,
           removeClassName,
         )}
       >

@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { MorandiSwatchGrid } from "@/components/ui/morandi-swatch-grid";
 import { DEFAULT_SWATCH, swatchDotStyle } from "@/lib/swatches";
+import { matchesNormalizedQuery } from "@/lib/text-match";
 import { cn, resolveEditedValue } from "@/lib/utils";
 
 import { type TagChipData } from "./tag-chip";
@@ -259,11 +260,9 @@ function TagEditorPanel({
 
   const filtered = useMemo(() => {
     if (!onPickSuggestion) return [];
-    const query = draft.trim().toLowerCase();
-    const matches = query
-      ? suggestions.filter((tag) => tag.name.toLowerCase().includes(query))
-      : suggestions;
-    return matches.slice(0, MAX_SUGGESTIONS);
+    return suggestions
+      .filter((tag) => matchesNormalizedQuery(tag.name, draft))
+      .slice(0, MAX_SUGGESTIONS);
   }, [suggestions, draft, onPickSuggestion]);
 
   return (

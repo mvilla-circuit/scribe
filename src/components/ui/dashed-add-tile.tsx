@@ -2,19 +2,22 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-// A dashed-bordered "create" tile -- the gallery/grid counterpart to
-// `EmptyState`'s panel affordance. Used for inline add controls like a
-// "+ New row" tile at the end of a datagrid gallery, where the create action
-// is a tile among peers rather than a lone centered panel.
+interface DashedAddTileProps {
+  onClick: () => void;
+  children: ReactNode;
+  className?: string;
+}
+
+/**
+ * Dashed-bordered create tile — the gallery/grid counterpart to
+ * {@link EmptyState}. Use for inline add controls (e.g. "+ New row") that sit
+ * among peer tiles rather than as a lone centered panel.
+ */
 export function DashedAddTile({
   onClick,
   children,
   className,
-}: {
-  onClick: () => void;
-  children: ReactNode;
-  className?: string;
-}) {
+}: DashedAddTileProps) {
   return (
     <button
       type="button"

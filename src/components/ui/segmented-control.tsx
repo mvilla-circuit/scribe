@@ -32,12 +32,12 @@ export function SegmentedControl<Value extends string>({
   value,
   onChange,
   className,
-  ...groupProps
+  "aria-label": ariaLabel,
 }: SegmentedControlProps<Value>) {
   return (
     <div
       role="group"
-      aria-label={groupProps["aria-label"]}
+      aria-label={ariaLabel}
       className={cn(
         "inline-flex items-center gap-0.5 rounded-md border border-border bg-surface p-0.5",
         className,

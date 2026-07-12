@@ -1,6 +1,6 @@
 import type { LucideProps } from "lucide-react";
 import { Search } from "lucide-react";
-import { useId } from "react";
+import { type ComponentType, useId } from "react";
 
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,7 @@ interface SearchFieldProps {
   /** Show the label instead of visually hiding it. Defaults to false. */
   hideLabel?: boolean;
   /** Leading icon component, or `null` to omit it. Defaults to the search glyph. */
-  icon?: React.ComponentType<LucideProps> | null;
+  icon?: ComponentType<LucideProps> | null;
   className?: string;
 }
 

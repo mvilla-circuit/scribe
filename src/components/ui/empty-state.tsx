@@ -2,24 +2,27 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-// The shared dashed-bordered panel used wherever a list, collection, or grid
-// has nothing in it yet (collections, datagrids, the table of contents). It
-// is purely presentational -- callers own any create affordance and pass it
-// in as `cta` -- so the wording and icon stay bespoke per surface while the
-// frame, spacing, and typography stay consistent.
+interface EmptyStateProps {
+  title: string;
+  body: string;
+  /** Optional create affordance; callers own the CTA content. */
+  cta?: ReactNode;
+  icon?: ReactNode;
+  className?: string;
+}
+
+/**
+ * Dashed-bordered empty panel for lists, collections, and grids. Purely
+ * presentational — wording and icon stay bespoke per surface while the frame,
+ * spacing, and typography stay consistent.
+ */
 export function EmptyState({
   title,
   body,
   cta,
   icon,
   className,
-}: {
-  title: string;
-  body: string;
-  cta?: ReactNode;
-  icon?: ReactNode;
-  className?: string;
-}) {
+}: EmptyStateProps) {
   return (
     <div
       className={cn(
@@ -28,16 +31,11 @@ export function EmptyState({
       )}
     >
       {icon}
-      <p
-        className={cn(
-          "text-sm font-medium text-text",
-          icon ? "mt-3" : undefined,
-        )}
-      >
+      <p className={cn("text-sm font-medium text-text", icon ? "mt-3" : null)}>
         {title}
       </p>
       <p className="mt-1 max-w-sm text-xs leading-relaxed text-muted">{body}</p>
-      {cta && <div className="mt-4">{cta}</div>}
+      {cta ? <div className="mt-4">{cta}</div> : null}
     </div>
   );
 }

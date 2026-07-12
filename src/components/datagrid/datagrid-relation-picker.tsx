@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { normalizeRelationRefs } from "@/lib/datagrid-relation";
 import type { DatagridRelationRef } from "@/lib/datagrid-schema";
+import { matchesNormalizedQuery } from "@/lib/text-match";
 import { cn } from "@/lib/utils";
 
 import type { RelationTargets } from "./datagrid-relations";
@@ -34,15 +35,15 @@ export function RelationField({
 
   const selectedKeys = useMemo(() => new Set(value.map(refKey)), [value]);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (q === "") return targets.options;
-    return targets.options.filter(
-      (o) =>
-        o.label.toLowerCase().includes(q) ||
-        o.subtitle.toLowerCase().includes(q),
-    );
-  }, [targets.options, query]);
+  const filtered = useMemo(
+    () =>
+      targets.options.filter(
+        (o) =>
+          matchesNormalizedQuery(o.label, query) ||
+          matchesNormalizedQuery(o.subtitle, query),
+      ),
+    [targets.options, query],
+  );
 
   const toggle = (ref: DatagridRelationRef) => {
     const key = refKey(ref);

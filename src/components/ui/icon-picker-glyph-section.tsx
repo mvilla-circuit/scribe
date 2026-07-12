@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { type IconValue, serializeIcon } from "@/data/icon";
 import { NoColorIcon } from "@/editor/icons";
 import { TEXT_COLORS } from "@/editor/palette";
+import { matchesNormalizedQuery } from "@/lib/text-match";
 import { cn } from "@/lib/utils";
 
 import { SearchField } from "./search-field";
@@ -32,10 +33,10 @@ export function GlyphSection({
     currentGlyph?.color ?? null,
   );
 
-  const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return q ? iconNames.filter((name) => name.includes(q)) : iconNames;
-  }, [query]);
+  const matches = useMemo(
+    () => iconNames.filter((name) => matchesNormalizedQuery(name, query)),
+    [query],
+  );
 
   const { visibleCount, hasMore, sentinelRef } = useInfiniteReveal({
     total: matches.length,

@@ -50,6 +50,7 @@ function CoverCardComponent({
   const label = title || "Untitled";
   const subtitleText = subtitle?.trim() || null;
   const mediaAspect = aspect === "album" ? "aspect-[4/3]" : "aspect-[3/4]";
+  const actionsList = actions && actions.length > 0 ? actions : null;
   const card = (
     <div className="group relative h-full" data-testid="cover-card">
       <button
@@ -97,14 +98,14 @@ function CoverCardComponent({
           </span>
         </div>
       </button>
-      {actions && actions.length > 0 && (
-        <CoverCardActions actions={actions} label={label} />
-      )}
+      {actionsList ? (
+        <CoverCardActions actions={actionsList} label={label} />
+      ) : null}
     </div>
   );
 
-  if (!actions || actions.length === 0) return card;
-  return <RowContextMenu actions={actions}>{card}</RowContextMenu>;
+  if (!actionsList) return card;
+  return <RowContextMenu actions={actionsList}>{card}</RowContextMenu>;
 }
 
 // Hover chip for the more-actions control. Tracks menu open state in React
