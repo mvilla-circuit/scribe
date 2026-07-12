@@ -16,10 +16,13 @@ This file applies to the whole repo. Scoped `AGENTS.md` files add area-specific 
 - Install with `npm install`.
 - App config lives in `.env.local` at the project root: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
 - **Git worktrees:** `.env.local` is gitignored, so linked worktrees do not
-  inherit it. A Husky `post-checkout` hook copies it from the primary checkout
-  into new worktrees automatically. If a worktree is still missing it (hook
-  skipped, or the file was added later), run `./scripts/sync-worktree-env.sh`
-  from that worktree, then `npm install`.
+  inherit it. Create worktrees with `./scripts/git-worktree-add.sh` (same args
+  as `git worktree add`) so `.env.local` is copied from the primary checkout.
+  If you already used plain `git worktree add`, run
+  `./scripts/sync-worktree-env.sh` from the new worktree (or pass its path from
+  the primary checkout), then `npm install`. A Husky `post-checkout` hook is
+  best-effort only after husky is installed in that worktree — it does **not**
+  run on a fresh `git worktree add`.
 
 ## Commands
 
