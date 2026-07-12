@@ -137,6 +137,42 @@ describe("CollectionPage", () => {
     ).toBeTruthy();
   });
 
+  it("shows tags only on collection cards, never on books or docs", () => {
+    const client = seed();
+    client.setQueryData(tagsKey, [{ id: "tag-1", name: "Epic", color: "sky" }]);
+    // Assign the tag both to the child collection ("Side Tales", id "c2")
+    // and — as if by coincidence — to the book's id, to prove the gallery
+    // wiring keys off each child's *kind*, not merely whether some taggable
+    // row happens to reference its id.
+    client.setQueryData(taggablesKey("collection"), [
+      {
+        id: "tg-1",
+        tag_id: "tag-1",
+        target_type: "collection",
+        target_id: "c2",
+      },
+      {
+        id: "tg-2",
+        tag_id: "tag-1",
+        target_type: "collection",
+        target_id: "b1",
+      },
+    ]);
+
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+
+    const collectionCard = screen.getByRole("button", {
+      name: /^Side Tales/,
+    });
+    expect(within(collectionCard).getByText("Epic")).toBeInTheDocument();
+
+    const bookCard = screen.getByRole("button", { name: "First Light" });
+    expect(within(bookCard).queryByText("Epic")).not.toBeInTheDocument();
+
+    const docCard = screen.getByRole("button", { name: "Opening scene" });
+    expect(within(docCard).queryByText("Epic")).not.toBeInTheDocument();
+  });
+
   it("shows datagrid cards belonging to the collection", () => {
     const client = seed();
     client.setQueryData(datagridsKey, [

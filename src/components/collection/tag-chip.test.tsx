@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import { TagChip } from "./tag-chip";
+import { StaticTagChip, TagChip } from "./tag-chip";
 
 describe("TagChip", () => {
   it("renders the tag name with a swatch wash for its color", () => {
@@ -28,5 +28,24 @@ describe("TagChip", () => {
     await user.click(screen.getByRole("button", { name: "Fantasy" }));
 
     expect(onClick).toHaveBeenCalledOnce();
+  });
+});
+
+describe("StaticTagChip", () => {
+  it("renders the tag name as non-interactive text with a swatch wash", () => {
+    render(<StaticTagChip name="Fantasy" color="sky" />);
+
+    const chip = screen.getByText("Fantasy");
+    expect(chip.tagName).toBe("SPAN");
+    expect(chip).toHaveStyle({ color: "var(--swatch-sky)" });
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("falls back to the stone hue for an unknown color", () => {
+    render(<StaticTagChip name="Untagged" color={null} />);
+
+    expect(screen.getByText("Untagged")).toHaveStyle({
+      color: "var(--swatch-stone)",
+    });
   });
 });

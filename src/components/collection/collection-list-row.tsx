@@ -13,11 +13,21 @@ import {
 } from "@/components/ui/row-action-menu";
 
 import { type GalleryChild, galleryChildMeta } from "./collection-gallery";
+import { type GalleryTag, TagChipsRow } from "./tag-chips-row";
+
+// List rows are more compact than grid cards, so a row caps at fewer chips
+// before collapsing the rest into a "+N".
+const MAX_VISIBLE_TAGS = 2;
 
 interface CollectionListRowProps {
   child: GalleryChild;
   onOpen: () => void;
   actions?: RowAction[];
+  /**
+   * Tags to show alongside the kind label. Omitted entirely for kinds that
+   * can't carry tags (only collections do today).
+   */
+  tags?: GalleryTag[];
 }
 
 function galleryFallback(child: GalleryChild) {
@@ -42,6 +52,7 @@ export function CollectionListRow({
   child,
   onOpen,
   actions = [],
+  tags = [],
 }: CollectionListRowProps) {
   const { title, kindLabel, icon } = galleryChildMeta(child);
   const label = title || "Untitled";
@@ -65,7 +76,16 @@ export function CollectionListRow({
           <span className="block truncate text-sm font-medium text-text">
             {label}
           </span>
-          <span className="mt-0.5 block text-xs text-muted">{kindLabel}</span>
+          <span className="mt-0.5 flex items-center gap-2 text-xs text-muted">
+            <span>{kindLabel}</span>
+            {tags.length > 0 && (
+              <TagChipsRow
+                tags={tags}
+                max={MAX_VISIBLE_TAGS}
+                data-testid="collection-list-row-tags"
+              />
+            )}
+          </span>
         </span>
       </button>
       {hasActions && (

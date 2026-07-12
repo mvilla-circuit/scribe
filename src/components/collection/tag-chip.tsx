@@ -35,3 +35,23 @@ export const TagChip = forwardRef<HTMLButtonElement, TagChipProps>(
   ),
 );
 TagChip.displayName = "TagChip";
+
+export interface StaticTagChipProps {
+  name: string;
+  color: string | null;
+  className?: string;
+}
+
+/**
+ * Non-interactive rendering of a tag chip: the same swatch-washed pill as
+ * `TagChip`, but a plain `<span>` for read-only display contexts (gallery
+ * cover cards, list rows) where a button's click/focus semantics — and the
+ * recolor/remove dropdown it triggers — don't apply.
+ */
+export function StaticTagChip({ name, color, className }: StaticTagChipProps) {
+  return (
+    <span style={swatchChipStyle(color)} className={cn(CHIP_CLASS, className)}>
+      {name}
+    </span>
+  );
+}
