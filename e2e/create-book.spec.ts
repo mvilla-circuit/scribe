@@ -7,7 +7,9 @@ test.describe("create book", () => {
     await authedPage.goto("/");
 
     await expect(
-      authedPage.getByText(/create your first book to start writing/i),
+      authedPage.getByText(
+        /nothing here yet\. create a book or collection to get started/i,
+      ),
     ).toBeVisible();
 
     // The main empty state and the (also-empty) sidebar each render a "New

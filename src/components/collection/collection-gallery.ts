@@ -26,6 +26,14 @@ export function isGalleryChild(child: TreeChild): child is GalleryChild {
   return child.kind !== "folder";
 }
 
+/**
+ * Cover shape for a gallery child: tall book covers for books and docs, wider
+ * album covers for collections, datagrids, and whiteboards.
+ */
+export function galleryCoverAspect(child: GalleryChild): "book" | "album" {
+  return child.kind === "book" || child.kind === "entry" ? "book" : "album";
+}
+
 /** Display metadata for a gallery list/grid row. */
 export function galleryChildMeta(child: GalleryChild): {
   title: string;

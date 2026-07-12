@@ -160,7 +160,7 @@ describe("FieldManager", () => {
     expect(screen.getByRole("button", { name: "Rename Female" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Rename Male" })).toBeVisible();
     expect(
-      screen.queryByRole("button", { name: "stone for Female" }),
+      screen.queryByRole("button", { name: "Stone for Female" }),
     ).not.toBeInTheDocument();
   });
 
@@ -173,7 +173,7 @@ describe("FieldManager", () => {
 
     await user.click(screen.getByRole("button", { name: "Color for Female" }));
     await user.click(
-      await screen.findByRole("button", { name: "moss for Female" }),
+      await screen.findByRole("button", { name: "Moss for Female" }),
     );
 
     const last = onChange.mock.calls.at(-1)?.[0] as DatagridField[];

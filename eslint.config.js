@@ -25,6 +25,7 @@ export default defineConfig([
     "coverage",
     "playwright-report",
     "test-results",
+    ".worktrees",
   ]),
 
   // Application source: full type-aware linting.

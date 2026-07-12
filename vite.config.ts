@@ -91,8 +91,10 @@ export default defineConfig({
     },
     // Reset spies/mocks between tests so suites can't leak into each other.
     restoreMocks: true,
-    // E2E specs are driven by Playwright, not Vitest.
-    exclude: ["**/node_modules/**", "**/dist/**", "e2e/**"],
+    // E2E specs are driven by Playwright, not Vitest. Git worktrees under
+    // `.worktrees/` are separate checkouts and must not be swept into this
+    // suite (they bring their own React copies and fail with hook mismatches).
+    exclude: ["**/node_modules/**", "**/dist/**", "e2e/**", ".worktrees/**"],
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],

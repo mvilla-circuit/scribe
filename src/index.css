@@ -34,6 +34,7 @@
   --color-success: var(--success);
   --color-danger: var(--danger);
   --shadow-popover: var(--shadow-popover);
+  --shadow-card: var(--shadow-card);
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
@@ -65,6 +66,9 @@
   --inverted-text: #faf9f7;
   --shadow-popover:
     0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.12);
+  /* Tighter card lift for gallery hover — denser and closer than the soft
+     popover bloom, so hovered covers feel crisp rather than foggy. */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.16);
   /* Feedback toasts. Success leans on a calm emerald that reads clearly against
      the warm paper without shouting; error mirrors it in a muted terracotta. */
   --toast-success-bg: #eef7f1;
@@ -162,6 +166,7 @@
   --inverted-text: #16171a;
   --shadow-popover:
     0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.45), 0 5px 14px rgba(0, 0, 0, 0.6);
   --toast-success-bg: #15241c;
   --toast-success-border: rgba(94, 224, 162, 0.22);
   --toast-success-fg: #74e3a8;

@@ -53,6 +53,7 @@ import {
   filterGalleryChildren,
   type GalleryChild,
   galleryChildMeta,
+  galleryCoverAspect,
   isGalleryChild,
   sortGalleryChildren,
 } from "./collection-gallery";
@@ -644,6 +645,7 @@ function GalleryCoverCard({
       fallback={galleryFallback(child)}
       onOpen={onOpen}
       actions={actions}
+      aspect={galleryCoverAspect(child)}
     />
   );
 }

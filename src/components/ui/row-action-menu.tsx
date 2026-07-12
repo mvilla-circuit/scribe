@@ -160,14 +160,17 @@ export function RowActionDropdown({
   actions,
   label = "More actions",
   tooltipSide,
+  onOpenChange,
 }: {
   actions: RowAction[];
   label?: string;
   /** Which side the label tooltip opens on; defaults to the Tooltip default. */
   tooltipSide?: ComponentProps<typeof Tooltip>["side"];
+  /** Fired when the dropdown opens or closes (e.g. to keep a hover chip visible). */
+  onOpenChange?: (open: boolean) => void;
 }) {
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={onOpenChange}>
       <Tooltip content={label} side={tooltipSide}>
         <DropdownMenuTrigger asChild>
           <button
@@ -180,7 +183,7 @@ export function RowActionDropdown({
             onPointerDown={(e) => {
               e.stopPropagation();
             }}
-            className="flex h-6 w-6 items-center justify-center rounded text-muted hover:bg-hover hover:text-text"
+            className="flex h-6 w-6 items-center justify-center rounded text-muted outline-none hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-hover data-[state=open]:text-text"
           >
             <MoreIcon size={15} />
           </button>

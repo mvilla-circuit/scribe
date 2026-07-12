@@ -28,6 +28,33 @@ describe("Masthead", () => {
     ).toBeInTheDocument();
   });
 
+  it("hangs the set icon beside the title so affordance actions cannot shift it", () => {
+    renderWithProviders(
+      <Masthead
+        icon="📘"
+        onSelectIcon={vi.fn()}
+        onRemoveIcon={vi.fn()}
+        changeIconLabel="Change icon"
+        actions={<button type="button">Add cover</button>}
+      >
+        <h1>Series</h1>
+      </Masthead>,
+    );
+
+    const iconButton = screen.getByRole("button", { name: "Change icon" });
+    const titleBlock = screen.getByTestId("masthead-title");
+    const actionsRow = screen.getByTestId("masthead-actions-row");
+
+    expect(titleBlock).toContainElement(iconButton);
+    expect(titleBlock).toContainElement(
+      screen.getByRole("heading", { name: "Series" }),
+    );
+    expect(actionsRow).not.toContainElement(iconButton);
+    expect(actionsRow).toContainElement(
+      screen.getByRole("button", { name: "Add cover" }),
+    );
+  });
+
   it("keeps stacked icon margin and clears it only at xl when hanging", () => {
     renderWithProviders(
       <Masthead
@@ -40,10 +67,10 @@ describe("Masthead", () => {
       </Masthead>,
     );
 
-    expect(screen.getByTestId("masthead-actions-row")).toHaveClass(
-      "mb-2",
-      "xl:mb-0",
-    );
+    expect(screen.getByTestId("masthead-icon")).toHaveClass("mb-2", "xl:mb-0");
+    expect(
+      screen.queryByTestId("masthead-actions-row"),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps the in-flow margin when Add cover is present beside an icon", () => {

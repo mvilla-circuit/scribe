@@ -1,11 +1,10 @@
 import { ImagePlus, X } from "lucide-react";
 import { type ChangeEvent, type ReactNode, useRef, useState } from "react";
 
+import { COVER_IMAGE_ACCEPT } from "@/data/cover-upload";
 import { cn } from "@/lib/utils";
 
 import { Tooltip } from "./tooltip";
-
-const ACCEPTED_IMAGE_TYPES = "image/png,image/jpeg,image/webp,image/gif";
 
 /** Shared hover-pill styles matching Masthead's "Add icon" affordance. */
 const ADD_AFFORDANCE_CLASS =
@@ -54,7 +53,7 @@ function useCoverFilePicker(onUpload: (file: File) => Promise<string>): {
       <input
         ref={inputRef}
         type="file"
-        accept={ACCEPTED_IMAGE_TYPES}
+        accept={COVER_IMAGE_ACCEPT}
         aria-label="Choose cover image"
         onChange={onFileChange}
         className="sr-only"
