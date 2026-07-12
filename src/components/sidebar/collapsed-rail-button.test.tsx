@@ -69,4 +69,17 @@ describe("CollapsedRailButton", () => {
     );
     expect(screen.queryByTestId("rail-indicator")).not.toBeInTheDocument();
   });
+
+  it("shows the label as tooltip content on hover", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <CollapsedRailButton label="Genesis" onClick={vi.fn()}>
+        <span>icon</span>
+      </CollapsedRailButton>,
+    );
+
+    await user.hover(screen.getByRole("button", { name: "Genesis" }));
+
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Genesis");
+  });
 });
