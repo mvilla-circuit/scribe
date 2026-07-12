@@ -111,6 +111,45 @@ describe("CoverCard", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows truncated tags under the title block", () => {
+    render(
+      <CoverCard
+        title="The Realm"
+        icon={null}
+        coverUrl={null}
+        fallback={<span>fallback</span>}
+        onOpen={vi.fn()}
+        tags={[
+          { id: "t1", name: "Fantasy", color: "sky" },
+          { id: "t2", name: "Epic", color: "moss" },
+          { id: "t3", name: "Series", color: "clay" },
+          { id: "t4", name: "Draft", color: "plum" },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Fantasy")).toBeInTheDocument();
+    expect(screen.getByText("Epic")).toBeInTheDocument();
+    expect(screen.getByText("Series")).toBeInTheDocument();
+    expect(screen.queryByText("Draft")).not.toBeInTheDocument();
+    expect(screen.getByText("+1")).toBeInTheDocument();
+  });
+
+  it("hides the tag row when there are no tags", () => {
+    render(
+      <CoverCard
+        title="The Realm"
+        icon={null}
+        coverUrl={null}
+        fallback={<span>fallback</span>}
+        onOpen={vi.fn()}
+        tags={[]}
+      />,
+    );
+
+    expect(screen.queryByTestId("cover-card-tags")).not.toBeInTheDocument();
+  });
+
   it("keeps the more-actions chip visible while its menu is open", async () => {
     const user = userEvent.setup();
     renderWithProviders(

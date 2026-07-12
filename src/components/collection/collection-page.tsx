@@ -40,6 +40,11 @@ import { useCreateDatagrid, useDatagrids } from "@/data/datagrids";
 import { useCreateEntry, useDeleteEntry, useEntries } from "@/data/entries";
 import { useFolders } from "@/data/folders";
 import { endPositionFor } from "@/data/ordering";
+import {
+  tagsForCollection,
+  useCollectionTaggables,
+  useTags,
+} from "@/data/tags";
 import { buildTree, childrenOf, collectionAncestors, ROOT } from "@/data/tree";
 import {
   useCreateWhiteboard,
@@ -58,8 +63,10 @@ import {
   sortGalleryChildren,
 } from "./collection-gallery";
 import { CollectionListRow } from "./collection-list-row";
+import { CollectionTagsSection } from "./collection-tags-section";
 import { CollectionToolbar } from "./collection-toolbar";
 import { CoverCard } from "./cover-card";
+import { type GalleryTag } from "./tag-chips-row";
 
 /**
  * A collection's own page: an editable masthead (icon, title, description) with
@@ -74,6 +81,8 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   const entriesQuery = useEntries();
   const datagridsQuery = useDatagrids();
   const whiteboardsQuery = useWhiteboards();
+  const tagsQuery = useTags();
+  const taggablesQuery = useCollectionTaggables();
 
   const collections = useMemo(
     () => collectionsQuery.data ?? [],
@@ -89,6 +98,11 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   const whiteboards = useMemo(
     () => whiteboardsQuery.data ?? [],
     [whiteboardsQuery.data],
+  );
+  const tags = useMemo(() => tagsQuery.data ?? [], [tagsQuery.data]);
+  const taggables = useMemo(
+    () => taggablesQuery.data ?? [],
+    [taggablesQuery.data],
   );
 
   const collection = collections.find((c) => c.id === collectionId) ?? null;
@@ -332,6 +346,13 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
     }
   };
 
+  // Only collections carry tags today; other gallery kinds simply have no
+  // tags prop passed, regardless of what the taggables cache holds.
+  const tagsFor = (child: GalleryChild): GalleryTag[] | undefined =>
+    child.kind === "collection"
+      ? tagsForCollection(tags, taggables, child.id)
+      : undefined;
+
   const actionsFor = (child: GalleryChild): RowAction[] => {
     switch (child.kind) {
       case "collection":
@@ -443,8 +464,9 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                 description: description || null,
               });
             }}
-            className="mt-3 text-base leading-relaxed text-muted"
+            className="mt-1.5 text-base leading-snug text-muted"
           />
+          <CollectionTagsSection collectionId={collection.id} />
         </Masthead>
 
         {isEmpty ? (
@@ -495,6 +517,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                       openChild(child);
                     }}
                     actions={actionsFor(child)}
+                    tags={tagsFor(child)}
                   />
                 ))}
               </div>
@@ -510,6 +533,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                           openChild(child);
                         }}
                         actions={actionsFor(child)}
+                        tags={tagsFor(child)}
                       />
                     ))}
                   </CardGrid>
@@ -524,6 +548,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                           openChild(child);
                         }}
                         actions={actionsFor(child)}
+                        tags={tagsFor(child)}
                       />
                     ))}
                   </CardGrid>
@@ -538,6 +563,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                           openChild(child);
                         }}
                         actions={actionsFor(child)}
+                        tags={tagsFor(child)}
                       />
                     ))}
                   </CardGrid>
@@ -552,6 +578,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                           openChild(child);
                         }}
                         actions={actionsFor(child)}
+                        tags={tagsFor(child)}
                       />
                     ))}
                   </CardGrid>
@@ -566,6 +593,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                           openChild(child);
                         }}
                         actions={actionsFor(child)}
+                        tags={tagsFor(child)}
                       />
                     ))}
                   </CardGrid>
@@ -581,6 +609,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                       openChild(child);
                     }}
                     actions={actionsFor(child)}
+                    tags={tagsFor(child)}
                   />
                 ))}
               </div>
@@ -630,10 +659,12 @@ function GalleryCoverCard({
   child,
   onOpen,
   actions,
+  tags,
 }: {
   child: GalleryChild;
   onOpen: () => void;
   actions: RowAction[];
+  tags?: GalleryTag[];
 }) {
   const { title, subtitle, icon, coverUrl } = galleryChildMeta(child);
   return (
@@ -646,6 +677,7 @@ function GalleryCoverCard({
       onOpen={onOpen}
       actions={actions}
       aspect={galleryCoverAspect(child)}
+      tags={tags}
     />
   );
 }

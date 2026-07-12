@@ -8,8 +8,14 @@ import {
 } from "@/components/ui/row-action-menu";
 import { cn } from "@/lib/utils";
 
+import { type GalleryTag, TagChipsRow } from "./tag-chips-row";
+
 /** Portrait book cover vs landscape album cover for gallery media. */
 type CoverCardAspect = "book" | "album";
+
+// Grid cards are narrower than list rows, so a card caps at fewer chips
+// before collapsing the rest into a "+N".
+const MAX_VISIBLE_TAGS = 3;
 
 interface CoverCardProps {
   title: string;
@@ -28,6 +34,12 @@ interface CoverCardProps {
    * kinds use the wider `album` ratio. Defaults to `book`.
    */
   aspect?: CoverCardAspect;
+  /**
+   * Tags to show under the title block, capped to `MAX_VISIBLE_TAGS` chips
+   * plus a muted overflow count. Omitted entirely for kinds that can't carry
+   * tags (only collections do today).
+   */
+  tags?: GalleryTag[];
 }
 
 function CoverCardComponent({
@@ -39,6 +51,7 @@ function CoverCardComponent({
   onOpen,
   actions,
   aspect = "book",
+  tags = [],
 }: CoverCardProps) {
   const label = title || "Untitled";
   const subtitleText = subtitle?.trim() || null;
@@ -83,6 +96,12 @@ function CoverCardComponent({
                 {subtitleText}
               </span>
             )}
+            <TagChipsRow
+              tags={tags}
+              max={MAX_VISIBLE_TAGS}
+              className="mt-1.5"
+              data-testid="cover-card-tags"
+            />
           </span>
         </div>
       </button>

@@ -90,3 +90,10 @@ export const datagridRowContentKey = (rowId: string) =>
 /** Cache key for one datagrid's saved views, keyed per datagrid. */
 export const datagridViewsKey = (datagridId: string) =>
   ["datagrid-views", datagridId] as const;
+
+/** All library tags for the signed-in user. */
+export const tagsKey = ["tags"] as const;
+
+/** Tag assignments for a given polymorphic target type (e.g. collections). */
+export const taggablesKey = (targetType: string) =>
+  ["taggables", targetType] as const;

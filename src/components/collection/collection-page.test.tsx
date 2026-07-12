@@ -9,6 +9,8 @@ import {
   datagridsKey,
   entriesKey,
   foldersKey,
+  taggablesKey,
+  tagsKey,
   whiteboardsKey,
 } from "@/data/query-keys";
 import { useUIStore } from "@/store/ui";
@@ -67,6 +69,8 @@ function seed() {
   ]);
   client.setQueryData(datagridsKey, []);
   client.setQueryData(whiteboardsKey, []);
+  client.setQueryData(tagsKey, []);
+  client.setQueryData(taggablesKey("collection"), []);
   return client;
 }
 
@@ -102,6 +106,64 @@ describe("CollectionPage", () => {
     expect(
       screen.getByRole("button", { name: "Opening scene" }),
     ).toBeInTheDocument();
+  });
+
+  it("renders the tag row below the description", () => {
+    const client = seed();
+    client.setQueryData(tagsKey, [{ id: "tag-1", name: "Epic", color: "sky" }]);
+    client.setQueryData(taggablesKey("collection"), [
+      {
+        id: "tg-1",
+        tag_id: "tag-1",
+        target_type: "collection",
+        target_id: "c1",
+      },
+    ]);
+
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+
+    expect(
+      screen
+        .getByLabelText("Collection description")
+        .compareDocumentPosition(screen.getByRole("button", { name: "Epic" })) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("shows tags only on collection cards, never on books or docs", () => {
+    const client = seed();
+    client.setQueryData(tagsKey, [{ id: "tag-1", name: "Epic", color: "sky" }]);
+    // Assign the tag both to the child collection ("Side Tales", id "c2")
+    // and — as if by coincidence — to the book's id, to prove the gallery
+    // wiring keys off each child's *kind*, not merely whether some taggable
+    // row happens to reference its id.
+    client.setQueryData(taggablesKey("collection"), [
+      {
+        id: "tg-1",
+        tag_id: "tag-1",
+        target_type: "collection",
+        target_id: "c2",
+      },
+      {
+        id: "tg-2",
+        tag_id: "tag-1",
+        target_type: "collection",
+        target_id: "b1",
+      },
+    ]);
+
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+
+    const collectionCard = screen.getByRole("button", {
+      name: /^Side Tales/,
+    });
+    expect(within(collectionCard).getByText("Epic")).toBeInTheDocument();
+
+    const bookCard = screen.getByRole("button", { name: "First Light" });
+    expect(within(bookCard).queryByText("Epic")).not.toBeInTheDocument();
+
+    const docCard = screen.getByRole("button", { name: "Opening scene" });
+    expect(within(docCard).queryByText("Epic")).not.toBeInTheDocument();
   });
 
   it("shows datagrid cards belonging to the collection", () => {
@@ -199,9 +261,18 @@ describe("CollectionPage", () => {
 
     await user.click(screen.getByRole("button", { name: "List view" }));
 
-    expect(screen.getByText("Collection")).toBeInTheDocument();
-    expect(screen.getByText("Book")).toBeInTheDocument();
-    expect(screen.getByText("Doc")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "First Light" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Opening scene" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Side Tales" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Collection")).not.toBeInTheDocument();
+    expect(screen.queryByText("Book")).not.toBeInTheDocument();
+    expect(screen.queryByText("Doc")).not.toBeInTheDocument();
     await waitFor(() => {
       expect(patchBody).toEqual({ view: { layout: "list" } });
     });
@@ -227,11 +298,11 @@ describe("CollectionPage", () => {
     await user.click(screen.getByRole("button", { name: "List view" }));
 
     const rows = screen.getAllByRole("button", {
-      name: /^(First LightBook|Opening sceneDoc|Side TalesCollection)$/,
+      name: /^(First Light|Opening scene|Side Tales)/,
     });
-    expect(rows[0]).toHaveAccessibleName("First LightBook");
-    expect(rows[1]).toHaveAccessibleName("Opening sceneDoc");
-    expect(rows[2]).toHaveAccessibleName("Side TalesCollection");
+    expect(rows[0]).toHaveAccessibleName("First Light");
+    expect(rows[1]).toHaveAccessibleName("Opening scene");
+    expect(rows[2]).toHaveAccessibleName("Side Tales");
   });
 
   it("orders sectioned grid cards alphabetically by default", () => {
@@ -293,6 +364,8 @@ describe("CollectionPage", () => {
     client.setQueryData(entriesKey, []);
     client.setQueryData(datagridsKey, []);
     client.setQueryData(whiteboardsKey, []);
+    client.setQueryData(tagsKey, []);
+    client.setQueryData(taggablesKey("collection"), []);
 
     renderWithProviders(<CollectionPage collectionId="c1" />, { client });
 

@@ -175,3 +175,34 @@ export function makeDatagridView(
     ...overrides,
   };
 }
+
+/** A library tag row (`tags` table). */
+export function makeTag(
+  overrides: Partial<Tables<"tags">> = {},
+): Tables<"tags"> {
+  return {
+    id: "tag-1",
+    user_id: "user-1",
+    name: "Fantasy",
+    color: "sky",
+    position: 1024,
+    created_at: "2026-01-01T00:00:00.000Z",
+    updated_at: "2026-01-01T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
+/** A tag assignment row (`taggables` table). */
+export function makeTaggable(
+  overrides: Partial<Tables<"taggables">> = {},
+): Tables<"taggables"> {
+  return {
+    id: "taggable-1",
+    user_id: "user-1",
+    tag_id: "tag-1",
+    target_type: "collection",
+    target_id: "collection-1",
+    created_at: "2026-01-01T00:00:00.000Z",
+    ...overrides,
+  };
+}
