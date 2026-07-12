@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 
 import { EditableText } from "@/components/book/editable-text";
 import { PageIcon } from "@/components/book/icons";
@@ -31,7 +31,11 @@ import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { type RowAction } from "@/components/ui/row-action-menu";
 import { useBooks, useCreateBook, useMoveBook } from "@/data/books";
 import {
+  applySectionLabel,
+  DEFAULT_SECTION_LABELS,
+  type GallerySectionKind,
   parseCollectionView,
+  sectionLabel,
   serializeCollectionView,
 } from "@/data/collection-view";
 import {
@@ -170,15 +174,6 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   const visibleChildren = useMemo(
     () => sortGalleryChildren(filterGalleryChildren(children, query)),
     [children, query],
-  );
-  const childCollections = visibleChildren.filter(
-    (c) => c.kind === "collection",
-  );
-  const childBooks = visibleChildren.filter((c) => c.kind === "book");
-  const childEntries = visibleChildren.filter((c) => c.kind === "entry");
-  const childDatagrids = visibleChildren.filter((c) => c.kind === "datagrid");
-  const childWhiteboards = visibleChildren.filter(
-    (c) => c.kind === "whiteboard",
   );
 
   const rootPosition = () => endPositionFor(childrenOf(model, ROOT));
@@ -551,7 +546,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                 const next = serializeCollectionView({ ...view, layout });
                 updateCollection.mutate({
                   id: collection.id,
-                  view: { layout: next.layout },
+                  view: next,
                 });
               }}
             />
@@ -573,81 +568,43 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
               </div>
             ) : showSections ? (
               <>
-                {childCollections.length > 0 && (
-                  <CardGrid heading="Collections">
-                    {childCollections.map((child) => (
-                      <GalleryCoverCard
-                        key={child.id}
-                        child={child}
-                        onOpen={() => {
-                          openChild(child);
-                        }}
-                        actions={actionsFor(child)}
-                        tags={tagsFor(child)}
-                      />
-                    ))}
-                  </CardGrid>
-                )}
-                {childBooks.length > 0 && (
-                  <CardGrid heading="Books">
-                    {childBooks.map((child) => (
-                      <GalleryCoverCard
-                        key={child.id}
-                        child={child}
-                        onOpen={() => {
-                          openChild(child);
-                        }}
-                        actions={actionsFor(child)}
-                        tags={tagsFor(child)}
-                      />
-                    ))}
-                  </CardGrid>
-                )}
-                {childEntries.length > 0 && (
-                  <CardGrid heading="Docs">
-                    {childEntries.map((child) => (
-                      <GalleryCoverCard
-                        key={child.id}
-                        child={child}
-                        onOpen={() => {
-                          openChild(child);
-                        }}
-                        actions={actionsFor(child)}
-                        tags={tagsFor(child)}
-                      />
-                    ))}
-                  </CardGrid>
-                )}
-                {childDatagrids.length > 0 && (
-                  <CardGrid heading="Datagrids">
-                    {childDatagrids.map((child) => (
-                      <GalleryCoverCard
-                        key={child.id}
-                        child={child}
-                        onOpen={() => {
-                          openChild(child);
-                        }}
-                        actions={actionsFor(child)}
-                        tags={tagsFor(child)}
-                      />
-                    ))}
-                  </CardGrid>
-                )}
-                {childWhiteboards.length > 0 && (
-                  <CardGrid heading="Whiteboards">
-                    {childWhiteboards.map((child) => (
-                      <GalleryCoverCard
-                        key={child.id}
-                        child={child}
-                        onOpen={() => {
-                          openChild(child);
-                        }}
-                        actions={actionsFor(child)}
-                        tags={tagsFor(child)}
-                      />
-                    ))}
-                  </CardGrid>
-                )}
+                {(
+                  Object.keys(DEFAULT_SECTION_LABELS) as GallerySectionKind[]
+                ).map((kind) => {
+                  const items = galleryChildren.filter(
+                    (child) => child.kind === kind,
+                  );
+                  if (items.length === 0) return null;
+                  return (
+                    <CardGrid
+                      key={kind}
+                      value={sectionLabel(view, kind)}
+                      ariaLabel={`${DEFAULT_SECTION_LABELS[kind]} section name`}
+                      placeholder={DEFAULT_SECTION_LABELS[kind]}
+                      onCommit={(next) => {
+                        const updated = applySectionLabel(view, kind, next);
+                        if (!updated) return false;
+                        updateCollection.mutate({
+                          id: collection.id,
+                          view: serializeCollectionView(updated),
+                        });
+                        return true;
+                      }}
+                    >
+                      {items.map((child) => (
+                        <GalleryCoverCard
+                          key={child.id}
+                          child={child}
+                          onOpen={() => {
+                            openChild(child);
+                          }}
+                          actions={actionsFor(child)}
+                          tags={tagsFor(child)}
+                        />
+                      ))}
+                    </CardGrid>
+                  );
+                })}
               </>
             ) : (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -685,16 +642,35 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
 }
 
 function CardGrid({
-  heading,
+  value,
+  ariaLabel,
+  placeholder,
+  onCommit,
   children,
 }: {
-  heading: string;
+  value: string;
+  ariaLabel: string;
+  placeholder: string;
+  /** Returns false when the write was a no-op so the field can reset. */
+  onCommit: (next: string) => boolean;
   children: React.ReactNode;
 }) {
+  const headingId = useId();
+  const [resetKey, setResetKey] = useState(0);
   return (
-    <section>
-      <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted">
-        {heading}
+    <section aria-labelledby={headingId}>
+      <h2 id={headingId} className="mb-3">
+        <EditableText
+          key={resetKey}
+          value={value}
+          ariaLabel={ariaLabel}
+          placeholder={placeholder}
+          allowEmpty
+          onCommit={(next) => {
+            if (!onCommit(next)) setResetKey((key) => key + 1);
+          }}
+          className="text-xs font-medium uppercase tracking-wide text-muted"
+        />
       </h2>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {children}
