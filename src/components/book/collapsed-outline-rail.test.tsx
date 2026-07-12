@@ -3,9 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { documentsKey } from "@/data/query-keys";
+import { documentsKey, whiteboardsKey } from "@/data/query-keys";
 import { useUIStore } from "@/store/ui";
-import { makeBook, makeDocument } from "@/test/fixtures";
+import { makeBook, makeDocument, makeWhiteboard } from "@/test/fixtures";
 import { server } from "@/test/msw/server";
 import {
   createTestQueryClient,
@@ -30,6 +30,7 @@ const resetStore = () =>
     sidebarWidth: 260,
     activeBookId: "b1",
     activeDocId: null,
+    activeWhiteboardId: null,
     expandedFolderIds: [],
     expandedDocIds: [],
   });
@@ -53,6 +54,35 @@ function seedDocs() {
 }
 
 describe("CollapsedOutlineRail", () => {
+  it("includes top-level whiteboards and does not select the title page", () => {
+    useUIStore.setState({ activeWhiteboardId: "w1" });
+    const client = seedDocs();
+    client.setQueryData(whiteboardsKey, [
+      makeWhiteboard({
+        id: "w1",
+        collection_id: null,
+        book_id: "b1",
+        name: "Storyboard",
+        position: 1536,
+      }),
+    ]);
+
+    renderWithProviders(<CollapsedOutlineRail book={BOOK} />, { client });
+
+    expect(screen.getByRole("button", { name: "Storyboard" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("button", { name: "Genesis" })).not.toHaveAttribute(
+      "aria-current",
+    );
+    const labels = screen
+      .getAllByRole("button")
+      .map((b) => b.getAttribute("aria-label"));
+    // Mixed position order: Chapter 1 (1024), Storyboard (1536), Chapter 2 (2048).
+    expect(labels).toEqual(["Genesis", "Chapter 1", "Storyboard", "Chapter 2"]);
+  });
+
   it("renders the pinned Title Page first, then only top-level pages", () => {
     renderWithProviders(<CollapsedOutlineRail book={BOOK} />, {
       client: seedDocs(),
@@ -91,6 +121,33 @@ describe("CollapsedOutlineRail", () => {
         "rail-indicator",
       ),
     ).not.toBeInTheDocument();
+  });
+
+  it("treats nested whiteboards as children for the rail indicator", async () => {
+    const client = seedDocs();
+    client.setQueryData(whiteboardsKey, [
+      makeWhiteboard({
+        id: "w-nested",
+        collection_id: null,
+        book_id: "b1",
+        parent_document_id: "d2",
+        name: "Map",
+      }),
+    ]);
+
+    renderWithProviders(<CollapsedOutlineRail book={BOOK} />, { client });
+
+    expect(
+      within(screen.getByRole("button", { name: "Chapter 2" })).getByTestId(
+        "rail-indicator",
+      ),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Chapter 2" }));
+
+    expect(useUIStore.getState().activeDocId).toBe("d2");
+    expect(useUIStore.getState().sidebarCollapsed).toBe(false);
+    expect(useUIStore.getState().expandedDocIds).toContain("d2");
   });
 
   it("navigates to a childless page without expanding the sidebar", async () => {

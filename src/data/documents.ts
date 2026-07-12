@@ -17,7 +17,14 @@ import {
   documentsKey,
   NO_BOOK,
   pageIndexKey,
+  whiteboardSceneKey,
+  whiteboardsKey,
 } from "./query-keys";
+import {
+  pruneWhiteboardCache,
+  whiteboardUnderDocuments,
+} from "./whiteboard-cache";
+import type { WhiteboardMeta } from "./whiteboards";
 
 /** A single page row from the `documents` table, including its editor body. */
 export type Document = Tables<"documents">;
@@ -382,19 +389,67 @@ export function useMoveDocument(bookId: string) {
 export function useDeleteDocument(bookId: string) {
   const qc = useQueryClient();
   const key = documentsKey(bookId);
+  const handlers = documentHandlers<DeleteDocumentInput>(
+    qc,
+    key,
+    (prev, input) => removeBySet(prev, collectDocumentSubtree(prev, input.id)),
+    "Couldn't delete page",
+  );
   return useMutation({
     mutationFn: async (input: DeleteDocumentInput) => {
       await execWrite(supabase.from("documents").delete().eq("id", input.id));
     },
     // The page and its descendants cascade away in the DB; remove the same set
-    // optimistically so the outline and TOC update instantly.
-    ...documentHandlers<DeleteDocumentInput>(
-      qc,
-      key,
-      (prev, input) =>
-        removeBySet(prev, collectDocumentSubtree(prev, input.id)),
-      "Couldn't delete page",
-    ),
+    // optimistically so the outline and TOC update instantly. Nested
+    // whiteboards are pruned in onMutate too so they don't briefly reappear as
+    // outline roots when their parent document disappears from the cache.
+    mutationKey: handlers.mutationKey,
+    onMutate: async (input) => {
+      const documentIds = collectDocumentSubtree(
+        qc.getQueryData<DocumentMeta[]>(key) ?? [],
+        input.id,
+      );
+      await qc.cancelQueries({ queryKey: whiteboardsKey });
+      const previousWhiteboards =
+        qc.getQueryData<WhiteboardMeta[]>(whiteboardsKey);
+      const deletedIds = (previousWhiteboards ?? [])
+        .filter((whiteboard) =>
+          whiteboardUnderDocuments(whiteboard, documentIds),
+        )
+        .map((whiteboard) => whiteboard.id);
+      await Promise.all(
+        deletedIds.map((id) =>
+          qc.cancelQueries({ queryKey: whiteboardSceneKey(id) }),
+        ),
+      );
+      const previousScenes = new Map<string, Json | undefined>();
+      for (const id of deletedIds) {
+        previousScenes.set(id, qc.getQueryData(whiteboardSceneKey(id)));
+      }
+      const context = await handlers.onMutate(input);
+      pruneWhiteboardCache(qc, (whiteboard) =>
+        whiteboardUnderDocuments(whiteboard, documentIds),
+      );
+      return { ...context, documentIds, previousWhiteboards, previousScenes };
+    },
+    onError: (error, input, context) => {
+      handlers.onError(error, input, context);
+      if (!context) return;
+      if (context.previousWhiteboards !== undefined) {
+        qc.setQueryData(whiteboardsKey, context.previousWhiteboards);
+      }
+      for (const [id, scene] of context.previousScenes) {
+        if (scene === undefined) {
+          qc.removeQueries({ queryKey: whiteboardSceneKey(id) });
+        } else {
+          qc.setQueryData(whiteboardSceneKey(id), scene);
+        }
+      }
+    },
+    onSettled: (data, error, variables) => {
+      handlers.onSettled?.(data, error, variables);
+      void qc.invalidateQueries({ queryKey: whiteboardsKey });
+    },
   });
 }
 

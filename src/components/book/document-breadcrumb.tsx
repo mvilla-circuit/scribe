@@ -1,24 +1,46 @@
-import { useMemo } from "react";
+import { Fragment, type ReactNode, useMemo } from "react";
 
+import {
+  Breadcrumb,
+  BreadcrumbLink,
+  BreadcrumbSep,
+} from "@/components/ui/breadcrumb";
 import type { Book } from "@/data/books";
 import { documentAncestors } from "@/data/doc-tree";
 import type { DocumentMeta } from "@/data/documents";
 
-// The page breadcrumb trail: the book (jumps to the title page), each ancestor
-// document, then the current page. Rendered as a shrinkable (`min-w-0`) flex
-// row so it sits in the document view's sticky top bar beside the page-settings
-// controls and yields width to them, ellipsizing items instead of wrapping.
+/** Fields the book page trail needs for the leaf crumb / ancestor walk. */
+export type BreadcrumbLeaf = Pick<
+  DocumentMeta,
+  "id" | "parent_document_id" | "title" | "is_title_page"
+>;
+
+/**
+ * The page breadcrumb trail: the book (jumps to the title page), each ancestor
+ * document, then the current crumb. Rendered as a shrinkable (`min-w-0`) flex
+ * row so it sits in a sticky top bar beside page controls and yields width to
+ * them, ellipsizing items instead of wrapping.
+ */
 export function DocumentBreadcrumb({
   book,
   document,
   documents,
   onNavigate,
+  current,
+  label,
 }: {
   book: Book;
-  document: DocumentMeta;
+  document: BreadcrumbLeaf;
   documents: DocumentMeta[];
   /** Navigate to an ancestor document, or to the book's title page (null). */
   onNavigate: (documentId: string | null) => void;
+  /**
+   * Optional current crumb. Defaults to a plain text span of the document
+   * title — pass a custom node (e.g. an editable whiteboard name) to replace it.
+   */
+  current?: ReactNode;
+  /** Optional accessible name when the parent nav is not already "Breadcrumb". */
+  label?: string;
 }) {
   const ancestors = useMemo(
     () => documentAncestors(documents, document),
@@ -26,38 +48,32 @@ export function DocumentBreadcrumb({
   );
 
   return (
-    <div className="flex min-w-0 items-center gap-1">
-      <button
-        type="button"
+    <Breadcrumb label={label}>
+      <BreadcrumbLink
         onClick={() => {
           onNavigate(null);
         }}
-        className="min-w-0 shrink truncate rounded-sm px-1 outline-none hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
       >
-        {book.title}
-      </button>
+        {book.title || "Untitled"}
+      </BreadcrumbLink>
       {ancestors.map((parent) => (
-        <span key={parent.id} className="flex min-w-0 items-center gap-1">
+        <Fragment key={parent.id}>
           <BreadcrumbSep />
-          <button
-            type="button"
+          <BreadcrumbLink
             onClick={() => {
               onNavigate(parent.id);
             }}
-            className="min-w-0 shrink truncate rounded-sm px-1 outline-none hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
           >
             {parent.title || "Untitled"}
-          </button>
-        </span>
+          </BreadcrumbLink>
+        </Fragment>
       ))}
       <BreadcrumbSep />
-      <span className="min-w-0 shrink truncate px-1 text-text">
-        {document.title || "Untitled"}
-      </span>
-    </div>
+      {current ?? (
+        <span className="min-w-0 shrink truncate px-1 text-text">
+          {document.title || "Untitled"}
+        </span>
+      )}
+    </Breadcrumb>
   );
-}
-
-function BreadcrumbSep() {
-  return <span className="shrink-0 select-none text-muted/50">/</span>;
 }

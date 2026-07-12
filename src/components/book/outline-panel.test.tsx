@@ -2,9 +2,9 @@ import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { documentsKey } from "@/data/query-keys";
+import { documentsKey, whiteboardsKey } from "@/data/query-keys";
 import { useUIStore } from "@/store/ui";
-import { makeBook, makeDocument } from "@/test/fixtures";
+import { makeBook, makeDocument, makeWhiteboard } from "@/test/fixtures";
 import {
   createTestQueryClient,
   renderWithProviders,
@@ -20,7 +20,7 @@ vi.mock("sonner", () => ({
 // avoids standing up the real (Tauri/Supabase-backed) AuthProvider in a test
 // that never triggers a mutation.
 vi.mock("@/lib/auth", () => ({
-  useAuth: () => ({ session: null }),
+  useAuth: () => ({ session: { user: { id: "user-1" } } }),
 }));
 
 const BOOK = makeBook({ id: "b1", title: "Genesis" });
@@ -45,6 +45,27 @@ function seedClient() {
 }
 
 describe("OutlinePanel copy link", () => {
+  it("renders and opens a whiteboard nested below a page", async () => {
+    useUIStore.setState({ expandedDocIds: ["d1"] });
+    const client = seedClient();
+    client.setQueryData(whiteboardsKey, [
+      makeWhiteboard({
+        id: "w1",
+        collection_id: null,
+        book_id: "b1",
+        parent_document_id: "d1",
+        name: "Character map",
+        position: 512,
+      }),
+    ]);
+
+    renderWithProviders(<OutlinePanel book={BOOK} />, { client });
+
+    await userEvent.click(screen.getByText("Character map"));
+
+    expect(useUIStore.getState().activeWhiteboardId).toBe("w1");
+  });
+
   it("copies the page link from the row menu", async () => {
     // userEvent.setup() installs its own clipboard stub, so override it after.
     const user = userEvent.setup({ pointerEventsCheck: 0 });
@@ -62,5 +83,40 @@ describe("OutlinePanel copy link", () => {
     );
 
     expect(writeText).toHaveBeenCalledWith("scribe://page/d1");
+  });
+});
+
+describe("OutlinePanel delete cascade", () => {
+  it("clears the open whiteboard when its parent page is deleted", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    useUIStore.setState({
+      activeBookId: "b1",
+      activeDocId: null,
+      activeWhiteboardId: "w1",
+      expandedDocIds: ["d1"],
+    });
+    const client = seedClient();
+    client.setQueryData(whiteboardsKey, [
+      makeWhiteboard({
+        id: "w1",
+        collection_id: null,
+        book_id: "b1",
+        parent_document_id: "d1",
+        name: "Character map",
+        position: 512,
+      }),
+    ]);
+
+    renderWithProviders(<OutlinePanel book={BOOK} />, { client });
+
+    expect(screen.getByText("Chapter 1")).toBeInTheDocument();
+    // Document row is first in the outline; its More actions precedes the nested board.
+    const moreButtons = screen.getAllByRole("button", { name: "More actions" });
+    await user.click(moreButtons[0]!);
+    await user.click(await screen.findByRole("menuitem", { name: "Delete" }));
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+
+    expect(useUIStore.getState().activeWhiteboardId).toBeNull();
+    expect(useUIStore.getState().activeBookId).toBe("b1");
   });
 });

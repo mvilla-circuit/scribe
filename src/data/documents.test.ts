@@ -2,7 +2,7 @@ import { waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
 
-import { makeDocument } from "@/test/fixtures";
+import { makeDocument, makeWhiteboard } from "@/test/fixtures";
 import { server } from "@/test/msw/server";
 import {
   createTestQueryClient,
@@ -28,7 +28,13 @@ import {
   useUpdateDocument,
   useUpdateDocumentContent,
 } from "./documents";
-import { documentContentKey, documentsKey, pageIndexKey } from "./query-keys";
+import {
+  documentContentKey,
+  documentsKey,
+  pageIndexKey,
+  whiteboardSceneKey,
+  whiteboardsKey,
+} from "./query-keys";
 
 // The data hooks read the session for the user id; stub auth so we don't pull
 // auth.tsx (and its Tauri plugin imports) into the test runtime.
@@ -335,6 +341,118 @@ describe("useDeleteDocument", () => {
         .getQueryData<{ id: string }[]>(documentsKey("book-1"))
         ?.map((d) => d.id),
     ).toEqual(["keep"]);
+  });
+
+  it("prunes whiteboards cascaded with the deleted document subtree", async () => {
+    let releaseDelete!: () => void;
+    const deleteGate = new Promise<void>((resolve) => {
+      releaseDelete = resolve;
+    });
+    server.use(
+      http.delete(DOCUMENTS_URL, async () => {
+        await deleteGate;
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const client = createTestQueryClient();
+    client.setQueryData(documentsKey("book-1"), [
+      makeDocument({ id: "root" }),
+      makeDocument({ id: "child", parent_document_id: "root" }),
+    ]);
+    client.setQueryData(whiteboardsKey, [
+      makeWhiteboard({
+        id: "nested-board",
+        collection_id: null,
+        book_id: "book-1",
+        parent_document_id: "child",
+      }),
+    ]);
+    client.setQueryData(whiteboardSceneKey("nested-board"), { items: [] });
+    const { result } = renderHookWithQuery(() => useDeleteDocument("book-1"), {
+      client,
+    });
+
+    result.current.mutate({ id: "root" });
+
+    // Optimistic: boards leave the cache before the network settles so they
+    // cannot briefly reappear as outline roots without a parent.
+    await waitFor(() => {
+      expect(client.getQueryData(whiteboardsKey)).toEqual([]);
+    });
+    expect(
+      client.getQueryData(whiteboardSceneKey("nested-board")),
+    ).toBeUndefined();
+    expect(result.current.isSuccess).toBe(false);
+
+    releaseDelete();
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(client.getQueryData(whiteboardsKey)).toEqual([]);
+  });
+
+  it("restores pruned whiteboards when document delete fails", async () => {
+    server.use(
+      http.delete(DOCUMENTS_URL, () =>
+        HttpResponse.json({ message: "boom" }, { status: 500 }),
+      ),
+    );
+    const client = createTestQueryClient();
+    const board = makeWhiteboard({
+      id: "nested-board",
+      collection_id: null,
+      book_id: "book-1",
+      parent_document_id: "root",
+    });
+    client.setQueryData(documentsKey("book-1"), [makeDocument({ id: "root" })]);
+    client.setQueryData(whiteboardsKey, [board]);
+    client.setQueryData(whiteboardSceneKey("nested-board"), { items: [] });
+    const { result } = renderHookWithQuery(() => useDeleteDocument("book-1"), {
+      client,
+    });
+
+    result.current.mutate({ id: "root" });
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+    expect(client.getQueryData(whiteboardsKey)).toEqual([board]);
+    expect(client.getQueryData(whiteboardSceneKey("nested-board"))).toEqual({
+      items: [],
+    });
+  });
+
+  it("cancels whiteboard queries before prune and invalidates them on settle", async () => {
+    server.use(
+      http.delete(DOCUMENTS_URL, () => new HttpResponse(null, { status: 204 })),
+    );
+    const client = createTestQueryClient();
+    const cancelSpy = vi.spyOn(client, "cancelQueries");
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+    client.setQueryData(documentsKey("book-1"), [makeDocument({ id: "root" })]);
+    client.setQueryData(whiteboardsKey, [
+      makeWhiteboard({
+        id: "nested-board",
+        collection_id: null,
+        book_id: "book-1",
+        parent_document_id: "root",
+      }),
+    ]);
+    client.setQueryData(whiteboardSceneKey("nested-board"), { items: [] });
+    const { result } = renderHookWithQuery(() => useDeleteDocument("book-1"), {
+      client,
+    });
+
+    result.current.mutate({ id: "root" });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(cancelSpy).toHaveBeenCalledWith({ queryKey: whiteboardsKey });
+    expect(cancelSpy).toHaveBeenCalledWith({
+      queryKey: whiteboardSceneKey("nested-board"),
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: whiteboardsKey });
   });
 });
 

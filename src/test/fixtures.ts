@@ -129,6 +129,8 @@ export function makeWhiteboard(
     id: "whiteboard-1",
     user_id: "user-1",
     collection_id: "collection-1",
+    book_id: null,
+    parent_document_id: null,
     name: "Untitled",
     icon: null,
     cover_url: null,

@@ -637,36 +637,42 @@ export type Database = {
       }
       whiteboards: {
         Row: {
-          collection_id: string
+          book_id: string | null
+          collection_id: string | null
           cover_url: string | null
           created_at: string
           icon: string | null
           id: string
           name: string
+          parent_document_id: string | null
           position: number
           scene: Json
           updated_at: string
           user_id: string
         }
         Insert: {
-          collection_id: string
+          book_id?: string | null
+          collection_id?: string | null
           cover_url?: string | null
           created_at?: string
           icon?: string | null
           id?: string
           name?: string
+          parent_document_id?: string | null
           position?: number
           scene?: Json
           updated_at?: string
           user_id: string
         }
         Update: {
-          collection_id?: string
+          book_id?: string | null
+          collection_id?: string | null
           cover_url?: string | null
           created_at?: string
           icon?: string | null
           id?: string
           name?: string
+          parent_document_id?: string | null
           position?: number
           scene?: Json
           updated_at?: string
@@ -674,10 +680,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "whiteboards_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "whiteboards_collection_id_fkey"
             columns: ["collection_id"]
             isOneToOne: false
             referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whiteboards_parent_document_id_fkey"
+            columns: ["parent_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
             referencedColumns: ["id"]
           },
         ]

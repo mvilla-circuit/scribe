@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { FontMap } from "@/fonts/catalog";
 import { useAuth } from "@/lib/auth";
 import type { Tables, TablesUpdate } from "@/lib/database.types";
+import type { Json } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
 import { asJsonObject } from "@/lib/utils";
 
@@ -10,7 +11,14 @@ import { execWrite, requireUserId } from "./crud";
 import { coerceFontMap } from "./font-map";
 import { listHandlers, patchById, removeById } from "./optimistic-list";
 import { byPosition } from "./ordering";
-import { booksKey, pageIndexKey } from "./query-keys";
+import {
+  booksKey,
+  pageIndexKey,
+  whiteboardSceneKey,
+  whiteboardsKey,
+} from "./query-keys";
+import { pruneWhiteboardCache } from "./whiteboard-cache";
+import type { WhiteboardMeta } from "./whiteboards";
 
 /** A single book row from the `books` table. */
 export type Book = Tables<"books">;
@@ -212,19 +220,56 @@ export function useMoveBook() {
 /** Mutation hook that deletes a book; its documents cascade away in the DB. */
 export function useDeleteBook() {
   const qc = useQueryClient();
+  // Deleting a book cascade-deletes its documents and whiteboards in the DB.
+  // The cross-book page index spans every book, so invalidate it too or page
+  // link cards keep resolving to the now-deleted pages. Whiteboards are pruned
+  // in onMutate (with cancel + settle invalidate) so an in-flight refetch
+  // cannot restore cascaded boards after the book disappears from the cache.
+  const base = listHandlers<Book, DeleteBookInput>({
+    qc,
+    key: booksKey,
+    update: (prev, input) => removeById(prev, input.id),
+    errorMessage: "Couldn't delete book",
+    alsoInvalidate: [pageIndexKey, whiteboardsKey],
+  });
   return useMutation({
+    ...base,
     mutationFn: async (input: DeleteBookInput) => {
       await execWrite(supabase.from("books").delete().eq("id", input.id));
     },
-    // Deleting a book cascade-deletes its documents in the DB. The cross-book
-    // page index spans every book, so invalidate it too (mirroring the document
-    // mutations) or page link cards keep resolving to the now-deleted pages.
-    ...listHandlers<Book, DeleteBookInput>({
-      qc,
-      key: booksKey,
-      update: (prev, input) => removeById(prev, input.id),
-      errorMessage: "Couldn't delete book",
-      alsoInvalidate: [pageIndexKey],
-    }),
+    onMutate: async (input) => {
+      await qc.cancelQueries({ queryKey: whiteboardsKey });
+      const previousWhiteboards =
+        qc.getQueryData<WhiteboardMeta[]>(whiteboardsKey);
+      const deletedIds = (previousWhiteboards ?? [])
+        .filter((whiteboard) => whiteboard.book_id === input.id)
+        .map((whiteboard) => whiteboard.id);
+      await Promise.all(
+        deletedIds.map((id) =>
+          qc.cancelQueries({ queryKey: whiteboardSceneKey(id) }),
+        ),
+      );
+      const previousScenes = new Map<string, Json | undefined>();
+      for (const id of deletedIds) {
+        previousScenes.set(id, qc.getQueryData(whiteboardSceneKey(id)));
+      }
+      const context = await base.onMutate(input);
+      pruneWhiteboardCache(qc, (whiteboard) => whiteboard.book_id === input.id);
+      return { ...context, previousWhiteboards, previousScenes };
+    },
+    onError: (error, input, context) => {
+      base.onError(error, input, context);
+      if (!context) return;
+      if (context.previousWhiteboards !== undefined) {
+        qc.setQueryData(whiteboardsKey, context.previousWhiteboards);
+      }
+      for (const [id, scene] of context.previousScenes) {
+        if (scene === undefined) {
+          qc.removeQueries({ queryKey: whiteboardSceneKey(id) });
+        } else {
+          qc.setQueryData(whiteboardSceneKey(id), scene);
+        }
+      }
+    },
   });
 }

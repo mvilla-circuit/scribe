@@ -5,6 +5,7 @@ import {
   LinkIcon,
   PencilIcon,
   TrashIcon,
+  WhiteboardIcon,
 } from "@/components/sidebar/icons";
 import {
   SIDEBAR_ICON_SIZE,
@@ -17,7 +18,7 @@ import { type RowAction } from "@/components/ui/row-action-menu";
 import { Tooltip } from "@/components/ui/tooltip";
 
 import { PageIcon, PlusIcon } from "./icons";
-import { type FlatDocNode } from "./outline-dnd";
+import { type FlatBookOutlineNode, type FlatDocNode } from "./outline-dnd";
 
 // The document's icon when set, otherwise the generic page glyph. Shared by the
 // live rows and the drag overlay.
@@ -35,18 +36,20 @@ function DocIcon({ document }: { document: FlatDocNode["document"] }) {
 // `memo`.
 interface OutlineRowHandlers {
   onToggleExpand: (id: string) => void;
-  onSelect: (id: string) => void;
+  onSelectDocument: (id: string) => void;
+  onSelectWhiteboard: (id: string) => void;
   onStartRename: (id: string) => void;
-  onCommitRename: (node: FlatDocNode, value: string) => void;
+  onCommitRename: (node: FlatBookOutlineNode, value: string) => void;
   onCancelRename: () => void;
-  onDelete: (node: FlatDocNode) => void;
+  onDelete: (node: FlatBookOutlineNode) => void;
   onDuplicate: (node: FlatDocNode) => void;
   onCopyLink: (id: string) => void;
   onNewChild: (id: string) => void;
+  onNewWhiteboardChild: (id: string) => void;
 }
 
 type OutlineRowProps = OutlineRowHandlers & {
-  node: FlatDocNode;
+  node: FlatBookOutlineNode;
   selected: boolean;
   editing: boolean;
   expanded: boolean;
@@ -61,7 +64,8 @@ export const OutlineRow = memo(function OutlineRow({
   expanded,
   projectionDepth,
   onToggleExpand,
-  onSelect,
+  onSelectDocument,
+  onSelectWhiteboard,
   onStartRename,
   onCommitRename,
   onCancelRename,
@@ -69,10 +73,14 @@ export const OutlineRow = memo(function OutlineRow({
   onDuplicate,
   onCopyLink,
   onNewChild,
+  onNewWhiteboardChild,
 }: OutlineRowProps) {
-  const label = node.document.title || "Untitled";
+  const isDocument = node.kind === "document";
+  const label = isDocument
+    ? node.document.title || "Untitled"
+    : node.whiteboard.name || "Untitled";
 
-  const icon = (
+  const icon = isDocument ? (
     <ExpandToggleIcon
       expanded={expanded}
       hasChildren={node.hasChildren}
@@ -84,35 +92,16 @@ export const OutlineRow = memo(function OutlineRow({
     >
       <DocIcon document={node.document} />
     </ExpandToggleIcon>
+  ) : (
+    <WhiteboardIcon size={SIDEBAR_ICON_SIZE} />
   );
 
-  const menuActions: RowAction[] = [
-    {
-      icon: <PlusIcon size={15} />,
-      label: "Add page inside",
-      onSelect: () => {
-        onNewChild(node.id);
-      },
-    },
+  const commonActions: RowAction[] = [
     {
       icon: <PencilIcon size={15} />,
       label: "Rename",
       onSelect: () => {
         onStartRename(node.id);
-      },
-    },
-    {
-      icon: <DuplicateIcon size={15} />,
-      label: "Duplicate",
-      onSelect: () => {
-        onDuplicate(node);
-      },
-    },
-    {
-      icon: <LinkIcon size={15} />,
-      label: "Copy link",
-      onSelect: () => {
-        onCopyLink(node.id);
       },
     },
     {
@@ -125,8 +114,42 @@ export const OutlineRow = memo(function OutlineRow({
       separatorBefore: true,
     },
   ];
+  const menuActions: RowAction[] = isDocument
+    ? [
+        {
+          icon: <PlusIcon size={15} />,
+          label: "Add page inside",
+          onSelect: () => {
+            onNewChild(node.id);
+          },
+        },
+        {
+          icon: <PlusIcon size={15} />,
+          label: "Add whiteboard inside",
+          onSelect: () => {
+            onNewWhiteboardChild(node.id);
+          },
+        },
+        ...commonActions.slice(0, 1),
+        {
+          icon: <DuplicateIcon size={15} />,
+          label: "Duplicate",
+          onSelect: () => {
+            onDuplicate(node);
+          },
+        },
+        {
+          icon: <LinkIcon size={15} />,
+          label: "Copy link",
+          onSelect: () => {
+            onCopyLink(node.id);
+          },
+        },
+        ...commonActions.slice(1),
+      ]
+    : commonActions;
 
-  const leadingActions = (
+  const leadingActions = isDocument ? (
     <Tooltip content="Add page inside" side="right">
       <button
         type="button"
@@ -144,7 +167,7 @@ export const OutlineRow = memo(function OutlineRow({
         <PlusIcon size={15} />
       </button>
     </Tooltip>
-  );
+  ) : undefined;
 
   return (
     <TreeRowShell
@@ -161,7 +184,11 @@ export const OutlineRow = memo(function OutlineRow({
       menuActions={menuActions}
       leadingActions={leadingActions}
       onActivate={() => {
-        onSelect(node.id);
+        if (node.kind === "document") {
+          onSelectDocument(node.id);
+        } else {
+          onSelectWhiteboard(node.id);
+        }
       }}
       onStartRename={() => {
         onStartRename(node.id);
@@ -176,11 +203,21 @@ export const OutlineRow = memo(function OutlineRow({
 
 // Clean single-line chip rendered in the DragOverlay so the lifted row follows
 // the cursor without its controls.
-export function OutlineDragOverlay({ node }: { node: FlatDocNode }) {
+export function OutlineDragOverlay({ node }: { node: FlatBookOutlineNode }) {
   return (
     <SidebarRowOverlay
-      icon={<DocIcon document={node.document} />}
-      label={node.document.title || "Untitled"}
+      icon={
+        node.kind === "document" ? (
+          <DocIcon document={node.document} />
+        ) : (
+          <WhiteboardIcon size={SIDEBAR_ICON_SIZE} />
+        )
+      }
+      label={
+        node.kind === "document"
+          ? node.document.title || "Untitled"
+          : node.whiteboard.name || "Untitled"
+      }
     />
   );
 }

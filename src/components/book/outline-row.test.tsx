@@ -9,14 +9,19 @@ import { type ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { makeDocument } from "@/test/fixtures";
+import { makeDocument, makeWhiteboard } from "@/test/fixtures";
 
-import { type FlatDocNode } from "./outline-dnd";
+import { type FlatBookOutlineNode } from "./outline-dnd";
 import { OutlineRow } from "./outline-row";
 
+type FlatDocumentOutlineNode = Extract<
+  FlatBookOutlineNode,
+  { kind: "document" }
+>;
+
 function makeNode(
-  overrides: Partial<FlatDocNode> & { hasChildren: boolean },
-): FlatDocNode {
+  overrides: Partial<FlatDocumentOutlineNode> & { hasChildren: boolean },
+): FlatDocumentOutlineNode {
   const document = makeDocument({
     id: "d1",
     title: "Chapter 1",
@@ -24,6 +29,7 @@ function makeNode(
   });
   return {
     id: document.id,
+    kind: "document",
     depth: 0,
     parentId: null,
     position: document.position,
@@ -54,7 +60,7 @@ function RowHarness({
 }
 
 function renderRow(
-  node: FlatDocNode,
+  node: FlatBookOutlineNode,
   options: {
     expanded?: boolean;
     onToggleExpand?: (id: string) => void;
@@ -74,7 +80,8 @@ function renderRow(
         expanded={options.expanded ?? false}
         projectionDepth={null}
         onToggleExpand={onToggleExpand}
-        onSelect={onSelect}
+        onSelectDocument={onSelect}
+        onSelectWhiteboard={unused}
         onStartRename={unused}
         onCommitRename={unused}
         onCancelRename={unused}
@@ -82,6 +89,7 @@ function renderRow(
         onDuplicate={unused}
         onCopyLink={unused}
         onNewChild={unused}
+        onNewWhiteboardChild={unused}
       />
     </RowHarness>,
   );
@@ -126,5 +134,39 @@ describe("OutlineRow expand toggle", () => {
     ).toBeInTheDocument();
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- decorative chevron svg has no accessible role
     expect(container.querySelector(".rotate-90")).toBeInTheDocument();
+  });
+});
+
+describe("OutlineRow whiteboard", () => {
+  it("renders a leaf whiteboard without add-inside actions", async () => {
+    const user = userEvent.setup();
+    const whiteboard = makeWhiteboard({
+      id: "w1",
+      collection_id: null,
+      book_id: "book-1",
+      name: "Map",
+    });
+    const node: FlatBookOutlineNode = {
+      id: whiteboard.id,
+      kind: "whiteboard",
+      depth: 0,
+      parentId: null,
+      position: whiteboard.position,
+      hasChildren: false,
+      whiteboard,
+    };
+
+    renderRow(node);
+    await user.click(screen.getByRole("button", { name: "More actions" }));
+
+    expect(
+      screen.queryByRole("menuitem", { name: "Add page inside" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("menuitem", { name: "Add whiteboard inside" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitem", { name: "Rename" }),
+    ).toBeInTheDocument();
   });
 });

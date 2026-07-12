@@ -16,6 +16,7 @@ import {
   useUpdateWhiteboardScene,
   useWhiteboards,
   useWhiteboardScene,
+  type WhiteboardMeta,
 } from "@/data/whiteboards";
 import { cn } from "@/lib/utils";
 import {
@@ -35,6 +36,7 @@ import {
   type WhiteboardScene,
 } from "@/lib/whiteboard-scene";
 
+import { WhiteboardBreadcrumb } from "./whiteboard-breadcrumb";
 import { WhiteboardCanvas } from "./whiteboard-canvas";
 
 const SAVE_DELAY = 400;
@@ -89,7 +91,11 @@ export function WhiteboardPage({ whiteboardId }: { whiteboardId: string }) {
       : "Loading whiteboard…";
     return (
       <div data-testid="whiteboard-page" className="flex h-full flex-col bg-bg">
-        <WhiteboardNav name={null} onRename={undefined} />
+        <WhiteboardNav
+          whiteboard={whiteboard}
+          name={null}
+          onRename={undefined}
+        />
         <main className="flex flex-1 items-center justify-center px-8 pb-16">
           <p className="text-sm text-muted">{message}</p>
         </main>
@@ -101,6 +107,7 @@ export function WhiteboardPage({ whiteboardId }: { whiteboardId: string }) {
     <WhiteboardEditor
       key={whiteboardId}
       whiteboardId={whiteboardId}
+      whiteboard={whiteboard}
       name={whiteboard?.name ?? "Untitled"}
       initialScene={initialScene}
     />
@@ -109,10 +116,12 @@ export function WhiteboardPage({ whiteboardId }: { whiteboardId: string }) {
 
 function WhiteboardEditor({
   whiteboardId,
+  whiteboard,
   name,
   initialScene,
 }: {
   whiteboardId: string;
+  whiteboard: WhiteboardMeta | null;
   name: string;
   initialScene: WhiteboardScene;
 }) {
@@ -319,6 +328,7 @@ function WhiteboardEditor({
       className="flex h-full min-h-0 flex-col bg-bg"
     >
       <WhiteboardNav
+        whiteboard={whiteboard}
         name={name}
         onRename={(value) => {
           renameWhiteboard.mutate({ id: whiteboardId, name: value });
@@ -386,14 +396,29 @@ function WhiteboardEditor({
 }
 
 function WhiteboardNav({
+  whiteboard,
   name,
   onRename,
   children,
 }: {
+  whiteboard: WhiteboardMeta | null;
   name: string | null;
   onRename: ((value: string) => void) | undefined;
   children?: React.ReactNode;
 }) {
+  const current =
+    name !== null && onRename ? (
+      <EditableText
+        value={name}
+        ariaLabel="Whiteboard name"
+        placeholder="Untitled"
+        onCommit={onRename}
+        className="min-w-0 max-w-xs shrink truncate rounded-sm px-1 text-sm font-medium tracking-tight text-text"
+      />
+    ) : (
+      <span className="px-1 text-sm font-medium text-muted">Whiteboard</span>
+    );
+
   return (
     <nav
       aria-label="Whiteboard"
@@ -401,17 +426,13 @@ function WhiteboardNav({
       className="flex shrink-0 items-center gap-3 border-b border-border px-6 py-2"
     >
       <NavHistoryControls />
-      {name !== null && onRename ? (
-        <EditableText
-          value={name}
-          ariaLabel="Whiteboard name"
-          placeholder="Untitled"
-          onCommit={onRename}
-          className="max-w-xs text-sm font-medium tracking-tight text-text"
-        />
-      ) : (
-        <span className="text-sm font-medium text-muted">Whiteboard</span>
-      )}
+      <div className="min-w-0 flex-1">
+        {whiteboard ? (
+          <WhiteboardBreadcrumb whiteboard={whiteboard} current={current} />
+        ) : (
+          current
+        )}
+      </div>
       {children}
     </nav>
   );
