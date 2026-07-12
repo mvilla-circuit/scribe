@@ -26,6 +26,7 @@ import { type RowAction } from "@/components/ui/row-action-menu";
 import { useBooks, useCreateBook, useMoveBook } from "@/data/books";
 import {
   DEFAULT_SECTION_LABELS,
+  type GallerySectionKind,
   parseCollectionView,
   sectionLabel,
   serializeCollectionView,
@@ -149,15 +150,6 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   const visibleChildren = useMemo(
     () => sortGalleryChildren(filterGalleryChildren(children, query)),
     [children, query],
-  );
-  const childCollections = visibleChildren.filter(
-    (c) => c.kind === "collection",
-  );
-  const childBooks = visibleChildren.filter((c) => c.kind === "book");
-  const childEntries = visibleChildren.filter((c) => c.kind === "entry");
-  const childDatagrids = visibleChildren.filter((c) => c.kind === "datagrid");
-  const childWhiteboards = visibleChildren.filter(
-    (c) => c.kind === "whiteboard",
   );
 
   const rootPosition = () => endPositionFor(childrenOf(model, ROOT));
@@ -526,141 +518,42 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
               </div>
             ) : showSections ? (
               <>
-                {childCollections.length > 0 && (
-                  <CardGrid
-                    value={sectionLabel(view, "collection")}
-                    ariaLabel="Collections section name"
-                    placeholder={DEFAULT_SECTION_LABELS.collection}
-                    onCommit={(next) => {
-                      updateCollection.mutate({
-                        id: collection.id,
-                        view: serializeCollectionView(
-                          setSectionLabel(view, "collection", next),
-                        ),
-                      });
-                    }}
-                  >
-                    {childCollections.map((child) => (
-                      <GalleryCoverCard
-                        key={child.id}
-                        child={child}
-                        onOpen={() => {
-                          openChild(child);
-                        }}
-                        actions={actionsFor(child)}
-                        tags={tagsFor(child)}
-                      />
-                    ))}
-                  </CardGrid>
-                )}
-                {childBooks.length > 0 && (
-                  <CardGrid
-                    value={sectionLabel(view, "book")}
-                    ariaLabel="Books section name"
-                    placeholder={DEFAULT_SECTION_LABELS.book}
-                    onCommit={(next) => {
-                      updateCollection.mutate({
-                        id: collection.id,
-                        view: serializeCollectionView(
-                          setSectionLabel(view, "book", next),
-                        ),
-                      });
-                    }}
-                  >
-                    {childBooks.map((child) => (
-                      <GalleryCoverCard
-                        key={child.id}
-                        child={child}
-                        onOpen={() => {
-                          openChild(child);
-                        }}
-                        actions={actionsFor(child)}
-                        tags={tagsFor(child)}
-                      />
-                    ))}
-                  </CardGrid>
-                )}
-                {childEntries.length > 0 && (
-                  <CardGrid
-                    value={sectionLabel(view, "entry")}
-                    ariaLabel="Docs section name"
-                    placeholder={DEFAULT_SECTION_LABELS.entry}
-                    onCommit={(next) => {
-                      updateCollection.mutate({
-                        id: collection.id,
-                        view: serializeCollectionView(
-                          setSectionLabel(view, "entry", next),
-                        ),
-                      });
-                    }}
-                  >
-                    {childEntries.map((child) => (
-                      <GalleryCoverCard
-                        key={child.id}
-                        child={child}
-                        onOpen={() => {
-                          openChild(child);
-                        }}
-                        actions={actionsFor(child)}
-                        tags={tagsFor(child)}
-                      />
-                    ))}
-                  </CardGrid>
-                )}
-                {childDatagrids.length > 0 && (
-                  <CardGrid
-                    value={sectionLabel(view, "datagrid")}
-                    ariaLabel="Datagrids section name"
-                    placeholder={DEFAULT_SECTION_LABELS.datagrid}
-                    onCommit={(next) => {
-                      updateCollection.mutate({
-                        id: collection.id,
-                        view: serializeCollectionView(
-                          setSectionLabel(view, "datagrid", next),
-                        ),
-                      });
-                    }}
-                  >
-                    {childDatagrids.map((child) => (
-                      <GalleryCoverCard
-                        key={child.id}
-                        child={child}
-                        onOpen={() => {
-                          openChild(child);
-                        }}
-                        actions={actionsFor(child)}
-                        tags={tagsFor(child)}
-                      />
-                    ))}
-                  </CardGrid>
-                )}
-                {childWhiteboards.length > 0 && (
-                  <CardGrid
-                    value={sectionLabel(view, "whiteboard")}
-                    ariaLabel="Whiteboards section name"
-                    placeholder={DEFAULT_SECTION_LABELS.whiteboard}
-                    onCommit={(next) => {
-                      updateCollection.mutate({
-                        id: collection.id,
-                        view: serializeCollectionView(
-                          setSectionLabel(view, "whiteboard", next),
-                        ),
-                      });
-                    }}
-                  >
-                    {childWhiteboards.map((child) => (
-                      <GalleryCoverCard
-                        key={child.id}
-                        child={child}
-                        onOpen={() => {
-                          openChild(child);
-                        }}
-                        actions={actionsFor(child)}
-                        tags={tagsFor(child)}
-                      />
-                    ))}
-                  </CardGrid>
-                )}
+                {(
+                  Object.keys(DEFAULT_SECTION_LABELS) as GallerySectionKind[]
+                ).map((kind) => {
+                  const items = galleryChildren.filter(
+                    (child) => child.kind === kind,
+                  );
+                  if (items.length === 0) return null;
+                  return (
+                    <CardGrid
+                      key={kind}
+                      value={sectionLabel(view, kind)}
+                      ariaLabel={`${DEFAULT_SECTION_LABELS[kind]} section name`}
+                      placeholder={DEFAULT_SECTION_LABELS[kind]}
+                      onCommit={(next) => {
+                        updateCollection.mutate({
+                          id: collection.id,
+                          view: serializeCollectionView(
+                            setSectionLabel(view, kind, next),
+                          ),
+                        });
+                      }}
+                    >
+                      {items.map((child) => (
+                        <GalleryCoverCard
+                          key={child.id}
+                          child={child}
+                          onOpen={() => {
+                            openChild(child);
+                          }}
+                          actions={actionsFor(child)}
+                          tags={tagsFor(child)}
+                        />
+                      ))}
+                    </CardGrid>
+                  );
+                })}
               </>
             ) : (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">

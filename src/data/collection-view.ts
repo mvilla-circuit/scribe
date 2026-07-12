@@ -19,10 +19,6 @@ export const DEFAULT_SECTION_LABELS: Record<GallerySectionKind, string> = {
   whiteboard: "Whiteboards",
 };
 
-const SECTION_KINDS = Object.keys(
-  DEFAULT_SECTION_LABELS,
-) as GallerySectionKind[];
-
 /** The persisted display preferences for a collection. */
 export interface CollectionView {
   layout: CollectionLayout;
@@ -60,6 +56,13 @@ function sanitizeSectionLabels(
   return Object.keys(labels).length > 0 ? labels : undefined;
 }
 
+function withSectionLabels(
+  layout: CollectionLayout,
+  sectionLabels: Partial<Record<GallerySectionKind, string>> | undefined,
+): CollectionView {
+  return sectionLabels ? { layout, sectionLabels } : { layout };
+}
+
 /**
  * Converts an untrusted persisted collection view into supported preferences.
  * Invalid or missing values fall back to the grid default. Legacy `sort` keys
@@ -71,11 +74,10 @@ export function parseCollectionView(raw: unknown): CollectionView {
   }
 
   const record = raw as Record<string, unknown>;
-  const sectionLabels = sanitizeSectionLabels(record.sectionLabels);
-  return {
-    layout: record.layout === "list" ? "list" : DEFAULT_COLLECTION_VIEW.layout,
-    ...(sectionLabels ? { sectionLabels } : {}),
-  };
+  return withSectionLabels(
+    record.layout === "list" ? "list" : DEFAULT_COLLECTION_VIEW.layout,
+    sanitizeSectionLabels(record.sectionLabels),
+  );
 }
 
 /** Returns a JSON-ready copy of a collection view with lean sectionLabels. */
@@ -84,12 +86,7 @@ export function serializeCollectionView(view: CollectionView): Json {
   if (!sectionLabels) {
     return { layout: view.layout };
   }
-
-  const labels: Record<string, Json | undefined> = {};
-  for (const kind of SECTION_KINDS) {
-    const value = sectionLabels[kind];
-    if (value !== undefined) labels[kind] = value;
-  }
+  const labels: Record<string, string> = { ...sectionLabels };
   return { layout: view.layout, sectionLabels: labels };
 }
 
@@ -110,21 +107,8 @@ export function setSectionLabel(
   kind: GallerySectionKind,
   label: string,
 ): CollectionView {
-  const trimmed = label.trim();
-  const nextLabels: Partial<Record<GallerySectionKind, string>> = {};
-  for (const existing of SECTION_KINDS) {
-    if (existing === kind) continue;
-    const value = view.sectionLabels?.[existing];
-    if (value !== undefined) nextLabels[existing] = value;
-  }
-
-  if (trimmed && trimmed !== DEFAULT_SECTION_LABELS[kind]) {
-    nextLabels[kind] = trimmed;
-  }
-
-  const hasLabels = SECTION_KINDS.some((k) => nextLabels[k] !== undefined);
-  return {
-    layout: view.layout,
-    ...(hasLabels ? { sectionLabels: nextLabels } : {}),
-  };
+  return withSectionLabels(
+    view.layout,
+    sanitizeSectionLabels({ ...view.sectionLabels, [kind]: label }),
+  );
 }
