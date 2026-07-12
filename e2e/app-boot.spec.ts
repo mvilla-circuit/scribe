@@ -11,7 +11,9 @@ test.describe("signed in", () => {
       authedPage.locator("section").getByRole("button", { name: "New book" }),
     ).toBeVisible();
     await expect(
-      authedPage.getByText(/create your first book to start writing/i),
+      authedPage.getByText(
+        /nothing here yet\. create a book or collection to get started/i,
+      ),
     ).toBeVisible();
   });
 });
