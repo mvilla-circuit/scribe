@@ -27,6 +27,7 @@ describe("CollectionTags", () => {
         onAdd={vi.fn()}
         onRemove={vi.fn()}
         onRecolor={vi.fn()}
+        onRename={vi.fn()}
       />,
     );
 
@@ -41,34 +42,42 @@ describe("CollectionTags", () => {
         onAdd={vi.fn()}
         onRemove={vi.fn()}
         onRecolor={vi.fn()}
+        onRename={vi.fn()}
       />,
     );
 
     expect(screen.getByRole("button", { name: "Add tag" })).toBeInTheDocument();
   });
 
-  it("adds a tag via the editor", async () => {
-    const user = userEvent.setup();
-    const onAdd = vi.fn();
+  it("opens a dropdown with name field and color palette when adding", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
     renderWithProviders(
       <CollectionTags
         tags={[]}
-        onAdd={onAdd}
+        onAdd={vi.fn()}
         onRemove={vi.fn()}
         onRecolor={vi.fn()}
+        onRename={vi.fn()}
       />,
     );
 
     await user.click(screen.getByRole("button", { name: "Add tag" }));
-    await user.type(screen.getByLabelText("New tag name"), "Worldbuilding");
-    await user.keyboard("{Enter}");
 
-    expect(onAdd).toHaveBeenCalledWith("Worldbuilding");
-    expect(screen.queryByLabelText("New tag name")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("New tag name")).toBeInTheDocument();
+    expect(
+      screen.getByRole("group", { name: "Tag color" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Stone" })).toHaveClass(
+      "h-6",
+      "w-6",
+    );
+    expect(screen.getByRole("menu")).toContainElement(
+      screen.getByLabelText("New tag name"),
+    );
   });
 
-  it("assigns from a suggested library tag", async () => {
-    const user = userEvent.setup();
+  it("adds a tag with the selected color via the dropdown", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
     const onAdd = vi.fn();
     renderWithProviders(
       <CollectionTags
@@ -76,17 +85,130 @@ describe("CollectionTags", () => {
         onAdd={onAdd}
         onRemove={vi.fn()}
         onRecolor={vi.fn()}
+        onRename={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Add tag" }));
+    await user.click(screen.getByRole("button", { name: "Moss" }));
+    await user.type(screen.getByLabelText("New tag name"), "Worldbuilding");
+    await user.keyboard("{Enter}");
+
+    expect(onAdd).toHaveBeenCalledWith("Worldbuilding", "moss");
+  });
+
+  it("assigns from a suggested library tag", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const onAdd = vi.fn();
+    renderWithProviders(
+      <CollectionTags
+        tags={[]}
+        onAdd={onAdd}
+        onRemove={vi.fn()}
+        onRecolor={vi.fn()}
+        onRename={vi.fn()}
         suggestions={[{ id: "lib-1", name: "Reference", color: "moss" }]}
       />,
     );
 
     await user.click(screen.getByRole("button", { name: "Add tag" }));
-    await user.click(screen.getByRole("option", { name: "Reference" }));
+    await user.click(screen.getByRole("menuitem", { name: "Reference" }));
 
-    expect(onAdd).toHaveBeenCalledWith("Reference");
+    expect(onAdd).toHaveBeenCalledWith("Reference", "moss");
   });
 
-  it("recolors from the chip popover", async () => {
+  it("selects a filtered library tag while typing a partial name", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const onAdd = vi.fn();
+    renderWithProviders(
+      <CollectionTags
+        tags={[]}
+        onAdd={onAdd}
+        onRemove={vi.fn()}
+        onRecolor={vi.fn()}
+        onRename={vi.fn()}
+        suggestions={[
+          { id: "lib-1", name: "Thriller", color: "umber" },
+          { id: "lib-2", name: "Fantasy", color: "sky" },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Add tag" }));
+    await user.type(screen.getByLabelText("New tag name"), "thri");
+    await user.click(screen.getByRole("menuitem", { name: "Thriller" }));
+
+    expect(onAdd).toHaveBeenCalledWith("Thriller", "umber");
+    expect(onAdd).not.toHaveBeenCalledWith("thri", expect.anything());
+  });
+
+  it("deletes a library tag from the suggestions list", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const onDeleteSuggestion = vi.fn();
+    renderWithProviders(
+      <CollectionTags
+        tags={[]}
+        onAdd={vi.fn()}
+        onRemove={vi.fn()}
+        onRecolor={vi.fn()}
+        onRename={vi.fn()}
+        onDeleteSuggestion={onDeleteSuggestion}
+        suggestions={[{ id: "lib-1", name: "Historical", color: "honey" }]}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Add tag" }));
+    await user.click(screen.getByRole("button", { name: "Delete Historical" }));
+
+    expect(onDeleteSuggestion).toHaveBeenCalledWith("lib-1");
+  });
+
+  it("opens the same editor dropdown when clicking an existing tag", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    renderWithProviders(
+      <CollectionTags
+        tags={[{ id: "t1", name: "Fantasy", color: "sky" }]}
+        onAdd={vi.fn()}
+        onRemove={vi.fn()}
+        onRecolor={vi.fn()}
+        onRename={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Fantasy" }));
+
+    expect(screen.getByLabelText("Tag name")).toHaveValue("Fantasy");
+    expect(
+      screen.getByRole("group", { name: "Color for Fantasy" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("menuitem", { name: "Remove" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renames from the chip dropdown", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const onRename = vi.fn();
+    renderWithProviders(
+      <CollectionTags
+        tags={[{ id: "t1", name: "Fantasy", color: "sky" }]}
+        onAdd={vi.fn()}
+        onRemove={vi.fn()}
+        onRecolor={vi.fn()}
+        onRename={onRename}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Fantasy" }));
+    const input = screen.getByLabelText("Tag name");
+    await user.clear(input);
+    await user.type(input, "Epic");
+    await user.keyboard("{Enter}");
+
+    expect(onRename).toHaveBeenCalledWith("t1", "Epic");
+  });
+
+  it("recolors from the chip dropdown", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const onRecolor = vi.fn();
     renderWithProviders(
@@ -95,18 +217,19 @@ describe("CollectionTags", () => {
         onAdd={vi.fn()}
         onRemove={vi.fn()}
         onRecolor={onRecolor}
+        onRename={vi.fn()}
       />,
     );
 
     await user.click(screen.getByRole("button", { name: "Fantasy" }));
     await user.click(
-      await screen.findByRole("button", { name: "moss for Fantasy" }),
+      await screen.findByRole("button", { name: "Moss for Fantasy" }),
     );
 
     expect(onRecolor).toHaveBeenCalledWith("t1", "moss");
   });
 
-  it("removes from the collection", async () => {
+  it("removes via the hover X on the chip", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const onRemove = vi.fn();
     renderWithProviders(
@@ -115,11 +238,12 @@ describe("CollectionTags", () => {
         onAdd={vi.fn()}
         onRemove={onRemove}
         onRecolor={vi.fn()}
+        onRename={vi.fn()}
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: "Fantasy" }));
-    await user.click(await screen.findByRole("menuitem", { name: "Remove" }));
+    await user.hover(screen.getByRole("button", { name: "Fantasy" }));
+    await user.click(screen.getByRole("button", { name: "Remove Fantasy" }));
 
     expect(onRemove).toHaveBeenCalledWith("t1");
   });

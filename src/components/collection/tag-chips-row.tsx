@@ -16,16 +16,18 @@ export interface TagChipsRowProps extends Omit<
   "className"
 > {
   tags: GalleryTag[];
-  /** Maximum number of chips shown before collapsing the rest into a "+N". */
-  max: number;
+  /**
+   * Maximum number of chips shown before collapsing the rest into a "+N".
+   * When omitted, every tag is shown.
+   */
+  max?: number;
   className?: string;
 }
 
 /**
- * A read-only row of tag chips capped at `max`, with a muted `+N` for any
- * remaining tags. Renders nothing for an empty list, so callers can spread it
- * in unconditionally. Shared by `CoverCard` and `CollectionListRow` so both
- * gallery surfaces cap and overflow tags the same way.
+ * A read-only row of tag chips. When `max` is set, remaining tags collapse into
+ * a muted `+N`. Renders nothing for an empty list, so callers can spread it in
+ * unconditionally. Shared by `CoverCard` and `CollectionListRow`.
  */
 export function TagChipsRow({
   tags,
@@ -35,7 +37,7 @@ export function TagChipsRow({
 }: TagChipsRowProps) {
   if (tags.length === 0) return null;
 
-  const visible = tags.slice(0, max);
+  const visible = max === undefined ? tags : tags.slice(0, max);
   const overflow = tags.length - visible.length;
 
   return (

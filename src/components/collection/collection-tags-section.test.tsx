@@ -86,8 +86,8 @@ describe("CollectionTagsSection", () => {
       client: seed(),
     });
 
-    await user.click(screen.getByRole("button", { name: "Fantasy" }));
-    await user.click(await screen.findByRole("menuitem", { name: "Remove" }));
+    await user.hover(screen.getByRole("button", { name: "Fantasy" }));
+    await user.click(screen.getByRole("button", { name: "Remove Fantasy" }));
 
     await waitFor(() => {
       expect(
@@ -111,7 +111,7 @@ describe("CollectionTagsSection", () => {
 
     await user.click(screen.getByRole("button", { name: "Fantasy" }));
     await user.click(
-      await screen.findByRole("button", { name: "moss for Fantasy" }),
+      await screen.findByRole("button", { name: "Moss for Fantasy" }),
     );
 
     await waitFor(() => {
