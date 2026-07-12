@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 
+import { Input } from "@/components/ui/input";
 import { Tooltip } from "@/components/ui/tooltip";
 import { AccentColorPopover } from "@/editor/block-control-presets";
 import { BlockControls } from "@/editor/block-controls";
@@ -143,7 +144,7 @@ export function QuoteView({ node, updateAttributes, editor }: NodeViewProps) {
               className="scribe-quote-cite-field"
               data-value={attribution || "Add a citation…"}
             >
-              <input
+              <Input
                 ref={citeRef}
                 type="text"
                 // size=1 keeps the input's own intrinsic width tiny so the
@@ -170,7 +171,7 @@ export function QuoteView({ node, updateAttributes, editor }: NodeViewProps) {
                 onMouseDown={(e) => {
                   e.stopPropagation();
                 }}
-                className="scribe-quote-cite-input"
+                className="h-auto focus-visible:ring-0 scribe-quote-cite-input"
                 aria-label="Quote attribution"
               />
             </span>

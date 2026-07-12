@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 
 import { cn, resolveEditedValue } from "@/lib/utils";
 
+import { Input } from "./input";
+
 interface InlineRenameProps {
   initialValue: string;
   onCommit: (value: string) => void;
@@ -58,7 +60,7 @@ export function InlineRename({
   };
 
   return (
-    <input
+    <Input
       ref={inputRef}
       value={value}
       placeholder={placeholder}
@@ -87,8 +89,7 @@ export function InlineRename({
       }}
       onBlur={commit}
       className={cn(
-        "w-full min-w-0 rounded-sm border border-accent/60 bg-surface px-1.5 py-0.5 " +
-          "text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "h-auto min-w-0 rounded-sm border-accent/60 px-1.5 py-0.5",
         className,
       )}
     />

@@ -1,6 +1,7 @@
 import { memo, useMemo, useState } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { type PageLinkOption, useEditorBridge } from "@/editor/editor-bridge";
 import { useKeyboardList } from "@/editor/use-keyboard-list";
 import { cn } from "@/lib/utils";
@@ -84,7 +85,7 @@ export const PagePicker = memo(function PagePicker() {
       <DialogContent className="p-0">
         <DialogTitle className="sr-only">Link to a page</DialogTitle>
         <div className="border-b border-border p-2.5">
-          <input
+          <Input
             autoFocus
             value={query}
             onChange={(e) => {
@@ -92,7 +93,7 @@ export const PagePicker = memo(function PagePicker() {
             }}
             onKeyDown={onKeyDown}
             placeholder="Search pages and books…"
-            className="h-9 w-full rounded-md border border-border bg-bg px-3 text-sm text-text outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-9"
           />
         </div>
         <div ref={listRef} className="max-h-[20rem] overflow-y-auto p-1.5">

@@ -4,6 +4,7 @@ Scribe is a minimalist desktop writing app: Tauri 2 (Rust) shell + React 19 + Ty
 
 This file applies to the whole repo. Scoped `AGENTS.md` files add area-specific rules:
 
+- [`src/components/ui/AGENTS.md`](src/components/ui/AGENTS.md) — design-system primitives
 - [`src/editor/AGENTS.md`](src/editor/AGENTS.md) — TipTap/ProseMirror editor
 - [`src/data/AGENTS.md`](src/data/AGENTS.md) — React Query data layer
 - [`src/store/AGENTS.md`](src/store/AGENTS.md) — Zustand UI state
@@ -52,6 +53,7 @@ All of these are enforced by ESLint/Prettier — follow them so `verify` stays g
 - **Logging**: `console` is limited to `warn` and `error`.
 - **No native dialogs**: `window.alert`/`confirm`/`prompt` are banned (`no-alert`); use an in-app dialog or popover (e.g. the `LinkPopover`/`PagePicker`).
 - **No native `title` tooltips**: the `title` attribute on host elements is banned (lint); use the `<Tooltip>` component for hover hints, and `aria-label` for an icon-only control's accessible name. (A component prop named `title`, e.g. `<ConfirmDialog title=…>`, is fine.)
+- **No raw text `<input>`**: banned by lint except `file` / `checkbox` / `radio` / `hidden` and the `<Input>` primitive itself. Use `<Input>` or `<SearchField>` from `components/ui`.
 - **Formatting**: Prettier — 2-space indent, double quotes, semicolons, trailing commas, 80-col width. Don't hand-format; run `npm run format`.
 
 ## Design guidelines
@@ -97,6 +99,19 @@ adding or changing UI, hold to the direction inferred from the existing styles
   shouting; match that quiet tone for any new feedback.
 - **Accessibility**: `jsx-a11y` runs in strict mode — keep semantic markup,
   labels, and visible focus rings (`--ring`). Maintain contrast in both themes.
+- **Design system first**: repeated chrome lives in [`src/components/ui/`](src/components/ui/).
+  Prefer existing primitives (`Button`, `IconButton`, `Input` / `SearchField`,
+  `Chip` / `StaticChip` / `RemovableChip`, `EmptyState`, `DashedAddTile`,
+  `Popover`, `SegmentedControl`, `Breadcrumb*`, `Masthead`, `EditableText`,
+  `InlineRename`, `CoverCard`) over copying their Tailwind stacks. See
+  [`src/components/ui/AGENTS.md`](src/components/ui/AGENTS.md).
+- **No raw text `<input>`**: use `<Input>` (or `<SearchField>`). Lint bans raw
+  `<input>` except `file` / `checkbox` / `radio` / `hidden` and the `Input`
+  primitive itself. Do not hand-roll bordered field chrome.
+- **No hand-rolled chips / empties / icon buttons**: swatch pills use `Chip` /
+  `StaticChip` / `RemovableChip`; dashed empty panels use `EmptyState`; icon
+  chrome uses `IconButton`. Relation navigate chips stay feature-local (not
+  `RemovableChip`).
 
 ## Performance
 
@@ -154,7 +169,8 @@ graph TD
 
 ```
 src/
-  components/   App shell + UI primitives (components/ui)
+  components/   App shell + UI primitives
+    ui/         Design-system primitives                    -> src/components/ui/AGENTS.md
   editor/       TipTap/ProseMirror editor and extensions  -> src/editor/AGENTS.md
   data/         React Query hooks for books/folders/docs    -> src/data/AGENTS.md
   store/        Zustand UI state (persisted to localStorage)

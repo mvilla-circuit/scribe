@@ -13,6 +13,7 @@ export const Input = forwardRef<
   HTMLInputElement,
   React.InputHTMLAttributes<HTMLInputElement>
 >(({ className, ...props }, ref) => (
+  // eslint-disable-next-line no-restricted-syntax -- Input is the design-system wrapper around the native control
   <input
     ref={ref}
     className={cn(

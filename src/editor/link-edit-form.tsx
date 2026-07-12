@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 import { CheckIcon, LinkIcon, TrashIcon } from "./icons";
@@ -48,7 +49,7 @@ export function LinkEditForm({
       className="flex items-center gap-1"
     >
       <LinkIcon size={14} className="ml-1 mr-0.5 shrink-0 text-muted" />
-      <input
+      <Input
         autoFocus
         type="url"
         value={href}
@@ -63,7 +64,7 @@ export function LinkEditForm({
         }}
         placeholder="Paste or type a link"
         aria-label="Link URL"
-        className="h-7 min-w-0 flex-1 bg-transparent text-sm text-text outline-none placeholder:text-muted"
+        className="h-7 min-w-0 flex-1 border-transparent bg-transparent px-0 focus-visible:ring-0"
       />
       <span className="mx-0.5 h-5 w-px shrink-0 bg-border" />
       {hasLink && (

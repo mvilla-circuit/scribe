@@ -1,6 +1,7 @@
 import { Plus, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { RemovableChip } from "@/components/ui/chip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,11 +9,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { MorandiSwatchGrid } from "@/components/ui/morandi-swatch-grid";
 import { DEFAULT_SWATCH, swatchDotStyle } from "@/lib/swatches";
 import { cn, resolveEditedValue } from "@/lib/utils";
 
-import { TagChip, type TagChipData } from "./tag-chip";
+import { type TagChipData } from "./tag-chip";
 
 /** A tag assigned to (or assignable to) a collection. */
 type CollectionTag = TagChipData;
@@ -100,14 +102,22 @@ function TagChipMenu({ tag, onRecolor, onRename, onRemove }: TagChipMenuProps) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="group/tag relative inline-flex max-w-full items-center">
+    <RemovableChip
+      name={tag.name}
+      color={tag.color}
+      onRemove={onRemove}
+      removeReveal="hover"
+      removeClassName="size-4 hover:bg-elevated hover:opacity-100 hover:text-text"
+      className="max-w-full"
+    >
       <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>
-          <TagChip
-            name={tag.name}
-            color={tag.color}
-            className="group-hover/tag:pr-5"
-          />
+          <button
+            type="button"
+            className="min-w-0 truncate rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {tag.name}
+          </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="start"
@@ -134,19 +144,7 @@ function TagChipMenu({ tag, onRecolor, onRename, onRemove }: TagChipMenuProps) {
           />
         </DropdownMenuContent>
       </DropdownMenu>
-      <button
-        type="button"
-        aria-label={`Remove ${tag.name}`}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onRemove();
-        }}
-        className="absolute right-0.5 top-1/2 z-10 flex size-4 -translate-y-1/2 items-center justify-center rounded-full text-muted opacity-0 outline-none transition-opacity hover:bg-elevated hover:text-text focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring pointer-events-none group-hover/tag:pointer-events-auto group-hover/tag:opacity-100 motion-reduce:transition-none"
-      >
-        <X className="size-3" aria-hidden="true" />
-      </button>
-    </div>
+    </RemovableChip>
   );
 }
 
@@ -270,7 +268,7 @@ function TagEditorPanel({
 
   return (
     <div className="p-2">
-      <input
+      <Input
         ref={inputRef}
         aria-label={nameLabel}
         value={draft}
@@ -293,7 +291,7 @@ function TagEditorPanel({
           }
         }}
         placeholder="Tag name"
-        className="mb-4 h-7 w-full rounded-md border border-border bg-bg px-2 text-xs text-text outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-ring"
+        className="mb-4 h-7 bg-bg px-2 text-xs"
       />
       <div role="group" aria-label={colorGroupLabel}>
         <MorandiSwatchGrid

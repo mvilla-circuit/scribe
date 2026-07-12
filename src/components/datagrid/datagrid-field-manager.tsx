@@ -27,11 +27,11 @@ import {
   Plus,
   Trash2,
   Type,
-  X,
 } from "lucide-react";
 import { type ReactNode, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { RemovableChip } from "@/components/ui/chip";
 import {
   Dialog,
   DialogContent,
@@ -45,6 +45,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { InlineRename } from "@/components/ui/inline-rename";
+import { Input } from "@/components/ui/input";
 import { MorandiSwatchGrid } from "@/components/ui/morandi-swatch-grid";
 import {
   addField,
@@ -64,11 +65,7 @@ import type {
 } from "@/lib/datagrid-schema";
 import { cn, resolveEditedValue } from "@/lib/utils";
 
-import {
-  swatchChipStyle,
-  swatchDotStyle,
-  swatchForIndex,
-} from "./datagrid-colors";
+import { swatchDotStyle, swatchForIndex } from "./datagrid-colors";
 
 const FIELD_TYPE_ICONS: Record<DatagridFieldType, typeof Type> = {
   text: Type,
@@ -95,9 +92,6 @@ const OPTION_TYPES = new Set<DatagridFieldType>([
   "multi_select",
   "status",
 ]);
-
-const INPUT_CLASS =
-  "min-w-0 w-full rounded-md border border-transparent bg-transparent px-2 py-1 text-sm text-text outline-none placeholder:text-muted hover:border-border focus-visible:border-border focus-visible:ring-2 focus-visible:ring-ring";
 
 interface FieldManagerProps {
   open: boolean;
@@ -350,7 +344,7 @@ function SortableFieldRow({
           <GripVertical className="size-4" aria-hidden="true" />
         </button>
 
-        <input
+        <Input
           ref={nameInputRef}
           aria-label={`Field name for ${field.name}`}
           value={draftName}
@@ -367,7 +361,7 @@ function SortableFieldRow({
               setDraftName(field.name);
             }
           }}
-          className={cn(INPUT_CLASS, "flex-1")}
+          className="h-auto flex-1 border-transparent bg-transparent px-2 py-1 hover:border-border focus-visible:border-border"
         />
 
         <FieldTypeMenu
@@ -451,12 +445,17 @@ function OptionEditor({
   return (
     <div className="mt-1 ml-8 flex flex-col items-start gap-1.5 rounded-md bg-tree-group px-2 py-2">
       {options.map((option) => (
-        <div
+        <RemovableChip
           key={option.id}
-          style={swatchChipStyle(option.color)}
-          className={cn(
-            "group/option inline-flex min-h-7 max-w-full items-center gap-1 rounded-full px-1.5 py-0.5 text-xs font-medium",
-          )}
+          name={option.name}
+          color={option.color}
+          onRemove={() => {
+            removeOption(option.id);
+          }}
+          removeLabel={`Delete option ${option.name}`}
+          removeReveal="hover"
+          removeClassName="size-5 hover:bg-hover hover:opacity-100 hover:text-danger"
+          className="group/option min-h-7 max-w-full gap-1 px-1.5 py-0.5"
         >
           <DropdownMenu
             open={colorOptionId === option.id}
@@ -514,18 +513,7 @@ function OptionEditor({
               {option.name}
             </button>
           )}
-
-          <button
-            type="button"
-            aria-label={`Delete option ${option.name}`}
-            onClick={() => {
-              removeOption(option.id);
-            }}
-            className="flex size-5 shrink-0 items-center justify-center rounded-full opacity-0 outline-none transition-opacity hover:bg-hover hover:text-danger focus:opacity-100 focus-visible:ring-2 focus-visible:ring-ring group-hover/option:opacity-100 group-focus-within/option:opacity-100"
-          >
-            <X className="size-3.5" aria-hidden="true" />
-          </button>
-        </div>
+        </RemovableChip>
       ))}
       <button
         type="button"

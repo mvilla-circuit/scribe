@@ -68,4 +68,40 @@ describe("RemovableChip", () => {
 
     expect(onRemove).toHaveBeenCalledOnce();
   });
+
+  it("renders children instead of the plain name label", () => {
+    render(
+      <RemovableChip name="Fantasy" color="sky" onRemove={vi.fn()}>
+        <span data-testid="custom-body">custom</span>
+      </RemovableChip>,
+    );
+
+    expect(screen.getByTestId("custom-body")).toBeInTheDocument();
+    expect(screen.queryByText("Fantasy")).not.toBeInTheDocument();
+  });
+
+  it("keeps the remove control hidden until hover when removeReveal is hover", () => {
+    render(
+      <RemovableChip
+        name="Fantasy"
+        color="sky"
+        onRemove={vi.fn()}
+        removeReveal="hover"
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Remove Fantasy" })).toHaveClass(
+      "opacity-0",
+    );
+  });
+});
+
+describe("Chip washed toggle", () => {
+  it("skips the swatch wash when washed is false", () => {
+    render(<Chip name="Draft" color="sky" washed={false} />);
+
+    const chip = screen.getByRole("button", { name: "Draft" });
+    expect(chip).toHaveClass("bg-tree-group");
+    expect(chip).not.toHaveStyle({ color: "var(--swatch-sky)" });
+  });
 });

@@ -2,6 +2,7 @@ import { Check, Link2, Plus, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { normalizeRelationRefs } from "@/lib/datagrid-relation";
 import type { DatagridRelationRef } from "@/lib/datagrid-schema";
 import { cn } from "@/lib/utils";
@@ -105,14 +106,15 @@ export function RelationField({
         <DialogContent className="p-0">
           <DialogTitle className="sr-only">Add {fieldName}</DialogTitle>
           <div className="border-b border-border p-2.5">
-            <input
+            <Input
               autoFocus
+              type="search"
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
               }}
               placeholder="Search records…"
-              className="h-9 w-full rounded-md border border-border bg-bg px-3 text-sm text-text outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-9"
             />
           </div>
           <div className="max-h-[20rem] overflow-y-auto p-1.5">

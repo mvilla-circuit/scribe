@@ -1,6 +1,7 @@
 import { Maximize2, Plus } from "lucide-react";
 import { useRef, useState } from "react";
 
+import { Input } from "@/components/ui/input";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useDragResize } from "@/components/ui/use-drag-resize";
 import type { DatagridQueryRow } from "@/lib/datagrid-query";
@@ -247,7 +248,7 @@ export function DatagridTableView({
                     )}
                   >
                     <div className="flex items-center gap-1">
-                      <input
+                      <Input
                         key={row.title}
                         aria-label={`Title for ${row.title || "Untitled"}`}
                         defaultValue={row.title}
@@ -263,7 +264,7 @@ export function DatagridTableView({
                           if (e.key === "Enter") e.currentTarget.blur();
                         }}
                         placeholder="Untitled"
-                        className="min-w-0 flex-1 rounded bg-transparent px-1.5 py-1 font-medium text-text outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-ring"
+                        className="h-auto flex-1 rounded border-transparent bg-transparent px-1.5 py-1 font-medium"
                       />
                       <Tooltip content="Open">
                         <button

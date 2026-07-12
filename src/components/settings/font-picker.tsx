@@ -2,6 +2,7 @@ import * as RPopover from "@radix-ui/react-popover";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { Input } from "@/components/ui/input";
 import {
   type FontEntry,
   type FontRole,
@@ -125,14 +126,13 @@ export function FontPicker({
         className="scribe-pop z-50 flex max-h-[min(22rem,var(--radix-popover-content-available-height))] w-[var(--radix-popover-trigger-width)] min-w-[18rem] flex-col overflow-hidden rounded-lg border border-border bg-elevated text-text shadow-popover outline-none"
       >
         <div className="border-b border-border p-2">
-          <input
+          <Input
             autoFocus
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
             }}
             placeholder="Search fonts…"
-            className="h-8 w-full rounded-md border border-border bg-bg px-2.5 text-sm text-text outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-ring"
           />
         </div>
 
