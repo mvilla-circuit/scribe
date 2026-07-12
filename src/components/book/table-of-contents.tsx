@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 
+import { Button } from "@/components/ui/button";
 import { DocumentIcon } from "@/components/ui/document-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buildDocTree, flattenTocExpanded } from "@/data/doc-tree";
@@ -70,14 +71,10 @@ export function TableOfContents({
         <p className="mx-auto mt-1.5 max-w-sm text-sm leading-relaxed text-muted">
           Add your first page to begin shaping this book.
         </p>
-        <button
-          type="button"
-          onClick={onCreateFirst}
-          className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
-        >
+        <Button variant="primary" onClick={onCreateFirst} className="mt-4">
           <PlusIcon size={15} />
           Add your first page
-        </button>
+        </Button>
       </div>
     );
   }

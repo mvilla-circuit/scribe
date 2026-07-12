@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 
 function GoogleIcon() {
@@ -47,7 +48,7 @@ export function AuthScreen() {
 
   return (
     <main className="flex h-full items-center justify-center px-6">
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-8 shadow-sm">
+      <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-8 shadow-card">
         <div className="mb-8 text-center">
           <h1 className="font-serif text-3xl font-semibold italic tracking-tight text-text">
             Scribe
@@ -55,15 +56,15 @@ export function AuthScreen() {
           <p className="mt-2 text-sm text-muted">Sign in to start writing.</p>
         </div>
 
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           onClick={() => void handleSignIn()}
           disabled={busy}
-          className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-bg px-4 py-2.5 text-sm font-medium text-text transition hover:bg-hover disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full py-2.5"
         >
           <GoogleIcon />
           {busy ? "Opening browser…" : "Continue with Google"}
-        </button>
+        </Button>
 
         {error && (
           <p className="mt-4 text-center text-sm text-danger">{error}</p>

@@ -70,4 +70,21 @@ describe("TableOfContents", () => {
 
     expect(useUIStore.getState().activeDocId).toBe("ch1a");
   });
+
+  it("renders the create-first-page CTA as a button when empty", () => {
+    renderWithProviders(
+      <TableOfContents
+        documents={[]}
+        loading={false}
+        titleFont="var(--font-display)"
+        expandedIds={new Set()}
+        onToggle={vi.fn()}
+        onCreateFirst={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /add your first page/i }),
+    ).toBeInTheDocument();
+  });
 });
