@@ -123,8 +123,12 @@ test.describe("collections with seeded data", () => {
     ).toBeVisible();
 
     await authedPage.getByRole("button", { name: "List view" }).click();
+    // List rows use a left media cap (gallery cards do not).
     await expect(
-      authedPage.getByText("Book", { exact: true }).first(),
+      authedPage.getByTestId("list-row-media").first(),
+    ).toBeVisible();
+    await expect(
+      authedPage.getByRole("button", { name: "Alpha Book", exact: true }),
     ).toBeVisible();
   });
 
