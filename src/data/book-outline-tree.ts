@@ -2,6 +2,28 @@ import type { DocumentMeta } from "./documents";
 import { byPosition } from "./ordering";
 import type { WhiteboardMeta } from "./whiteboards";
 
+/**
+ * Documents and whiteboards that share fractional sibling ordering under
+ * `parentDocumentId`. Callers should pass book-scoped whiteboards when the
+ * global list may include other books.
+ */
+export function outlinePositionSiblings(
+  documents: DocumentMeta[],
+  whiteboards: Pick<WhiteboardMeta, "parent_document_id" | "position">[],
+  parentDocumentId: string | null,
+): { position: number }[] {
+  return [
+    ...documents.filter(
+      (document) =>
+        !document.is_title_page &&
+        document.parent_document_id === parentDocumentId,
+    ),
+    ...whiteboards.filter(
+      (whiteboard) => whiteboard.parent_document_id === parentDocumentId,
+    ),
+  ];
+}
+
 /** A document or leaf whiteboard rendered in a book's navigable outline. */
 export type BookOutlineNode =
   | {

@@ -111,7 +111,7 @@ export function descendantCount(documents: DocumentMeta[], id: string): number {
  */
 export function documentAncestors(
   documents: DocumentMeta[],
-  document: DocumentMeta,
+  document: Pick<DocumentMeta, "parent_document_id">,
 ): DocumentMeta[] {
   const byId = new Map(documents.map((d) => [d.id, d]));
   const chain: DocumentMeta[] = [];

@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 
-import { BookIcon } from "@/components/sidebar/icons";
+import { BookIcon, WhiteboardIcon } from "@/components/sidebar/icons";
 import {
   SIDEBAR_ICON_SIZE,
   SIDEBAR_ROW_GAP,
@@ -23,7 +23,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip } from "@/components/ui/tooltip";
-import { buildBookOutlineTree } from "@/data/book-outline-tree";
+import {
+  buildBookOutlineTree,
+  outlinePositionSiblings,
+} from "@/data/book-outline-tree";
 import type { Book } from "@/data/books";
 import { descendantCount } from "@/data/doc-tree";
 import {
@@ -50,7 +53,7 @@ import { copyPageLink } from "@/editor/copy-page-link";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
 
-import { PlusIcon } from "./icons";
+import { PageIcon, PlusIcon } from "./icons";
 import {
   type FlatBookOutlineNode,
   type FlatDocNode,
@@ -164,14 +167,9 @@ export function OutlinePanel({ book }: { book: Book }) {
         id,
         title: "Untitled",
         parent_document_id: parentId,
-        position: endPositionFor([
-          ...documents.filter(
-            (d) => !d.is_title_page && d.parent_document_id === parentId,
-          ),
-          ...whiteboards.filter(
-            (whiteboard) => whiteboard.parent_document_id === parentId,
-          ),
-        ]),
+        position: endPositionFor(
+          outlinePositionSiblings(documents, whiteboards, parentId),
+        ),
       });
       setActiveDoc(id);
       startRename(id);
@@ -192,16 +190,9 @@ export function OutlinePanel({ book }: { book: Book }) {
         id,
         book_id: book.id,
         parent_document_id: parentDocumentId,
-        position: endPositionFor([
-          ...documents.filter(
-            (document) =>
-              !document.is_title_page &&
-              document.parent_document_id === parentDocumentId,
-          ),
-          ...whiteboards.filter(
-            (whiteboard) => whiteboard.parent_document_id === parentDocumentId,
-          ),
-        ]),
+        position: endPositionFor(
+          outlinePositionSiblings(documents, whiteboards, parentDocumentId),
+        ),
       });
       navigateTo({ bookId: book.id, whiteboardId: id });
     },
@@ -239,21 +230,17 @@ export function OutlinePanel({ book }: { book: Book }) {
 
   const onDelete = useCallback(
     (node: FlatBookOutlineNode) => {
-      if (node.kind === "document") {
-        requestDelete({
-          id: node.id,
-          title: node.document.title || "Untitled",
-          descendants: descendantCount(documents, node.id),
-          kind: "document",
-        });
-      } else {
-        requestDelete({
-          id: node.id,
-          title: node.whiteboard.name || "Untitled",
-          descendants: 0,
-          kind: "whiteboard",
-        });
-      }
+      const title =
+        (node.kind === "document"
+          ? node.document.title
+          : node.whiteboard.name) || "Untitled";
+      requestDelete({
+        id: node.id,
+        title,
+        descendants:
+          node.kind === "document" ? descendantCount(documents, node.id) : 0,
+        kind: node.kind,
+      });
     },
     [requestDelete, documents],
   );
@@ -262,12 +249,23 @@ export function OutlinePanel({ book }: { book: Book }) {
     const target = panel.deleteTarget;
     if (!target) return;
     if (target.kind === "whiteboard") {
-      if (activeWhiteboardId === target.id) setActiveDoc(null);
+      if (activeWhiteboardId === target.id) {
+        navigateTo({ bookId: book.id });
+      }
       deleteWhiteboard.mutate({ id: target.id });
       return;
     }
     const subtree = collectDocumentSubtree(documents, target.id);
-    if (activeDocId && subtree.has(activeDocId)) setActiveDoc(null);
+    const activeWhiteboard = whiteboards.find(
+      (whiteboard) => whiteboard.id === activeWhiteboardId,
+    );
+    const clearsActiveView =
+      (activeDocId !== null && subtree.has(activeDocId)) ||
+      (activeWhiteboard?.parent_document_id != null &&
+        subtree.has(activeWhiteboard.parent_document_id));
+    if (clearsActiveView) {
+      navigateTo({ bookId: book.id });
+    }
     deleteDocument.mutate({ id: target.id });
   };
 
@@ -328,6 +326,7 @@ export function OutlinePanel({ book }: { book: Book }) {
                   handleCreate(null);
                 }}
               >
+                <PageIcon size={15} />
                 New page
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -335,6 +334,7 @@ export function OutlinePanel({ book }: { book: Book }) {
                   handleCreateWhiteboard();
                 }}
               >
+                <WhiteboardIcon size={15} />
                 New whiteboard
               </DropdownMenuItem>
             </DropdownMenuContent>

@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { SubtitleToggle } from "@/components/ui/subtitle-toggle";
 import { Tooltip } from "@/components/ui/tooltip";
+import { outlinePositionSiblings } from "@/data/book-outline-tree";
 import {
   type Book,
   bookShowSubtitle,
@@ -16,6 +17,7 @@ import { buildDocTree, expandableDocIds } from "@/data/doc-tree";
 import { type DocumentMeta, useCreateDocument } from "@/data/documents";
 import { endPositionFor } from "@/data/ordering";
 import { collectionAncestors } from "@/data/tree";
+import { useWhiteboards } from "@/data/whiteboards";
 import { useCascadedFonts } from "@/fonts/use-cascaded-fonts";
 import { useUIStore } from "@/store/ui";
 
@@ -39,6 +41,7 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
   const updateBook = useUpdateBook();
   const uploadCover = useUploadCover();
   const createDocument = useCreateDocument(book.id);
+  const whiteboardsQuery = useWhiteboards();
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
   const setActiveCollection = useUIStore((s) => s.setActiveCollection);
 
@@ -106,14 +109,16 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
 
   const createFirstPage = () => {
     const id = crypto.randomUUID();
-    const siblings = documents.filter(
-      (d) => !d.is_title_page && d.parent_document_id === null,
+    const bookWhiteboards = (whiteboardsQuery.data ?? []).filter(
+      (whiteboard) => whiteboard.book_id === book.id,
     );
     createDocument.mutate({
       id,
       title: "Untitled",
       parent_document_id: null,
-      position: endPositionFor(siblings),
+      position: endPositionFor(
+        outlinePositionSiblings(documents, bookWhiteboards, null),
+      ),
     });
     setActiveDoc(id);
   };

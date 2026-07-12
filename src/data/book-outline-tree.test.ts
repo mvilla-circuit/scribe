@@ -2,7 +2,44 @@ import { describe, expect, it } from "vitest";
 
 import { makeDocument, makeWhiteboard } from "@/test/fixtures";
 
-import { buildBookOutlineTree } from "./book-outline-tree";
+import {
+  buildBookOutlineTree,
+  outlinePositionSiblings,
+} from "./book-outline-tree";
+
+describe("outlinePositionSiblings", () => {
+  it("includes pages and whiteboards under the same parent", () => {
+    const siblings = outlinePositionSiblings(
+      [
+        makeDocument({ id: "title", is_title_page: true, position: 0 }),
+        makeDocument({ id: "root-page", position: 1024 }),
+        makeDocument({
+          id: "nested",
+          parent_document_id: "root-page",
+          position: 512,
+        }),
+      ],
+      [
+        makeWhiteboard({
+          id: "root-board",
+          collection_id: null,
+          book_id: "book-1",
+          position: 2048,
+        }),
+        makeWhiteboard({
+          id: "nested-board",
+          collection_id: null,
+          book_id: "book-1",
+          parent_document_id: "root-page",
+          position: 256,
+        }),
+      ],
+      null,
+    );
+
+    expect(siblings.map((sibling) => sibling.position)).toEqual([1024, 2048]);
+  });
+});
 
 describe("buildBookOutlineTree", () => {
   it("interleaves pages and book whiteboards by shared sibling position", () => {
