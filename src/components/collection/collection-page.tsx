@@ -453,7 +453,6 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
             className="text-4xl font-semibold leading-tight tracking-tight text-text"
             style={{ fontFamily: "var(--font-display)" }}
           />
-          <CollectionTagsSection collectionId={collection.id} />
           <EditableText
             value={collection.description ?? ""}
             ariaLabel="Collection description"
@@ -465,8 +464,9 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                 description: description || null,
               });
             }}
-            className="mt-3 text-base leading-relaxed text-muted"
+            className="mt-1.5 text-base leading-snug text-muted"
           />
+          <CollectionTagsSection collectionId={collection.id} />
         </Masthead>
 
         {isEmpty ? (

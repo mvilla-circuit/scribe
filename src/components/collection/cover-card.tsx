@@ -100,7 +100,7 @@ function CoverCardComponent({
               <TagChipsRow
                 tags={tags}
                 max={MAX_VISIBLE_TAGS}
-                className="mt-1"
+                className="mt-1.5"
                 data-testid="cover-card-tags"
               />
             )}

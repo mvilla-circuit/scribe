@@ -108,7 +108,7 @@ describe("CollectionPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the tag row between the title and description", () => {
+  it("renders the tag row below the description", () => {
     const client = seed();
     client.setQueryData(tagsKey, [{ id: "tag-1", name: "Epic", color: "sky" }]);
     client.setQueryData(taggablesKey("collection"), [
@@ -124,16 +124,9 @@ describe("CollectionPage", () => {
 
     expect(
       screen
-        .getByLabelText("Collection name")
+        .getByLabelText("Collection description")
         .compareDocumentPosition(screen.getByRole("button", { name: "Epic" })) &
         Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(
-      screen
-        .getByRole("button", { name: "Epic" })
-        .compareDocumentPosition(
-          screen.getByLabelText("Collection description"),
-        ) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
 
@@ -268,9 +261,18 @@ describe("CollectionPage", () => {
 
     await user.click(screen.getByRole("button", { name: "List view" }));
 
-    expect(screen.getByText("Collection")).toBeInTheDocument();
-    expect(screen.getByText("Book")).toBeInTheDocument();
-    expect(screen.getByText("Doc")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "First Light" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Opening scene" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Side Tales" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Collection")).not.toBeInTheDocument();
+    expect(screen.queryByText("Book")).not.toBeInTheDocument();
+    expect(screen.queryByText("Doc")).not.toBeInTheDocument();
     await waitFor(() => {
       expect(patchBody).toEqual({ view: { layout: "list" } });
     });
@@ -296,11 +298,11 @@ describe("CollectionPage", () => {
     await user.click(screen.getByRole("button", { name: "List view" }));
 
     const rows = screen.getAllByRole("button", {
-      name: /^(First LightBook|Opening sceneDoc|Side TalesCollection)$/,
+      name: /^(First Light|Opening scene|Side Tales)/,
     });
-    expect(rows[0]).toHaveAccessibleName("First LightBook");
-    expect(rows[1]).toHaveAccessibleName("Opening sceneDoc");
-    expect(rows[2]).toHaveAccessibleName("Side TalesCollection");
+    expect(rows[0]).toHaveAccessibleName("First Light");
+    expect(rows[1]).toHaveAccessibleName("Opening scene");
+    expect(rows[2]).toHaveAccessibleName("Side Tales");
   });
 
   it("orders sectioned grid cards alphabetically by default", () => {
