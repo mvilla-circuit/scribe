@@ -111,6 +111,38 @@ describe("whiteboards", () => {
     });
   });
 
+  it("creates a book whiteboard with optional document parent", async () => {
+    let inserted: Record<string, unknown> | undefined;
+    server.use(
+      http.post(WHITEBOARDS_URL, async ({ request }) => {
+        inserted = (await request.json()) as Record<string, unknown>;
+        return new HttpResponse(null, { status: 201 });
+      }),
+    );
+    const client = createTestQueryClient();
+    client.setQueryData(whiteboardsKey, []);
+    const { result } = renderHookWithQuery(() => useCreateWhiteboard(), {
+      client,
+    });
+
+    result.current.mutate({
+      id: "whiteboard-book-1",
+      book_id: "book-1",
+      parent_document_id: "doc-1",
+      position: 1024,
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(inserted).toMatchObject({
+      id: "whiteboard-book-1",
+      collection_id: null,
+      book_id: "book-1",
+      parent_document_id: "doc-1",
+    });
+  });
+
   it("useUpdateWhiteboardScene patches scene key only", async () => {
     let listRequests = 0;
     server.use(

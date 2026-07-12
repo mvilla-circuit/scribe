@@ -139,6 +139,7 @@ export function buildTree(
   }
   // Whiteboards nest under their collection only — never the root or a folder.
   for (const whiteboard of whiteboards) {
+    if (whiteboard.collection_id === null) continue;
     push(whiteboard.collection_id, {
       kind: "whiteboard",
       id: whiteboard.id,

@@ -2,7 +2,7 @@ import { waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
 
-import { makeDocument } from "@/test/fixtures";
+import { makeDocument, makeWhiteboard } from "@/test/fixtures";
 import { server } from "@/test/msw/server";
 import {
   createTestQueryClient,
@@ -28,7 +28,13 @@ import {
   useUpdateDocument,
   useUpdateDocumentContent,
 } from "./documents";
-import { documentContentKey, documentsKey, pageIndexKey } from "./query-keys";
+import {
+  documentContentKey,
+  documentsKey,
+  pageIndexKey,
+  whiteboardSceneKey,
+  whiteboardsKey,
+} from "./query-keys";
 
 // The data hooks read the session for the user id; stub auth so we don't pull
 // auth.tsx (and its Tauri plugin imports) into the test runtime.
@@ -335,6 +341,39 @@ describe("useDeleteDocument", () => {
         .getQueryData<{ id: string }[]>(documentsKey("book-1"))
         ?.map((d) => d.id),
     ).toEqual(["keep"]);
+  });
+
+  it("prunes whiteboards cascaded with the deleted document subtree", async () => {
+    server.use(
+      http.delete(DOCUMENTS_URL, () => new HttpResponse(null, { status: 204 })),
+    );
+    const client = createTestQueryClient();
+    client.setQueryData(documentsKey("book-1"), [
+      makeDocument({ id: "root" }),
+      makeDocument({ id: "child", parent_document_id: "root" }),
+    ]);
+    client.setQueryData(whiteboardsKey, [
+      makeWhiteboard({
+        id: "nested-board",
+        collection_id: null,
+        book_id: "book-1",
+        parent_document_id: "child",
+      }),
+    ]);
+    client.setQueryData(whiteboardSceneKey("nested-board"), { items: [] });
+    const { result } = renderHookWithQuery(() => useDeleteDocument("book-1"), {
+      client,
+    });
+
+    result.current.mutate({ id: "root" });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(client.getQueryData(whiteboardsKey)).toEqual([]);
+    expect(
+      client.getQueryData(whiteboardSceneKey("nested-board")),
+    ).toBeUndefined();
   });
 });
 

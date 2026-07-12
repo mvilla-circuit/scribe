@@ -11,6 +11,7 @@ import { coerceFontMap } from "./font-map";
 import { listHandlers, patchById, removeById } from "./optimistic-list";
 import { byPosition } from "./ordering";
 import { booksKey, pageIndexKey } from "./query-keys";
+import { pruneWhiteboardCache } from "./whiteboard-cache";
 
 /** A single book row from the `books` table. */
 export type Book = Tables<"books">;
@@ -226,5 +227,8 @@ export function useDeleteBook() {
       errorMessage: "Couldn't delete book",
       alsoInvalidate: [pageIndexKey],
     }),
+    onSuccess: (_data, input) => {
+      pruneWhiteboardCache(qc, (whiteboard) => whiteboard.book_id === input.id);
+    },
   });
 }

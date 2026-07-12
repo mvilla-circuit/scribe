@@ -18,6 +18,7 @@ import {
   NO_BOOK,
   pageIndexKey,
 } from "./query-keys";
+import { pruneWhiteboardCache } from "./whiteboard-cache";
 
 /** A single page row from the `documents` table, including its editor body. */
 export type Document = Tables<"documents">;
@@ -382,19 +383,36 @@ export function useMoveDocument(bookId: string) {
 export function useDeleteDocument(bookId: string) {
   const qc = useQueryClient();
   const key = documentsKey(bookId);
+  const handlers = documentHandlers<DeleteDocumentInput>(
+    qc,
+    key,
+    (prev, input) => removeBySet(prev, collectDocumentSubtree(prev, input.id)),
+    "Couldn't delete page",
+  );
   return useMutation({
     mutationFn: async (input: DeleteDocumentInput) => {
       await execWrite(supabase.from("documents").delete().eq("id", input.id));
     },
     // The page and its descendants cascade away in the DB; remove the same set
     // optimistically so the outline and TOC update instantly.
-    ...documentHandlers<DeleteDocumentInput>(
-      qc,
-      key,
-      (prev, input) =>
-        removeBySet(prev, collectDocumentSubtree(prev, input.id)),
-      "Couldn't delete page",
-    ),
+    ...handlers,
+    onMutate: async (input) => {
+      const documentIds = collectDocumentSubtree(
+        qc.getQueryData<DocumentMeta[]>(key) ?? [],
+        input.id,
+      );
+      const context = await handlers.onMutate(input);
+      return { ...context, documentIds };
+    },
+    onSuccess: (_data, _input, context) => {
+      if (!context) return;
+      pruneWhiteboardCache(
+        qc,
+        (whiteboard) =>
+          whiteboard.parent_document_id !== null &&
+          context.documentIds.has(whiteboard.parent_document_id),
+      );
+    },
   });
 }
 

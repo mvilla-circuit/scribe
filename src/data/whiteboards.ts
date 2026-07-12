@@ -19,14 +19,25 @@ export type WhiteboardMeta = Omit<Whiteboard, "scene">;
 
 /** Every whiteboard column except `scene`, for the structural list. */
 const WHITEBOARD_META_COLUMNS =
-  "id, user_id, collection_id, name, icon, cover_url, position, created_at, updated_at" as const;
+  "id, user_id, collection_id, book_id, parent_document_id, name, icon, cover_url, position, created_at, updated_at" as const;
 
-interface CreateWhiteboardInput {
-  id: string;
-  collection_id: string;
-  name?: string;
-  position: number;
-}
+type CreateWhiteboardInput =
+  | {
+      id: string;
+      collection_id: string;
+      book_id?: never;
+      parent_document_id?: never;
+      name?: string;
+      position: number;
+    }
+  | {
+      id: string;
+      book_id: string;
+      collection_id?: never;
+      parent_document_id?: string | null;
+      name?: string;
+      position: number;
+    };
 
 interface RenameWhiteboardInput {
   id: string;
@@ -37,11 +48,21 @@ type UpdateWhiteboardInput = { id: string } & Partial<
   Pick<Whiteboard, "name" | "icon" | "cover_url">
 >;
 
-interface MoveWhiteboardInput {
-  id: string;
-  collection_id: string;
-  position: number;
-}
+type MoveWhiteboardInput =
+  | {
+      id: string;
+      collection_id: string;
+      book_id?: never;
+      parent_document_id?: never;
+      position: number;
+    }
+  | {
+      id: string;
+      book_id: string;
+      collection_id?: never;
+      parent_document_id: string | null;
+      position: number;
+    };
 
 interface DeleteWhiteboardInput {
   id: string;
@@ -98,7 +119,11 @@ function newWhiteboardRow(
   return {
     id: input.id,
     user_id: userId,
-    collection_id: input.collection_id,
+    collection_id:
+      "collection_id" in input ? (input.collection_id ?? null) : null,
+    book_id: "book_id" in input ? (input.book_id ?? null) : null,
+    parent_document_id:
+      "parent_document_id" in input ? (input.parent_document_id ?? null) : null,
     name: input.name ?? "Untitled",
     icon: null,
     cover_url: null,
@@ -112,7 +137,7 @@ function emptySceneJson(): Json {
   return sceneToJson(emptyWhiteboardScene());
 }
 
-/** Mutation hook that creates a whiteboard in a collection. */
+/** Mutation hook that creates a whiteboard in a collection or book. */
 export function useCreateWhiteboard() {
   const qc = useQueryClient();
   const { session } = useAuth();
@@ -190,23 +215,39 @@ export function useUpdateWhiteboard() {
   });
 }
 
-/** Mutation hook that moves a whiteboard to a collection and position. */
+/** Mutation hook that repositions a whiteboard within its current owner. */
 export function useMoveWhiteboard() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: MoveWhiteboardInput) =>
-      updateWhiteboardRow(input.id, {
-        collection_id: input.collection_id,
+    mutationFn: (input: MoveWhiteboardInput) => {
+      if ("collection_id" in input) {
+        return updateWhiteboardRow(input.id, {
+          collection_id: input.collection_id,
+          position: input.position,
+        });
+      }
+      return updateWhiteboardRow(input.id, {
+        parent_document_id: input.parent_document_id,
         position: input.position,
-      }),
+      });
+    },
     ...listHandlers<WhiteboardMeta, MoveWhiteboardInput>({
       qc,
       key: whiteboardsKey,
       update: (prev, input) =>
-        patchById(prev, input.id, {
-          collection_id: input.collection_id,
-          position: input.position,
-        }),
+        patchById(
+          prev,
+          input.id,
+          "collection_id" in input
+            ? {
+                collection_id: input.collection_id,
+                position: input.position,
+              }
+            : {
+                parent_document_id: input.parent_document_id,
+                position: input.position,
+              },
+        ),
       errorMessage: "Couldn't move whiteboard",
     }),
   });

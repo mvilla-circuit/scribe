@@ -2,7 +2,7 @@ import { waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
 
-import { makeBook } from "@/test/fixtures";
+import { makeBook, makeWhiteboard } from "@/test/fixtures";
 import { server } from "@/test/msw/server";
 import {
   createTestQueryClient,
@@ -19,7 +19,7 @@ import {
   useMoveBook,
   useRenameBook,
 } from "./books";
-import { pageIndexKey } from "./query-keys";
+import { pageIndexKey, whiteboardSceneKey, whiteboardsKey } from "./query-keys";
 
 // Avoid pulling auth.tsx (and its Tauri plugin imports) into the test runtime;
 // the hooks under test don't depend on the session.
@@ -312,5 +312,30 @@ describe("useDeleteBook", () => {
     // The book's documents cascade-delete in the DB; the page index spans all
     // books, so it must be invalidated or link cards keep stale targets.
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: pageIndexKey });
+  });
+
+  it("prunes whiteboards cascaded with the deleted book", async () => {
+    server.use(
+      http.delete(BOOKS_URL, () => new HttpResponse(null, { status: 204 })),
+    );
+    const client = createTestQueryClient();
+    client.setQueryData(["books"], [makeBook({ id: "b1" })]);
+    client.setQueryData(whiteboardsKey, [
+      makeWhiteboard({
+        id: "board-1",
+        collection_id: null,
+        book_id: "b1",
+      }),
+    ]);
+    client.setQueryData(whiteboardSceneKey("board-1"), { items: [] });
+    const { result } = renderHookWithQuery(() => useDeleteBook(), { client });
+
+    result.current.mutate({ id: "b1" });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(client.getQueryData(whiteboardsKey)).toEqual([]);
+    expect(client.getQueryData(whiteboardSceneKey("board-1"))).toBeUndefined();
   });
 });
