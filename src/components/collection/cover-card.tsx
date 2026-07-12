@@ -57,11 +57,11 @@ function CoverCardComponent({
   const subtitleText = subtitle?.trim() || null;
   const mediaAspect = aspect === "album" ? "aspect-[4/3]" : "aspect-[3/4]";
   const card = (
-    <div className="group relative">
+    <div className="group relative h-full" data-testid="cover-card">
       <button
         type="button"
         onClick={onOpen}
-        className="flex w-full flex-col overflow-hidden rounded-lg border border-border bg-surface text-left outline-none transition-[border-color,box-shadow] duration-150 ease-out hover:border-text/20 hover:shadow-card focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+        className="flex h-full w-full flex-col overflow-hidden rounded-lg border border-border bg-surface text-left outline-none transition-[border-color,box-shadow] duration-150 ease-out hover:border-text/20 hover:shadow-card focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
       >
         {coverUrl ? (
           <img
@@ -81,7 +81,10 @@ function CoverCardComponent({
             {icon ? <DocumentIcon icon={icon} size={28} /> : fallback}
           </div>
         )}
-        <div className="flex items-start gap-1.5 px-3 py-2.5">
+        <div
+          data-testid="cover-card-footer"
+          className="flex flex-1 items-start gap-1.5 px-3 py-2.5"
+        >
           {coverUrl && icon && (
             <span className="mt-0.5 shrink-0">
               <DocumentIcon icon={icon} size={16} />
