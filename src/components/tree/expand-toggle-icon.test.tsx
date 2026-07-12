@@ -1,22 +1,45 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { type ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { ExpandToggleIcon } from "./expand-toggle-icon";
 
+function renderToggle({
+  expanded = false,
+  hasChildren = true,
+  expandLabel = "Expand",
+  collapseLabel = "Collapse",
+  onToggle = vi.fn(),
+  children = <span>icon</span>,
+}: {
+  expanded?: boolean;
+  hasChildren?: boolean;
+  expandLabel?: string;
+  collapseLabel?: string;
+  onToggle?: () => void;
+  children?: ReactNode;
+} = {}) {
+  const view = render(
+    <ExpandToggleIcon
+      expanded={expanded}
+      hasChildren={hasChildren}
+      expandLabel={expandLabel}
+      collapseLabel={collapseLabel}
+      onToggle={onToggle}
+    >
+      {children}
+    </ExpandToggleIcon>,
+  );
+  return { ...view, onToggle };
+}
+
 describe("ExpandToggleIcon", () => {
   it("renders children and no expand button when hasChildren is false", () => {
-    render(
-      <ExpandToggleIcon
-        expanded={false}
-        hasChildren={false}
-        expandLabel="Expand"
-        collapseLabel="Collapse"
-        onToggle={vi.fn()}
-      >
-        <span data-testid="resting-icon">icon</span>
-      </ExpandToggleIcon>,
-    );
+    renderToggle({
+      hasChildren: false,
+      children: <span data-testid="resting-icon">icon</span>,
+    });
 
     expect(screen.getByTestId("resting-icon")).toBeInTheDocument();
     expect(
@@ -28,17 +51,10 @@ describe("ExpandToggleIcon", () => {
   });
 
   it("renders an expand button with expandLabel when hasChildren and collapsed", () => {
-    render(
-      <ExpandToggleIcon
-        expanded={false}
-        hasChildren
-        expandLabel="Expand collection"
-        collapseLabel="Collapse collection"
-        onToggle={vi.fn()}
-      >
-        <span>icon</span>
-      </ExpandToggleIcon>,
-    );
+    renderToggle({
+      expandLabel: "Expand collection",
+      collapseLabel: "Collapse collection",
+    });
 
     expect(
       screen.getByRole("button", { name: "Expand collection" }),
@@ -46,17 +62,11 @@ describe("ExpandToggleIcon", () => {
   });
 
   it("uses collapseLabel when expanded", () => {
-    render(
-      <ExpandToggleIcon
-        expanded
-        hasChildren
-        expandLabel="Expand collection"
-        collapseLabel="Collapse collection"
-        onToggle={vi.fn()}
-      >
-        <span>icon</span>
-      </ExpandToggleIcon>,
-    );
+    renderToggle({
+      expanded: true,
+      expandLabel: "Expand collection",
+      collapseLabel: "Collapse collection",
+    });
 
     expect(
       screen.getByRole("button", { name: "Collapse collection" }),
@@ -64,35 +74,16 @@ describe("ExpandToggleIcon", () => {
   });
 
   it("rotates the chevron when expanded", () => {
-    const { container } = render(
-      <ExpandToggleIcon
-        expanded
-        hasChildren
-        expandLabel="Expand"
-        collapseLabel="Collapse"
-        onToggle={vi.fn()}
-      >
-        <span>icon</span>
-      </ExpandToggleIcon>,
-    );
+    const { container } = renderToggle({ expanded: true });
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- decorative chevron svg has no accessible role
-    const rotated = container.querySelector(".rotate-90");
-    expect(rotated).toBeInTheDocument();
+    expect(container.querySelector(".rotate-90")).toBeInTheDocument();
   });
 
   it("applies hover/focus opacity classes on icon and button when hasChildren", () => {
-    render(
-      <ExpandToggleIcon
-        expanded={false}
-        hasChildren
-        expandLabel="Expand"
-        collapseLabel="Collapse"
-        onToggle={vi.fn()}
-      >
-        <span data-testid="resting-icon">icon</span>
-      </ExpandToggleIcon>,
-    );
+    renderToggle({
+      children: <span data-testid="resting-icon">icon</span>,
+    });
 
     // eslint-disable-next-line testing-library/no-node-access -- assert fade classes on the resting-icon wrapper
     const iconWrapper = screen.getByTestId("resting-icon").parentElement;
@@ -106,17 +97,9 @@ describe("ExpandToggleIcon", () => {
   });
 
   it("gates opacity and transform transitions behind motion-reduce", () => {
-    const { container } = render(
-      <ExpandToggleIcon
-        expanded={false}
-        hasChildren
-        expandLabel="Expand"
-        collapseLabel="Collapse"
-        onToggle={vi.fn()}
-      >
-        <span data-testid="resting-icon">icon</span>
-      </ExpandToggleIcon>,
-    );
+    const { container } = renderToggle({
+      children: <span data-testid="resting-icon">icon</span>,
+    });
 
     // eslint-disable-next-line testing-library/no-node-access -- assert transition classes on the resting-icon wrapper
     const iconWrapper = screen.getByTestId("resting-icon").parentElement;
@@ -135,19 +118,7 @@ describe("ExpandToggleIcon", () => {
 
   it("calls onToggle when the expand button is clicked", async () => {
     const user = userEvent.setup();
-    const onToggle = vi.fn();
-
-    render(
-      <ExpandToggleIcon
-        expanded={false}
-        hasChildren
-        expandLabel="Expand"
-        collapseLabel="Collapse"
-        onToggle={onToggle}
-      >
-        <span>icon</span>
-      </ExpandToggleIcon>,
-    );
+    const { onToggle } = renderToggle();
 
     await user.click(screen.getByRole("button", { name: "Expand" }));
 

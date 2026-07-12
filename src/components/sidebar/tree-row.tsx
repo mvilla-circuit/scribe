@@ -360,9 +360,8 @@ export const TreeRow = memo(function TreeRow({
       }
       menuActions={menuActions}
       onActivate={() => {
-        if (isFolder) {
-          if (node.hasChildren) onToggleExpand(node.id);
-        } else if (isCollection) onSelectCollection(node.id);
+        if (isFolder && node.hasChildren) onToggleExpand(node.id);
+        else if (isCollection) onSelectCollection(node.id);
         else if (child.kind === "entry")
           onSelectEntry(node.id, child.entry.collection_id);
         else if (child.kind === "datagrid") onSelectDatagrid(node.id);

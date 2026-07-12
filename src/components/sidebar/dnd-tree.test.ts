@@ -76,14 +76,16 @@ describe("flattenTree", () => {
       ).map((n) => [n.id, n.hasChildren]),
     );
 
-    expect(byId["c-empty"]).toBe(false);
-    expect(byId["c-full"]).toBe(true);
-    expect(byId["f-full"]).toBe(true);
-    expect(byId["f-empty"]).toBe(false);
-    expect(byId["b-root"]).toBe(false);
-    expect(byId["b-in-folder"]).toBe(false);
-    expect(byId["b-in-coll"]).toBe(false);
-    expect(byId.e1).toBe(false);
+    expect(byId).toEqual({
+      "c-empty": false,
+      "c-full": true,
+      "f-full": true,
+      "f-empty": false,
+      "b-root": false,
+      "b-in-folder": false,
+      "b-in-coll": false,
+      e1: false,
+    });
   });
 });
 

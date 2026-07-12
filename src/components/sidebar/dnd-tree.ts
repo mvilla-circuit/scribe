@@ -32,13 +32,14 @@ export function flattenTree(
 ): FlatNode[] {
   const out: FlatNode[] = [];
   const walk = (
-    containerId: string,
+    children: TreeChild[],
     depth: number,
     parentId: string | null,
   ) => {
-    for (const child of childrenOf(model, containerId)) {
+    for (const child of children) {
       const isContainer =
         child.kind === "folder" || child.kind === "collection";
+      const nested = isContainer ? childrenOf(model, child.id) : null;
       out.push({
         id: child.id,
         kind: child.kind,
@@ -46,17 +47,15 @@ export function flattenTree(
         parentId,
         position: child.position,
         draggable: true,
-        hasChildren: isContainer
-          ? childrenOf(model, child.id).length > 0
-          : false,
+        hasChildren: nested !== null && nested.length > 0,
         child,
       });
-      if (isContainer && expanded.has(child.id)) {
-        walk(child.id, depth + 1, child.id);
+      if (nested && expanded.has(child.id)) {
+        walk(nested, depth + 1, child.id);
       }
     }
   };
-  walk(ROOT, 0, null);
+  walk(childrenOf(model, ROOT), 0, null);
   return out;
 }
 

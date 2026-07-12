@@ -339,17 +339,6 @@ describe("SidebarTree expand toggle", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("does not render expand control for empty collection", () => {
-    renderWithProviders(<SidebarTree />, { client: seedExpandToggle() });
-
-    const empty = screen.getByRole("treeitem", { name: /Empty Collection/ });
-    expect(
-      within(empty).queryByRole("button", {
-        name: /Expand collection|Collapse collection/,
-      }),
-    ).not.toBeInTheDocument();
-  });
-
   it("collection chevron toggles expandedFolderIds without selecting", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     renderWithProviders(<SidebarTree />, { client: seedExpandToggle() });

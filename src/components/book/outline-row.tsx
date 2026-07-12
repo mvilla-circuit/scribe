@@ -72,8 +72,6 @@ export const OutlineRow = memo(function OutlineRow({
 }: OutlineRowProps) {
   const label = node.document.title || "Untitled";
 
-  // Always show the page's icon; for rows with children, ExpandToggleIcon
-  // reveals the expand/collapse chevron over it on hover or focus.
   const icon = (
     <ExpandToggleIcon
       expanded={expanded}

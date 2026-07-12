@@ -17,8 +17,11 @@ interface ExpandToggleIconProps {
 }
 
 /**
- * Resting identity icon for a nestable sidebar tree row, with an on-demand
+ * Resting identity icon for a nestable tree row, with an on-demand
  * expand/collapse chevron revealed over it when the row has children.
+ *
+ * Hover/focus reveal uses Tailwind `group-*` variants, so the parent row
+ * must include the `group` class (as `SidebarRow` does).
  */
 export function ExpandToggleIcon({
   expanded,
