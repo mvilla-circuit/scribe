@@ -27,3 +27,34 @@ export function pruneWhiteboardCache(
   }
   return removedIds;
 }
+
+/**
+ * How many book whiteboards nest under any document in `documentIds` (used for
+ * cascade-delete confirm copy and optimistic prune predicates).
+ */
+export function countWhiteboardsUnderDocuments(
+  whiteboards: Pick<WhiteboardMeta, "parent_document_id">[],
+  documentIds: Set<string>,
+): number {
+  let total = 0;
+  for (const whiteboard of whiteboards) {
+    if (
+      whiteboard.parent_document_id !== null &&
+      documentIds.has(whiteboard.parent_document_id)
+    ) {
+      total += 1;
+    }
+  }
+  return total;
+}
+
+/** Whether a whiteboard is nested under any id in a document subtree. */
+export function whiteboardUnderDocuments(
+  whiteboard: Pick<WhiteboardMeta, "parent_document_id">,
+  documentIds: Set<string>,
+): boolean {
+  return (
+    whiteboard.parent_document_id !== null &&
+    documentIds.has(whiteboard.parent_document_id)
+  );
+}

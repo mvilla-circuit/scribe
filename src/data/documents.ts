@@ -17,8 +17,14 @@ import {
   documentsKey,
   NO_BOOK,
   pageIndexKey,
+  whiteboardSceneKey,
+  whiteboardsKey,
 } from "./query-keys";
-import { pruneWhiteboardCache } from "./whiteboard-cache";
+import {
+  pruneWhiteboardCache,
+  whiteboardUnderDocuments,
+} from "./whiteboard-cache";
+import type { WhiteboardMeta } from "./whiteboards";
 
 /** A single page row from the `documents` table, including its editor body. */
 export type Document = Tables<"documents">;
@@ -394,25 +400,47 @@ export function useDeleteDocument(bookId: string) {
       await execWrite(supabase.from("documents").delete().eq("id", input.id));
     },
     // The page and its descendants cascade away in the DB; remove the same set
-    // optimistically so the outline and TOC update instantly.
-    ...handlers,
+    // optimistically so the outline and TOC update instantly. Nested
+    // whiteboards are pruned in onMutate too so they don't briefly reappear as
+    // outline roots when their parent document disappears from the cache.
+    mutationKey: handlers.mutationKey,
     onMutate: async (input) => {
       const documentIds = collectDocumentSubtree(
         qc.getQueryData<DocumentMeta[]>(key) ?? [],
         input.id,
       );
+      const previousWhiteboards =
+        qc.getQueryData<WhiteboardMeta[]>(whiteboardsKey);
+      const previousScenes = new Map<string, Json | undefined>();
+      for (const whiteboard of previousWhiteboards ?? []) {
+        if (whiteboardUnderDocuments(whiteboard, documentIds)) {
+          previousScenes.set(
+            whiteboard.id,
+            qc.getQueryData(whiteboardSceneKey(whiteboard.id)),
+          );
+        }
+      }
       const context = await handlers.onMutate(input);
-      return { ...context, documentIds };
-    },
-    onSuccess: (_data, _input, context) => {
-      if (!context) return;
-      pruneWhiteboardCache(
-        qc,
-        (whiteboard) =>
-          whiteboard.parent_document_id !== null &&
-          context.documentIds.has(whiteboard.parent_document_id),
+      pruneWhiteboardCache(qc, (whiteboard) =>
+        whiteboardUnderDocuments(whiteboard, documentIds),
       );
+      return { ...context, documentIds, previousWhiteboards, previousScenes };
     },
+    onError: (error, input, context) => {
+      handlers.onError(error, input, context);
+      if (!context) return;
+      if (context.previousWhiteboards !== undefined) {
+        qc.setQueryData(whiteboardsKey, context.previousWhiteboards);
+      }
+      for (const [id, scene] of context.previousScenes) {
+        if (scene === undefined) {
+          qc.removeQueries({ queryKey: whiteboardSceneKey(id) });
+        } else {
+          qc.setQueryData(whiteboardSceneKey(id), scene);
+        }
+      }
+    },
+    onSettled: handlers.onSettled,
   });
 }
 

@@ -43,6 +43,10 @@ import {
 } from "@/data/documents";
 import { endPositionFor } from "@/data/ordering";
 import {
+  countWhiteboardsUnderDocuments,
+  whiteboardUnderDocuments,
+} from "@/data/whiteboard-cache";
+import {
   useCreateWhiteboard,
   useDeleteWhiteboard,
   useMoveWhiteboard,
@@ -54,6 +58,7 @@ import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
 
 import { PageIcon, PlusIcon } from "./icons";
+import { describeDelete } from "./outline-delete-copy";
 import {
   type FlatBookOutlineNode,
   type FlatDocNode,
@@ -66,6 +71,7 @@ interface DeleteTarget {
   id: string;
   title: string;
   descendants: number;
+  whiteboardDescendants: number;
   kind: "document" | "whiteboard";
 }
 
@@ -234,15 +240,29 @@ export function OutlinePanel({ book }: { book: Book }) {
         (node.kind === "document"
           ? node.document.title
           : node.whiteboard.name) || "Untitled";
+      if (node.kind === "whiteboard") {
+        requestDelete({
+          id: node.id,
+          title,
+          descendants: 0,
+          whiteboardDescendants: 0,
+          kind: "whiteboard",
+        });
+        return;
+      }
+      const subtree = collectDocumentSubtree(documents, node.id);
       requestDelete({
         id: node.id,
         title,
-        descendants:
-          node.kind === "document" ? descendantCount(documents, node.id) : 0,
-        kind: node.kind,
+        descendants: descendantCount(documents, node.id),
+        whiteboardDescendants: countWhiteboardsUnderDocuments(
+          whiteboards,
+          subtree,
+        ),
+        kind: "document",
       });
     },
-    [requestDelete, documents],
+    [requestDelete, documents, whiteboards],
   );
 
   const confirmDelete = () => {
@@ -261,8 +281,8 @@ export function OutlinePanel({ book }: { book: Book }) {
     );
     const clearsActiveView =
       (activeDocId !== null && subtree.has(activeDocId)) ||
-      (activeWhiteboard?.parent_document_id != null &&
-        subtree.has(activeWhiteboard.parent_document_id));
+      (activeWhiteboard != null &&
+        whiteboardUnderDocuments(activeWhiteboard, subtree));
     if (clearsActiveView) {
       navigateTo({ bookId: book.id });
     }
@@ -416,14 +436,4 @@ export function OutlinePanel({ book }: { book: Book }) {
       />
     </div>
   );
-}
-
-function describeDelete(target: DeleteTarget | null): string {
-  if (target?.kind === "whiteboard")
-    return "This permanently deletes the whiteboard.";
-  const descendants = target?.descendants ?? 0;
-  if (descendants === 0) return "This permanently deletes the page.";
-  return `This permanently deletes the page and its ${descendants} nested page${
-    descendants === 1 ? "" : "s"
-  }.`;
 }

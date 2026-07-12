@@ -344,8 +344,15 @@ describe("useDeleteDocument", () => {
   });
 
   it("prunes whiteboards cascaded with the deleted document subtree", async () => {
+    let releaseDelete!: () => void;
+    const deleteGate = new Promise<void>((resolve) => {
+      releaseDelete = resolve;
+    });
     server.use(
-      http.delete(DOCUMENTS_URL, () => new HttpResponse(null, { status: 204 })),
+      http.delete(DOCUMENTS_URL, async () => {
+        await deleteGate;
+        return new HttpResponse(null, { status: 204 });
+      }),
     );
     const client = createTestQueryClient();
     client.setQueryData(documentsKey("book-1"), [
@@ -367,13 +374,52 @@ describe("useDeleteDocument", () => {
 
     result.current.mutate({ id: "root" });
 
+    // Optimistic: boards leave the cache before the network settles so they
+    // cannot briefly reappear as outline roots without a parent.
+    await waitFor(() => {
+      expect(client.getQueryData(whiteboardsKey)).toEqual([]);
+    });
+    expect(
+      client.getQueryData(whiteboardSceneKey("nested-board")),
+    ).toBeUndefined();
+    expect(result.current.isSuccess).toBe(false);
+
+    releaseDelete();
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
     expect(client.getQueryData(whiteboardsKey)).toEqual([]);
-    expect(
-      client.getQueryData(whiteboardSceneKey("nested-board")),
-    ).toBeUndefined();
+  });
+
+  it("restores pruned whiteboards when document delete fails", async () => {
+    server.use(
+      http.delete(DOCUMENTS_URL, () =>
+        HttpResponse.json({ message: "boom" }, { status: 500 }),
+      ),
+    );
+    const client = createTestQueryClient();
+    const board = makeWhiteboard({
+      id: "nested-board",
+      collection_id: null,
+      book_id: "book-1",
+      parent_document_id: "root",
+    });
+    client.setQueryData(documentsKey("book-1"), [makeDocument({ id: "root" })]);
+    client.setQueryData(whiteboardsKey, [board]);
+    client.setQueryData(whiteboardSceneKey("nested-board"), { items: [] });
+    const { result } = renderHookWithQuery(() => useDeleteDocument("book-1"), {
+      client,
+    });
+
+    result.current.mutate({ id: "root" });
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+    expect(client.getQueryData(whiteboardsKey)).toEqual([board]);
+    expect(client.getQueryData(whiteboardSceneKey("nested-board"))).toEqual({
+      items: [],
+    });
   });
 });
 

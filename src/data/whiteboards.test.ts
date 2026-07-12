@@ -247,4 +247,44 @@ describe("whiteboards", () => {
       position: 2048,
     });
   });
+
+  it("useMoveWhiteboard reparents a book whiteboard under a document", async () => {
+    server.use(
+      http.patch(
+        WHITEBOARDS_URL,
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    );
+    const client = createTestQueryClient();
+    client.setQueryData(whiteboardsKey, [
+      makeWhiteboard({
+        id: "whiteboard-1",
+        collection_id: null,
+        book_id: "book-1",
+        parent_document_id: null,
+        position: 1024,
+      }),
+    ]);
+    const { result } = renderHookWithQuery(() => useMoveWhiteboard(), {
+      client,
+    });
+
+    result.current.mutate({
+      id: "whiteboard-1",
+      book_id: "book-1",
+      parent_document_id: "doc-1",
+      position: 2048,
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(
+      client.getQueryData<Whiteboard[]>(whiteboardsKey)?.[0],
+    ).toMatchObject({
+      book_id: "book-1",
+      parent_document_id: "doc-1",
+      position: 2048,
+    });
+  });
 });

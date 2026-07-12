@@ -63,6 +63,7 @@ describe("CollapsedOutlineRail", () => {
         collection_id: null,
         book_id: "b1",
         name: "Storyboard",
+        position: 1536,
       }),
     ]);
 
@@ -75,6 +76,11 @@ describe("CollapsedOutlineRail", () => {
     expect(screen.getByRole("button", { name: "Genesis" })).not.toHaveAttribute(
       "aria-current",
     );
+    const labels = screen
+      .getAllByRole("button")
+      .map((b) => b.getAttribute("aria-label"));
+    // Mixed position order: Chapter 1 (1024), Storyboard (1536), Chapter 2 (2048).
+    expect(labels).toEqual(["Genesis", "Chapter 1", "Storyboard", "Chapter 2"]);
   });
 
   it("renders the pinned Title Page first, then only top-level pages", () => {
@@ -115,6 +121,33 @@ describe("CollapsedOutlineRail", () => {
         "rail-indicator",
       ),
     ).not.toBeInTheDocument();
+  });
+
+  it("treats nested whiteboards as children for the rail indicator", async () => {
+    const client = seedDocs();
+    client.setQueryData(whiteboardsKey, [
+      makeWhiteboard({
+        id: "w-nested",
+        collection_id: null,
+        book_id: "b1",
+        parent_document_id: "d2",
+        name: "Map",
+      }),
+    ]);
+
+    renderWithProviders(<CollapsedOutlineRail book={BOOK} />, { client });
+
+    expect(
+      within(screen.getByRole("button", { name: "Chapter 2" })).getByTestId(
+        "rail-indicator",
+      ),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Chapter 2" }));
+
+    expect(useUIStore.getState().activeDocId).toBe("d2");
+    expect(useUIStore.getState().sidebarCollapsed).toBe(false);
+    expect(useUIStore.getState().expandedDocIds).toContain("d2");
   });
 
   it("navigates to a childless page without expanding the sidebar", async () => {
