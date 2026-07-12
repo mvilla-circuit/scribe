@@ -7,6 +7,7 @@ import type { GalleryChild } from "./collection-gallery";
 import {
   filterGalleryChildren,
   galleryChildMeta,
+  galleryCoverAspect,
   sortGalleryChildren,
 } from "./collection-gallery";
 
@@ -82,6 +83,14 @@ describe("galleryChildMeta", () => {
   it("returns null subtitle when none is set", () => {
     expect(galleryChildMeta(bookChild() as GalleryChild).subtitle).toBeNull();
     expect(galleryChildMeta(entryChild() as GalleryChild).subtitle).toBeNull();
+  });
+});
+
+describe("galleryCoverAspect", () => {
+  it("uses book covers for books and docs, album covers otherwise", () => {
+    expect(galleryCoverAspect(bookChild() as GalleryChild)).toBe("book");
+    expect(galleryCoverAspect(entryChild() as GalleryChild)).toBe("book");
+    expect(galleryCoverAspect(collectionChild() as GalleryChild)).toBe("album");
   });
 });
 

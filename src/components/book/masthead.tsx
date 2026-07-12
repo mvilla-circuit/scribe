@@ -3,7 +3,6 @@ import { type ReactNode } from "react";
 import { DocumentIcon } from "@/components/ui/document-icon";
 import { IconPicker } from "@/components/ui/icon-picker";
 import { Tooltip } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
 
 interface MastheadProps {
   /** The current icon id, or null when none is set. */
@@ -24,13 +23,13 @@ interface MastheadProps {
 // The shared title masthead for the book cover and document pages: an icon plus
 // the title block, composed so the two read as one header.
 //
-// On wide viewports the icon "hangs" in the left margin (an absolute
-// `right-full` offset), so the title sits flush with the body below it — no
-// divider needed to reconcile their left edges. On narrower viewports there's no
-// room in the margin, so the icon drops onto its own row directly above the
-// title (the classic stacked layout). The empty "Add icon" affordance always
-// stays stacked, since a wide pill doesn't belong in the margin. Optional
-// `actions` (Add cover, …) stay in the stacked row next to Add icon.
+// On wide viewports the set icon "hangs" in the left margin of the title block
+// (an absolute `right-full` offset), so it stays vertically aligned with the
+// title even when affordance actions (Add cover, …) sit above. On narrower
+// viewports there's no room in the margin, so the icon drops onto its own row
+// directly above the title (the classic stacked layout). The empty "Add icon"
+// affordance always stays stacked with any actions, since a wide pill doesn't
+// belong in the margin.
 export function Masthead({
   icon,
   onSelectIcon,
@@ -39,32 +38,42 @@ export function Masthead({
   actions,
   children,
 }: MastheadProps) {
-  // Keep mb-2 for the stacked (non-xl) icon row; only clear it at xl when the
-  // icon hangs in the margin and there are no in-flow actions (no phantom gap).
+  const showActionsRow = !icon || Boolean(actions);
+
   return (
     <header className="group/masthead relative">
-      <div
-        data-testid="masthead-actions-row"
-        className={cn(
-          "mb-2 flex items-center gap-1",
-          icon && !actions && "xl:mb-0",
-        )}
-      >
+      {showActionsRow && (
         <div
-          className={cn(
-            icon && "xl:absolute xl:right-full xl:top-0 xl:mr-3 xl:mb-0",
-          )}
+          data-testid="masthead-actions-row"
+          className="mb-2 flex items-center gap-1"
         >
-          <MastheadIconControl
-            icon={icon}
-            onSelect={onSelectIcon}
-            onRemove={onRemoveIcon}
-            changeLabel={changeIconLabel}
-          />
+          {!icon && (
+            <MastheadIconControl
+              icon={icon}
+              onSelect={onSelectIcon}
+              onRemove={onRemoveIcon}
+              changeLabel={changeIconLabel}
+            />
+          )}
+          {actions}
         </div>
-        {actions}
+      )}
+      <div data-testid="masthead-title" className="relative">
+        {icon && (
+          <div
+            data-testid="masthead-icon"
+            className="mb-2 xl:absolute xl:right-full xl:top-0 xl:mb-0 xl:mr-3"
+          >
+            <MastheadIconControl
+              icon={icon}
+              onSelect={onSelectIcon}
+              onRemove={onRemoveIcon}
+              changeLabel={changeIconLabel}
+            />
+          </div>
+        )}
+        {children}
       </div>
-      {children}
     </header>
   );
 }
