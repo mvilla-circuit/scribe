@@ -421,6 +421,39 @@ describe("useDeleteDocument", () => {
       items: [],
     });
   });
+
+  it("cancels whiteboard queries before prune and invalidates them on settle", async () => {
+    server.use(
+      http.delete(DOCUMENTS_URL, () => new HttpResponse(null, { status: 204 })),
+    );
+    const client = createTestQueryClient();
+    const cancelSpy = vi.spyOn(client, "cancelQueries");
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+    client.setQueryData(documentsKey("book-1"), [makeDocument({ id: "root" })]);
+    client.setQueryData(whiteboardsKey, [
+      makeWhiteboard({
+        id: "nested-board",
+        collection_id: null,
+        book_id: "book-1",
+        parent_document_id: "root",
+      }),
+    ]);
+    client.setQueryData(whiteboardSceneKey("nested-board"), { items: [] });
+    const { result } = renderHookWithQuery(() => useDeleteDocument("book-1"), {
+      client,
+    });
+
+    result.current.mutate({ id: "root" });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(cancelSpy).toHaveBeenCalledWith({ queryKey: whiteboardsKey });
+    expect(cancelSpy).toHaveBeenCalledWith({
+      queryKey: whiteboardSceneKey("nested-board"),
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: whiteboardsKey });
+  });
 });
 
 describe("useMoveDocument", () => {

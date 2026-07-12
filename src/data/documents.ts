@@ -409,16 +409,22 @@ export function useDeleteDocument(bookId: string) {
         qc.getQueryData<DocumentMeta[]>(key) ?? [],
         input.id,
       );
+      await qc.cancelQueries({ queryKey: whiteboardsKey });
       const previousWhiteboards =
         qc.getQueryData<WhiteboardMeta[]>(whiteboardsKey);
+      const deletedIds = (previousWhiteboards ?? [])
+        .filter((whiteboard) =>
+          whiteboardUnderDocuments(whiteboard, documentIds),
+        )
+        .map((whiteboard) => whiteboard.id);
+      await Promise.all(
+        deletedIds.map((id) =>
+          qc.cancelQueries({ queryKey: whiteboardSceneKey(id) }),
+        ),
+      );
       const previousScenes = new Map<string, Json | undefined>();
-      for (const whiteboard of previousWhiteboards ?? []) {
-        if (whiteboardUnderDocuments(whiteboard, documentIds)) {
-          previousScenes.set(
-            whiteboard.id,
-            qc.getQueryData(whiteboardSceneKey(whiteboard.id)),
-          );
-        }
+      for (const id of deletedIds) {
+        previousScenes.set(id, qc.getQueryData(whiteboardSceneKey(id)));
       }
       const context = await handlers.onMutate(input);
       pruneWhiteboardCache(qc, (whiteboard) =>
@@ -440,7 +446,10 @@ export function useDeleteDocument(bookId: string) {
         }
       }
     },
-    onSettled: handlers.onSettled,
+    onSettled: (data, error, variables) => {
+      handlers.onSettled?.(data, error, variables);
+      void qc.invalidateQueries({ queryKey: whiteboardsKey });
+    },
   });
 }
 

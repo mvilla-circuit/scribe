@@ -315,10 +315,19 @@ describe("useDeleteBook", () => {
   });
 
   it("prunes whiteboards cascaded with the deleted book", async () => {
+    let releaseDelete!: () => void;
+    const deleteGate = new Promise<void>((resolve) => {
+      releaseDelete = resolve;
+    });
     server.use(
-      http.delete(BOOKS_URL, () => new HttpResponse(null, { status: 204 })),
+      http.delete(BOOKS_URL, async () => {
+        await deleteGate;
+        return new HttpResponse(null, { status: 204 });
+      }),
     );
     const client = createTestQueryClient();
+    const cancelSpy = vi.spyOn(client, "cancelQueries");
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
     client.setQueryData(["books"], [makeBook({ id: "b1" })]);
     client.setQueryData(whiteboardsKey, [
       makeWhiteboard({
@@ -333,9 +342,48 @@ describe("useDeleteBook", () => {
     result.current.mutate({ id: "b1" });
 
     await waitFor(() => {
+      expect(client.getQueryData(whiteboardsKey)).toEqual([]);
+    });
+    expect(client.getQueryData(whiteboardSceneKey("board-1"))).toBeUndefined();
+    expect(cancelSpy).toHaveBeenCalledWith({ queryKey: whiteboardsKey });
+    expect(cancelSpy).toHaveBeenCalledWith({
+      queryKey: whiteboardSceneKey("board-1"),
+    });
+    expect(result.current.isSuccess).toBe(false);
+
+    releaseDelete();
+    await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: whiteboardsKey });
     expect(client.getQueryData(whiteboardsKey)).toEqual([]);
-    expect(client.getQueryData(whiteboardSceneKey("board-1"))).toBeUndefined();
+  });
+
+  it("restores pruned whiteboards when book delete fails", async () => {
+    server.use(
+      http.delete(BOOKS_URL, () =>
+        HttpResponse.json({ message: "boom" }, { status: 500 }),
+      ),
+    );
+    const client = createTestQueryClient();
+    const board = makeWhiteboard({
+      id: "board-1",
+      collection_id: null,
+      book_id: "b1",
+    });
+    client.setQueryData(["books"], [makeBook({ id: "b1" })]);
+    client.setQueryData(whiteboardsKey, [board]);
+    client.setQueryData(whiteboardSceneKey("board-1"), { items: [] });
+    const { result } = renderHookWithQuery(() => useDeleteBook(), { client });
+
+    result.current.mutate({ id: "b1" });
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+    expect(client.getQueryData(whiteboardsKey)).toEqual([board]);
+    expect(client.getQueryData(whiteboardSceneKey("board-1"))).toEqual({
+      items: [],
+    });
   });
 });
