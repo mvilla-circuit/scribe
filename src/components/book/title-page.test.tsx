@@ -83,7 +83,7 @@ vi.mock("@/fonts/use-cascaded-fonts", () => ({
   }),
 }));
 
-vi.mock("./masthead", () => ({
+vi.mock("@/components/ui/masthead", () => ({
   Masthead: ({
     children,
     actions,

@@ -1,6 +1,11 @@
 import { useRef, useState } from "react";
 
 import { LinkIcon } from "@/components/sidebar/icons";
+import {
+  EditableText,
+  type EditableTextHandle,
+} from "@/components/ui/editable-text";
+import { Masthead } from "@/components/ui/masthead";
 import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { SkeletonText } from "@/components/ui/skeleton";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -29,9 +34,7 @@ import { formatDateTime, formatRelativeTime } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
 
 import { DocumentBreadcrumb } from "./document-breadcrumb";
-import { EditableText, type EditableTextHandle } from "./editable-text";
 import { EditorBridgeHost } from "./editor-bridge-host";
-import { Masthead } from "./masthead";
 import { NavHistoryControls } from "./nav-history-controls";
 import { PageBanner } from "./page-banner";
 import { PageOutline } from "./page-outline";

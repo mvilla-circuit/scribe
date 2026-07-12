@@ -8,8 +8,8 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { EditableText } from "@/components/book/editable-text";
 import { NavHistoryControls } from "@/components/book/nav-history-controls";
+import { EditableText } from "@/components/ui/editable-text";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
   useRenameWhiteboard,

@@ -1,12 +1,12 @@
 import { useRef, useState } from "react";
 
+import { EditorBridgeHost } from "@/components/book/editor-bridge-host";
+import { NavHistoryControls } from "@/components/book/nav-history-controls";
 import {
   EditableText,
   type EditableTextHandle,
-} from "@/components/book/editable-text";
-import { EditorBridgeHost } from "@/components/book/editor-bridge-host";
-import { Masthead } from "@/components/book/masthead";
-import { NavHistoryControls } from "@/components/book/nav-history-controls";
+} from "@/components/ui/editable-text";
+import { Masthead } from "@/components/ui/masthead";
 import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { SkeletonText } from "@/components/ui/skeleton";
 import { useCollections } from "@/data/collections";

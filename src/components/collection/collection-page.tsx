@@ -1,8 +1,6 @@
 import { useId, useMemo, useState } from "react";
 
-import { EditableText } from "@/components/book/editable-text";
 import { PageIcon } from "@/components/book/icons";
-import { Masthead } from "@/components/book/masthead";
 import { NavHistoryControls } from "@/components/book/nav-history-controls";
 import {
   leafDeleteDescription,
@@ -27,6 +25,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EditableText } from "@/components/ui/editable-text";
+import { Masthead } from "@/components/ui/masthead";
 import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { type RowAction } from "@/components/ui/row-action-menu";
 import { useBooks, useCreateBook, useMoveBook } from "@/data/books";

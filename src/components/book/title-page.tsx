@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 
+import { EditableText } from "@/components/ui/editable-text";
+import { Masthead } from "@/components/ui/masthead";
 import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { SubtitleToggle } from "@/components/ui/subtitle-toggle";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -21,10 +23,8 @@ import { useWhiteboards } from "@/data/whiteboards";
 import { useCascadedFonts } from "@/fonts/use-cascaded-fonts";
 import { useUIStore } from "@/store/ui";
 
-import { EditableText } from "./editable-text";
 import { FontControl } from "./font-control";
 import { ChevronsDownUpIcon, ChevronsUpDownIcon } from "./icons";
-import { Masthead } from "./masthead";
 import { NavHistoryControls } from "./nav-history-controls";
 import { TableOfContents } from "./table-of-contents";
 

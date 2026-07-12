@@ -97,7 +97,7 @@ vi.mock("@/components/book/editor-bridge-host", () => ({
   EditorBridgeHost: ({ children }: { children: ReactNode }) => children,
 }));
 
-vi.mock("@/components/book/masthead", () => ({
+vi.mock("@/components/ui/masthead", () => ({
   Masthead: ({
     children,
     actions,

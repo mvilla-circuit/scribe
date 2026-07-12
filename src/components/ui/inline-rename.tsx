@@ -10,9 +10,18 @@ interface InlineRenameProps {
   className?: string;
 }
 
-// Inline editable field used for create/rename. Autofocuses and selects all on
-// mount, commits the trimmed value on Enter or blur, and cancels on Escape.
-// An empty commit falls back to cancelling so we never persist a blank name.
+/**
+ * Inline editable field used for create/rename. Autofocuses and selects all
+ * on mount, commits the trimmed value on Enter or blur, and cancels on
+ * Escape. An empty commit falls back to cancelling so we never persist a
+ * blank name.
+ *
+ * Compare to {@link EditableText}: `EditableText` is an always-on, auto-grow
+ * textarea used as the display text itself for titles/subtitles — it has no
+ * mount lifecycle, and blur simply commits (or reverts on an empty value)
+ * rather than cancelling. `InlineRename` is a one-shot field swapped in for a
+ * single tree-row rename and torn down on commit/cancel.
+ */
 export function InlineRename({
   initialValue,
   onCommit,

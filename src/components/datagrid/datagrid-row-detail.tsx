@@ -1,8 +1,8 @@
 import { X } from "lucide-react";
 import { type ReactNode, useState } from "react";
 
-import { EditableText } from "@/components/book/editable-text";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { EditableText } from "@/components/ui/editable-text";
 import { useDragResize } from "@/components/ui/use-drag-resize";
 import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";

@@ -1,12 +1,12 @@
 import { Plus, Upload } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 
-import { EditableText } from "@/components/book/editable-text";
 import { FontControl } from "@/components/book/font-control";
-import { Masthead } from "@/components/book/masthead";
 import { NavHistoryControls } from "@/components/book/nav-history-controls";
 import { DatagridIcon } from "@/components/sidebar/icons";
 import { Button } from "@/components/ui/button";
+import { EditableText } from "@/components/ui/editable-text";
+import { Masthead } from "@/components/ui/masthead";
 import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { SubtitleToggle } from "@/components/ui/subtitle-toggle";
 import { useCollections } from "@/data/collections";
