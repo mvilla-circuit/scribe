@@ -1,0 +1,5 @@
+# Best-effort: after `npm install` has created `.husky/_`, later checkouts in
+# an existing worktree can recover a missing `.env.local`. Fresh
+# `git worktree add` does not run this (no `.husky/_` yet) — use
+# `./scripts/git-worktree-add.sh` instead. Failures must not block checkout.
+./scripts/sync-worktree-env.sh || true
