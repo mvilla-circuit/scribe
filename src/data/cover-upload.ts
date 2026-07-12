@@ -31,14 +31,19 @@ export const COVER_IMAGE_ACCEPT = Object.keys(COVER_UPLOAD_TYPES).join(",");
 const COVERS_PUBLIC_MARKER = "/object/public/covers/";
 
 /**
- * Resolves a cover file's MIME type and extension from `File.type`, falling
- * back to the filename extension when the browser leaves the type blank.
+ * Resolves a cover file's MIME type and extension from `File.type`. When the
+ * browser leaves the type blank (or reports `application/octet-stream`), falls
+ * back to the filename extension. A present but non-allowlisted MIME is never
+ * overridden by the name — that would let a spoofed extension bypass the check.
  */
 export function resolveCoverUploadType(
   file: File,
 ): { mime: string; ext: string } | null {
   const extFromMime = COVER_UPLOAD_TYPES[file.type];
   if (extFromMime) return { mime: file.type, ext: extFromMime };
+
+  const typeMissing = !file.type || file.type === "application/octet-stream";
+  if (!typeMissing) return null;
 
   const extKey = /\.([a-z0-9]+)$/i.exec(file.name)?.[1]?.toLowerCase();
   if (!extKey) return null;

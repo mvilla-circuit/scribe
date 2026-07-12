@@ -80,8 +80,23 @@ describe("resolveCoverUploadType", () => {
     });
   });
 
+  it("falls back to the filename extension for application/octet-stream", () => {
+    const file = new File(["cover"], "cover.webp", {
+      type: "application/octet-stream",
+    });
+    expect(resolveCoverUploadType(file)).toEqual({
+      mime: "image/webp",
+      ext: "webp",
+    });
+  });
+
   it("returns null for unsupported types", () => {
     const file = new File(["cover"], "cover.svg", { type: "image/svg+xml" });
+    expect(resolveCoverUploadType(file)).toBeNull();
+  });
+
+  it("does not trust the filename when MIME is present but not allowlisted", () => {
+    const file = new File(["cover"], "cover.png", { type: "image/svg+xml" });
     expect(resolveCoverUploadType(file)).toBeNull();
   });
 });
@@ -113,6 +128,18 @@ describe("useUploadCover", () => {
     expect(result.current.error).toEqual(
       new Error("Image must be under 10 MB"),
     );
+  });
+
+  it("rejects an empty image file", async () => {
+    const { result } = renderHookWithQuery(() => useUploadCover());
+    const file = new File([], "cover.png", { type: "image/png" });
+
+    result.current.mutate(file);
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+    expect(result.current.error).toEqual(new Error("Image file is empty"));
   });
 
   it("uploads a supported cover and returns its public URL", async () => {
@@ -167,9 +194,18 @@ describe("useUploadCover", () => {
 
   it("uploads an AVIF cover with a blank MIME type from the filename", async () => {
     let uploadUrl = "";
+    let uploadedBlobType: string | null = null;
     server.use(
-      http.post(`${COVERS_URL}/:userId/:filename`, ({ request }) => {
+      http.post(`${COVERS_URL}/:userId/:filename`, async ({ request }) => {
         uploadUrl = request.url;
+        const form = await request.formData();
+        for (const value of form.values()) {
+          // Supabase appends the body as a File/Blob under an empty field name.
+          if (typeof value !== "string") {
+            uploadedBlobType = value.type;
+            break;
+          }
+        }
         return HttpResponse.json({ Key: "user-1/cover.avif" });
       }),
     );
@@ -185,5 +221,6 @@ describe("useUploadCover", () => {
     expect(uploadUrl).toMatch(
       /^http:\/\/supabase\.test\/storage\/v1\/object\/covers\/user-1\/[0-9a-f-]+\.avif$/,
     );
+    expect(uploadedBlobType).toBe("image/avif");
   });
 });
