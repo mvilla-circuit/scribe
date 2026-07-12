@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from "react";
+import { Fragment, useId, useMemo, useState } from "react";
 
 import { PageIcon } from "@/components/book/icons";
 import { NavHistoryControls } from "@/components/book/nav-history-controls";
@@ -18,6 +18,11 @@ import {
   TrashIcon,
   WhiteboardIcon,
 } from "@/components/sidebar/icons";
+import {
+  Breadcrumb,
+  BreadcrumbLink,
+  BreadcrumbSep,
+} from "@/components/ui/breadcrumb";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CoverCard } from "@/components/ui/cover-card";
 import {
@@ -432,28 +437,23 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
       >
         <NavHistoryControls />
         {ancestors.length > 0 && (
-          <div
-            aria-label="Breadcrumb"
-            className="flex min-w-0 flex-1 items-center gap-1 text-sm text-muted"
-          >
+          <Breadcrumb label="Breadcrumb" className="flex-1">
             {ancestors.map((parent) => (
-              <span key={parent.id} className="flex min-w-0 items-center gap-1">
-                <button
-                  type="button"
+              <Fragment key={parent.id}>
+                <BreadcrumbLink
                   onClick={() => {
                     setActiveCollection(parent.id);
                   }}
-                  className="min-w-0 shrink truncate rounded-sm px-1 outline-none hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {parent.name || "Untitled"}
-                </button>
-                <span className="shrink-0 select-none text-muted/50">/</span>
-              </span>
+                </BreadcrumbLink>
+                <BreadcrumbSep />
+              </Fragment>
             ))}
             <span className="min-w-0 shrink truncate px-1 text-text">
               {collection.name || "Untitled"}
             </span>
-          </div>
+          </Breadcrumb>
         )}
         <span className="ml-auto flex shrink-0 items-center justify-end">
           <CollectionCreateSplitButton

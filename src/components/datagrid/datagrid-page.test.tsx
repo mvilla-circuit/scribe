@@ -134,6 +134,15 @@ describe("DatagridPage", () => {
     expect(useUIStore.getState().activeDatagridRowId).toBe("r1");
   });
 
+  it("navigates to the collection via the breadcrumb", () => {
+    const client = seed({ rows: [] });
+    renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
+
+    fireEvent.click(screen.getByRole("button", { name: "Docs" }));
+
+    expect(useUIStore.getState().activeCollectionId).toBe("col-1");
+  });
+
   it("deletes a non-last view and selects another", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const client = seed({ rows: [] });

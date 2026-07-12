@@ -2,6 +2,7 @@ import { fireEvent, screen } from "@testing-library/react";
 import { forwardRef, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useUIStore } from "@/store/ui";
 import { renderWithProviders } from "@/test/render-with-query";
 
 import { EntryView } from "./entry-view";
@@ -149,6 +150,15 @@ describe("EntryView", () => {
     expect(
       screen.queryByRole("button", { name: "Research" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("navigates to the collection via the breadcrumb", () => {
+    renderWithProviders(<EntryView collectionId="c1" entryId="e1" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Research" }));
+
+    expect(useUIStore.getState().activeCollectionId).toBe("c1");
+    expect(useUIStore.getState().activeEntryId).toBeNull();
   });
 
   it("shows the entry cover when one is set", () => {

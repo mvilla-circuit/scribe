@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 
 import { EditorBridgeHost } from "@/components/book/editor-bridge-host";
 import { NavHistoryControls } from "@/components/book/nav-history-controls";
+import { Breadcrumb, BreadcrumbLink } from "@/components/ui/breadcrumb";
 import {
   EditableText,
   type EditableTextHandle,
@@ -191,13 +192,11 @@ function EntryBar({
     >
       <NavHistoryControls />
       {collectionName !== undefined && (
-        <button
-          type="button"
-          onClick={onOpenCollection}
-          className="min-w-0 truncate rounded-sm px-1 outline-none hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {collectionName || "Untitled"}
-        </button>
+        <Breadcrumb>
+          <BreadcrumbLink onClick={onOpenCollection}>
+            {collectionName || "Untitled"}
+          </BreadcrumbLink>
+        </Breadcrumb>
       )}
       <span className="ml-auto shrink-0">
         <SaveStatus state={saveState} />
