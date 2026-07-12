@@ -25,8 +25,11 @@ import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { type RowAction } from "@/components/ui/row-action-menu";
 import { useBooks, useCreateBook, useMoveBook } from "@/data/books";
 import {
+  DEFAULT_SECTION_LABELS,
   parseCollectionView,
+  sectionLabel,
   serializeCollectionView,
+  setSectionLabel,
 } from "@/data/collection-view";
 import {
   useCollections,
@@ -501,7 +504,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                 const next = serializeCollectionView({ ...view, layout });
                 updateCollection.mutate({
                   id: collection.id,
-                  view: { layout: next.layout },
+                  view: next,
                 });
               }}
             />
@@ -524,7 +527,19 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
             ) : showSections ? (
               <>
                 {childCollections.length > 0 && (
-                  <CardGrid heading="Collections">
+                  <CardGrid
+                    value={sectionLabel(view, "collection")}
+                    ariaLabel="Collections section name"
+                    placeholder={DEFAULT_SECTION_LABELS.collection}
+                    onCommit={(next) => {
+                      updateCollection.mutate({
+                        id: collection.id,
+                        view: serializeCollectionView(
+                          setSectionLabel(view, "collection", next),
+                        ),
+                      });
+                    }}
+                  >
                     {childCollections.map((child) => (
                       <GalleryCoverCard
                         key={child.id}
@@ -539,7 +554,19 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                   </CardGrid>
                 )}
                 {childBooks.length > 0 && (
-                  <CardGrid heading="Books">
+                  <CardGrid
+                    value={sectionLabel(view, "book")}
+                    ariaLabel="Books section name"
+                    placeholder={DEFAULT_SECTION_LABELS.book}
+                    onCommit={(next) => {
+                      updateCollection.mutate({
+                        id: collection.id,
+                        view: serializeCollectionView(
+                          setSectionLabel(view, "book", next),
+                        ),
+                      });
+                    }}
+                  >
                     {childBooks.map((child) => (
                       <GalleryCoverCard
                         key={child.id}
@@ -554,7 +581,19 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                   </CardGrid>
                 )}
                 {childEntries.length > 0 && (
-                  <CardGrid heading="Docs">
+                  <CardGrid
+                    value={sectionLabel(view, "entry")}
+                    ariaLabel="Docs section name"
+                    placeholder={DEFAULT_SECTION_LABELS.entry}
+                    onCommit={(next) => {
+                      updateCollection.mutate({
+                        id: collection.id,
+                        view: serializeCollectionView(
+                          setSectionLabel(view, "entry", next),
+                        ),
+                      });
+                    }}
+                  >
                     {childEntries.map((child) => (
                       <GalleryCoverCard
                         key={child.id}
@@ -569,7 +608,19 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                   </CardGrid>
                 )}
                 {childDatagrids.length > 0 && (
-                  <CardGrid heading="Datagrids">
+                  <CardGrid
+                    value={sectionLabel(view, "datagrid")}
+                    ariaLabel="Datagrids section name"
+                    placeholder={DEFAULT_SECTION_LABELS.datagrid}
+                    onCommit={(next) => {
+                      updateCollection.mutate({
+                        id: collection.id,
+                        view: serializeCollectionView(
+                          setSectionLabel(view, "datagrid", next),
+                        ),
+                      });
+                    }}
+                  >
                     {childDatagrids.map((child) => (
                       <GalleryCoverCard
                         key={child.id}
@@ -584,7 +635,19 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                   </CardGrid>
                 )}
                 {childWhiteboards.length > 0 && (
-                  <CardGrid heading="Whiteboards">
+                  <CardGrid
+                    value={sectionLabel(view, "whiteboard")}
+                    ariaLabel="Whiteboards section name"
+                    placeholder={DEFAULT_SECTION_LABELS.whiteboard}
+                    onCommit={(next) => {
+                      updateCollection.mutate({
+                        id: collection.id,
+                        view: serializeCollectionView(
+                          setSectionLabel(view, "whiteboard", next),
+                        ),
+                      });
+                    }}
+                  >
                     {childWhiteboards.map((child) => (
                       <GalleryCoverCard
                         key={child.id}
@@ -622,17 +685,28 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
 }
 
 function CardGrid({
-  heading,
+  value,
+  ariaLabel,
+  placeholder,
+  onCommit,
   children,
 }: {
-  heading: string;
+  value: string;
+  ariaLabel: string;
+  placeholder: string;
+  onCommit: (next: string) => void;
   children: React.ReactNode;
 }) {
   return (
     <section>
-      <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted">
-        {heading}
-      </h2>
+      <EditableText
+        value={value}
+        ariaLabel={ariaLabel}
+        placeholder={placeholder}
+        allowEmpty
+        onCommit={onCommit}
+        className="mb-3 text-xs font-medium uppercase tracking-wide text-muted"
+      />
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {children}
       </div>
