@@ -1,12 +1,12 @@
+import type { Locator } from "@playwright/test";
+
 import { expect, test } from "./fixtures";
 
 const TS = "2026-01-01T00:00:00.000Z";
 
-/** Require a Playwright bounding box; fails the test when the element has none. */
-function requireBox(
-  box: { x: number; y: number; width: number; height: number } | null,
-): { x: number; y: number; width: number; height: number } {
-  expect(box).not.toBeNull();
+/** Resolve a locator's bounding box, or fail when Playwright returns null. */
+async function boundingBoxOf(locator: Locator) {
+  const box = await locator.boundingBox();
   if (box === null) {
     throw new Error("expected a bounding box");
   }
@@ -169,6 +169,9 @@ test.describe("collections with seeded data", () => {
 });
 
 test.describe("collection gallery card heights", () => {
+  const tallSubtitle =
+    "A long subtitle that wraps onto a second line to grow this card taller than its neighbor";
+
   test.use({
     seed: {
       folders: [],
@@ -195,8 +198,7 @@ test.describe("collection gallery card heights", () => {
           id: "b-tall",
           user_id: "user-1",
           title: "Tall Card",
-          subtitle:
-            "A long subtitle that wraps onto a second line to grow this card taller than its neighbor",
+          subtitle: tallSubtitle,
           cover_url: null,
           icon: null,
           theme: {},
@@ -227,16 +229,16 @@ test.describe("collection gallery card heights", () => {
   // Tailwind breakpoints drive the gallery columns (viewport-based):
   // default 2, sm 3, lg 4. Sidebar shrinks the content pane but not the mq.
   const viewports = [
-    { width: 500, height: 800, cols: 2 },
-    { width: 800, height: 800, cols: 3 },
-    { width: 1280, height: 800, cols: 4 },
+    { width: 500, cols: 2 },
+    { width: 800, cols: 3 },
+    { width: 1280, cols: 4 },
   ] as const;
 
-  for (const { width, height, cols } of viewports) {
+  for (const { width, cols } of viewports) {
     test(`gallery grid cards in a row share equal height (${cols} cols)`, async ({
       authedPage,
     }) => {
-      await authedPage.setViewportSize({ width, height });
+      await authedPage.setViewportSize({ width, height: 800 });
       await authedPage.goto("/");
       await authedPage.getByRole("treeitem", { name: /Heights/ }).click();
 
@@ -249,14 +251,10 @@ test.describe("collection gallery card heights", () => {
       });
       await expect(tall).toBeVisible();
       await expect(short).toBeVisible();
-      await expect(
-        authedPage.getByText(
-          "A long subtitle that wraps onto a second line to grow this card taller than its neighbor",
-        ),
-      ).toBeVisible();
+      await expect(authedPage.getByText(tallSubtitle)).toBeVisible();
 
-      const tallBox = requireBox(await tall.boundingBox());
-      const shortBox = requireBox(await short.boundingBox());
+      const tallBox = await boundingBoxOf(tall);
+      const shortBox = await boundingBoxOf(short);
       expect(Math.abs(tallBox.height - shortBox.height)).toBeLessThanOrEqual(1);
       // Same row: tops align (within a pixel) when both fit in the first row.
       expect(Math.abs(tallBox.y - shortBox.y)).toBeLessThanOrEqual(1);
