@@ -12,6 +12,8 @@ export type FlatNode = DndNode & {
   // datagrids + whiteboards); inherited `id` from DndNode.
   kind: "folder" | "collection" | "book" | "entry" | "datagrid" | "whiteboard";
   draggable: boolean;
+  /** True when a folder/collection currently has at least one child. */
+  hasChildren: boolean;
   child: TreeChild;
 };
 
@@ -35,6 +37,8 @@ export function flattenTree(
     parentId: string | null,
   ) => {
     for (const child of childrenOf(model, containerId)) {
+      const isContainer =
+        child.kind === "folder" || child.kind === "collection";
       out.push({
         id: child.id,
         kind: child.kind,
@@ -42,10 +46,11 @@ export function flattenTree(
         parentId,
         position: child.position,
         draggable: true,
+        hasChildren: isContainer
+          ? childrenOf(model, child.id).length > 0
+          : false,
         child,
       });
-      const isContainer =
-        child.kind === "folder" || child.kind === "collection";
       if (isContainer && expanded.has(child.id)) {
         walk(child.id, depth + 1, child.id);
       }

@@ -10,13 +10,13 @@ import {
   SIDEBAR_ICON_SIZE,
   SidebarRowOverlay,
 } from "@/components/sidebar/sidebar-row";
+import { ExpandToggleIcon } from "@/components/tree/expand-toggle-icon";
 import { TreeRowShell } from "@/components/tree/tree-row-shell";
 import { DocumentIcon } from "@/components/ui/document-icon";
 import { type RowAction } from "@/components/ui/row-action-menu";
 import { Tooltip } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
 
-import { ChevronRightIcon, PageIcon, PlusIcon } from "./icons";
+import { PageIcon, PlusIcon } from "./icons";
 import { type FlatDocNode } from "./outline-dnd";
 
 // The document's icon when set, otherwise the generic page glyph. Shared by the
@@ -72,45 +72,20 @@ export const OutlineRow = memo(function OutlineRow({
 }: OutlineRowProps) {
   const label = node.document.title || "Untitled";
 
-  // Always show the page's icon; for rows with children, reveal the
-  // expand/collapse chevron over it on hover or focus (the icon fades out so the
-  // chevron reads cleanly). This keeps the page's identity visible at rest while
-  // still exposing the toggle on demand.
+  // Always show the page's icon; for rows with children, ExpandToggleIcon
+  // reveals the expand/collapse chevron over it on hover or focus.
   const icon = (
-    <span className="relative flex h-5 w-5 shrink-0 items-center justify-center text-muted/70">
-      <span
-        className={cn(
-          "flex items-center justify-center transition-opacity duration-150",
-          node.hasChildren &&
-            "group-hover:opacity-0 group-focus-within:opacity-0",
-        )}
-      >
-        <DocIcon document={node.document} />
-      </span>
-      {node.hasChildren && (
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-label={expanded ? "Collapse" : "Expand"}
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleExpand(node.id);
-          }}
-          onPointerDown={(e) => {
-            e.stopPropagation();
-          }}
-          className="absolute inset-0 flex items-center justify-center rounded text-muted opacity-0 transition-opacity duration-150 hover:text-text group-hover:opacity-100 group-focus-within:opacity-100"
-        >
-          <ChevronRightIcon
-            size={SIDEBAR_ICON_SIZE}
-            className={cn(
-              "transition-transform duration-150",
-              expanded && "rotate-90",
-            )}
-          />
-        </button>
-      )}
-    </span>
+    <ExpandToggleIcon
+      expanded={expanded}
+      hasChildren={node.hasChildren}
+      expandLabel="Expand"
+      collapseLabel="Collapse"
+      onToggle={() => {
+        onToggleExpand(node.id);
+      }}
+    >
+      <DocIcon document={node.document} />
+    </ExpandToggleIcon>
   );
 
   const menuActions: RowAction[] = [

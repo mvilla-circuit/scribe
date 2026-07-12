@@ -41,6 +41,50 @@ describe("flattenTree", () => {
       "b2",
     ]);
   });
+
+  it("flags hasChildren for containers", () => {
+    const tree = buildTree(
+      [
+        makeFolder({ id: "f-full", position: 1024 }),
+        makeFolder({ id: "f-empty", position: 2048 }),
+      ],
+      [
+        makeBook({ id: "b-in-folder", folder_id: "f-full", position: 1024 }),
+        makeBook({
+          id: "b-in-coll",
+          collection_id: "c-full",
+          position: 1024,
+        }),
+        makeBook({ id: "b-root", folder_id: null, position: 4096 }),
+      ],
+      [
+        makeCollection({ id: "c-full", position: 3072 }),
+        makeCollection({ id: "c-empty", position: 3584 }),
+      ],
+      [
+        makeEntry({
+          id: "e1",
+          collection_id: "c-full",
+          position: 2048,
+        }),
+      ],
+    );
+    const byId = Object.fromEntries(
+      flattenTree(
+        tree,
+        new Set(["f-full", "c-full", "f-empty", "c-empty"]),
+      ).map((n) => [n.id, n.hasChildren]),
+    );
+
+    expect(byId["c-empty"]).toBe(false);
+    expect(byId["c-full"]).toBe(true);
+    expect(byId["f-full"]).toBe(true);
+    expect(byId["f-empty"]).toBe(false);
+    expect(byId["b-root"]).toBe(false);
+    expect(byId["b-in-folder"]).toBe(false);
+    expect(byId["b-in-coll"]).toBe(false);
+    expect(byId.e1).toBe(false);
+  });
 });
 
 describe("getProjection", () => {

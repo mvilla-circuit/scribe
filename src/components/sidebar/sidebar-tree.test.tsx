@@ -271,6 +271,156 @@ describe("SidebarTree collection docs", () => {
   });
 });
 
+describe("SidebarTree expand toggle", () => {
+  function seedExpandToggle() {
+    const client = createTestQueryClient();
+    client.setQueryData(foldersKey, [
+      makeFolder({ id: "f-full", name: "With Books", position: 1024 }),
+      makeFolder({ id: "f-empty", name: "Empty Folder", position: 2048 }),
+    ]);
+    client.setQueryData(booksKey, [
+      makeBook({
+        id: "bk-in-folder",
+        title: "Folder Book",
+        folder_id: "f-full",
+        position: 1024,
+      }),
+    ]);
+    client.setQueryData(collectionsKey, [
+      makeCollection({
+        id: "c-full",
+        name: "With Docs",
+        position: 3072,
+      }),
+      makeCollection({
+        id: "c-empty",
+        name: "Empty Collection",
+        position: 4096,
+      }),
+    ]);
+    client.setQueryData(entriesKey, [
+      makeEntry({
+        id: "e1",
+        collection_id: "c-full",
+        title: "Nested Doc",
+        position: 1024,
+      }),
+    ]);
+    client.setQueryData(datagridsKey, []);
+    client.setQueryData(whiteboardsKey, []);
+    return client;
+  }
+
+  it("renders Expand collection only when collection has children", () => {
+    renderWithProviders(<SidebarTree />, { client: seedExpandToggle() });
+
+    const withDocs = screen.getByRole("treeitem", { name: /With Docs/ });
+    expect(
+      within(withDocs).getByRole("button", { name: "Expand collection" }),
+    ).toBeInTheDocument();
+
+    const empty = screen.getByRole("treeitem", { name: /Empty Collection/ });
+    expect(
+      within(empty).queryByRole("button", { name: "Expand collection" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders Expand folder only when folder has children", () => {
+    renderWithProviders(<SidebarTree />, { client: seedExpandToggle() });
+
+    const withBooks = screen.getByRole("treeitem", { name: /With Books/ });
+    expect(
+      within(withBooks).getByRole("button", { name: "Expand folder" }),
+    ).toBeInTheDocument();
+
+    const empty = screen.getByRole("treeitem", { name: /Empty Folder/ });
+    expect(
+      within(empty).queryByRole("button", { name: "Expand folder" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not render expand control for empty collection", () => {
+    renderWithProviders(<SidebarTree />, { client: seedExpandToggle() });
+
+    const empty = screen.getByRole("treeitem", { name: /Empty Collection/ });
+    expect(
+      within(empty).queryByRole("button", {
+        name: /Expand collection|Collapse collection/,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("collection chevron toggles expandedFolderIds without selecting", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    renderWithProviders(<SidebarTree />, { client: seedExpandToggle() });
+
+    expect(
+      screen.queryByRole("treeitem", { name: /Nested Doc/ }),
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      within(screen.getByRole("treeitem", { name: /With Docs/ })).getByRole(
+        "button",
+        { name: "Expand collection" },
+      ),
+    );
+
+    expect(useUIStore.getState().expandedFolderIds).toContain("c-full");
+    expect(useUIStore.getState().activeCollectionId).toBeNull();
+    expect(
+      screen.getByRole("treeitem", { name: /Nested Doc/ }),
+    ).toBeInTheDocument();
+
+    // Re-query: expanding remounts the row into a surface group.
+    await user.click(
+      within(screen.getByRole("treeitem", { name: /With Docs/ })).getByRole(
+        "button",
+        { name: "Collapse collection" },
+      ),
+    );
+
+    expect(useUIStore.getState().expandedFolderIds).not.toContain("c-full");
+    expect(useUIStore.getState().activeCollectionId).toBeNull();
+    expect(
+      screen.queryByRole("treeitem", { name: /Nested Doc/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("folder chevron toggles expandedFolderIds without selecting", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    renderWithProviders(<SidebarTree />, { client: seedExpandToggle() });
+
+    expect(
+      screen.queryByRole("treeitem", { name: /Folder Book/ }),
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      within(screen.getByRole("treeitem", { name: /With Books/ })).getByRole(
+        "button",
+        { name: "Expand folder" },
+      ),
+    );
+
+    expect(useUIStore.getState().expandedFolderIds).toContain("f-full");
+    expect(useUIStore.getState().activeBookId).toBeNull();
+    expect(
+      screen.getByRole("treeitem", { name: /Folder Book/ }),
+    ).toBeInTheDocument();
+
+    await user.click(
+      within(screen.getByRole("treeitem", { name: /With Books/ })).getByRole(
+        "button",
+        { name: "Collapse folder" },
+      ),
+    );
+
+    expect(useUIStore.getState().expandedFolderIds).not.toContain("f-full");
+    expect(
+      screen.queryByRole("treeitem", { name: /Folder Book/ }),
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe("SidebarTree collection whiteboards", () => {
   function seedWithWhiteboard() {
     const client = createTestQueryClient();

@@ -8,7 +8,6 @@ import {
   Copy,
   CornerUpLeft,
   Folder,
-  FolderOpen,
   FolderPlus,
   Library,
   Link,
@@ -23,7 +22,6 @@ import {
 import { makeIcon } from "@/lib/make-icon";
 
 export const FolderIcon = makeIcon(Folder);
-export const FolderOpenIcon = makeIcon(FolderOpen);
 export const BookIcon = makeIcon(Book);
 export const CollectionIcon = makeIcon(Library);
 export const DatagridIcon = makeIcon(Table2);
