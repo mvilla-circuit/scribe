@@ -5,6 +5,11 @@ import { PageIcon } from "@/components/book/icons";
 import { Masthead } from "@/components/book/masthead";
 import { NavHistoryControls } from "@/components/book/nav-history-controls";
 import {
+  leafDeleteDescription,
+  type LeafDeleteKind,
+  leafDeleteTitle,
+} from "@/components/leaf-delete-copy";
+import {
   BookIcon,
   BookPlusIcon,
   CollectionIcon,
@@ -15,6 +20,7 @@ import {
   TrashIcon,
   WhiteboardIcon,
 } from "@/components/sidebar/icons";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +42,11 @@ import {
   useUpdateCollection,
 } from "@/data/collections";
 import { deleteCoverObject, useUploadCover } from "@/data/cover-upload";
-import { useCreateDatagrid, useDatagrids } from "@/data/datagrids";
+import {
+  useCreateDatagrid,
+  useDatagrids,
+  useDeleteDatagrid,
+} from "@/data/datagrids";
 import { useCreateEntry, useDeleteEntry, useEntries } from "@/data/entries";
 import { useFolders } from "@/data/folders";
 import { endPositionFor } from "@/data/ordering";
@@ -67,6 +77,12 @@ import { CollectionTagsSection } from "./collection-tags-section";
 import { CollectionToolbar } from "./collection-toolbar";
 import { CoverCard } from "./cover-card";
 import { type GalleryTag } from "./tag-chips-row";
+
+interface LeafDeleteTarget {
+  kind: LeafDeleteKind;
+  id: string;
+  title: string;
+}
 
 /**
  * A collection's own page: an editable masthead (icon, title, description) with
@@ -127,6 +143,10 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   const setActiveDatagrid = useUIStore((s) => s.setActiveDatagrid);
   const setActiveWhiteboard = useUIStore((s) => s.setActiveWhiteboard);
   const setFolderExpanded = useUIStore((s) => s.setFolderExpanded);
+  const activeEntryId = useUIStore((s) => s.activeEntryId);
+  const activeDatagridId = useUIStore((s) => s.activeDatagridId);
+  const activeWhiteboardId = useUIStore((s) => s.activeWhiteboardId);
+  const navigateTo = useUIStore((s) => s.navigateTo);
 
   const renameCollection = useRenameCollection();
   const updateCollection = useUpdateCollection();
@@ -137,10 +157,14 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   const createEntry = useCreateEntry();
   const deleteEntry = useDeleteEntry();
   const createDatagrid = useCreateDatagrid();
+  const deleteDatagrid = useDeleteDatagrid();
   const createWhiteboard = useCreateWhiteboard();
   const deleteWhiteboard = useDeleteWhiteboard();
   const uploadCover = useUploadCover();
   const [query, setQuery] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<LeafDeleteTarget | null>(
+    null,
+  );
 
   const view = parseCollectionView(collection?.view);
   const visibleChildren = useMemo(
@@ -272,16 +296,40 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
     },
   ];
 
-  const entryActions = (id: string): RowAction[] => [
+  const leafDeleteActions = (target: LeafDeleteTarget): RowAction[] => [
     {
       icon: <TrashIcon size={15} />,
       label: "Delete",
       danger: true,
       onSelect: () => {
-        deleteEntry.mutate({ id });
+        setPendingDelete({
+          ...target,
+          title: target.title || "Untitled",
+        });
       },
     },
   ];
+
+  const confirmPendingDelete = () => {
+    const target = pendingDelete;
+    if (!target) return;
+
+    switch (target.kind) {
+      case "entry":
+        if (activeEntryId === target.id) {
+          navigateTo({ collectionId });
+        }
+        deleteEntry.mutate({ id: target.id });
+        return;
+      case "datagrid":
+        if (activeDatagridId === target.id) setActiveDatagrid(null);
+        deleteDatagrid.mutate({ id: target.id });
+        return;
+      case "whiteboard":
+        if (activeWhiteboardId === target.id) setActiveWhiteboard(null);
+        deleteWhiteboard.mutate({ id: target.id });
+    }
+  };
 
   // No resolved collection has three distinct causes — an in-flight fetch, a
   // failed fetch, and a genuinely missing id — so surface each rather than
@@ -360,21 +408,23 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
       case "book":
         return bookActions(child.id);
       case "entry":
-        return entryActions(child.id);
+        return leafDeleteActions({
+          kind: "entry",
+          id: child.id,
+          title: child.entry.title,
+        });
       case "datagrid":
-        // Track D wires datagrid row actions; none in the gallery yet.
-        return [];
+        return leafDeleteActions({
+          kind: "datagrid",
+          id: child.id,
+          title: child.datagrid.name,
+        });
       case "whiteboard":
-        return [
-          {
-            icon: <TrashIcon size={15} />,
-            label: "Delete",
-            danger: true,
-            onSelect: () => {
-              deleteWhiteboard.mutate({ id: child.id });
-            },
-          },
-        ];
+        return leafDeleteActions({
+          kind: "whiteboard",
+          id: child.id,
+          title: child.whiteboard.name,
+        });
     }
   };
 
@@ -617,6 +667,19 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
           </div>
         )}
       </div>
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        title={pendingDelete ? leafDeleteTitle(pendingDelete.title) : ""}
+        description={
+          pendingDelete ? leafDeleteDescription(pendingDelete.kind) : undefined
+        }
+        confirmLabel="Delete"
+        danger
+        onConfirm={confirmPendingDelete}
+      />
     </div>
   );
 }

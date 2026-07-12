@@ -74,6 +74,21 @@ function seed() {
   return client;
 }
 
+async function openGalleryDeleteDialog(
+  user: ReturnType<typeof userEvent.setup>,
+  itemName: string,
+) {
+  await user.click(
+    screen.getByRole("button", { name: `Actions for ${itemName}` }),
+  );
+  await user.click(
+    within(await screen.findByRole("menu")).getByRole("menuitem", {
+      name: "Delete",
+    }),
+  );
+  return screen.findByRole("dialog");
+}
+
 beforeEach(() => {
   Element.prototype.hasPointerCapture = () => false;
   Element.prototype.setPointerCapture = vi.fn();
@@ -83,6 +98,7 @@ beforeEach(() => {
     activeBookId: null,
     activeCollectionId: "c1",
     activeEntryId: null,
+    activeDatagridId: null,
     activeWhiteboardId: null,
   });
 });
@@ -450,7 +466,29 @@ describe("CollectionPage", () => {
     expect(client.getQueryData<unknown[]>(whiteboardsKey)).toHaveLength(1);
   });
 
-  it("deletes a doc from the gallery", async () => {
+  it("shows delete action on datagrid gallery cards", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = seed();
+    client.setQueryData(datagridsKey, [
+      makeDatagrid({
+        id: "dg1",
+        collection_id: "c1",
+        name: "World bible",
+      }),
+    ]);
+
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+
+    await user.click(
+      screen.getByRole("button", { name: "Actions for World bible" }),
+    );
+    const menu = await screen.findByRole("menu");
+    expect(
+      within(menu).getByRole("menuitem", { name: "Delete" }),
+    ).toBeInTheDocument();
+  });
+
+  it("deletes a doc from the gallery after confirm", async () => {
     server.use(
       http.delete(
         "http://supabase.test/rest/v1/entries",
@@ -472,10 +510,128 @@ describe("CollectionPage", () => {
     ).not.toBeInTheDocument();
     await user.click(within(menu).getByRole("menuitem", { name: "Delete" }));
 
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent('Delete "Opening scene"?');
+    expect(dialog).toHaveTextContent("This permanently deletes the doc.");
+    await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+
+    await waitFor(() => {
+      expect(
+        client
+          .getQueryData<{ id: string }[]>(entriesKey)
+          ?.map((entry) => entry.id),
+      ).not.toContain("e1");
+    });
+  });
+
+  it("cancels doc delete from the gallery", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = seed();
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+
+    const dialog = await openGalleryDeleteDialog(user, "Opening scene");
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(
       client
         .getQueryData<{ id: string }[]>(entriesKey)
         ?.map((entry) => entry.id),
-    ).not.toContain("e1");
+    ).toContain("e1");
+  });
+
+  it("deletes a datagrid from the gallery after confirm", async () => {
+    server.use(
+      http.delete(
+        "http://supabase.test/rest/v1/datagrids",
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    );
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = seed();
+    client.setQueryData(datagridsKey, [
+      makeDatagrid({
+        id: "dg1",
+        collection_id: "c1",
+        name: "World bible",
+      }),
+    ]);
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+
+    const dialog = await openGalleryDeleteDialog(user, "World bible");
+    expect(dialog).toHaveTextContent('Delete "World bible"?');
+    expect(dialog).toHaveTextContent(
+      "This permanently deletes the datagrid and all its rows.",
+    );
+    await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+
+    await waitFor(() => {
+      expect(
+        client
+          .getQueryData<{ id: string }[]>(datagridsKey)
+          ?.map((grid) => grid.id),
+      ).not.toContain("dg1");
+    });
+  });
+
+  it("deletes a whiteboard from the gallery after confirm", async () => {
+    server.use(
+      http.delete(
+        "http://supabase.test/rest/v1/whiteboards",
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    );
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = seed();
+    client.setQueryData(whiteboardsKey, [
+      makeWhiteboard({
+        id: "wb1",
+        collection_id: "c1",
+        name: "Story map",
+      }),
+    ]);
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+
+    const dialog = await openGalleryDeleteDialog(user, "Story map");
+    expect(dialog).toHaveTextContent('Delete "Story map"?');
+    expect(dialog).toHaveTextContent(
+      "This permanently deletes the whiteboard.",
+    );
+    await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+
+    await waitFor(() => {
+      expect(
+        client
+          .getQueryData<{ id: string }[]>(whiteboardsKey)
+          ?.map((board) => board.id),
+      ).not.toContain("wb1");
+    });
+  });
+
+  it("clears the active datagrid when deleting it from the gallery", async () => {
+    server.use(
+      http.delete(
+        "http://supabase.test/rest/v1/datagrids",
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    );
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = seed();
+    client.setQueryData(datagridsKey, [
+      makeDatagrid({
+        id: "dg1",
+        collection_id: "c1",
+        name: "World bible",
+      }),
+    ]);
+    useUIStore.setState({ activeDatagridId: "dg1" });
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+
+    const dialog = await openGalleryDeleteDialog(user, "World bible");
+    await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+
+    await waitFor(() => {
+      expect(useUIStore.getState().activeDatagridId).toBeNull();
+    });
   });
 });

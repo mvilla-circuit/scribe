@@ -1,6 +1,10 @@
 import { type ReactNode, useCallback, useMemo } from "react";
 
 import {
+  leafDeleteDescription,
+  leafDeleteTitle,
+} from "@/components/leaf-delete-copy";
+import {
   neighbourPositions,
   removeDescendants,
 } from "@/components/tree/tree-dnd";
@@ -743,9 +747,10 @@ function deleteTitle(target: DeleteTarget | null): string {
     target.kind === "entry" ||
     target.kind === "datagrid" ||
     target.kind === "whiteboard"
-  )
-    return `Delete "${target.title}"?`;
-  return `Delete "${target.name}"?`;
+  ) {
+    return leafDeleteTitle(target.title);
+  }
+  return leafDeleteTitle(target.name);
 }
 
 function deleteDescription(target: DeleteTarget | null): string {
@@ -759,12 +764,12 @@ function deleteDescription(target: DeleteTarget | null): string {
       target.whiteboards,
     );
   }
-  if (target.kind === "entry") return "This permanently deletes the doc.";
-  if (target.kind === "datagrid") {
-    return "This permanently deletes the datagrid and all its rows.";
-  }
-  if (target.kind === "whiteboard") {
-    return "This permanently deletes the whiteboard.";
+  if (
+    target.kind === "entry" ||
+    target.kind === "datagrid" ||
+    target.kind === "whiteboard"
+  ) {
+    return leafDeleteDescription(target.kind);
   }
   return "This permanently deletes the book and everything inside it.";
 }
