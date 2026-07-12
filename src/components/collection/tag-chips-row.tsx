@@ -2,14 +2,10 @@ import { type ComponentPropsWithoutRef } from "react";
 
 import { cn } from "@/lib/utils";
 
-import { StaticTagChip } from "./tag-chip";
+import { StaticTagChip, type TagChipData } from "./tag-chip";
 
-/** The minimal tag shape a gallery surface needs to render a read-only chip. */
-export interface GalleryTag {
-  id: string;
-  name: string;
-  color: string | null;
-}
+/** Read-only tag shape for gallery surfaces (cover cards, list rows). */
+export type GalleryTag = TagChipData;
 
 export interface TagChipsRowProps extends Omit<
   ComponentPropsWithoutRef<"span">,

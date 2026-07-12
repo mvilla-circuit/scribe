@@ -7,6 +7,13 @@ import { cn } from "@/lib/utils";
 const CHIP_CLASS =
   "inline-flex max-w-full items-center truncate rounded-full px-2 py-0.5 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
+/** Minimal tag shape shared by editable and read-only chip surfaces. */
+export interface TagChipData {
+  id: string;
+  name: string;
+  color: string | null;
+}
+
 export interface TagChipProps extends Omit<
   ComponentPropsWithoutRef<"button">,
   "color"

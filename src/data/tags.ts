@@ -29,6 +29,7 @@ export type Taggable = Tables<"taggables">;
 // The only `taggables.target_type` this module deals with; books/entries have
 // their own tagging surfaces built on the same table.
 const COLLECTION_TARGET_TYPE = "collection";
+const COLLECTION_TAGGABLES_KEY = taggablesKey(COLLECTION_TARGET_TYPE);
 
 // Postgres unique-violation SQLSTATE, raised by the `(tag_id, target_type,
 // target_id)` unique constraint on `taggables` when a pair is assigned twice.
@@ -78,6 +79,46 @@ function findTagByName(tags: Tag[], name: string): Tag | undefined {
   return tags.find((tag) => tag.name.toLowerCase() === lower);
 }
 
+function isAssignedToCollection(
+  rows: Taggable[],
+  tagId: string,
+  collectionId: string,
+): boolean {
+  return rows.some(
+    (row) => row.tag_id === tagId && row.target_id === collectionId,
+  );
+}
+
+function buildTag(input: {
+  userId: string;
+  name: string;
+  color: string;
+  position: number;
+  now: string;
+}): Tag {
+  return {
+    id: crypto.randomUUID(),
+    user_id: input.userId,
+    name: input.name,
+    color: input.color,
+    position: input.position,
+    created_at: input.now,
+    updated_at: input.now,
+  };
+}
+
+function cacheCollectionAssignment(
+  qc: QueryClient,
+  row: Taggable,
+  collectionId: string,
+): void {
+  qc.setQueryData<Taggable[]>(COLLECTION_TAGGABLES_KEY, (prev) => {
+    const rows = prev ?? [];
+    if (isAssignedToCollection(rows, row.tag_id, collectionId)) return rows;
+    return [...rows, row];
+  });
+}
+
 /** Query hook for all of the signed-in user's tags, ordered by position. */
 export function useTags() {
   return useQuery({
@@ -89,7 +130,7 @@ export function useTags() {
 /** Query hook for the tag assignments on collections. */
 export function useCollectionTaggables() {
   return useQuery({
-    queryKey: taggablesKey(COLLECTION_TARGET_TYPE),
+    queryKey: COLLECTION_TAGGABLES_KEY,
     queryFn: async (): Promise<Taggable[]> => {
       const { data, error } = await supabase
         .from("taggables")
@@ -167,15 +208,15 @@ export function useAssignCollectionTag() {
       const tags = await loadTags(qc);
       const existingTag = findTagByName(tags, name);
       const now = new Date().toISOString();
-      const tag: Tag = existingTag ?? {
-        id: crypto.randomUUID(),
-        user_id: userId,
-        name,
-        color: input.color ?? swatchForIndex(tags.length),
-        position: endPositionFor(tags),
-        created_at: now,
-        updated_at: now,
-      };
+      const tag =
+        existingTag ??
+        buildTag({
+          userId,
+          name,
+          color: input.color ?? swatchForIndex(tags.length),
+          position: endPositionFor(tags),
+          now,
+        });
 
       if (!existingTag) {
         await execWrite(
@@ -193,46 +234,29 @@ export function useAssignCollectionTag() {
       }
 
       const taggables =
-        qc.getQueryData<Taggable[]>(taggablesKey(COLLECTION_TARGET_TYPE)) ?? [];
-      const alreadyAssigned = taggables.some(
-        (row) => row.tag_id === tag.id && row.target_id === input.collectionId,
-      );
-      if (!alreadyAssigned) {
-        const { error } = await supabase.from("taggables").insert({
-          id: crypto.randomUUID(),
-          user_id: userId,
-          tag_id: tag.id,
-          target_type: COLLECTION_TARGET_TYPE,
-          target_id: input.collectionId,
-        });
-        if (error && error.code !== UNIQUE_VIOLATION) throw error;
-        qc.setQueryData<Taggable[]>(
-          taggablesKey(COLLECTION_TARGET_TYPE),
-          (prev) => {
-            const rows = prev ?? [];
-            if (
-              rows.some(
-                (row) =>
-                  row.tag_id === tag.id && row.target_id === input.collectionId,
-              )
-            ) {
-              return rows;
-            }
-            return [
-              ...rows,
-              {
-                id: crypto.randomUUID(),
-                user_id: userId,
-                tag_id: tag.id,
-                target_type: COLLECTION_TARGET_TYPE,
-                target_id: input.collectionId,
-                created_at: now,
-              },
-            ];
-          },
-        );
+        qc.getQueryData<Taggable[]>(COLLECTION_TAGGABLES_KEY) ?? [];
+      if (isAssignedToCollection(taggables, tag.id, input.collectionId)) {
+        return tag;
       }
 
+      const assignment: Taggable = {
+        id: crypto.randomUUID(),
+        user_id: userId,
+        tag_id: tag.id,
+        target_type: COLLECTION_TARGET_TYPE,
+        target_id: input.collectionId,
+        created_at: now,
+      };
+      const { error } = await supabase.from("taggables").insert({
+        id: assignment.id,
+        user_id: assignment.user_id,
+        tag_id: assignment.tag_id,
+        target_type: assignment.target_type,
+        target_id: assignment.target_id,
+      });
+      if (error && error.code !== UNIQUE_VIOLATION) throw error;
+
+      cacheCollectionAssignment(qc, assignment, input.collectionId);
       return tag;
     },
     onError: () => {
@@ -261,7 +285,7 @@ export function useUnassignCollectionTag() {
     },
     ...optimisticListHandlers<Taggable, UnassignCollectionTagInput>({
       qc,
-      key: taggablesKey(COLLECTION_TARGET_TYPE),
+      key: COLLECTION_TAGGABLES_KEY,
       sort: (a, b) => a.created_at.localeCompare(b.created_at),
       update: (prev, input) =>
         prev.filter(
@@ -331,19 +355,16 @@ export function useDeleteTag() {
       execWrite(supabase.from("tags").delete().eq("id", input.tagId)),
     onMutate: async (input) => {
       await qc.cancelQueries({ queryKey: tagsKey });
-      await qc.cancelQueries({
-        queryKey: taggablesKey(COLLECTION_TARGET_TYPE),
-      });
+      await qc.cancelQueries({ queryKey: COLLECTION_TAGGABLES_KEY });
       const previousTags = qc.getQueryData<Tag[]>(tagsKey);
       const previousTaggables = qc.getQueryData<Taggable[]>(
-        taggablesKey(COLLECTION_TARGET_TYPE),
+        COLLECTION_TAGGABLES_KEY,
       );
       qc.setQueryData<Tag[]>(tagsKey, (prev) =>
         (prev ?? []).filter((tag) => tag.id !== input.tagId),
       );
-      qc.setQueryData<Taggable[]>(
-        taggablesKey(COLLECTION_TARGET_TYPE),
-        (prev) => (prev ?? []).filter((row) => row.tag_id !== input.tagId),
+      qc.setQueryData<Taggable[]>(COLLECTION_TAGGABLES_KEY, (prev) =>
+        (prev ?? []).filter((row) => row.tag_id !== input.tagId),
       );
       return { previousTags, previousTaggables };
     },
@@ -352,10 +373,7 @@ export function useDeleteTag() {
         qc.setQueryData(tagsKey, context.previousTags);
       }
       if (context?.previousTaggables) {
-        qc.setQueryData(
-          taggablesKey(COLLECTION_TARGET_TYPE),
-          context.previousTaggables,
-        );
+        qc.setQueryData(COLLECTION_TAGGABLES_KEY, context.previousTaggables);
       }
       toast.error("Couldn't delete tag");
     },

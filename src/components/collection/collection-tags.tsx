@@ -12,14 +12,10 @@ import { MorandiSwatchGrid } from "@/components/ui/morandi-swatch-grid";
 import { DEFAULT_SWATCH, swatchDotStyle } from "@/lib/swatches";
 import { cn } from "@/lib/utils";
 
-import { TagChip } from "./tag-chip";
+import { TagChip, type TagChipData } from "./tag-chip";
 
 /** A tag assigned to (or assignable to) a collection. */
-export interface CollectionTag {
-  id: string;
-  name: string;
-  color: string | null;
-}
+type CollectionTag = TagChipData;
 
 export interface CollectionTagsProps {
   tags: CollectionTag[];
@@ -31,6 +27,12 @@ export interface CollectionTagsProps {
   suggestions?: CollectionTag[];
   /** Deletes a library tag from the suggestions list (and everywhere it was used). */
   onDeleteSuggestion?: (tagId: string) => void;
+}
+
+const MAX_SUGGESTIONS = 6;
+
+function preventCloseAutoFocus(event: Event): void {
+  event.preventDefault();
 }
 
 /**
@@ -87,19 +89,14 @@ export function CollectionTags({
   );
 }
 
-const MAX_SUGGESTIONS = 6;
-
-function TagChipMenu({
-  tag,
-  onRecolor,
-  onRename,
-  onRemove,
-}: {
+interface TagChipMenuProps {
   tag: CollectionTag;
   onRecolor: (color: string) => void;
   onRename: (name: string) => void;
   onRemove: () => void;
-}) {
+}
+
+function TagChipMenu({ tag, onRecolor, onRename, onRemove }: TagChipMenuProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -115,9 +112,7 @@ function TagChipMenu({
         <DropdownMenuContent
           align="start"
           className="w-56 p-0"
-          onCloseAutoFocus={(e) => {
-            e.preventDefault();
-          }}
+          onCloseAutoFocus={preventCloseAutoFocus}
         >
           <TagEditorPanel
             nameLabel="Tag name"
@@ -155,19 +150,26 @@ function TagChipMenu({
   );
 }
 
+interface AddTagControlProps {
+  isEmpty: boolean;
+  suggestions: CollectionTag[];
+  onAdd: (name: string, color: string) => void;
+  onDeleteSuggestion?: (tagId: string) => void;
+}
+
 function AddTagControl({
   isEmpty,
   suggestions,
   onAdd,
   onDeleteSuggestion,
-}: {
-  isEmpty: boolean;
-  suggestions: CollectionTag[];
-  onAdd: (name: string, color: string) => void;
-  onDeleteSuggestion?: (tagId: string) => void;
-}) {
+}: AddTagControlProps) {
   const [open, setOpen] = useState(false);
   const [draftColor, setDraftColor] = useState<string>(DEFAULT_SWATCH);
+
+  function closeAndReset(): void {
+    setDraftColor(DEFAULT_SWATCH);
+    setOpen(false);
+  }
 
   return (
     <DropdownMenu
@@ -194,9 +196,7 @@ function AddTagControl({
       <DropdownMenuContent
         align="start"
         className="w-56 p-0"
-        onCloseAutoFocus={(e) => {
-          e.preventDefault();
-        }}
+        onCloseAutoFocus={preventCloseAutoFocus}
       >
         <TagEditorPanel
           nameLabel="New tag name"
@@ -207,25 +207,35 @@ function AddTagControl({
           suggestions={suggestions}
           onCommitName={(name) => {
             onAdd(name, draftColor);
-            setDraftColor(DEFAULT_SWATCH);
-            setOpen(false);
+            closeAndReset();
           }}
           onPickColor={(hue) => {
             setDraftColor(hue);
           }}
           onPickSuggestion={(tag) => {
             onAdd(tag.name, tag.color ?? DEFAULT_SWATCH);
-            setDraftColor(DEFAULT_SWATCH);
-            setOpen(false);
+            closeAndReset();
           }}
           onDeleteSuggestion={onDeleteSuggestion}
-          onCancel={() => {
-            setOpen(false);
-          }}
+          onCancel={closeAndReset}
         />
       </DropdownMenuContent>
     </DropdownMenu>
   );
+}
+
+interface TagEditorPanelProps {
+  nameLabel: string;
+  initialName: string;
+  color: string;
+  colorGroupLabel: string;
+  colorButtonLabel: (hue: string) => string;
+  suggestions?: CollectionTag[];
+  onCommitName: (name: string) => void;
+  onPickColor: (hue: string) => void;
+  onPickSuggestion?: (tag: CollectionTag) => void;
+  onDeleteSuggestion?: (tagId: string) => void;
+  onCancel: () => void;
 }
 
 function TagEditorPanel({
@@ -240,19 +250,7 @@ function TagEditorPanel({
   onPickSuggestion,
   onDeleteSuggestion,
   onCancel,
-}: {
-  nameLabel: string;
-  initialName: string;
-  color: string;
-  colorGroupLabel: string;
-  colorButtonLabel: (hue: string) => string;
-  suggestions?: CollectionTag[];
-  onCommitName: (name: string) => void;
-  onPickColor: (hue: string) => void;
-  onPickSuggestion?: (tag: CollectionTag) => void;
-  onDeleteSuggestion?: (tagId: string) => void;
-  onCancel: () => void;
-}) {
+}: TagEditorPanelProps) {
   const [draft, setDraft] = useState(initialName);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -264,10 +262,9 @@ function TagEditorPanel({
   const filtered = useMemo(() => {
     if (!onPickSuggestion) return [];
     const query = draft.trim().toLowerCase();
-    const matches =
-      query === ""
-        ? suggestions
-        : suggestions.filter((tag) => tag.name.toLowerCase().includes(query));
+    const matches = query
+      ? suggestions.filter((tag) => tag.name.toLowerCase().includes(query))
+      : suggestions;
     return matches.slice(0, MAX_SUGGESTIONS);
   }, [suggestions, draft, onPickSuggestion]);
 

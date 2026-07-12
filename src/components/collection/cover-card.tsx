@@ -96,14 +96,12 @@ function CoverCardComponent({
                 {subtitleText}
               </span>
             )}
-            {tags.length > 0 && (
-              <TagChipsRow
-                tags={tags}
-                max={MAX_VISIBLE_TAGS}
-                className="mt-1.5"
-                data-testid="cover-card-tags"
-              />
-            )}
+            <TagChipsRow
+              tags={tags}
+              max={MAX_VISIBLE_TAGS}
+              className="mt-1.5"
+              data-testid="cover-card-tags"
+            />
           </span>
         </div>
       </button>

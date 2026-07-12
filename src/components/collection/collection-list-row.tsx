@@ -56,7 +56,7 @@ export function CollectionListRow({
 }: CollectionListRowProps) {
   const { title, subtitle, icon, coverUrl } = galleryChildMeta(child);
   const label = title || "Untitled";
-  const subtitleText = subtitle?.trim() ? subtitle.trim() : null;
+  const subtitleText = subtitle?.trim() || null;
   const hasActions = actions.length > 0;
 
   const row = (
@@ -96,13 +96,11 @@ export function CollectionListRow({
               {subtitleText}
             </span>
           )}
-          {tags.length > 0 && (
-            <TagChipsRow
-              tags={tags}
-              className="mt-1.5"
-              data-testid="collection-list-row-tags"
-            />
-          )}
+          <TagChipsRow
+            tags={tags}
+            className="mt-1.5"
+            data-testid="collection-list-row-tags"
+          />
         </span>
       </button>
       {hasActions && (

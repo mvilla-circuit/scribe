@@ -12,15 +12,7 @@ import {
   useUpdateTagName,
 } from "@/data/tags";
 
-import { type CollectionTag, CollectionTags } from "./collection-tags";
-
-function toCollectionTag(tag: {
-  id: string;
-  name: string;
-  color: string | null;
-}): CollectionTag {
-  return { id: tag.id, name: tag.name, color: tag.color };
-}
+import { CollectionTags } from "./collection-tags";
 
 /**
  * Masthead seam for a collection's tags: joins the library `tags` list and
@@ -50,13 +42,13 @@ export function CollectionTagsSection({
     [tags, taggables, collectionId],
   );
   const suggestions = useMemo(
-    () => tagsByRecentUse(tags, taggables).map(toCollectionTag),
+    () => tagsByRecentUse(tags, taggables),
     [tags, taggables],
   );
 
   return (
     <CollectionTags
-      tags={assigned.map(toCollectionTag)}
+      tags={assigned}
       suggestions={suggestions}
       onAdd={(name, color) => {
         assignTag.mutate({ collectionId, name, color });
