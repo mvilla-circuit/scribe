@@ -30,7 +30,7 @@ describe("CoverCard", () => {
     expect(screen.getByText("A Crown So Heavy")).toBeInTheDocument();
     const subtitle = screen.getByText("Book one of the realm");
     expect(subtitle).toBeInTheDocument();
-    expect(subtitle).toHaveClass("text-muted");
+    expect(subtitle).toHaveClass("text-muted", "line-clamp-2");
   });
 
   it("omits the subtitle row when none is set", () => {

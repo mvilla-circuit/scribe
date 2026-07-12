@@ -79,7 +79,7 @@ function CoverCardComponent({
               {label}
             </span>
             {subtitleText && (
-              <span className="mt-0.5 block truncate text-xs text-muted">
+              <span className="mt-0.5 line-clamp-2 text-xs text-muted">
                 {subtitleText}
               </span>
             )}
