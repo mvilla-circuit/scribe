@@ -1,12 +1,17 @@
 import { useMemo } from "react";
 
 import { CollapsedRailButton } from "@/components/sidebar/collapsed-rail-button";
-import { AlertIcon, BookIcon } from "@/components/sidebar/icons";
+import {
+  AlertIcon,
+  BookIcon,
+  WhiteboardIcon,
+} from "@/components/sidebar/icons";
 import { SIDEBAR_ICON_SIZE } from "@/components/sidebar/sidebar-row";
 import { DocumentIcon } from "@/components/ui/document-icon";
 import type { Book } from "@/data/books";
 import { buildDocTree, documentAncestors } from "@/data/doc-tree";
 import { useDocuments } from "@/data/documents";
+import { useWhiteboards } from "@/data/whiteboards";
 import { useUIStore } from "@/store/ui";
 
 import { PageIcon } from "./icons";
@@ -25,11 +30,18 @@ export function CollapsedOutlineRail({ book }: { book: Book }) {
     [documentsQuery.data],
   );
   const titlePage = documents.find((d) => d.is_title_page) ?? null;
+  const whiteboardsQuery = useWhiteboards();
+  const whiteboards = (whiteboardsQuery.data ?? []).filter(
+    (whiteboard) =>
+      whiteboard.book_id === book.id && whiteboard.parent_document_id === null,
+  );
 
   const activeDocId = useUIStore((s) => s.activeDocId);
+  const activeWhiteboardId = useUIStore((s) => s.activeWhiteboardId);
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
   const setDocExpanded = useUIStore((s) => s.setDocExpanded);
   const setSidebarCollapsed = useUIStore((s) => s.setSidebarCollapsed);
+  const navigateTo = useUIStore((s) => s.navigateTo);
 
   // Top-level pages only; subpages are revealed in the expanded sidebar.
   const topLevel = useMemo(() => buildDocTree(documents), [documents]);
@@ -45,7 +57,8 @@ export function CollapsedOutlineRail({ book }: { book: Book }) {
   }, [documents, activeDocId]);
 
   const titlePageSelected =
-    activeDocId === null || activeDocId === titlePage?.id;
+    activeWhiteboardId === null &&
+    (activeDocId === null || activeDocId === titlePage?.id);
 
   // Mirror the library rail: the narrow rail can't host a retry card, so a
   // failed load shows a single warning affordance that re-opens the sidebar
@@ -107,6 +120,18 @@ export function CollapsedOutlineRail({ book }: { book: Book }) {
           </CollapsedRailButton>
         );
       })}
+      {whiteboards.map((whiteboard) => (
+        <CollapsedRailButton
+          key={whiteboard.id}
+          label={whiteboard.name || "Untitled"}
+          selected={activeWhiteboardId === whiteboard.id}
+          onClick={() => {
+            navigateTo({ bookId: book.id, whiteboardId: whiteboard.id });
+          }}
+        >
+          <WhiteboardIcon size={SIDEBAR_ICON_SIZE} />
+        </CollapsedRailButton>
+      ))}
     </div>
   );
 }

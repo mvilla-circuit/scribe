@@ -82,6 +82,7 @@ function renderRow(
         onDuplicate={unused}
         onCopyLink={unused}
         onNewChild={unused}
+        onNewWhiteboardChild={unused}
       />
     </RowHarness>,
   );

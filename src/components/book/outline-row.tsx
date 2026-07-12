@@ -43,6 +43,7 @@ interface OutlineRowHandlers {
   onDuplicate: (node: FlatDocNode) => void;
   onCopyLink: (id: string) => void;
   onNewChild: (id: string) => void;
+  onNewWhiteboardChild: (id: string) => void;
 }
 
 type OutlineRowProps = OutlineRowHandlers & {
@@ -69,6 +70,7 @@ export const OutlineRow = memo(function OutlineRow({
   onDuplicate,
   onCopyLink,
   onNewChild,
+  onNewWhiteboardChild,
 }: OutlineRowProps) {
   const label = node.document.title || "Untitled";
 
@@ -92,6 +94,13 @@ export const OutlineRow = memo(function OutlineRow({
       label: "Add page inside",
       onSelect: () => {
         onNewChild(node.id);
+      },
+    },
+    {
+      icon: <PlusIcon size={15} />,
+      label: "Add whiteboard inside",
+      onSelect: () => {
+        onNewWhiteboardChild(node.id);
       },
     },
     {

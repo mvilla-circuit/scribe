@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 
-import { BookIcon } from "@/components/sidebar/icons";
+import { BookIcon, WhiteboardIcon } from "@/components/sidebar/icons";
 import {
   SIDEBAR_ICON_SIZE,
   SIDEBAR_ROW_GAP,
@@ -16,6 +16,12 @@ import { useTreeDnd } from "@/components/tree/use-tree-dnd";
 import { useTreePanel } from "@/components/tree/use-tree-panel";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DocumentIcon } from "@/components/ui/document-icon";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tooltip } from "@/components/ui/tooltip";
 import type { Book } from "@/data/books";
 import { buildDocTree, descendantCount } from "@/data/doc-tree";
@@ -32,6 +38,7 @@ import {
   useRenameDocument,
 } from "@/data/documents";
 import { endPositionFor } from "@/data/ordering";
+import { useCreateWhiteboard, useWhiteboards } from "@/data/whiteboards";
 import { copyPageLink } from "@/editor/copy-page-link";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
@@ -60,18 +67,29 @@ export function OutlinePanel({ book }: { book: Book }) {
     [documentsQuery.data],
   );
   const titlePage = documents.find((d) => d.is_title_page) ?? null;
+  const whiteboardsQuery = useWhiteboards();
+  const whiteboards = useMemo(
+    () =>
+      (whiteboardsQuery.data ?? []).filter(
+        (whiteboard) => whiteboard.book_id === book.id,
+      ),
+    [book.id, whiteboardsQuery.data],
+  );
 
   const expandedArr = useUIStore((s) => s.expandedDocIds);
   const toggleDocExpanded = useUIStore((s) => s.toggleDocExpanded);
   const setDocExpanded = useUIStore((s) => s.setDocExpanded);
   const activeDocId = useUIStore((s) => s.activeDocId);
+  const activeWhiteboardId = useUIStore((s) => s.activeWhiteboardId);
   const setActiveDoc = useUIStore((s) => s.setActiveDoc);
+  const navigateTo = useUIStore((s) => s.navigateTo);
 
   const createDocument = useCreateDocument(book.id);
   const duplicateDocument = useDuplicateDocument(book.id);
   const renameDocument = useRenameDocument(book.id);
   const moveDocument = useMoveDocument(book.id);
   const deleteDocument = useDeleteDocument(book.id);
+  const createWhiteboard = useCreateWhiteboard();
 
   const panel = useTreePanel<DeleteTarget>();
   // Pull out the stable members (react-query's `mutate`, the panel's
@@ -79,6 +97,7 @@ export function OutlinePanel({ book }: { book: Book }) {
   // without listing the whole per-render mutation/panel objects — which would
   // rebuild the callbacks every render and defeat the row memoization.
   const { mutate: createDocumentMutate } = createDocument;
+  const { mutate: createWhiteboardMutate } = createWhiteboard;
   const { mutate: duplicateDocumentMutate } = duplicateDocument;
   const { mutate: renameDocumentMutate } = renameDocument;
   const { startRename, cancelRename, requestDelete } = panel;
@@ -137,6 +156,28 @@ export function OutlinePanel({ book }: { book: Book }) {
       startRename,
     ],
   );
+  const handleCreateWhiteboard = useCallback(
+    (parentDocumentId: string | null = null) => {
+      const id = crypto.randomUUID();
+      createWhiteboardMutate({
+        id,
+        book_id: book.id,
+        parent_document_id: parentDocumentId,
+        position: endPositionFor([
+          ...documents.filter(
+            (document) =>
+              !document.is_title_page &&
+              document.parent_document_id === parentDocumentId,
+          ),
+          ...whiteboards.filter(
+            (whiteboard) => whiteboard.parent_document_id === parentDocumentId,
+          ),
+        ]),
+      });
+      navigateTo({ bookId: book.id, whiteboardId: id });
+    },
+    [book.id, createWhiteboardMutate, documents, navigateTo, whiteboards],
+  );
 
   const onDuplicate = useCallback(
     (node: FlatDocNode) => {
@@ -183,7 +224,8 @@ export function OutlinePanel({ book }: { book: Book }) {
   };
 
   const titlePageSelected =
-    activeDocId === null || activeDocId === titlePage?.id;
+    activeWhiteboardId === null &&
+    (activeDocId === null || activeDocId === titlePage?.id);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -220,18 +262,35 @@ export function OutlinePanel({ book }: { book: Book }) {
           <span className="select-none text-xs font-medium uppercase tracking-wide text-muted">
             Pages
           </span>
-          <Tooltip content="New page" side="right">
-            <button
-              type="button"
-              onClick={() => {
-                handleCreate(null);
-              }}
-              aria-label="New page"
-              className="flex h-6 w-6 items-center justify-center rounded-md text-muted transition-colors hover:bg-hover hover:text-text"
-            >
-              <PlusIcon size={16} />
-            </button>
-          </Tooltip>
+          <DropdownMenu>
+            <Tooltip content="Add to outline" side="right">
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Add to outline"
+                  className="flex h-6 w-6 items-center justify-center rounded-md text-muted transition-colors hover:bg-hover hover:text-text"
+                >
+                  <PlusIcon size={16} />
+                </button>
+              </DropdownMenuTrigger>
+            </Tooltip>
+            <DropdownMenuContent>
+              <DropdownMenuItem
+                onSelect={() => {
+                  handleCreate(null);
+                }}
+              >
+                New page
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  handleCreateWhiteboard();
+                }}
+              >
+                New whiteboard
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -280,10 +339,37 @@ export function OutlinePanel({ book }: { book: Book }) {
                 onDuplicate={onDuplicate}
                 onCopyLink={onCopyLink}
                 onNewChild={handleCreate}
+                onNewWhiteboardChild={handleCreateWhiteboard}
               />
             ))}
           </TreeDndContainer>
         )}
+        {whiteboards
+          .filter((whiteboard) => whiteboard.parent_document_id === null)
+          .map((whiteboard) => (
+            <button
+              key={whiteboard.id}
+              type="button"
+              aria-current={
+                activeWhiteboardId === whiteboard.id ? "page" : undefined
+              }
+              onClick={() => {
+                navigateTo({ bookId: book.id, whiteboardId: whiteboard.id });
+              }}
+              style={{ paddingLeft: sidebarRowPadding(0) }}
+              className={cn(
+                "flex h-9 w-full items-center gap-2 rounded-md pr-1 text-left text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
+                activeWhiteboardId === whiteboard.id
+                  ? "bg-selected font-medium text-text"
+                  : "text-text hover:bg-hover",
+              )}
+            >
+              <WhiteboardIcon size={SIDEBAR_ICON_SIZE} />
+              <span className="min-w-0 flex-1 truncate">
+                {whiteboard.name || "Untitled"}
+              </span>
+            </button>
+          ))}
       </div>
 
       <ConfirmDialog
