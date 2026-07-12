@@ -5,7 +5,8 @@ import { cn } from "@/lib/utils";
 
 import { Tooltip } from "./tooltip";
 
-const ACCEPTED_IMAGE_TYPES = "image/png,image/jpeg,image/webp,image/gif";
+const ACCEPTED_IMAGE_TYPES =
+  "image/png,image/jpeg,image/webp,image/gif,image/avif";
 
 /** Shared hover-pill styles matching Masthead's "Add icon" affordance. */
 const ADD_AFFORDANCE_CLASS =

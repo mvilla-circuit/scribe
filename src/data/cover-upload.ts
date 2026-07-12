@@ -7,14 +7,47 @@ import { supabase } from "@/lib/supabase";
 import { requireUserId } from "./crud";
 
 const COVER_UPLOAD_MAX_BYTES = 10 * 1024 * 1024;
+
+/** MIME → file extension for covers we accept. */
 const COVER_UPLOAD_TYPES: Record<string, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",
   "image/webp": "webp",
   "image/gif": "gif",
+  "image/avif": "avif",
+};
+
+/** Extension → MIME, for pickers that leave `File.type` empty (common for AVIF). */
+const COVER_UPLOAD_EXTENSIONS: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+  gif: "image/gif",
+  avif: "image/avif",
 };
 
 const COVERS_PUBLIC_MARKER = "/object/public/covers/";
+
+/**
+ * Resolves a cover file's MIME type and extension from `File.type`, falling
+ * back to the filename extension when the browser leaves the type blank.
+ */
+export function resolveCoverUploadType(
+  file: File,
+): { mime: string; ext: string } | null {
+  const fromMime = COVER_UPLOAD_TYPES[file.type];
+  if (fromMime) return { mime: file.type, ext: fromMime };
+
+  const match = /\.([a-z0-9]+)$/i.exec(file.name);
+  const extKey = match?.[1]?.toLowerCase();
+  if (!extKey) return null;
+  const mime = COVER_UPLOAD_EXTENSIONS[extKey];
+  if (!mime) return null;
+  const ext = COVER_UPLOAD_TYPES[mime];
+  if (!ext) return null;
+  return { mime, ext };
+}
 
 /**
  * Extracts the storage object path from a public `covers` URL, or null when the
@@ -51,16 +84,25 @@ export function useUploadCover() {
   return useMutation({
     mutationFn: async (file: File): Promise<string> => {
       const userId = requireUserId(session);
-      const ext = COVER_UPLOAD_TYPES[file.type];
-      if (!ext) throw new Error("Unsupported image type");
+      const resolved = resolveCoverUploadType(file);
+      if (!resolved) throw new Error("Unsupported image type");
       if (file.size > COVER_UPLOAD_MAX_BYTES) {
         throw new Error("Image must be under 10 MB");
       }
+      if (file.size === 0) {
+        throw new Error("Image file is empty");
+      }
 
-      const path = `${userId}/${crypto.randomUUID()}.${ext}`;
+      // Read into a typed Blob so storage always sees real bytes + contentType.
+      // Passing a File whose `type` is blank (or AVIF on some WebViews) can make
+      // Supabase Storage reject the multipart body as "No content provided".
+      const bytes = await file.arrayBuffer();
+      const body = new Blob([bytes], { type: resolved.mime });
+
+      const path = `${userId}/${crypto.randomUUID()}.${resolved.ext}`;
       const { error } = await supabase.storage
         .from("covers")
-        .upload(path, file, { contentType: file.type, upsert: false });
+        .upload(path, body, { contentType: resolved.mime, upsert: false });
       if (error) throw error;
 
       const { data } = supabase.storage.from("covers").getPublicUrl(path);

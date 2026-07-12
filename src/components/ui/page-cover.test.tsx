@@ -102,6 +102,15 @@ describe("PageCover", () => {
 });
 
 describe("AddCoverButton", () => {
+  it("accepts AVIF among cover image types", () => {
+    renderWithProviders(<AddCoverButton onUpload={vi.fn()} />);
+
+    expect(screen.getByLabelText("Choose cover image")).toHaveAttribute(
+      "accept",
+      expect.stringContaining("image/avif"),
+    );
+  });
+
   it("uploads a cover selected through the add control", async () => {
     const user = userEvent.setup();
     const cover = new File(["cover"], "cover.png", { type: "image/png" });

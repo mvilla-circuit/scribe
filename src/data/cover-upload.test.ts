@@ -8,6 +8,7 @@ import { renderHookWithQuery } from "@/test/render-with-query";
 import {
   coverObjectPathFromPublicUrl,
   deleteCoverObject,
+  resolveCoverUploadType,
   useUploadCover,
 } from "./cover-upload";
 
@@ -62,6 +63,29 @@ describe("deleteCoverObject", () => {
   });
 });
 
+describe("resolveCoverUploadType", () => {
+  it("uses the File MIME type when present", () => {
+    const file = new File(["cover"], "cover.avif", { type: "image/avif" });
+    expect(resolveCoverUploadType(file)).toEqual({
+      mime: "image/avif",
+      ext: "avif",
+    });
+  });
+
+  it("falls back to the filename extension when MIME is blank", () => {
+    const file = new File(["cover"], "cover.avif", { type: "" });
+    expect(resolveCoverUploadType(file)).toEqual({
+      mime: "image/avif",
+      ext: "avif",
+    });
+  });
+
+  it("returns null for unsupported types", () => {
+    const file = new File(["cover"], "cover.svg", { type: "image/svg+xml" });
+    expect(resolveCoverUploadType(file)).toBeNull();
+  });
+});
+
 describe("useUploadCover", () => {
   it("rejects an unsupported image type", async () => {
     const { result } = renderHookWithQuery(() => useUploadCover());
@@ -113,6 +137,53 @@ describe("useUploadCover", () => {
     );
     expect(result.current.data).toMatch(
       /^http:\/\/supabase\.test\/storage\/v1\/object\/public\/covers\/user-1\/[0-9a-f-]+\.png$/,
+    );
+  });
+
+  it("uploads an AVIF cover and returns its public URL", async () => {
+    let uploadUrl = "";
+    server.use(
+      http.post(`${COVERS_URL}/:userId/:filename`, ({ request }) => {
+        uploadUrl = request.url;
+        return HttpResponse.json({ Key: "user-1/cover.avif" });
+      }),
+    );
+
+    const { result } = renderHookWithQuery(() => useUploadCover());
+    const file = new File(["cover"], "cover.avif", { type: "image/avif" });
+
+    result.current.mutate(file);
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(uploadUrl).toMatch(
+      /^http:\/\/supabase\.test\/storage\/v1\/object\/covers\/user-1\/[0-9a-f-]+\.avif$/,
+    );
+    expect(result.current.data).toMatch(
+      /^http:\/\/supabase\.test\/storage\/v1\/object\/public\/covers\/user-1\/[0-9a-f-]+\.avif$/,
+    );
+  });
+
+  it("uploads an AVIF cover with a blank MIME type from the filename", async () => {
+    let uploadUrl = "";
+    server.use(
+      http.post(`${COVERS_URL}/:userId/:filename`, ({ request }) => {
+        uploadUrl = request.url;
+        return HttpResponse.json({ Key: "user-1/cover.avif" });
+      }),
+    );
+
+    const { result } = renderHookWithQuery(() => useUploadCover());
+    const file = new File(["cover"], "cover.avif", { type: "" });
+
+    result.current.mutate(file);
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(uploadUrl).toMatch(
+      /^http:\/\/supabase\.test\/storage\/v1\/object\/covers\/user-1\/[0-9a-f-]+\.avif$/,
     );
   });
 });
