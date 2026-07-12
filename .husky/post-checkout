@@ -1,0 +1,4 @@
+# Runs on `git checkout` and `git worktree add`. Copy app secrets into new
+# linked worktrees so `npm run tauri dev` / `npm run dev` work without a
+# manual `.env.local` step. Failures must not block checkout.
+./scripts/sync-worktree-env.sh || true
