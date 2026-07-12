@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MorandiSwatchGrid } from "@/components/ui/morandi-swatch-grid";
 import { DEFAULT_SWATCH, swatchDotStyle } from "@/lib/swatches";
-import { cn } from "@/lib/utils";
+import { cn, resolveEditedValue } from "@/lib/utils";
 
 import { TagChip, type TagChipData } from "./tag-chip";
 
@@ -121,7 +121,7 @@ function TagChipMenu({ tag, onRecolor, onRename, onRemove }: TagChipMenuProps) {
             colorGroupLabel={`Color for ${tag.name}`}
             colorButtonLabel={(hue) => `${hue} for ${tag.name}`}
             onCommitName={(name) => {
-              if (name !== tag.name) onRename(name);
+              onRename(name);
               setOpen(false);
             }}
             onPickColor={(hue) => {
@@ -280,8 +280,13 @@ function TagEditorPanel({
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             e.preventDefault();
-            const trimmed = draft.trim();
-            if (trimmed) onCommitName(trimmed);
+            // A blank or unchanged name settles the same way an inline rename
+            // does: close without a redundant (or empty) commit.
+            const outcome = resolveEditedValue(draft, {
+              previous: initialName,
+            });
+            if (outcome.commit) onCommitName(outcome.value);
+            else onCancel();
           } else if (e.key === "Escape") {
             e.preventDefault();
             onCancel();

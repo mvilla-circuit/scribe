@@ -8,6 +8,7 @@ interface InlineRenameProps {
   onCancel: () => void;
   placeholder?: string;
   className?: string;
+  ariaLabel?: string;
 }
 
 /**
@@ -28,6 +29,7 @@ export function InlineRename({
   onCancel,
   placeholder,
   className,
+  ariaLabel,
 }: InlineRenameProps) {
   const [value, setValue] = useState(initialValue);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -60,6 +62,7 @@ export function InlineRename({
       ref={inputRef}
       value={value}
       placeholder={placeholder}
+      aria-label={ariaLabel}
       spellCheck={false}
       onChange={(e) => {
         setValue(e.target.value);

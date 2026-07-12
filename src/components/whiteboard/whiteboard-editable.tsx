@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { cn } from "@/lib/utils";
+import { cn, resolveEditedValue } from "@/lib/utils";
 
 interface CanvasTextProps {
   value: string;
@@ -56,7 +56,13 @@ export function CanvasText({
   const finish = (commit: boolean) => {
     if (settled.current) return;
     settled.current = true;
-    if (commit && draft !== value) onCommit(draft);
+    // Canvas notes may be cleared to blank, so settle with the shared trim
+    // rule but allow an empty result through rather than cancelling it.
+    const outcome = resolveEditedValue(draft, {
+      previous: value,
+      allowEmpty: true,
+    });
+    if (commit && outcome.commit) onCommit(outcome.value);
     else setDraft(value);
     onStopEditing();
   };

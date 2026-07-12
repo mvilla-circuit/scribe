@@ -29,7 +29,7 @@ import {
   Type,
   X,
 } from "lucide-react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -44,6 +44,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { InlineRename } from "@/components/ui/inline-rename";
 import { MorandiSwatchGrid } from "@/components/ui/morandi-swatch-grid";
 import {
   addField,
@@ -61,7 +62,7 @@ import type {
   DatagridFieldType,
   DatagridSelectOption,
 } from "@/lib/datagrid-schema";
-import { cn } from "@/lib/utils";
+import { cn, resolveEditedValue } from "@/lib/utils";
 
 import {
   swatchChipStyle,
@@ -304,9 +305,13 @@ function SortableFieldRow({
   );
 
   const commitRename = () => {
-    const next = draftName.trim() || field.name;
-    setDraftName(next);
-    if (next !== field.name) onRename(field.id, next);
+    const outcome = resolveEditedValue(draftName, { previous: field.name });
+    if (outcome.commit) {
+      setDraftName(outcome.value);
+      onRename(field.id, outcome.value);
+    } else {
+      setDraftName(field.name);
+    }
   };
 
   return (
@@ -416,19 +421,10 @@ function OptionEditor({
 }) {
   const options = field.config.options ?? [];
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [draftName, setDraftName] = useState("");
   const [colorOptionId, setColorOptionId] = useState<string | null>(null);
-  const renameInput = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!editingId) return;
-    renameInput.current?.focus();
-    renameInput.current?.select();
-  }, [editingId]);
 
   const addOption = () => {
     const id = crypto.randomUUID();
-    setDraftName("New option");
     setEditingId(id);
     onChange([
       ...options,
@@ -450,16 +446,6 @@ function OptionEditor({
 
   const removeOption = (id: string) => {
     onChange(options.filter((o) => o.id !== id));
-  };
-
-  const startRename = (option: DatagridSelectOption) => {
-    setDraftName(option.name);
-    setEditingId(option.id);
-  };
-
-  const commitRename = (option: DatagridSelectOption) => {
-    renameOption(option.id, draftName);
-    setEditingId(null);
   };
 
   return (
@@ -504,33 +490,24 @@ function OptionEditor({
           </DropdownMenu>
 
           {editingId === option.id ? (
-            <input
-              ref={renameInput}
-              aria-label={`Rename ${option.name}`}
-              value={draftName}
-              onChange={(event) => {
-                setDraftName(event.target.value);
+            <InlineRename
+              initialValue={option.name}
+              ariaLabel={`Rename ${option.name}`}
+              onCommit={(name) => {
+                renameOption(option.id, name);
+                setEditingId(null);
               }}
-              onBlur={() => {
-                commitRename(option);
+              onCancel={() => {
+                setEditingId(null);
               }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  event.currentTarget.blur();
-                } else if (event.key === "Escape") {
-                  event.preventDefault();
-                  setEditingId(null);
-                }
-              }}
-              className={cn(INPUT_CLASS, "min-w-[12rem] flex-1 py-0.5")}
+              className="min-w-[12rem] flex-1 py-0.5"
             />
           ) : (
             <button
               type="button"
               aria-label={`Rename ${option.name}`}
               onClick={() => {
-                startRename(option);
+                setEditingId(option.id);
               }}
               className="min-w-0 truncate rounded px-1 py-0.5 text-left outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring"
             >

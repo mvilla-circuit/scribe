@@ -2,6 +2,7 @@ import { Maximize2, Plus } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { Tooltip } from "@/components/ui/tooltip";
+import { useDragResize } from "@/components/ui/use-drag-resize";
 import type { DatagridQueryRow } from "@/lib/datagrid-query";
 import { TITLE_FIELD_ID } from "@/lib/datagrid-query";
 import type {
@@ -72,12 +73,13 @@ export function DatagridTableView({
   // Live width overrides during a drag; committed to the view on mouse-up so the
   // grid never writes to the store on every mousemove.
   const [draftWidths, setDraftWidths] = useState<Record<string, number>>({});
-  const dragRef = useRef<{
+  // Which column is being resized, and the width/clientX it started from — set
+  // synchronously before arming `useDragResize` so its clientX-only callbacks
+  // can be translated back into a width for that column.
+  const dragStart = useRef<{
     columnId: string;
     startX: number;
     startWidth: number;
-    frame: number;
-    width: number;
   } | null>(null);
 
   const defaultWidth = (columnId: string) =>
@@ -95,48 +97,40 @@ export function DatagridTableView({
     onResizeColumn?.(columnId, next);
   };
 
+  const widthAtClientX = (clientX: number) => {
+    const drag = dragStart.current;
+    if (!drag) return null;
+    return Math.max(
+      MIN_COLUMN_WIDTH,
+      drag.startWidth + (clientX - drag.startX),
+    );
+  };
+
+  const { onMouseDown: armDrag } = useDragResize({
+    onResize: (clientX) => {
+      const drag = dragStart.current;
+      const width = widthAtClientX(clientX);
+      if (!drag || width === null) return;
+      setDraftWidths((prev) => ({ ...prev, [drag.columnId]: width }));
+    },
+    onCommit: (clientX) => {
+      const drag = dragStart.current;
+      const width = widthAtClientX(clientX);
+      dragStart.current = null;
+      if (!drag || width === null) return;
+      commitWidth(drag.columnId, width);
+    },
+  });
+
   const startResize = (columnId: string, event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
-    const startWidth = widthOf(columnId) ?? defaultWidth(columnId);
-    dragRef.current = {
+    dragStart.current = {
       columnId,
       startX: event.clientX,
-      startWidth,
-      frame: 0,
-      width: startWidth,
+      startWidth: widthOf(columnId) ?? defaultWidth(columnId),
     };
-
-    const onMove = (e: MouseEvent) => {
-      const drag = dragRef.current;
-      if (!drag) return;
-      const width = Math.max(
-        MIN_COLUMN_WIDTH,
-        drag.startWidth + (e.clientX - drag.startX),
-      );
-      drag.width = width;
-      if (drag.frame === 0) {
-        drag.frame = requestAnimationFrame(() => {
-          if (!dragRef.current) return;
-          dragRef.current.frame = 0;
-          setDraftWidths((prev) => ({ ...prev, [columnId]: width }));
-        });
-      }
-    };
-
-    const onUp = () => {
-      const drag = dragRef.current;
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-      if (drag) {
-        if (drag.frame !== 0) cancelAnimationFrame(drag.frame);
-        dragRef.current = null;
-        commitWidth(columnId, drag.width);
-      }
-    };
-
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    armDrag(event);
   };
 
   const nudgeWidth = (columnId: string, delta: number) => {
