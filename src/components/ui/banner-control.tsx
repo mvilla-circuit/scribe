@@ -1,4 +1,3 @@
-import * as RPopover from "@radix-ui/react-popover";
 import { RectangleHorizontal } from "lucide-react";
 import { useState } from "react";
 
@@ -7,6 +6,7 @@ import { SwatchGrid } from "@/editor/swatch-grid";
 import { makeIcon } from "@/lib/make-icon";
 import { cn } from "@/lib/utils";
 
+import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { Tooltip } from "./tooltip";
 
 const BannerGlyph = makeIcon(RectangleHorizontal);
@@ -27,9 +27,9 @@ export function BannerControl({
   const active = value !== null;
 
   return (
-    <RPopover.Root open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen}>
       <Tooltip content={active ? "Banner color" : "Add banner"}>
-        <RPopover.Trigger asChild>
+        <PopoverTrigger asChild>
           <button
             type="button"
             aria-label={active ? "Banner color" : "Add banner"}
@@ -43,25 +43,19 @@ export function BannerControl({
           >
             <BannerGlyph size={16} />
           </button>
-        </RPopover.Trigger>
+        </PopoverTrigger>
       </Tooltip>
-      <RPopover.Portal>
-        <RPopover.Content
-          align="end"
-          sideOffset={6}
-          className="scribe-pop z-50 w-[12rem] rounded-lg border border-border bg-elevated p-3 text-text shadow-popover outline-none"
-        >
-          <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.07em] text-muted">
-            Banner
-          </div>
-          <SwatchGrid
-            swatches={BANNER_COLORS}
-            value={value}
-            onChange={onChange}
-            clearLabel="No banner"
-          />
-        </RPopover.Content>
-      </RPopover.Portal>
-    </RPopover.Root>
+      <PopoverContent align="end" className="w-[12rem] p-3">
+        <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.07em] text-muted">
+          Banner
+        </div>
+        <SwatchGrid
+          swatches={BANNER_COLORS}
+          value={value}
+          onChange={onChange}
+          clearLabel="No banner"
+        />
+      </PopoverContent>
+    </Popover>
   );
 }

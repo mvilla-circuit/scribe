@@ -1,4 +1,4 @@
-import * as RPopover from "@radix-ui/react-popover";
+import type * as RPopover from "@radix-ui/react-popover";
 import { useState } from "react";
 
 import { parseIcon } from "@/data/icon";
@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { EmojiSection } from "./icon-picker-emoji-section";
 import { GlyphSection } from "./icon-picker-glyph-section";
 import { UploadSection } from "./icon-picker-upload-section";
+import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 
 interface IconPickerProps {
   /** The trigger element. Rendered via Radix `asChild`. */
@@ -46,64 +47,61 @@ export function IconPicker({
   };
 
   return (
-    <RPopover.Root open={open} onOpenChange={setOpen}>
-      <RPopover.Trigger asChild>{children}</RPopover.Trigger>
-      <RPopover.Portal>
-        <RPopover.Content
-          align={align}
-          sideOffset={6}
-          className="scribe-pop z-50 flex w-[19rem] flex-col overflow-hidden rounded-lg border border-border bg-elevated text-text shadow-popover outline-none"
-        >
-          <div className="flex items-center gap-1 border-b border-border p-1.5">
-            <TabButton
-              active={tab === "glyph"}
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <PopoverContent
+        align={align}
+        className="flex w-[19rem] flex-col overflow-hidden"
+      >
+        <div className="flex items-center gap-1 border-b border-border p-1.5">
+          <TabButton
+            active={tab === "glyph"}
+            onClick={() => {
+              setTab("glyph");
+            }}
+          >
+            Icons
+          </TabButton>
+          <TabButton
+            active={tab === "emoji"}
+            onClick={() => {
+              setTab("emoji");
+            }}
+          >
+            Emoji
+          </TabButton>
+          <TabButton
+            active={tab === "upload"}
+            onClick={() => {
+              setTab("upload");
+            }}
+          >
+            Upload
+          </TabButton>
+          <div className="flex-1" />
+          {value && (
+            <button
+              type="button"
               onClick={() => {
-                setTab("glyph");
+                onRemove();
+                setOpen(false);
               }}
+              className="h-7 shrink-0 rounded-md px-2 text-xs font-medium text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
             >
-              Icons
-            </TabButton>
-            <TabButton
-              active={tab === "emoji"}
-              onClick={() => {
-                setTab("emoji");
-              }}
-            >
-              Emoji
-            </TabButton>
-            <TabButton
-              active={tab === "upload"}
-              onClick={() => {
-                setTab("upload");
-              }}
-            >
-              Upload
-            </TabButton>
-            <div className="flex-1" />
-            {value && (
-              <button
-                type="button"
-                onClick={() => {
-                  onRemove();
-                  setOpen(false);
-                }}
-                className="h-7 shrink-0 rounded-md px-2 text-xs font-medium text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                Remove
-              </button>
-            )}
-          </div>
+              Remove
+            </button>
+          )}
+        </div>
 
-          <div className="h-[20rem]">
-            {tab === "glyph" && (
-              <GlyphSection current={current} onSelect={select} />
-            )}
-            {tab === "emoji" && <EmojiSection onSelect={select} />}
-            {tab === "upload" && <UploadSection onSelect={select} />}
-          </div>
-        </RPopover.Content>
-      </RPopover.Portal>
-    </RPopover.Root>
+        <div className="h-[20rem]">
+          {tab === "glyph" && (
+            <GlyphSection current={current} onSelect={select} />
+          )}
+          {tab === "emoji" && <EmojiSection onSelect={select} />}
+          {tab === "upload" && <UploadSection onSelect={select} />}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 

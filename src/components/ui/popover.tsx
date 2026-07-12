@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 export const Popover = RPopover.Root;
 export const PopoverTrigger = RPopover.Trigger;
+export const PopoverAnchor = RPopover.Anchor;
 
 export const PopoverContent = forwardRef<
   React.ComponentRef<typeof RPopover.Content>,

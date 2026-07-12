@@ -1,6 +1,11 @@
-import * as RPopover from "@radix-ui/react-popover";
 import { useState } from "react";
 import { toast } from "sonner";
+
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+} from "@/components/ui/popover";
 
 import { EditorIconButton } from "./editor-icon-button";
 import { CopyIcon, ExternalLinkIcon, PencilIcon, TrashIcon } from "./icons";
@@ -78,60 +83,58 @@ export function LinkPopover({
     : {};
 
   return (
-    <RPopover.Root open={open} onOpenChange={onOpenChange}>
-      <RPopover.Anchor asChild>
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverAnchor asChild>
         <div style={anchorStyle} />
-      </RPopover.Anchor>
-      <RPopover.Portal>
-        <RPopover.Content
-          side="top"
-          sideOffset={8}
-          onMouseEnter={onCardEnter}
-          onMouseLeave={onCardLeave}
-          className="scribe-pop z-50 w-80 max-w-[22rem] rounded-lg border border-border bg-elevated p-1.5 font-sans shadow-popover focus-within:ring-2 focus-within:ring-ring"
-        >
-          {showForm ? (
-            <LinkEditForm
-              key={href}
-              initialHref={href}
-              hasLink={hasLink}
-              onSubmit={onSubmit}
-              onRemove={onRemove}
-              onCancel={() => {
-                if (mode === "add") onOpenChange(false);
-                else setEditing(false);
-              }}
-            />
-          ) : (
-            <div className="flex flex-col gap-1.5">
-              <span className="scribe-linkpop-url px-1">{href}</span>
-              <div className="flex items-center gap-0.5">
-                <EditorIconButton label="Open link" onClick={onOpenUrl}>
-                  <ExternalLinkIcon size={14} />
+      </PopoverAnchor>
+      <PopoverContent
+        side="top"
+        sideOffset={8}
+        onMouseEnter={onCardEnter}
+        onMouseLeave={onCardLeave}
+        className="w-80 max-w-[22rem] p-1.5 focus-within:ring-2 focus-within:ring-ring"
+      >
+        {showForm ? (
+          <LinkEditForm
+            key={href}
+            initialHref={href}
+            hasLink={hasLink}
+            onSubmit={onSubmit}
+            onRemove={onRemove}
+            onCancel={() => {
+              if (mode === "add") onOpenChange(false);
+              else setEditing(false);
+            }}
+          />
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            <span className="scribe-linkpop-url px-1">{href}</span>
+            <div className="flex items-center gap-0.5">
+              <EditorIconButton label="Open link" onClick={onOpenUrl}>
+                <ExternalLinkIcon size={14} />
+              </EditorIconButton>
+              <EditorIconButton label="Copy link" onClick={copy}>
+                <CopyIcon size={14} />
+              </EditorIconButton>
+              {editable && (
+                <EditorIconButton
+                  label="Edit link"
+                  onClick={() => {
+                    setEditing(true);
+                  }}
+                >
+                  <PencilIcon size={14} />
                 </EditorIconButton>
-                <EditorIconButton label="Copy link" onClick={copy}>
-                  <CopyIcon size={14} />
+              )}
+              {editable && (
+                <EditorIconButton label="Remove link" onClick={onRemove}>
+                  <TrashIcon size={14} />
                 </EditorIconButton>
-                {editable && (
-                  <EditorIconButton
-                    label="Edit link"
-                    onClick={() => {
-                      setEditing(true);
-                    }}
-                  >
-                    <PencilIcon size={14} />
-                  </EditorIconButton>
-                )}
-                {editable && (
-                  <EditorIconButton label="Remove link" onClick={onRemove}>
-                    <TrashIcon size={14} />
-                  </EditorIconButton>
-                )}
-              </div>
+              )}
             </div>
-          )}
-        </RPopover.Content>
-      </RPopover.Portal>
-    </RPopover.Root>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }
