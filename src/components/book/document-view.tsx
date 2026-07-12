@@ -169,7 +169,7 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
           onClick={() => {
             void copyPageLink("document", document.id);
           }}
-          className="absolute right-0 top-1 h-8 w-8 opacity-0 pointer-events-none group-hover/title:pointer-events-auto group-hover/title:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 motion-reduce:transition-none"
+          className="absolute right-0 top-1 h-8 w-8 opacity-0 transition-opacity pointer-events-none group-hover/title:pointer-events-auto group-hover/title:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 motion-reduce:transition-none"
         >
           <LinkIcon size={18} />
         </IconButton>
