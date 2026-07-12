@@ -58,6 +58,7 @@ import {
   sortGalleryChildren,
 } from "./collection-gallery";
 import { CollectionListRow } from "./collection-list-row";
+import { CollectionTagsSection } from "./collection-tags-section";
 import { CollectionToolbar } from "./collection-toolbar";
 import { CoverCard } from "./cover-card";
 
@@ -432,6 +433,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
             className="text-4xl font-semibold leading-tight tracking-tight text-text"
             style={{ fontFamily: "var(--font-display)" }}
           />
+          <CollectionTagsSection collectionId={collection.id} />
           <EditableText
             value={collection.description ?? ""}
             ariaLabel="Collection description"

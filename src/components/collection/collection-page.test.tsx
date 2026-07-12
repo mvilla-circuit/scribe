@@ -9,6 +9,8 @@ import {
   datagridsKey,
   entriesKey,
   foldersKey,
+  taggablesKey,
+  tagsKey,
   whiteboardsKey,
 } from "@/data/query-keys";
 import { useUIStore } from "@/store/ui";
@@ -67,6 +69,8 @@ function seed() {
   ]);
   client.setQueryData(datagridsKey, []);
   client.setQueryData(whiteboardsKey, []);
+  client.setQueryData(tagsKey, []);
+  client.setQueryData(taggablesKey("collection"), []);
   return client;
 }
 
@@ -102,6 +106,35 @@ describe("CollectionPage", () => {
     expect(
       screen.getByRole("button", { name: "Opening scene" }),
     ).toBeInTheDocument();
+  });
+
+  it("renders the tag row between the title and description", () => {
+    const client = seed();
+    client.setQueryData(tagsKey, [{ id: "tag-1", name: "Epic", color: "sky" }]);
+    client.setQueryData(taggablesKey("collection"), [
+      {
+        id: "tg-1",
+        tag_id: "tag-1",
+        target_type: "collection",
+        target_id: "c1",
+      },
+    ]);
+
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+
+    expect(
+      screen
+        .getByLabelText("Collection name")
+        .compareDocumentPosition(screen.getByRole("button", { name: "Epic" })) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      screen
+        .getByRole("button", { name: "Epic" })
+        .compareDocumentPosition(
+          screen.getByLabelText("Collection description"),
+        ) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("shows datagrid cards belonging to the collection", () => {
@@ -293,6 +326,8 @@ describe("CollectionPage", () => {
     client.setQueryData(entriesKey, []);
     client.setQueryData(datagridsKey, []);
     client.setQueryData(whiteboardsKey, []);
+    client.setQueryData(tagsKey, []);
+    client.setQueryData(taggablesKey("collection"), []);
 
     renderWithProviders(<CollectionPage collectionId="c1" />, { client });
 
