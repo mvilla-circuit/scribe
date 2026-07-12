@@ -19,6 +19,7 @@ import {
   WhiteboardIcon,
 } from "@/components/sidebar/icons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { CoverCard } from "@/components/ui/cover-card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -79,8 +80,7 @@ import {
 import { CollectionListRow } from "./collection-list-row";
 import { CollectionTagsSection } from "./collection-tags-section";
 import { CollectionToolbar } from "./collection-toolbar";
-import { CoverCard } from "./cover-card";
-import { type GalleryTag } from "./tag-chips-row";
+import { type GalleryTag, TagChipsRow } from "./tag-chips-row";
 
 interface LeafDeleteTarget {
   kind: LeafDeleteKind;
@@ -694,6 +694,10 @@ function galleryFallback(child: GalleryChild) {
   }
 }
 
+// Grid cards are narrower than list rows, so a card caps at fewer chips
+// before collapsing the rest into a "+N".
+const MAX_VISIBLE_GRID_TAGS = 3;
+
 function GalleryCoverCard({
   child,
   onOpen,
@@ -716,7 +720,14 @@ function GalleryCoverCard({
       onOpen={onOpen}
       actions={actions}
       aspect={galleryCoverAspect(child)}
-      tags={tags}
+      footerExtra={
+        <TagChipsRow
+          tags={tags ?? []}
+          max={MAX_VISIBLE_GRID_TAGS}
+          className="mt-1.5"
+          data-testid="cover-card-tags"
+        />
+      }
     />
   );
 }

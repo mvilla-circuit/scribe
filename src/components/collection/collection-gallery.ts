@@ -1,4 +1,5 @@
 import type { TreeChild } from "@/data/tree";
+import { matchesNormalizedQuery } from "@/lib/text-match";
 
 /** A tree child that can appear in a collection gallery (folders are excluded). */
 export type GalleryChild = Exclude<TreeChild, { kind: "folder" }>;
@@ -92,13 +93,9 @@ export function filterGalleryChildren(
   children: TreeChild[],
   query: string,
 ): TreeChild[] {
-  const normalized = query.toLocaleLowerCase();
-
   return children.filter(
     (child) =>
-      isGalleryChild(child) &&
-      (normalized === "" ||
-        itemTitle(child).toLocaleLowerCase().includes(normalized)),
+      isGalleryChild(child) && matchesNormalizedQuery(itemTitle(child), query),
   );
 }
 
