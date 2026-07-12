@@ -120,4 +120,17 @@ describe("IconButton", () => {
       "mx-auto",
     );
   });
+
+  it("renders without an internal tooltip when tooltip is false", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <IconButton label="Settings" tooltip={false} onClick={vi.fn()}>
+        <span>icon</span>
+      </IconButton>,
+    );
+
+    await user.hover(screen.getByRole("button", { name: "Settings" }));
+
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
 });

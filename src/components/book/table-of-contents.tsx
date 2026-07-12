@@ -20,6 +20,8 @@ interface TableOfContentsProps {
    * Omitted when the list can't be empty (a parent page always has children).
    */
   onCreateFirst?: () => void;
+  /** The book's resolved title-role font, so the contents empty state echoes the cover. */
+  titleFont?: string;
   /** Ids of expanded parents; collapsed parents hide their subtree. */
   expandedIds: Set<string>;
   /** Toggle a single parent's expansion. */
@@ -38,6 +40,7 @@ export function TableOfContents({
   documents,
   loading,
   onCreateFirst,
+  titleFont = "var(--font-display)",
   expandedIds,
   onToggle,
   rootId = null,
@@ -64,7 +67,9 @@ export function TableOfContents({
     return (
       <EmptyState
         className="mt-10"
+        tone="editorial"
         title="No documents yet"
+        titleStyle={{ fontFamily: titleFont }}
         body="Add your first page to begin shaping this book."
         cta={
           <Button variant="primary" onClick={onCreateFirst}>

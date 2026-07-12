@@ -1,6 +1,6 @@
 import { CollapsedOutlineRail } from "@/components/book/collapsed-outline-rail";
 import { ChevronLeftIcon } from "@/components/book/icons";
-import { Tooltip } from "@/components/ui/tooltip";
+import { IconButton } from "@/components/ui/icon-button";
 import type { Book } from "@/data/books";
 
 import { CollapsedLibraryRail } from "./collapsed-library-rail";
@@ -22,16 +22,14 @@ export function CollapsedSidebarNav({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <Tooltip content={backTarget.tooltip} side="right">
-        <button
-          type="button"
-          onClick={backTarget.goBack}
-          aria-label={backTarget.tooltip}
-          className="mx-auto flex h-9 w-9 items-center justify-center rounded-md text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <ChevronLeftIcon size={18} />
-        </button>
-      </Tooltip>
+      <IconButton
+        label={backTarget.tooltip}
+        side="right"
+        onClick={backTarget.goBack}
+        className="mx-auto text-muted"
+      >
+        <ChevronLeftIcon size={18} />
+      </IconButton>
       <CollapsedOutlineRail book={activeBook} />
     </div>
   );

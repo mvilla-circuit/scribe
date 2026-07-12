@@ -5,6 +5,7 @@ import {
   EditableText,
   type EditableTextHandle,
 } from "@/components/ui/editable-text";
+import { IconButton } from "@/components/ui/icon-button";
 import { Masthead } from "@/components/ui/masthead";
 import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { SkeletonText } from "@/components/ui/skeleton";
@@ -162,18 +163,16 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
         {/* Notion-style quiet affordance: hidden until the title is hovered or
             the button is focused, and inert at rest so it never intercepts
             clicks meant for the editable title. */}
-        <Tooltip content="Copy link">
-          <button
-            type="button"
-            aria-label="Copy link to page"
-            onClick={() => {
-              void copyPageLink("document", document.id);
-            }}
-            className="absolute right-0 top-1 flex h-8 w-8 items-center justify-center rounded-md text-muted opacity-0 outline-none transition-opacity hover:bg-hover hover:text-text focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring pointer-events-none group-hover/title:pointer-events-auto group-hover/title:opacity-100 focus-visible:pointer-events-auto motion-reduce:transition-none"
-          >
-            <LinkIcon size={18} />
-          </button>
-        </Tooltip>
+        <IconButton
+          label="Copy link to page"
+          size="sm"
+          onClick={() => {
+            void copyPageLink("document", document.id);
+          }}
+          className="absolute right-0 top-1 h-8 w-8 opacity-0 pointer-events-none group-hover/title:pointer-events-auto group-hover/title:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100 motion-reduce:transition-none"
+        >
+          <LinkIcon size={18} />
+        </IconButton>
       </div>
 
       {document.show_subtitle && (

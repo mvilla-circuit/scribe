@@ -76,4 +76,25 @@ describe("SearchField", () => {
 
     expect(screen.getByText("Search collection")).not.toHaveClass("sr-only");
   });
+
+  it("keeps the leading icon centered on the input when the label is visible", () => {
+    const { container } = render(
+      <SearchField
+        label="Search collection"
+        value=""
+        onChange={vi.fn()}
+        hideLabel={false}
+      />,
+    );
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- assert icon lives in the input wrapper, not the outer label+field shell
+    const icon = container.querySelector('[data-testid="search-field-icon"]');
+    expect(icon).not.toBeNull();
+    // eslint-disable-next-line testing-library/no-node-access -- layout structure check for absolute icon centering
+    const field = icon?.parentElement;
+    expect(field).toContainElement(
+      screen.getByRole("searchbox", { name: "Search collection" }),
+    );
+    expect(field).not.toContainElement(screen.getByText("Search collection"));
+  });
 });

@@ -36,29 +36,34 @@ export function SearchField({
   const id = useId();
 
   return (
-    <div className={cn("relative min-w-0 flex-1", className)}>
+    <div className={cn("min-w-0 flex-1", className)}>
       <label
         htmlFor={id}
         className={hideLabel ? "sr-only" : "mb-1 block text-xs text-muted"}
       >
         {label}
       </label>
-      {Icon ? (
-        <Icon
-          className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted"
-          aria-hidden="true"
+      {/* Icon is positioned against the input only so a visible label above
+          does not shift `top-1/2` to the midpoint of label+field. */}
+      <div className="relative">
+        {Icon ? (
+          <Icon
+            data-testid="search-field-icon"
+            className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted"
+            aria-hidden="true"
+          />
+        ) : null}
+        <Input
+          id={id}
+          type="search"
+          value={value}
+          onChange={(event) => {
+            onChange(event.target.value);
+          }}
+          placeholder={placeholder}
+          className={Icon ? "pl-8" : undefined}
         />
-      ) : null}
-      <Input
-        id={id}
-        type="search"
-        value={value}
-        onChange={(event) => {
-          onChange(event.target.value);
-        }}
-        placeholder={placeholder}
-        className={Icon ? "pl-8" : undefined}
-      />
+      </div>
     </div>
   );
 }

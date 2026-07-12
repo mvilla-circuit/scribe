@@ -6,10 +6,10 @@ import {
   BreadcrumbSep,
 } from "@/components/ui/breadcrumb";
 import { EditableText } from "@/components/ui/editable-text";
+import { IconButton } from "@/components/ui/icon-button";
 import { Masthead } from "@/components/ui/masthead";
 import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { SubtitleToggle } from "@/components/ui/subtitle-toggle";
-import { Tooltip } from "@/components/ui/tooltip";
 import { outlinePositionSiblings } from "@/data/book-outline-tree";
 import {
   type Book,
@@ -208,21 +208,18 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
         )}
         <span className="ml-auto flex items-center gap-1">
           {expandable.length > 0 && (
-            <Tooltip content={allExpanded ? "Collapse all" : "Expand all"}>
-              <button
-                type="button"
-                onClick={toggleAll}
-                aria-pressed={allExpanded}
-                aria-label={allExpanded ? "Collapse all" : "Expand all"}
-                className="flex h-7 w-7 items-center justify-center rounded-md text-muted outline-none transition-colors hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {allExpanded ? (
-                  <ChevronsDownUpIcon size={16} />
-                ) : (
-                  <ChevronsUpDownIcon size={16} />
-                )}
-              </button>
-            </Tooltip>
+            <IconButton
+              label={allExpanded ? "Collapse all" : "Expand all"}
+              size="sm"
+              aria-pressed={allExpanded}
+              onClick={toggleAll}
+            >
+              {allExpanded ? (
+                <ChevronsDownUpIcon size={16} />
+              ) : (
+                <ChevronsUpDownIcon size={16} />
+              )}
+            </IconButton>
           )}
           <SubtitleToggle active={showSubtitle} onToggle={toggleSubtitle} />
           <FontControl
@@ -264,6 +261,7 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
           documents={documents}
           loading={loading}
           onCreateFirst={createFirstPage}
+          titleFont={titleFont}
           expandedIds={expandedIds}
           onToggle={toggleDoc}
         />

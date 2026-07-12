@@ -84,4 +84,22 @@ describe("TableOfContents", () => {
       screen.getByRole("button", { name: /add your first page/i }),
     ).toBeInTheDocument();
   });
+
+  it("renders the empty title in the book display font", () => {
+    renderWithProviders(
+      <TableOfContents
+        documents={[]}
+        loading={false}
+        expandedIds={new Set()}
+        onToggle={vi.fn()}
+        onCreateFirst={vi.fn()}
+        titleFont="var(--font-display)"
+      />,
+    );
+
+    expect(screen.getByText("No documents yet")).toHaveStyle({
+      fontFamily: "var(--font-display)",
+    });
+    expect(screen.getByText("No documents yet")).toHaveClass("text-base");
+  });
 });

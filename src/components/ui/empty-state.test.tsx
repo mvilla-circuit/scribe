@@ -28,4 +28,20 @@ describe("EmptyState", () => {
 
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
+
+  it("applies editorial title scale and titleStyle", () => {
+    render(
+      <EmptyState
+        tone="editorial"
+        title="No documents yet"
+        titleStyle={{ fontFamily: "var(--font-display)" }}
+        body="Add your first page."
+      />,
+    );
+
+    const title = screen.getByText("No documents yet");
+    expect(title).toHaveClass("text-base");
+    expect(title).toHaveStyle({ fontFamily: "var(--font-display)" });
+    expect(screen.getByText("Add your first page.")).toHaveClass("text-sm");
+  });
 });
