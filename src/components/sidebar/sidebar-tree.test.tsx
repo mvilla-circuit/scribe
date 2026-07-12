@@ -408,6 +408,17 @@ describe("SidebarTree expand toggle", () => {
       screen.queryByRole("treeitem", { name: /Folder Book/ }),
     ).not.toBeInTheDocument();
   });
+
+  it("activating an empty folder does not select a book", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    useUIStore.setState({ activeBookId: "bk-in-folder" });
+    renderWithProviders(<SidebarTree />, { client: seedExpandToggle() });
+
+    await user.click(screen.getByRole("treeitem", { name: /Empty Folder/ }));
+
+    expect(useUIStore.getState().activeBookId).toBe("bk-in-folder");
+    expect(useUIStore.getState().expandedFolderIds).not.toContain("f-empty");
+  });
 });
 
 describe("SidebarTree collection whiteboards", () => {

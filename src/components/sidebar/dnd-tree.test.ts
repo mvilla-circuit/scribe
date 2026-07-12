@@ -87,6 +87,37 @@ describe("flattenTree", () => {
       e1: false,
     });
   });
+
+  it("flags hasChildren when a collection nests only non-book children", () => {
+    const tree = buildTree(
+      [],
+      [],
+      [
+        makeCollection({ id: "c-parent", position: 1024 }),
+        makeCollection({
+          id: "c-nested",
+          parent_collection_id: "c-parent",
+          position: 1024,
+        }),
+        makeCollection({ id: "c-grid", position: 2048 }),
+        makeCollection({ id: "c-board", position: 3072 }),
+      ],
+      [],
+      [makeDatagrid({ id: "g1", collection_id: "c-grid", position: 1024 })],
+      [makeWhiteboard({ id: "w1", collection_id: "c-board", position: 1024 })],
+    );
+    const byId = Object.fromEntries(
+      flattenTree(tree, new Set(["c-parent"])).map((n) => [
+        n.id,
+        n.hasChildren,
+      ]),
+    );
+
+    expect(byId["c-parent"]).toBe(true);
+    expect(byId["c-nested"]).toBe(false);
+    expect(byId["c-grid"]).toBe(true);
+    expect(byId["c-board"]).toBe(true);
+  });
 });
 
 describe("getProjection", () => {
