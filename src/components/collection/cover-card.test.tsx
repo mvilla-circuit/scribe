@@ -57,6 +57,27 @@ describe("CoverCard", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("stretches the shell and footer so grid rows can equalize", () => {
+    render(
+      <CoverCard
+        title="Short"
+        icon={null}
+        coverUrl={null}
+        fallback={<span>fallback</span>}
+        onOpen={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("cover-card")).toHaveClass("h-full");
+    expect(screen.getByRole("button", { name: /Short/ })).toHaveClass("h-full");
+    expect(screen.getByTestId("cover-card-footer")).toHaveClass("flex-1");
+
+    // Media keeps its aspect ratio; only the footer absorbs extra height.
+    const media = screen.getByTestId("cover-card-media");
+    expect(media).not.toHaveClass("flex-1");
+    expect(media).toHaveClass("aspect-[3/4]");
+  });
+
   it("defaults the cover media to a book-cover aspect", () => {
     render(
       <CoverCard

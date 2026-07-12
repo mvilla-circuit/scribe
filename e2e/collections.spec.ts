@@ -1,6 +1,17 @@
+import type { Locator } from "@playwright/test";
+
 import { expect, test } from "./fixtures";
 
 const TS = "2026-01-01T00:00:00.000Z";
+
+/** Resolve a locator's bounding box, or fail when Playwright returns null. */
+async function boundingBoxOf(locator: Locator) {
+  const box = await locator.boundingBox();
+  if (box === null) {
+    throw new Error("expected a bounding box");
+  }
+  return box;
+}
 
 test.describe("collections", () => {
   test("creates a collection from the Library menu and opens its page", async ({
@@ -155,4 +166,98 @@ test.describe("collections with seeded data", () => {
     await editor.fill("The old road winds north.");
     await expect(editor).toContainText("The old road winds north.");
   });
+});
+
+test.describe("collection gallery card heights", () => {
+  const tallSubtitle =
+    "A long subtitle that wraps onto a second line to grow this card taller than its neighbor";
+
+  test.use({
+    seed: {
+      folders: [],
+      documents: [],
+      entries: [],
+      collections: [
+        {
+          id: "c-heights",
+          user_id: "user-1",
+          name: "Heights",
+          icon: null,
+          cover_url: null,
+          description: null,
+          parent_collection_id: null,
+          fields: [],
+          view: {},
+          position: 1024,
+          created_at: TS,
+          updated_at: TS,
+        },
+      ],
+      books: [
+        {
+          id: "b-tall",
+          user_id: "user-1",
+          title: "Tall Card",
+          subtitle: tallSubtitle,
+          cover_url: null,
+          icon: null,
+          theme: {},
+          folder_id: null,
+          collection_id: "c-heights",
+          position: 1024,
+          created_at: TS,
+          updated_at: TS,
+        },
+        {
+          id: "b-short",
+          user_id: "user-1",
+          title: "Short Card",
+          subtitle: null,
+          cover_url: null,
+          icon: null,
+          theme: {},
+          folder_id: null,
+          collection_id: "c-heights",
+          position: 2048,
+          created_at: TS,
+          updated_at: TS,
+        },
+      ],
+    },
+  });
+
+  // Tailwind breakpoints drive the gallery columns (viewport-based):
+  // default 2, sm 3, lg 4. Sidebar shrinks the content pane but not the mq.
+  const viewports = [
+    { width: 500, cols: 2 },
+    { width: 800, cols: 3 },
+    { width: 1280, cols: 4 },
+  ] as const;
+
+  for (const { width, cols } of viewports) {
+    test(`gallery grid cards in a row share equal height (${cols} cols)`, async ({
+      authedPage,
+    }) => {
+      await authedPage.setViewportSize({ width, height: 800 });
+      await authedPage.goto("/");
+      await authedPage.getByRole("treeitem", { name: /Heights/ }).click();
+
+      const tall = authedPage.getByRole("button", {
+        name: /^Tall Card /,
+      });
+      const short = authedPage.getByRole("button", {
+        name: "Short Card",
+        exact: true,
+      });
+      await expect(tall).toBeVisible();
+      await expect(short).toBeVisible();
+      await expect(authedPage.getByText(tallSubtitle)).toBeVisible();
+
+      const tallBox = await boundingBoxOf(tall);
+      const shortBox = await boundingBoxOf(short);
+      expect(Math.abs(tallBox.height - shortBox.height)).toBeLessThanOrEqual(1);
+      // Same row: tops align (within a pixel) when both fit in the first row.
+      expect(Math.abs(tallBox.y - shortBox.y)).toBeLessThanOrEqual(1);
+    });
+  }
 });
