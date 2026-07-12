@@ -19,13 +19,14 @@ const COVER_UPLOAD_TYPES: Record<string, string> = {
 
 /** Extension → MIME, for pickers that leave `File.type` empty (common for AVIF). */
 const COVER_UPLOAD_EXTENSIONS: Record<string, string> = {
-  png: "image/png",
-  jpg: "image/jpeg",
+  ...Object.fromEntries(
+    Object.entries(COVER_UPLOAD_TYPES).map(([mime, ext]) => [ext, mime]),
+  ),
   jpeg: "image/jpeg",
-  webp: "image/webp",
-  gif: "image/gif",
-  avif: "image/avif",
 };
+
+/** Comma-separated `accept` list for cover file inputs. */
+export const COVER_IMAGE_ACCEPT = Object.keys(COVER_UPLOAD_TYPES).join(",");
 
 const COVERS_PUBLIC_MARKER = "/object/public/covers/";
 
@@ -36,17 +37,15 @@ const COVERS_PUBLIC_MARKER = "/object/public/covers/";
 export function resolveCoverUploadType(
   file: File,
 ): { mime: string; ext: string } | null {
-  const fromMime = COVER_UPLOAD_TYPES[file.type];
-  if (fromMime) return { mime: file.type, ext: fromMime };
+  const extFromMime = COVER_UPLOAD_TYPES[file.type];
+  if (extFromMime) return { mime: file.type, ext: extFromMime };
 
-  const match = /\.([a-z0-9]+)$/i.exec(file.name);
-  const extKey = match?.[1]?.toLowerCase();
+  const extKey = /\.([a-z0-9]+)$/i.exec(file.name)?.[1]?.toLowerCase();
   if (!extKey) return null;
   const mime = COVER_UPLOAD_EXTENSIONS[extKey];
   if (!mime) return null;
   const ext = COVER_UPLOAD_TYPES[mime];
-  if (!ext) return null;
-  return { mime, ext };
+  return ext ? { mime, ext } : null;
 }
 
 /**
@@ -86,18 +85,17 @@ export function useUploadCover() {
       const userId = requireUserId(session);
       const resolved = resolveCoverUploadType(file);
       if (!resolved) throw new Error("Unsupported image type");
-      if (file.size > COVER_UPLOAD_MAX_BYTES) {
-        throw new Error("Image must be under 10 MB");
-      }
       if (file.size === 0) {
         throw new Error("Image file is empty");
       }
+      if (file.size > COVER_UPLOAD_MAX_BYTES) {
+        throw new Error("Image must be under 10 MB");
+      }
 
-      // Read into a typed Blob so storage always sees real bytes + contentType.
-      // Passing a File whose `type` is blank (or AVIF on some WebViews) can make
-      // Supabase Storage reject the multipart body as "No content provided".
-      const bytes = await file.arrayBuffer();
-      const body = new Blob([bytes], { type: resolved.mime });
+      // Typed Blob so storage always sees real bytes + contentType. Passing a
+      // File whose `type` is blank (or AVIF on some WebViews) can make Supabase
+      // Storage reject the multipart body as "No content provided".
+      const body = file.slice(0, file.size, resolved.mime);
 
       const path = `${userId}/${crypto.randomUUID()}.${resolved.ext}`;
       const { error } = await supabase.storage

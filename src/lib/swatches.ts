@@ -25,18 +25,10 @@ export const MORANDI_SWATCHES = [
 /** A single Morandi hue key usable as a chip / option color. */
 export type MorandiSwatch = (typeof MORANDI_SWATCHES)[number];
 
-/**
- * Datagrid-facing alias of {@link MORANDI_SWATCHES}. Datagrid option editors
- * and their tests import the palette under this name; kept as a supported
- * alias rather than a call site migration.
- * @alias
- */
+/** @alias Datagrid-facing name for {@link MORANDI_SWATCHES}. */
 export const DATAGRID_SWATCHES = MORANDI_SWATCHES;
 
-/**
- * Datagrid-facing alias of {@link MorandiSwatch}.
- * @alias
- */
+/** @alias Datagrid-facing name for {@link MorandiSwatch}. */
 export type DatagridSwatch = MorandiSwatch;
 
 const SWATCH_SET = new Set<string>(MORANDI_SWATCHES);
@@ -50,17 +42,13 @@ export const DEFAULT_SWATCH: MorandiSwatch = "stone";
 
 /**
  * Whether `value` names one of the known Morandi swatches.
- * @lintignore Canonical predicate, reached externally today via the
- * `isDatagridSwatch` alias; will gain direct importers as call sites migrate.
+ * @lintignore Reached externally today via the `isDatagridSwatch` alias.
  */
 export function isMorandiSwatch(value: unknown): value is MorandiSwatch {
   return typeof value === "string" && SWATCH_SET.has(value);
 }
 
-/**
- * Datagrid-facing alias of {@link isMorandiSwatch}.
- * @alias
- */
+/** @alias Datagrid-facing name for {@link isMorandiSwatch}. */
 export const isDatagridSwatch = isMorandiSwatch;
 
 /**
@@ -91,9 +79,8 @@ export function swatchDotStyle(
  * palette, so a fresh set gets a varied, repeatable spread of hues.
  */
 export function swatchForIndex(index: number): MorandiSwatch {
-  const safe =
-    ((index % MORANDI_SWATCHES.length) + MORANDI_SWATCHES.length) %
-    MORANDI_SWATCHES.length;
+  const len = MORANDI_SWATCHES.length;
+  const safe = ((index % len) + len) % len;
   return MORANDI_SWATCHES[safe] ?? DEFAULT_SWATCH;
 }
 

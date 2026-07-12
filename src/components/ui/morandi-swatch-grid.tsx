@@ -1,4 +1,4 @@
-import { MORANDI_SWATCHES, swatchDotStyle, titleCaseHue } from "@/lib/swatches";
+import { MORANDI_SWATCHES, titleCaseHue } from "@/lib/swatches";
 
 import { SwatchDot, SwatchGridLayout } from "./swatch-grid";
 
@@ -28,7 +28,7 @@ export function MorandiSwatchGrid({
             key={hue}
             label={name}
             ariaLabel={ariaLabelForHue(name)}
-            background={swatchDotStyle(hue).backgroundColor ?? ""}
+            background={`var(--swatch-${hue})`}
             active={value === hue}
             onClick={() => {
               onChange(hue);

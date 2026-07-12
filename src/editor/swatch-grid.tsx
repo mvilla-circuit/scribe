@@ -28,7 +28,7 @@ export function SwatchGrid({
 }) {
   return (
     <UISwatchGrid
-      swatches={swatches.map((s) => ({ name: s.name, value: s.value }))}
+      swatches={swatches}
       value={value}
       onChange={onChange}
       clearLabel={clearLabel}

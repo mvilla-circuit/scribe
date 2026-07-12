@@ -1,12 +1,9 @@
 /**
- * Morandi swatch helpers for datagrid select/status options.
+ * Compatibility re-exports of `@/lib/swatches` for datagrid call sites.
+ * Prefer importing from `@/lib/swatches` in new code (data layer must).
  *
- * Re-exported from `@/lib/swatches` so the data layer and collection tags can
- * share the same palette without importing from `components/`.
- */
-/**
- * @lintignore Re-exported for existing callers; not imported by this name
- * from this shim today.
+ * @lintignore `DatagridSwatch` is re-exported for existing callers; not
+ * imported by this name from this shim today.
  */
 export type { DatagridSwatch } from "@/lib/swatches";
 export {

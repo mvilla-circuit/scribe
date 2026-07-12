@@ -41,7 +41,7 @@ function CoverCardComponent({
   aspect = "book",
 }: CoverCardProps) {
   const label = title || "Untitled";
-  const subtitleText = subtitle?.trim() ? subtitle.trim() : null;
+  const subtitleText = subtitle?.trim() || null;
   const mediaAspect = aspect === "album" ? "aspect-[4/3]" : "aspect-[3/4]";
   const card = (
     <div className="group relative">
