@@ -112,3 +112,22 @@ export function setSectionLabel(
     sanitizeSectionLabels({ ...view.sectionLabels, [kind]: label }),
   );
 }
+
+/**
+ * Returns the next view after a section-label edit, or `null` when the write
+ * would not change the persisted JSON (e.g. clearing an already-default label).
+ */
+export function applySectionLabel(
+  view: CollectionView,
+  kind: GallerySectionKind,
+  label: string,
+): CollectionView | null {
+  const next = setSectionLabel(view, kind, label);
+  if (
+    JSON.stringify(serializeCollectionView(view)) ===
+    JSON.stringify(serializeCollectionView(next))
+  ) {
+    return null;
+  }
+  return next;
+}

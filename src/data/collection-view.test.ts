@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  applySectionLabel,
   type CollectionLayout,
   DEFAULT_SECTION_LABELS,
   parseCollectionView,
@@ -130,5 +131,30 @@ describe("setSectionLabel", () => {
     expect(
       setSectionLabel(withOverride, "book", DEFAULT_SECTION_LABELS.book),
     ).toEqual({ layout: "grid" });
+  });
+
+  it("clears one override while keeping others", () => {
+    const view = {
+      layout: "grid" as const,
+      sectionLabels: { book: "Novels", entry: "Chapters" },
+    };
+    expect(setSectionLabel(view, "book", "")).toEqual({
+      layout: "grid",
+      sectionLabels: { entry: "Chapters" },
+    });
+  });
+});
+
+describe("applySectionLabel", () => {
+  it("returns null for no-op clears of an already-default label", () => {
+    expect(applySectionLabel({ layout: "grid" }, "book", "")).toBeNull();
+    expect(applySectionLabel({ layout: "grid" }, "book", "Books")).toBeNull();
+  });
+
+  it("returns the updated view when the label changes", () => {
+    expect(applySectionLabel({ layout: "grid" }, "book", "Novels")).toEqual({
+      layout: "grid",
+      sectionLabels: { book: "Novels" },
+    });
   });
 });

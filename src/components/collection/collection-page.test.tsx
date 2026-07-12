@@ -320,6 +320,134 @@ describe("CollectionPage", () => {
     });
   });
 
+  it("clears one override while keeping others", async () => {
+    let patchBody: unknown;
+    server.use(
+      http.patch(
+        "http://supabase.test/rest/v1/collections",
+        async ({ request }) => {
+          patchBody = await request.json();
+          return new HttpResponse(null, { status: 204 });
+        },
+      ),
+    );
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = seed();
+    client.setQueryData(collectionsKey, [
+      makeCollection({
+        id: "c1",
+        name: "The Realm",
+        description: "An epic",
+        cover_url: "https://example.test/realm.jpg",
+        view: {
+          layout: "grid",
+          sectionLabels: { book: "Novels", entry: "Chapters" },
+        },
+      }),
+      makeCollection({
+        id: "c2",
+        name: "Side Tales",
+        parent_collection_id: "c1",
+        cover_url: "https://example.test/tales.jpg",
+      }),
+    ]);
+
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+
+    const books = screen.getByRole("textbox", { name: "Books section name" });
+    await user.clear(books);
+    await user.tab();
+
+    await waitFor(() => {
+      expect(patchBody).toEqual({
+        view: { layout: "grid", sectionLabels: { entry: "Chapters" } },
+      });
+    });
+    expect(books).toHaveValue("Books");
+    expect(
+      screen.getByRole("textbox", { name: "Docs section name" }),
+    ).toHaveValue("Chapters");
+  });
+
+  it("trims section labels on commit", async () => {
+    let patchBody: unknown;
+    server.use(
+      http.patch(
+        "http://supabase.test/rest/v1/collections",
+        async ({ request }) => {
+          patchBody = await request.json();
+          return new HttpResponse(null, { status: 204 });
+        },
+      ),
+    );
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = seed();
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+
+    const books = screen.getByRole("textbox", { name: "Books section name" });
+    await user.clear(books);
+    await user.type(books, "  Novels  ");
+    await user.tab();
+
+    await waitFor(() => {
+      expect(patchBody).toEqual({
+        view: { layout: "grid", sectionLabels: { book: "Novels" } },
+      });
+    });
+    expect(books).toHaveValue("Novels");
+  });
+
+  it("does not patch when clearing an already-default section label", async () => {
+    let patchBody: unknown;
+    server.use(
+      http.patch(
+        "http://supabase.test/rest/v1/collections",
+        async ({ request }) => {
+          patchBody = await request.json();
+          return new HttpResponse(null, { status: 204 });
+        },
+      ),
+    );
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    renderWithProviders(<CollectionPage collectionId="c1" />, {
+      client: seed(),
+    });
+
+    const books = screen.getByRole("textbox", { name: "Books section name" });
+    await user.clear(books);
+    await user.tab();
+
+    expect(
+      screen.getByRole("textbox", { name: "Books section name" }),
+    ).toHaveValue("Books");
+    expect(patchBody).toBeUndefined();
+  });
+
+  it("cancels an in-progress rename without patching on Escape", async () => {
+    let patchBody: unknown;
+    server.use(
+      http.patch(
+        "http://supabase.test/rest/v1/collections",
+        async ({ request }) => {
+          patchBody = await request.json();
+          return new HttpResponse(null, { status: 204 });
+        },
+      ),
+    );
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    renderWithProviders(<CollectionPage collectionId="c1" />, {
+      client: seed(),
+    });
+
+    const books = screen.getByRole("textbox", { name: "Books section name" });
+    await user.clear(books);
+    await user.type(books, "Novels");
+    await user.keyboard("{Escape}");
+
+    expect(books).toHaveValue("Books");
+    expect(patchBody).toBeUndefined();
+  });
+
   it("clearing a section heading restores the default label", async () => {
     let patchBody: unknown;
     server.use(

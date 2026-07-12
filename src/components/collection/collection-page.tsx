@@ -25,12 +25,12 @@ import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { type RowAction } from "@/components/ui/row-action-menu";
 import { useBooks, useCreateBook, useMoveBook } from "@/data/books";
 import {
+  applySectionLabel,
   DEFAULT_SECTION_LABELS,
   type GallerySectionKind,
   parseCollectionView,
   sectionLabel,
   serializeCollectionView,
-  setSectionLabel,
 } from "@/data/collection-view";
 import {
   useCollections,
@@ -532,12 +532,13 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                       ariaLabel={`${DEFAULT_SECTION_LABELS[kind]} section name`}
                       placeholder={DEFAULT_SECTION_LABELS[kind]}
                       onCommit={(next) => {
+                        const updated = applySectionLabel(view, kind, next);
+                        if (!updated) return false;
                         updateCollection.mutate({
                           id: collection.id,
-                          view: serializeCollectionView(
-                            setSectionLabel(view, kind, next),
-                          ),
+                          view: serializeCollectionView(updated),
                         });
+                        return true;
                       }}
                     >
                       {items.map((child) => (
@@ -587,19 +588,24 @@ function CardGrid({
   value: string;
   ariaLabel: string;
   placeholder: string;
-  onCommit: (next: string) => void;
+  /** Returns false when the write was a no-op so the field can reset. */
+  onCommit: (next: string) => boolean;
   children: React.ReactNode;
 }) {
   const headingId = useId();
+  const [resetKey, setResetKey] = useState(0);
   return (
     <section aria-labelledby={headingId}>
       <h2 id={headingId} className="mb-3">
         <EditableText
+          key={resetKey}
           value={value}
           ariaLabel={ariaLabel}
           placeholder={placeholder}
           allowEmpty
-          onCommit={onCommit}
+          onCommit={(next) => {
+            if (!onCommit(next)) setResetKey((key) => key + 1);
+          }}
           className="text-xs font-medium uppercase tracking-wide text-muted"
         />
       </h2>
