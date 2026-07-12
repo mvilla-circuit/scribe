@@ -41,6 +41,83 @@ describe("flattenTree", () => {
       "b2",
     ]);
   });
+
+  it("flags hasChildren for containers", () => {
+    const tree = buildTree(
+      [
+        makeFolder({ id: "f-full", position: 1024 }),
+        makeFolder({ id: "f-empty", position: 2048 }),
+      ],
+      [
+        makeBook({ id: "b-in-folder", folder_id: "f-full", position: 1024 }),
+        makeBook({
+          id: "b-in-coll",
+          collection_id: "c-full",
+          position: 1024,
+        }),
+        makeBook({ id: "b-root", folder_id: null, position: 4096 }),
+      ],
+      [
+        makeCollection({ id: "c-full", position: 3072 }),
+        makeCollection({ id: "c-empty", position: 3584 }),
+      ],
+      [
+        makeEntry({
+          id: "e1",
+          collection_id: "c-full",
+          position: 2048,
+        }),
+      ],
+    );
+    const byId = Object.fromEntries(
+      flattenTree(
+        tree,
+        new Set(["f-full", "c-full", "f-empty", "c-empty"]),
+      ).map((n) => [n.id, n.hasChildren]),
+    );
+
+    expect(byId).toEqual({
+      "c-empty": false,
+      "c-full": true,
+      "f-full": true,
+      "f-empty": false,
+      "b-root": false,
+      "b-in-folder": false,
+      "b-in-coll": false,
+      e1: false,
+    });
+  });
+
+  it("flags hasChildren when a collection nests only non-book children", () => {
+    const tree = buildTree(
+      [],
+      [],
+      [
+        makeCollection({ id: "c-parent", position: 1024 }),
+        makeCollection({
+          id: "c-nested",
+          parent_collection_id: "c-parent",
+          position: 1024,
+        }),
+        makeCollection({ id: "c-grid", position: 2048 }),
+        makeCollection({ id: "c-board", position: 3072 }),
+      ],
+      [],
+      [makeDatagrid({ id: "g1", collection_id: "c-grid", position: 1024 })],
+      [makeWhiteboard({ id: "w1", collection_id: "c-board", position: 1024 })],
+    );
+    const byId = Object.fromEntries(
+      flattenTree(tree, new Set(["c-parent"])).map((n) => [
+        n.id,
+        n.hasChildren,
+      ]),
+    );
+
+    expect(byId["c-parent"]).toBe(true);
+    expect(byId["c-nested"]).toBe(false);
+    expect(byId["c-grid"]).toBe(true);
+    expect(byId["c-board"]).toBe(true);
+  });
 });
 
 describe("getProjection", () => {

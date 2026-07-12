@@ -1,12 +1,12 @@
 import { memo, type ReactNode, useMemo } from "react";
 
 import { PageIcon } from "@/components/book/icons";
+import { ExpandToggleIcon } from "@/components/tree/expand-toggle-icon";
 import { TreeRowShell } from "@/components/tree/tree-row-shell";
 import { DocumentIcon } from "@/components/ui/document-icon";
 import { type RowAction } from "@/components/ui/row-action-menu";
 import type { Collection } from "@/data/collections";
 import { collectionDescendants } from "@/data/tree";
-import { cn } from "@/lib/utils";
 
 import { type FlatNode, isCollectionLeaf } from "./dnd-tree";
 import {
@@ -16,7 +16,6 @@ import {
   CollectionPlusIcon,
   DatagridIcon,
   FolderIcon,
-  FolderOpenIcon,
   LinkIcon,
   PencilIcon,
   RemoveFromCollectionIcon,
@@ -59,17 +58,10 @@ function treeChildCustomIcon(child: FlatNode["child"]): string | null {
   }
 }
 
-function treeChildDefaultIcon(
-  child: FlatNode["child"],
-  expanded: boolean,
-): ReactNode {
+function treeChildDefaultIcon(child: FlatNode["child"]): ReactNode {
   switch (child.kind) {
     case "folder":
-      return expanded ? (
-        <FolderOpenIcon size={SIDEBAR_ICON_SIZE} />
-      ) : (
-        <FolderIcon size={SIDEBAR_ICON_SIZE} />
-      );
+      return <FolderIcon size={SIDEBAR_ICON_SIZE} />;
     case "collection":
       return <CollectionIcon size={SIDEBAR_ICON_SIZE} />;
     case "book":
@@ -83,12 +75,12 @@ function treeChildDefaultIcon(
   }
 }
 
-function treeChildIcon(child: FlatNode["child"], expanded = false): ReactNode {
+function treeChildIcon(child: FlatNode["child"]): ReactNode {
   const custom = treeChildCustomIcon(child);
   if (custom) {
     return <DocumentIcon icon={custom} size={SIDEBAR_ICON_SIZE} />;
   }
-  return treeChildDefaultIcon(child, expanded);
+  return treeChildDefaultIcon(child);
 }
 
 // Handlers take the row's id/node so the parent can pass one stable set of
@@ -197,37 +189,24 @@ export const TreeRow = memo(function TreeRow({
     return actions;
   }, [collections, node, isCollection, onMoveToCollection]);
 
-  const icon = isCollection ? (
-    <button
-      type="button"
-      tabIndex={-1}
-      aria-label={expanded ? "Collapse collection" : "Expand collection"}
-      onPointerDown={(e) => {
-        e.stopPropagation();
-      }}
-      onClick={(e) => {
-        e.stopPropagation();
-        onToggleExpand(node.id);
-      }}
-      className={cn(
-        "scribe-icon-pop flex h-5 w-5 shrink-0 items-center justify-center rounded outline-none hover:text-text focus-visible:ring-2 focus-visible:ring-ring",
-        expanded ? "text-accent" : "text-muted",
-      )}
-    >
-      {treeChildIcon(child)}
-    </button>
-  ) : (
-    <span
-      key={isFolder ? (expanded ? "open" : "closed") : "book"}
-      className={cn(
-        "flex h-5 w-5 shrink-0 items-center justify-center",
-        isFolder && expanded ? "text-accent" : "text-muted",
-        isFolder && "scribe-icon-pop",
-      )}
-    >
-      {treeChildIcon(child, expanded)}
-    </span>
-  );
+  const icon =
+    isFolder || isCollection ? (
+      <ExpandToggleIcon
+        expanded={expanded}
+        hasChildren={node.hasChildren}
+        expandLabel={isFolder ? "Expand folder" : "Expand collection"}
+        collapseLabel={isFolder ? "Collapse folder" : "Collapse collection"}
+        onToggle={() => {
+          onToggleExpand(node.id);
+        }}
+      >
+        {treeChildIcon(child)}
+      </ExpandToggleIcon>
+    ) : (
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center text-muted">
+        {treeChildIcon(child)}
+      </span>
+    );
 
   const moveAction: RowAction[] =
     moveSubmenu.length > 0
@@ -370,7 +349,9 @@ export const TreeRow = memo(function TreeRow({
       projectionDepth={projectionDepth}
       selected={selected}
       editing={editing}
-      ariaExpanded={isFolder || isCollection ? expanded : undefined}
+      ariaExpanded={
+        (isFolder || isCollection) && node.hasChildren ? expanded : undefined
+      }
       ariaSelected={!isFolder ? selected : undefined}
       icon={icon}
       label={label}
@@ -379,8 +360,9 @@ export const TreeRow = memo(function TreeRow({
       }
       menuActions={menuActions}
       onActivate={() => {
-        if (isFolder) onToggleExpand(node.id);
-        else if (isCollection) onSelectCollection(node.id);
+        if (isFolder) {
+          if (node.hasChildren) onToggleExpand(node.id);
+        } else if (isCollection) onSelectCollection(node.id);
         else if (child.kind === "entry")
           onSelectEntry(node.id, child.entry.collection_id);
         else if (child.kind === "datagrid") onSelectDatagrid(node.id);
