@@ -12,9 +12,12 @@ export function leafDeleteTitle(title: string): string {
 
 /** Cascade-aware description for a leaf delete confirm. */
 export function leafDeleteDescription(kind: LeafDeleteKind): string {
-  if (kind === "entry") return "This permanently deletes the doc.";
-  if (kind === "datagrid") {
-    return "This permanently deletes the datagrid and all its rows.";
+  switch (kind) {
+    case "entry":
+      return "This permanently deletes the doc.";
+    case "datagrid":
+      return "This permanently deletes the datagrid and all its rows.";
+    case "whiteboard":
+      return "This permanently deletes the whiteboard.";
   }
-  return "This permanently deletes the whiteboard.";
 }

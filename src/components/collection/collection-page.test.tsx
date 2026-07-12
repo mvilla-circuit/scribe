@@ -74,6 +74,21 @@ function seed() {
   return client;
 }
 
+async function openGalleryDeleteDialog(
+  user: ReturnType<typeof userEvent.setup>,
+  itemName: string,
+) {
+  await user.click(
+    screen.getByRole("button", { name: `Actions for ${itemName}` }),
+  );
+  await user.click(
+    within(await screen.findByRole("menu")).getByRole("menuitem", {
+      name: "Delete",
+    }),
+  );
+  return screen.findByRole("dialog");
+}
+
 beforeEach(() => {
   Element.prototype.hasPointerCapture = () => false;
   Element.prototype.setPointerCapture = vi.fn();
@@ -514,16 +529,7 @@ describe("CollectionPage", () => {
     const client = seed();
     renderWithProviders(<CollectionPage collectionId="c1" />, { client });
 
-    await user.click(
-      screen.getByRole("button", { name: "Actions for Opening scene" }),
-    );
-    await user.click(
-      within(await screen.findByRole("menu")).getByRole("menuitem", {
-        name: "Delete",
-      }),
-    );
-
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await openGalleryDeleteDialog(user, "Opening scene");
     await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -552,16 +558,7 @@ describe("CollectionPage", () => {
     ]);
     renderWithProviders(<CollectionPage collectionId="c1" />, { client });
 
-    await user.click(
-      screen.getByRole("button", { name: "Actions for World bible" }),
-    );
-    await user.click(
-      within(await screen.findByRole("menu")).getByRole("menuitem", {
-        name: "Delete",
-      }),
-    );
-
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await openGalleryDeleteDialog(user, "World bible");
     expect(dialog).toHaveTextContent('Delete "World bible"?');
     expect(dialog).toHaveTextContent(
       "This permanently deletes the datagrid and all its rows.",
@@ -595,16 +592,7 @@ describe("CollectionPage", () => {
     ]);
     renderWithProviders(<CollectionPage collectionId="c1" />, { client });
 
-    await user.click(
-      screen.getByRole("button", { name: "Actions for Story map" }),
-    );
-    await user.click(
-      within(await screen.findByRole("menu")).getByRole("menuitem", {
-        name: "Delete",
-      }),
-    );
-
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await openGalleryDeleteDialog(user, "Story map");
     expect(dialog).toHaveTextContent('Delete "Story map"?');
     expect(dialog).toHaveTextContent(
       "This permanently deletes the whiteboard.",
@@ -639,19 +627,8 @@ describe("CollectionPage", () => {
     useUIStore.setState({ activeDatagridId: "dg1" });
     renderWithProviders(<CollectionPage collectionId="c1" />, { client });
 
-    await user.click(
-      screen.getByRole("button", { name: "Actions for World bible" }),
-    );
-    await user.click(
-      within(await screen.findByRole("menu")).getByRole("menuitem", {
-        name: "Delete",
-      }),
-    );
-    await user.click(
-      within(await screen.findByRole("dialog")).getByRole("button", {
-        name: "Delete",
-      }),
-    );
+    const dialog = await openGalleryDeleteDialog(user, "World bible");
+    await user.click(within(dialog).getByRole("button", { name: "Delete" }));
 
     await waitFor(() => {
       expect(useUIStore.getState().activeDatagridId).toBeNull();

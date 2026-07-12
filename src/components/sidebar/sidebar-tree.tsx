@@ -743,13 +743,13 @@ export function SidebarTree() {
 function deleteTitle(target: DeleteTarget | null): string {
   if (!target) return "";
   if (
+    target.kind === "book" ||
     target.kind === "entry" ||
     target.kind === "datagrid" ||
     target.kind === "whiteboard"
   ) {
     return leafDeleteTitle(target.title);
   }
-  if (target.kind === "book") return leafDeleteTitle(target.title);
   return leafDeleteTitle(target.name);
 }
 

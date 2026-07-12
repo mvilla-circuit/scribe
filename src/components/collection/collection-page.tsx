@@ -296,20 +296,15 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
     },
   ];
 
-  const leafDeleteActions = (
-    kind: LeafDeleteKind,
-    id: string,
-    title: string,
-  ): RowAction[] => [
+  const leafDeleteActions = (target: LeafDeleteTarget): RowAction[] => [
     {
       icon: <TrashIcon size={15} />,
       label: "Delete",
       danger: true,
       onSelect: () => {
         setPendingDelete({
-          kind,
-          id,
-          title: title || "Untitled",
+          ...target,
+          title: target.title || "Untitled",
         });
       },
     },
@@ -318,20 +313,22 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   const confirmPendingDelete = () => {
     const target = pendingDelete;
     if (!target) return;
-    if (target.kind === "entry") {
-      if (activeEntryId === target.id) {
-        navigateTo({ collectionId });
-      }
-      deleteEntry.mutate({ id: target.id });
-      return;
+
+    switch (target.kind) {
+      case "entry":
+        if (activeEntryId === target.id) {
+          navigateTo({ collectionId });
+        }
+        deleteEntry.mutate({ id: target.id });
+        return;
+      case "datagrid":
+        if (activeDatagridId === target.id) setActiveDatagrid(null);
+        deleteDatagrid.mutate({ id: target.id });
+        return;
+      case "whiteboard":
+        if (activeWhiteboardId === target.id) setActiveWhiteboard(null);
+        deleteWhiteboard.mutate({ id: target.id });
     }
-    if (target.kind === "datagrid") {
-      if (activeDatagridId === target.id) setActiveDatagrid(null);
-      deleteDatagrid.mutate({ id: target.id });
-      return;
-    }
-    if (activeWhiteboardId === target.id) setActiveWhiteboard(null);
-    deleteWhiteboard.mutate({ id: target.id });
   };
 
   // No resolved collection has three distinct causes — an in-flight fetch, a
@@ -411,11 +408,23 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
       case "book":
         return bookActions(child.id);
       case "entry":
-        return leafDeleteActions("entry", child.id, child.entry.title);
+        return leafDeleteActions({
+          kind: "entry",
+          id: child.id,
+          title: child.entry.title,
+        });
       case "datagrid":
-        return leafDeleteActions("datagrid", child.id, child.datagrid.name);
+        return leafDeleteActions({
+          kind: "datagrid",
+          id: child.id,
+          title: child.datagrid.name,
+        });
       case "whiteboard":
-        return leafDeleteActions("whiteboard", child.id, child.whiteboard.name);
+        return leafDeleteActions({
+          kind: "whiteboard",
+          id: child.id,
+          title: child.whiteboard.name,
+        });
     }
   };
 
