@@ -1331,8 +1331,10 @@ button.scribe-essay-icon-btn:hover {
 }
 .scribe-dgrowcard-body {
   display: flex;
-  gap: 0.75rem;
-  padding: 0.65rem 0.75rem;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
@@ -1353,15 +1355,19 @@ button.scribe-essay-icon-btn:hover {
 .scribe-dgrowcard-body:focus-visible {
   box-shadow: 0 0 0 2px var(--color-ring);
 }
+/* Flush left cap — same idea as collection list rows: cover fills the strip. */
 .scribe-dgrowcard-media {
+  position: relative;
   flex-shrink: 0;
-  width: 4.5rem;
-  height: 3.25rem;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  background: var(--color-elevated);
+  align-self: stretch;
+  width: 5rem;
+  min-height: 4rem;
+  background: var(--color-tree-group);
+  color: var(--color-muted);
 }
 .scribe-dgrowcard-cover {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -1373,6 +1379,7 @@ button.scribe-essay-icon-btn:hover {
   justify-content: center;
   width: 100%;
   height: 100%;
+  min-height: 4rem;
   font-size: 1.1rem;
   color: var(--color-muted);
 }
@@ -1382,6 +1389,7 @@ button.scribe-essay-icon-btn:hover {
   min-width: 0;
   flex: 1;
   gap: 0.15rem;
+  padding: 0.65rem 0.85rem;
 }
 .scribe-dgrowcard-title {
   font-weight: 500;

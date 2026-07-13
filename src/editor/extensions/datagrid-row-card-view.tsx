@@ -65,11 +65,16 @@ export function DatagridRowCardView({
         className="scribe-dgrowcard-body"
         onActivate={notFound ? () => undefined : navigate}
       >
-        <div className="scribe-dgrowcard-media" aria-hidden>
+        <div
+          className="scribe-dgrowcard-media"
+          data-testid="dgrowcard-media"
+          aria-hidden
+        >
           {resolved?.coverUrl ? (
             <img
               src={resolved.coverUrl}
               alt=""
+              data-testid="dgrowcard-cover"
               className="scribe-dgrowcard-cover"
             />
           ) : (

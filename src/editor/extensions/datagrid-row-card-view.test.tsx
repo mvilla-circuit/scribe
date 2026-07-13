@@ -58,7 +58,7 @@ function renderCard(
 
 describe("DatagridRowCardView", () => {
   it("renders cover, title, and field preview lines from the bridge", () => {
-    const { container } = renderCard({
+    renderCard({
       datagridId: "dg-1",
       rowId: "row-1",
       label: "Stale",
@@ -68,10 +68,19 @@ describe("DatagridRowCardView", () => {
     expect(screen.getByText("Characters")).toBeInTheDocument();
     expect(screen.getByText("Warrior")).toBeInTheDocument();
     expect(screen.getByText("North")).toBeInTheDocument();
-    // Cover is decorative (empty alt) — assert structurally.
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- decorative cover <img alt=""> has no accessible role
-    const img = container.querySelector("img");
-    expect(img).toHaveAttribute("src", "https://cdn.test/cover.jpg");
+    expect(screen.getByTestId("dgrowcard-cover")).toHaveAttribute(
+      "src",
+      "https://cdn.test/cover.jpg",
+    );
+  });
+
+  it("uses a flush left media cap for the cover", () => {
+    renderCard({ datagridId: "dg-1", rowId: "row-1" });
+    const media = screen.getByTestId("dgrowcard-media");
+    const cover = screen.getByTestId("dgrowcard-cover");
+    expect(media).toHaveClass("scribe-dgrowcard-media");
+    expect(cover).toHaveClass("scribe-dgrowcard-cover");
+    expect(screen.getByRole("link")).toContainElement(media);
   });
 
   it("navigates to the source row when activated", async () => {
