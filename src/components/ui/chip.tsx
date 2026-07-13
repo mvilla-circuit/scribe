@@ -27,7 +27,7 @@ const REMOVE_REVEAL_COLLAPSE =
   "pointer-events-none max-w-0 overflow-hidden opacity-0 group-hover/chip:pointer-events-auto group-hover/chip:max-w-6 group-hover/chip:opacity-100 group-focus-within/chip:pointer-events-auto group-focus-within/chip:max-w-6 group-focus-within/chip:opacity-100 focus-visible:pointer-events-auto focus-visible:max-w-6 focus-visible:opacity-100";
 
 const REMOVE_REVEAL_SHELL =
-  "gap-0 transition-[gap,padding] duration-150 ease-out motion-reduce:transition-none hover:gap-2 hover:pr-3 focus-within:gap-2 focus-within:pr-3";
+  "gap-0 transition-[gap,padding] duration-150 ease-out motion-reduce:transition-none hover:gap-3 hover:pr-3 focus-within:gap-3 focus-within:pr-3";
 
 export interface ChipProps extends Omit<
   ComponentPropsWithoutRef<"button">,
