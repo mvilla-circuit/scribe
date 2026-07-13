@@ -48,8 +48,6 @@ export function EditorBridgeHost({ children }: { children: ReactNode }) {
     [rowQueries],
   );
   const rowsByDatagrid = useMemo(() => indexRowsByDatagrid(allRows), [allRows]);
-  const rowsLoading =
-    datagrids.length > 0 && rowQueries.some((query) => query.isLoading);
 
   // Default-view field visibility for embed card previews (same list gallery
   // cards use when that view is active).
@@ -64,8 +62,10 @@ export function EditorBridgeHost({ children }: { children: ReactNode }) {
     () => indexCardVisibleFieldIdsByDatagrid(allViews),
     [allViews],
   );
-  const viewsLoading =
-    datagrids.length > 0 && viewQueries.some((query) => query.isLoading);
+  const datagridDataLoading =
+    datagrids.length > 0 &&
+    (rowQueries.some((query) => query.isLoading) ||
+      viewQueries.some((query) => query.isLoading));
 
   const resolve = useCallback<EditorBridge["resolvePageTarget"]>(
     (targetType, targetId) =>
@@ -128,11 +128,7 @@ export function EditorBridgeHost({ children }: { children: ReactNode }) {
   const bridge = useMemo<EditorBridge>(
     () => ({
       loading:
-        indexLoading ||
-        booksLoading ||
-        datagridsLoading ||
-        rowsLoading ||
-        viewsLoading,
+        indexLoading || booksLoading || datagridsLoading || datagridDataLoading,
       resolvePageTarget: resolve,
       pageLinkOptions,
       navigateToPage,
@@ -145,8 +141,7 @@ export function EditorBridgeHost({ children }: { children: ReactNode }) {
       indexLoading,
       booksLoading,
       datagridsLoading,
-      rowsLoading,
-      viewsLoading,
+      datagridDataLoading,
       resolve,
       pageLinkOptions,
       navigateToPage,

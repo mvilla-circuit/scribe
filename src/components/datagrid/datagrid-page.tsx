@@ -170,6 +170,7 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
     collectionsQuery.data?.find((c) => c.id === datagrid.collection_id) ?? null;
 
   const layout = config.layout;
+  const isCardLayout = layout === "gallery" || layout === "board";
   const showSubtitle = datagridShowSubtitle(datagrid);
   const toggleSubtitle = () => {
     updateDatagrid.mutate({
@@ -234,7 +235,7 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
         }
         title="This datagrid is empty"
         body={
-          layout === "gallery" || layout === "board"
+          isCardLayout
             ? "Add a card to start building records, or import existing data from a CSV."
             : "Add a row to start building records, or import existing data from a CSV."
         }
@@ -242,9 +243,7 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
           <div className="flex gap-2">
             <Button variant="primary" onClick={handleCreateRow}>
               <Plus className="size-4" aria-hidden="true" />
-              {layout === "gallery" || layout === "board"
-                ? "New card"
-                : "New row"}
+              {isCardLayout ? "New card" : "New row"}
             </Button>
             <Button
               variant="secondary"
@@ -473,25 +472,14 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
               : config.cardVisibleFieldIds
           }
           onToggleVisibility={(fieldId) => {
-            persistConfig((prev) =>
-              layout === "table"
-                ? {
-                    ...prev,
-                    visibleFieldIds: toggleVisibleFieldId(
-                      fields,
-                      prev.visibleFieldIds,
-                      fieldId,
-                    ),
-                  }
-                : {
-                    ...prev,
-                    cardVisibleFieldIds: toggleVisibleFieldId(
-                      fields,
-                      prev.cardVisibleFieldIds,
-                      fieldId,
-                    ),
-                  },
-            );
+            persistConfig((prev) => {
+              const key =
+                layout === "table" ? "visibleFieldIds" : "cardVisibleFieldIds";
+              return {
+                ...prev,
+                [key]: toggleVisibleFieldId(fields, prev[key], fieldId),
+              };
+            });
           }}
         />
         <DatagridImportDialog

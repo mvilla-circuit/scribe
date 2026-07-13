@@ -1,3 +1,4 @@
+import { pickCardVisibilityView } from "@/components/datagrid/datagrid-field-visibility";
 import type { DatagridRowMeta } from "@/data/datagrid-rows";
 import type { DatagridView } from "@/data/datagrid-views";
 import type { Datagrid } from "@/data/datagrids";
@@ -20,6 +21,24 @@ import {
 /** Soft cap matching gallery cards — keep embed previews scannable. */
 const MAX_PREVIEW_FIELDS = 5;
 
+function groupByKey<T>(
+  items: T[],
+  keyOf: (item: T) => string,
+): Map<string, T[]> {
+  const byKey = new Map<string, T[]>();
+  for (const item of items) {
+    const key = keyOf(item);
+    const list = byKey.get(key);
+    if (list) list.push(item);
+    else byKey.set(key, [item]);
+  }
+  return byKey;
+}
+
+function displayLabel(value: string): string {
+  return value.trim() === "" ? "Untitled" : value;
+}
+
 /**
  * Index row metadata by owning datagrid id for O(1) resolve + picker lookups.
  * Build once per host render (memoized) so each card doesn't rebuild the map.
@@ -27,13 +46,7 @@ const MAX_PREVIEW_FIELDS = 5;
 export function indexRowsByDatagrid(
   rows: DatagridRowMeta[],
 ): Map<string, DatagridRowMeta[]> {
-  const byDatagrid = new Map<string, DatagridRowMeta[]>();
-  for (const row of rows) {
-    const list = byDatagrid.get(row.datagrid_id);
-    if (list) list.push(row);
-    else byDatagrid.set(row.datagrid_id, [row]);
-  }
-  return byDatagrid;
+  return groupByKey(rows, (row) => row.datagrid_id);
 }
 
 /**
@@ -44,15 +57,10 @@ export function indexRowsByDatagrid(
 export function indexCardVisibleFieldIdsByDatagrid(
   views: DatagridView[],
 ): Map<string, string[]> {
-  const byDatagrid = new Map<string, DatagridView[]>();
-  for (const view of views) {
-    const list = byDatagrid.get(view.datagrid_id);
-    if (list) list.push(view);
-    else byDatagrid.set(view.datagrid_id, [view]);
-  }
+  const byDatagrid = groupByKey(views, (view) => view.datagrid_id);
   const visible = new Map<string, string[]>();
   for (const [datagridId, list] of byDatagrid) {
-    const preferred = list.find((view) => view.is_default) ?? list[0] ?? null;
+    const preferred = pickCardVisibilityView(list);
     const config = parseDatagridViewConfig(preferred?.config ?? null);
     visible.set(datagridId, config.cardVisibleFieldIds);
   }
@@ -162,10 +170,10 @@ export function resolveDatagridRow(
     visibleFieldIdsByDatagrid.get(datagridId) ?? [],
   );
   return {
-    title: row.title.trim() === "" ? "Untitled" : row.title,
+    title: displayLabel(row.title),
     icon: row.icon,
     coverUrl: row.cover_url,
-    datagridName: datagrid.name.trim() === "" ? "Untitled" : datagrid.name,
+    datagridName: displayLabel(datagrid.name),
     fieldsPreview: buildFieldsPreview(fields, row),
   };
 }
@@ -178,7 +186,7 @@ export function buildDatagridLinkOptions(
 ): DatagridLinkOption[] {
   return datagrids.map((grid) => ({
     datagridId: grid.id,
-    label: grid.name.trim() === "" ? "Untitled" : grid.name,
+    label: displayLabel(grid.name),
     icon: grid.icon,
     subtitle: "Datagrid",
   }));
@@ -191,11 +199,11 @@ export function buildDatagridRowLinkOptions(
   datagrid: Datagrid,
   rows: DatagridRowMeta[],
 ): DatagridRowLinkOption[] {
-  const subtitle = datagrid.name.trim() === "" ? "Untitled" : datagrid.name;
+  const subtitle = displayLabel(datagrid.name);
   return rows.map((row) => ({
     datagridId: datagrid.id,
     rowId: row.id,
-    label: row.title.trim() === "" ? "Untitled" : row.title,
+    label: displayLabel(row.title),
     icon: row.icon,
     subtitle,
   }));

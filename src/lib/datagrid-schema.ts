@@ -315,6 +315,11 @@ function isPropertyValue(value: unknown): value is DatagridPropertyValue {
   );
 }
 
+function parseStringIds(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((id): id is string => typeof id === "string");
+}
+
 function parseFilters(raw: unknown): DatagridFilter[] {
   if (!Array.isArray(raw)) return [];
   const filters: DatagridFilter[] = [];
@@ -401,15 +406,11 @@ export function parseDatagridViewConfig(raw: unknown): DatagridViewConfig {
     row.layout === "gallery" || row.layout === "board" || row.layout === "table"
       ? row.layout
       : DEFAULT_DATAGRID_VIEW_CONFIG.layout;
-  const visibleFieldIds = Array.isArray(row.visibleFieldIds)
-    ? row.visibleFieldIds.filter((id): id is string => typeof id === "string")
-    : [];
+  const visibleFieldIds = parseStringIds(row.visibleFieldIds);
   // Missing cardVisibleFieldIds falls back to column visibility so pre-split
   // configs keep the same hides on cards; an explicit [] means all card fields.
   const cardVisibleFieldIds = Array.isArray(row.cardVisibleFieldIds)
-    ? row.cardVisibleFieldIds.filter(
-        (id): id is string => typeof id === "string",
-      )
+    ? parseStringIds(row.cardVisibleFieldIds)
     : visibleFieldIds;
   return {
     layout,

@@ -69,6 +69,7 @@ import type {
 import { cn, resolveEditedValue } from "@/lib/utils";
 
 import { swatchDotStyle, swatchForIndex } from "./datagrid-colors";
+import { effectiveVisibleIds } from "./datagrid-field-visibility";
 
 const FIELD_TYPE_ICONS: Record<DatagridFieldType, typeof Type> = {
   text: Type,
@@ -197,13 +198,10 @@ export function FieldManager({
     );
   };
 
-  const effectiveVisible = useMemo(() => {
-    const ids =
-      visibleIds && visibleIds.length > 0
-        ? visibleIds
-        : draftFields.map((field) => field.id);
-    return new Set(ids);
-  }, [draftFields, visibleIds]);
+  const effectiveVisible = useMemo(
+    () => new Set(effectiveVisibleIds(draftFields, visibleIds)),
+    [draftFields, visibleIds],
+  );
 
   const showVisibility = visibilityMode != null && onToggleVisibility != null;
 
@@ -430,15 +428,11 @@ function SortableFieldRow({
         {visibilityMode && onToggleVisibility ? (
           <IconButton
             size="sm"
-            label={
-              fieldVisible
-                ? visibilityMode === "columns"
-                  ? `Hide ${field.name} from table`
-                  : `Hide ${field.name} from cards`
-                : visibilityMode === "columns"
-                  ? `Show ${field.name} on table`
-                  : `Show ${field.name} on cards`
-            }
+            label={visibilityToggleLabel(
+              visibilityMode,
+              field.name,
+              fieldVisible === true,
+            )}
             onClick={() => {
               onToggleVisibility(field.id);
             }}
@@ -596,6 +590,21 @@ function OptionEditor({
       </button>
     </div>
   );
+}
+
+function visibilityToggleLabel(
+  mode: FieldVisibilityMode,
+  fieldName: string,
+  visible: boolean,
+): string {
+  if (mode === "columns") {
+    return visible
+      ? `Hide ${fieldName} from table`
+      : `Show ${fieldName} on table`;
+  }
+  return visible
+    ? `Hide ${fieldName} from cards`
+    : `Show ${fieldName} on cards`;
 }
 
 function FieldTypeMenu({

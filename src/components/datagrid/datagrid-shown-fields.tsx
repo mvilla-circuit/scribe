@@ -20,6 +20,7 @@ import {
 } from "@/lib/datagrid-schema";
 
 import {
+  effectiveVisibleIds,
   pickCardVisibilityView,
   toggleVisibleFieldId,
 } from "./datagrid-field-visibility";
@@ -48,13 +49,10 @@ export function DatagridShownFields({
     [targetView?.config],
   );
 
-  const effectiveVisible = useMemo(() => {
-    const ids =
-      config.cardVisibleFieldIds.length > 0
-        ? config.cardVisibleFieldIds
-        : fields.map((f) => f.id);
-    return new Set(ids);
-  }, [config.cardVisibleFieldIds, fields]);
+  const effectiveVisible = useMemo(
+    () => new Set(effectiveVisibleIds(fields, config.cardVisibleFieldIds)),
+    [config.cardVisibleFieldIds, fields],
+  );
 
   const hiddenCount = fields.filter((f) => !effectiveVisible.has(f.id)).length;
 
