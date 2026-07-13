@@ -454,65 +454,67 @@ function OptionEditor({
           }}
           removeLabel={`Delete option ${option.name}`}
           removeReveal="hover"
-          removeClassName="size-5 hover:bg-hover hover:opacity-100 hover:text-danger"
-          className="group/option min-h-7 max-w-full gap-1 px-1.5 py-0.5"
+          removeClassName="size-5 hover:bg-hover hover:text-danger"
+          className="min-h-7 max-w-full px-1.5 py-0.5"
         >
-          <DropdownMenu
-            open={colorOptionId === option.id}
-            onOpenChange={(open) => {
-              setColorOptionId(open ? option.id : null);
-            }}
-          >
-            <DropdownMenuTrigger asChild>
+          <div className="flex min-w-0 items-center gap-1">
+            <DropdownMenu
+              open={colorOptionId === option.id}
+              onOpenChange={(open) => {
+                setColorOptionId(open ? option.id : null);
+              }}
+            >
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={`Color for ${option.name}`}
+                  className="flex size-5 shrink-0 items-center justify-center rounded-full outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <span
+                    style={swatchDotStyle(option.color)}
+                    className="size-2.5 rounded-full"
+                    aria-hidden="true"
+                  />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="p-2">
+                <MorandiSwatchGrid
+                  value={option.color}
+                  onChange={(hue) => {
+                    recolorOption(option.id, hue);
+                    setColorOptionId(null);
+                  }}
+                  ariaLabelForHue={(hue) => `${hue} for ${option.name}`}
+                />
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {editingId === option.id ? (
+              <InlineRename
+                initialValue={option.name}
+                ariaLabel={`Rename ${option.name}`}
+                onCommit={(name) => {
+                  renameOption(option.id, name);
+                  setEditingId(null);
+                }}
+                onCancel={() => {
+                  setEditingId(null);
+                }}
+                className="min-w-[12rem] flex-1 py-0.5"
+              />
+            ) : (
               <button
                 type="button"
-                aria-label={`Color for ${option.name}`}
-                className="flex size-5 shrink-0 items-center justify-center rounded-full outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <span
-                  style={swatchDotStyle(option.color)}
-                  className="size-2.5 rounded-full"
-                  aria-hidden="true"
-                />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="p-2">
-              <MorandiSwatchGrid
-                value={option.color}
-                onChange={(hue) => {
-                  recolorOption(option.id, hue);
-                  setColorOptionId(null);
+                aria-label={`Rename ${option.name}`}
+                onClick={() => {
+                  setEditingId(option.id);
                 }}
-                ariaLabelForHue={(hue) => `${hue} for ${option.name}`}
-              />
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {editingId === option.id ? (
-            <InlineRename
-              initialValue={option.name}
-              ariaLabel={`Rename ${option.name}`}
-              onCommit={(name) => {
-                renameOption(option.id, name);
-                setEditingId(null);
-              }}
-              onCancel={() => {
-                setEditingId(null);
-              }}
-              className="min-w-[12rem] flex-1 py-0.5"
-            />
-          ) : (
-            <button
-              type="button"
-              aria-label={`Rename ${option.name}`}
-              onClick={() => {
-                setEditingId(option.id);
-              }}
-              className="min-w-0 truncate rounded px-1 py-0.5 text-left outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {option.name}
-            </button>
-          )}
+                className="min-w-0 truncate rounded px-1 py-0.5 text-left outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {option.name}
+              </button>
+            )}
+          </div>
         </RemovableChip>
       ))}
       <button

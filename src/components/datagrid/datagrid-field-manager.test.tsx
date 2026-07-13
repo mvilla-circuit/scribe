@@ -164,6 +164,16 @@ describe("FieldManager", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("collapses the option chip remove control at rest (inherits RemovableChip hover reveal)", () => {
+    renderWithProviders(<Harness initial={[SELECT_FIELD]} />);
+
+    const remove = screen.getByRole("button", { name: "Delete option Female" });
+
+    expect(remove).toHaveClass("max-w-0");
+    expect(remove).toHaveClass("opacity-0");
+    expect(remove.className).toMatch(/group-hover\/chip:max-w-/);
+  });
+
   it("changes option color from the chip color picker", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const onChange = vi.fn();

@@ -13,12 +13,26 @@ const CHIP_SHELL =
   "inline-flex max-w-full items-center rounded-full px-2 py-0.5 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring";
 const CHIP_CLASS = `${CHIP_SHELL} truncate`;
 
-const REMOVE_BUTTON_CLASS =
-  "flex size-3.5 shrink-0 items-center justify-center rounded-full outline-none transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none";
+const REMOVE_BUTTON_BASE =
+  "flex shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
-/** Reveal the remove control on chip hover/focus (and whenever it itself is focused). */
-const REMOVE_REVEAL_HOVER =
-  "pointer-events-none opacity-0 group-hover/chip:pointer-events-auto group-hover/chip:opacity-100 group-focus-within/chip:pointer-events-auto group-focus-within/chip:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100";
+const REMOVE_BUTTON_ALWAYS =
+  "size-3.5 transition-opacity hover:opacity-70 motion-reduce:transition-none";
+
+const REMOVE_REVEAL_BASE =
+  "size-3.5 transition-[max-width,opacity] duration-150 ease-out motion-reduce:transition-none";
+
+/**
+ * Collapse at rest; expand on chip hover/focus (and when the control itself is
+ * focused). The revealed `max-w-6` (24px) is the ceiling for the remove button,
+ * so it must stay >= the largest `removeClassName` size a consumer passes
+ * (currently `size-5`/20px) or `overflow-hidden` will clip the icon.
+ */
+const REMOVE_REVEAL_COLLAPSE =
+  "pointer-events-none max-w-0 overflow-hidden opacity-0 group-hover/chip:pointer-events-auto group-hover/chip:max-w-6 group-hover/chip:opacity-100 group-focus-within/chip:pointer-events-auto group-focus-within/chip:max-w-6 group-focus-within/chip:opacity-100 focus-visible:pointer-events-auto focus-visible:max-w-6 focus-visible:opacity-100";
+
+const REMOVE_REVEAL_SHELL =
+  "gap-0 transition-[gap,padding] duration-150 ease-out motion-reduce:transition-none hover:gap-1 hover:pr-1 focus-within:gap-1 focus-within:pr-1";
 
 export interface ChipProps extends Omit<
   ComponentPropsWithoutRef<"button">,
@@ -117,7 +131,13 @@ export function RemovableChip({
   return (
     <span
       style={swatchChipStyle(color)}
-      className={cn(CHIP_SHELL, "group/chip gap-1 pr-1", className)}
+      className={cn(
+        CHIP_SHELL,
+        "group/chip",
+        removeReveal === "always" && "gap-1 pr-1",
+        removeReveal === "hover" && REMOVE_REVEAL_SHELL,
+        className,
+      )}
     >
       {children ?? <span className="truncate">{name}</span>}
       <button
@@ -129,9 +149,13 @@ export function RemovableChip({
           onRemove();
         }}
         className={cn(
-          REMOVE_BUTTON_CLASS,
-          removeReveal === "hover" && REMOVE_REVEAL_HOVER,
+          REMOVE_BUTTON_BASE,
+          removeReveal === "always" && REMOVE_BUTTON_ALWAYS,
+          removeReveal === "hover" && REMOVE_REVEAL_BASE,
           removeClassName,
+          // Collapse classes come last so the rest-state (max-w-0/opacity-0)
+          // always wins over any width/opacity in `removeClassName`.
+          removeReveal === "hover" && REMOVE_REVEAL_COLLAPSE,
         )}
       >
         <X className="size-3" aria-hidden="true" />
