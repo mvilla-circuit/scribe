@@ -8,6 +8,7 @@ import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";
 
 import { DatagridRowBody } from "./datagrid-row-body";
+import { DatagridRowEditFields } from "./datagrid-row-edit-fields";
 import { RowOpenModeControl } from "./datagrid-row-open-mode-control";
 import { DatagridRowProperties } from "./datagrid-row-properties";
 import { useDatagridRowDetail } from "./use-datagrid-row-detail";
@@ -113,6 +114,9 @@ function RowPanelContent({
             style={{ fontFamily: "var(--font-display)" }}
           />
           <div className={styles.propertiesClassName}>
+            <div className="mb-2">
+              <DatagridRowEditFields datagridId={datagridId} fields={fields} />
+            </div>
             <DatagridRowProperties
               fields={fields}
               properties={properties}

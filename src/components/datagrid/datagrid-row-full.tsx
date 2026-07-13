@@ -9,6 +9,7 @@ import type { SaveState } from "@/editor/use-autosave";
 import { useUIStore } from "@/store/ui";
 
 import { DatagridRowBody } from "./datagrid-row-body";
+import { DatagridRowEditFields } from "./datagrid-row-edit-fields";
 import { RowOpenModeControl } from "./datagrid-row-open-mode-control";
 import { DatagridRowProperties } from "./datagrid-row-properties";
 import { useDatagridRowDetail } from "./use-datagrid-row-detail";
@@ -128,8 +129,11 @@ export function DatagridRowFull({
           />
         </Masthead>
 
-        {fields.length > 0 && (
-          <div className="mt-6">
+        <div className="mt-6">
+          <div className="mb-2">
+            <DatagridRowEditFields datagridId={datagridId} fields={fields} />
+          </div>
+          {fields.length > 0 && (
             <DatagridRowProperties
               fields={fields}
               properties={properties}
@@ -138,8 +142,8 @@ export function DatagridRowFull({
               relationTargets={relationTargets}
               onPatch={patchProperty}
             />
-          </div>
-        )}
+          )}
+        </div>
 
         <div
           className="mt-8 border-t border-border pt-6"
