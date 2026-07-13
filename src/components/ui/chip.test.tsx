@@ -95,7 +95,6 @@ describe("RemovableChip", () => {
     const shell = screen.getByText("Fantasy").parentElement;
 
     expect(shell).not.toHaveClass("gap-1");
-    expect(shell).not.toHaveClass("pr-0");
     expect(shell).toHaveClass("px-2");
     expect(removeButton).toHaveClass("max-w-0");
     expect(removeButton).toHaveClass("overflow-hidden");

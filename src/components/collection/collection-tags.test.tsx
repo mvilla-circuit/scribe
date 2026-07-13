@@ -287,7 +287,7 @@ describe("CollectionTags", () => {
 
     expect(addButton).toHaveClass("opacity-0");
     expect(addButton).not.toHaveClass("max-w-0");
-    expect(addButton.className).not.toMatch(/transition-/);
+    expect(addButton).toHaveClass("transition-opacity");
   });
 
   it("Add tag reveal classes include masthead hover focus-within and open", () => {
@@ -309,7 +309,8 @@ describe("CollectionTags", () => {
     );
     expect(addButton.className).toMatch(/focus-visible:opacity-100/);
     expect(addButton.className).toMatch(/data-\[state=open\]:opacity-100/);
-    expect(addButton.className).not.toMatch(/duration-150/);
+    expect(addButton).toHaveClass("motion-reduce:transition-none");
+    // Opacity-only reveal: no width animation like the chip remove control.
     expect(addButton.className).not.toMatch(/group-hover\/masthead:max-w-/);
   });
 

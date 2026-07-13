@@ -107,7 +107,7 @@ function TagChipMenu({ tag, onRecolor, onRename, onRemove }: TagChipMenuProps) {
       color={tag.color}
       onRemove={onRemove}
       removeReveal="hover"
-      removeClassName="size-4 hover:bg-elevated hover:opacity-100 hover:text-text"
+      removeClassName="size-4 hover:bg-elevated hover:text-text"
       className="max-w-full"
     >
       <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -148,9 +148,12 @@ function TagChipMenu({ tag, onRecolor, onRename, onRemove }: TagChipMenuProps) {
   );
 }
 
-/** Instant opacity reveal on masthead hover/focus (no width animation). */
+/**
+ * Fade in on masthead hover/focus (no width animation), matching the sibling
+ * Add icon / Add cover affordances that share the `group/masthead`.
+ */
 const ADD_TAG_REVEAL =
-  "opacity-0 focus-visible:opacity-100 group-hover/masthead:opacity-100 group-focus-within/masthead:opacity-100 data-[state=open]:opacity-100";
+  "opacity-0 transition-opacity motion-reduce:transition-none focus-visible:opacity-100 group-hover/masthead:opacity-100 group-focus-within/masthead:opacity-100 data-[state=open]:opacity-100";
 
 interface AddTagControlProps {
   suggestions: CollectionTag[];

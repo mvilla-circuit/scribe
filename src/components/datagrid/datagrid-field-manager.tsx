@@ -454,8 +454,8 @@ function OptionEditor({
           }}
           removeLabel={`Delete option ${option.name}`}
           removeReveal="hover"
-          removeClassName="size-5 hover:bg-hover hover:opacity-100 hover:text-danger"
-          className="group/option min-h-7 max-w-full px-1.5 py-0.5"
+          removeClassName="size-5 hover:bg-hover hover:text-danger"
+          className="min-h-7 max-w-full px-1.5 py-0.5"
         >
           <div className="flex min-w-0 items-center gap-1">
             <DropdownMenu

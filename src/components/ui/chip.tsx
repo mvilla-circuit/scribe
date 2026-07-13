@@ -22,12 +22,17 @@ const REMOVE_BUTTON_ALWAYS =
 const REMOVE_REVEAL_TRANSITION =
   "transition-[max-width,opacity] duration-150 ease-out motion-reduce:transition-none";
 
-/** Collapse at rest; expand on chip hover/focus (and when the control itself is focused). */
+/**
+ * Collapse at rest; expand on chip hover/focus (and when the control itself is
+ * focused). The revealed `max-w-6` (24px) is the ceiling for the remove button,
+ * so it must stay >= the largest `removeClassName` size a consumer passes
+ * (currently `size-5`/20px) or `overflow-hidden` will clip the icon.
+ */
 const REMOVE_REVEAL_COLLAPSE =
   "pointer-events-none max-w-0 overflow-hidden opacity-0 group-hover/chip:pointer-events-auto group-hover/chip:max-w-6 group-hover/chip:opacity-100 group-focus-within/chip:pointer-events-auto group-focus-within/chip:max-w-6 group-focus-within/chip:opacity-100 focus-visible:pointer-events-auto focus-visible:max-w-6 focus-visible:opacity-100";
 
 const REMOVE_REVEAL_SHELL =
-  "gap-0 transition-[gap,padding] duration-150 ease-out motion-reduce:transition-none hover:gap-3 hover:pr-3 focus-within:gap-3 focus-within:pr-3";
+  "gap-0 transition-[gap,padding] duration-150 ease-out motion-reduce:transition-none hover:gap-1 hover:pr-1 focus-within:gap-1 focus-within:pr-1";
 
 export interface ChipProps extends Omit<
   ComponentPropsWithoutRef<"button">,
@@ -149,6 +154,8 @@ export function RemovableChip({
           removeReveal === "hover" && REMOVE_REVEAL_TRANSITION,
           removeReveal === "hover" && "size-3.5",
           removeClassName,
+          // Collapse classes come last so the rest-state (max-w-0/opacity-0)
+          // always wins over any width/opacity in `removeClassName`.
           removeReveal === "hover" && REMOVE_REVEAL_COLLAPSE,
         )}
       >
