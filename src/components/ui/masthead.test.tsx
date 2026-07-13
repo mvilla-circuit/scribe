@@ -67,10 +67,67 @@ describe("Masthead", () => {
       </Masthead>,
     );
 
-    expect(screen.getByTestId("masthead-icon")).toHaveClass("mb-2", "xl:mb-0");
+    expect(screen.getByTestId("masthead-icon")).toHaveClass(
+      "mb-2",
+      "xl:mb-0",
+      "xl:top-1/2",
+      "xl:-translate-y-1/2",
+    );
     expect(
       screen.queryByTestId("masthead-actions-row"),
     ).not.toBeInTheDocument();
+  });
+
+  it("centers the hanging icon on the title line, not the full masthead block", () => {
+    renderWithProviders(
+      <Masthead
+        icon="📘"
+        onSelectIcon={vi.fn()}
+        onRemoveIcon={vi.fn()}
+        changeIconLabel="Change icon"
+      >
+        <h1>Series</h1>
+        <p>A subtitle</p>
+      </Masthead>,
+    );
+
+    const titleLine = screen.getByTestId("masthead-title-line");
+    const icon = screen.getByTestId("masthead-icon");
+
+    expect(titleLine).toContainElement(icon);
+    expect(titleLine).toContainElement(
+      screen.getByRole("heading", { name: "Series" }),
+    );
+    expect(titleLine).not.toContainElement(screen.getByText("A subtitle"));
+    expect(screen.getByTestId("masthead-title")).toContainElement(
+      screen.getByText("A subtitle"),
+    );
+  });
+
+  it("flattens fragment children so a book-style title block still centers on the title", () => {
+    renderWithProviders(
+      <Masthead
+        icon="📘"
+        onSelectIcon={vi.fn()}
+        onRemoveIcon={vi.fn()}
+        changeIconLabel="Change icon"
+      >
+        <>
+          <h1>Series</h1>
+          <p>A subtitle</p>
+        </>
+      </Masthead>,
+    );
+
+    const titleLine = screen.getByTestId("masthead-title-line");
+
+    expect(titleLine).toContainElement(
+      screen.getByRole("heading", { name: "Series" }),
+    );
+    expect(titleLine).not.toContainElement(screen.getByText("A subtitle"));
+    expect(screen.getByTestId("masthead-title")).toContainElement(
+      screen.getByText("A subtitle"),
+    );
   });
 
   it("keeps the in-flow margin when Add cover is present beside an icon", () => {
