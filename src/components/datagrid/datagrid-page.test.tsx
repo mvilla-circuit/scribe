@@ -465,4 +465,118 @@ describe("DatagridPage", () => {
       expect(config.visibleFieldIds).toEqual(["about", "age"]);
     });
   });
+
+  it("persists title-only cards when the last field is hidden", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    server.use(
+      http.patch(
+        "http://supabase.test/rest/v1/datagrid_views",
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    );
+    const client = seed({
+      fields: [{ id: "about", name: "About", type: "text", config: {} }],
+      rows: [
+        makeDatagridRow({
+          id: "r1",
+          datagrid_id: DGID,
+          title: "Ada",
+          properties: asJson({ about: "Writer" }),
+        }),
+      ],
+      viewConfig: {
+        layout: "gallery",
+        cardVisibleFieldIds: ["about"],
+      },
+    });
+
+    renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
+    expect(screen.getByText("Writer")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "View options" }));
+    await user.click(screen.getByRole("menuitem", { name: "Fields" }));
+    await user.click(
+      screen.getByRole("button", { name: "Hide About from cards" }),
+    );
+
+    await waitFor(() => {
+      const view = client.getQueryData<{ config: unknown }[]>(
+        datagridViewsKey(DGID),
+      )?.[0];
+      expect(parseDatagridViewConfig(view?.config).cardVisibleFieldIds).toEqual(
+        ["__none__"],
+      );
+    });
+    expect(screen.queryByText("Writer")).not.toBeInTheDocument();
+  });
+
+  it("Fields on a non-default gallery view does not rewrite the default view", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    server.use(
+      http.patch(
+        "http://supabase.test/rest/v1/datagrid_views",
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    );
+    const client = seed({
+      fields: [
+        { id: "about", name: "About", type: "text", config: {} },
+        { id: "age", name: "Age", type: "number", config: {} },
+      ],
+      rows: [
+        makeDatagridRow({
+          id: "r1",
+          datagrid_id: DGID,
+          title: "Ada",
+          properties: asJson({ about: "Writer", age: 36 }),
+        }),
+      ],
+    });
+    client.setQueryData(datagridViewsKey(DGID), [
+      makeDatagridView({
+        id: "view-default",
+        datagrid_id: DGID,
+        name: "Default",
+        is_default: true,
+        config: asJson({
+          layout: "table",
+          cardVisibleFieldIds: ["about", "age"],
+        }),
+      }),
+      makeDatagridView({
+        id: "view-gallery",
+        datagrid_id: DGID,
+        name: "Gallery",
+        is_default: false,
+        config: asJson({
+          layout: "gallery",
+          cardVisibleFieldIds: ["about", "age"],
+        }),
+      }),
+    ]);
+
+    renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
+    await user.click(screen.getByRole("button", { name: "Gallery" }));
+    expect(screen.getByText("Writer")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "View options" }));
+    await user.click(screen.getByRole("menuitem", { name: "Fields" }));
+    await user.click(
+      screen.getByRole("button", { name: "Hide Age from cards" }),
+    );
+
+    await waitFor(() => {
+      const views = client.getQueryData<{ id: string; config: unknown }[]>(
+        datagridViewsKey(DGID),
+      );
+      const gallery = views?.find((view) => view.id === "view-gallery");
+      const defaults = views?.find((view) => view.id === "view-default");
+      expect(
+        parseDatagridViewConfig(gallery?.config).cardVisibleFieldIds,
+      ).toEqual(["about"]);
+      expect(
+        parseDatagridViewConfig(defaults?.config).cardVisibleFieldIds,
+      ).toEqual(["about", "age"]);
+    });
+  });
 });

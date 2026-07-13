@@ -68,7 +68,10 @@ export interface DatagridRowLinkOption {
  * fake bridge.
  */
 export interface EditorBridge {
-  /** True while the page index / books / datagrids are still loading. */
+  /**
+   * True while the page index / books are still loading. Page-link cards use
+   * this only — datagrid row/view fetches must not delay page-link not-found.
+   */
   loading: boolean;
   /** Resolve a page/book target to its current display data, or null if absent. */
   resolvePageTarget: (
@@ -93,6 +96,16 @@ export interface EditorBridge {
     datagridId: string;
     rowId: string;
   }) => void;
+  /**
+   * Start loading rows/views for a datagrid (idempotent). Embeds and the
+   * picker call this so the host only fetches needed grids.
+   */
+  watchDatagrid: (datagridId: string) => void;
+  /**
+   * True while this datagrid's rows/views are pending (or not yet watched).
+   * Embed cards use this instead of {@link loading}.
+   */
+  isDatagridLoading: (datagridId: string) => boolean;
 }
 
 export const EditorBridgeContext = createContext<EditorBridge | null>(null);

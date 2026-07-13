@@ -272,4 +272,28 @@ describe("indexCardVisibleFieldIdsByDatagrid", () => {
       "about",
     ]);
   });
+
+  it("prefers the default view when multiple views exist", () => {
+    const views = [
+      makeDatagridView({
+        id: "v-other",
+        datagrid_id: "dg1",
+        is_default: false,
+        config: asJson({
+          layout: "gallery",
+          cardVisibleFieldIds: ["a"],
+        }),
+      }),
+      makeDatagridView({
+        id: "v-default",
+        datagrid_id: "dg1",
+        is_default: true,
+        config: asJson({
+          layout: "gallery",
+          cardVisibleFieldIds: ["b"],
+        }),
+      }),
+    ];
+    expect(indexCardVisibleFieldIdsByDatagrid(views).get("dg1")).toEqual(["b"]);
+  });
 });

@@ -94,7 +94,8 @@ export function DatagridShownFields({
       </PopoverTrigger>
       <PopoverContent align="start" className="w-56 p-1.5">
         <p className="px-2 py-1.5 text-xs text-muted">
-          Title is always shown. Hidden fields leave gallery and embed cards.
+          Title is always shown. Hidden fields leave embeds and the default
+          gallery view.
         </p>
         <ul className="flex list-none flex-col p-0">
           {fields.map((field) => {

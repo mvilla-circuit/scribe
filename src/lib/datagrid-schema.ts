@@ -261,15 +261,31 @@ export const DEFAULT_DATAGRID_VIEW_CONFIG: DatagridViewConfig = {
 };
 
 /**
- * Apply a view's visible-id list to the schema field list. Empty means all
- * fields in schema order; otherwise returns those ids that still exist, in
- * list order. Shared by table columns, gallery/board cards, and embeds.
+ * Persisted id list meaning “hide every property field” (title-only cards /
+ * columns). Distinct from `[]`, which still means “show all”.
+ */
+const NONE_VISIBLE_FIELD_ID = "__none__";
+
+/** Canonical stored value for the title-only / no-fields sentinel. */
+export const NONE_VISIBLE_FIELD_IDS: string[] = [NONE_VISIBLE_FIELD_ID];
+
+/** True when the id list is the title-only / no-fields sentinel. */
+export function isNoneVisibleFieldIds(ids: string[]): boolean {
+  return ids.length === 1 && ids[0] === NONE_VISIBLE_FIELD_ID;
+}
+
+/**
+ * Apply a view's visible-id list to the schema field list.
+ * - `[]` means all fields in schema order (legacy + default).
+ * - {@link NONE_VISIBLE_FIELD_IDS} means no property fields (title-only).
+ * - Otherwise returns those ids that still exist, in list order.
  */
 export function selectVisibleFields(
   fields: DatagridField[],
   visibleFieldIds: string[],
 ): DatagridField[] {
   if (visibleFieldIds.length === 0) return fields;
+  if (isNoneVisibleFieldIds(visibleFieldIds)) return [];
   const byId = new Map(fields.map((field) => [field.id, field]));
   return visibleFieldIds
     .map((id) => byId.get(id))

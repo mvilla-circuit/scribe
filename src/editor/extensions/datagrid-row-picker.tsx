@@ -24,7 +24,8 @@ export const DatagridRowPicker = memo(function DatagridRowPicker() {
   const close = useDatagridRowPicker((s) => s.close);
   const open = onSelect !== null;
 
-  const { datagridLinkOptions, datagridRowLinkOptions } = useEditorBridge();
+  const { datagridLinkOptions, datagridRowLinkOptions, watchDatagrid } =
+    useEditorBridge();
 
   const [step, setStep] = useState<Step>("datagrid");
   const [selectedDatagridId, setSelectedDatagridId] = useState<string | null>(
@@ -78,6 +79,7 @@ export const DatagridRowPicker = memo(function DatagridRowPicker() {
   }
 
   const chooseDatagrid = (row: DatagridLinkOption) => {
+    watchDatagrid(row.datagridId);
     setSelectedDatagridId(row.datagridId);
     setStep("row");
   };

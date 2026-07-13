@@ -24,8 +24,16 @@ export function DatagridRowCardView({
   const staleLabel = (node.attrs.label as string | null) ?? null;
   const editable = editor.isEditable;
 
-  const { resolveDatagridRow, navigateToDatagridRow, loading } =
-    useEditorBridge();
+  const {
+    resolveDatagridRow,
+    navigateToDatagridRow,
+    watchDatagrid,
+    isDatagridLoading,
+  } = useEditorBridge();
+
+  useEffect(() => {
+    if (datagridId) watchDatagrid(datagridId);
+  }, [datagridId, watchDatagrid]);
 
   const resolved = useMemo(
     () => resolveDatagridRow(datagridId, rowId),
@@ -54,6 +62,7 @@ export function DatagridRowCardView({
     navigateToDatagridRow({ datagridId, rowId });
   };
 
+  const loading = datagridId ? isDatagridLoading(datagridId) : false;
   const notFound = !loading && !resolved;
 
   return (

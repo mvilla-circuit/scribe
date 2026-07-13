@@ -32,6 +32,8 @@ function makeBridge(over: Partial<EditorBridge> = {}): EditorBridge {
     datagridLinkOptions: [],
     datagridRowLinkOptions: () => [],
     navigateToDatagridRow: vi.fn(),
+    watchDatagrid: vi.fn(),
+    isDatagridLoading: () => false,
     ...over,
   };
 }
@@ -113,5 +115,21 @@ describe("DatagridRowCardView", () => {
 
     expect(screen.getByText("Card not found")).toBeInTheDocument();
     expect(screen.queryByText("Gone")).not.toBeInTheDocument();
+  });
+
+  it("watches the datagrid and does not flash not-found while loading", () => {
+    const watchDatagrid = vi.fn();
+    renderCard(
+      { datagridId: "dg-1", rowId: "row-1", label: "Aria" },
+      makeBridge({
+        resolveDatagridRow: () => null,
+        watchDatagrid,
+        isDatagridLoading: () => true,
+      }),
+    );
+
+    expect(watchDatagrid).toHaveBeenCalledWith("dg-1");
+    expect(screen.queryByText("Card not found")).not.toBeInTheDocument();
+    expect(screen.getByText("Aria")).toBeInTheDocument();
   });
 });

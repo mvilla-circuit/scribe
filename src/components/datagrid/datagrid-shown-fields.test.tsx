@@ -72,6 +72,10 @@ describe("selectVisibleFields", () => {
     expect(selectVisibleFields(fields, [])).toEqual(fields);
   });
 
+  it("returns no fields for the none-sentinel (title-only)", () => {
+    expect(selectVisibleFields(fields, ["__none__"])).toEqual([]);
+  });
+
   it("filters and orders by visibleFieldIds", () => {
     expect(
       selectVisibleFields(fields, ["hair", "about"]).map((f) => f.id),
@@ -90,6 +94,16 @@ describe("toggleVisibleFieldId", () => {
       "age",
       "hair",
     ]);
+  });
+
+  it("persists the none-sentinel when hiding the last field", () => {
+    expect(toggleVisibleFieldId(fields, ["about"], "about")).toEqual([
+      "__none__",
+    ]);
+  });
+
+  it("shows a field from the none-sentinel", () => {
+    expect(toggleVisibleFieldId(fields, ["__none__"], "age")).toEqual(["age"]);
   });
 });
 
@@ -120,6 +134,9 @@ describe("DatagridShownFields", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Shown on cards" }));
+    expect(
+      screen.getByText(/embeds and the default gallery view/),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Hide Age" }));
 
     await waitFor(() => {

@@ -36,6 +36,8 @@ function makeBridge(over: Partial<EditorBridge> = {}): EditorBridge {
           ]
         : [],
     navigateToDatagridRow: vi.fn(),
+    watchDatagrid: vi.fn(),
+    isDatagridLoading: () => false,
     ...over,
   };
 }
