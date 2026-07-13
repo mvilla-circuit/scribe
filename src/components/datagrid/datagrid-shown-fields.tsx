@@ -1,4 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
+import { Eye, EyeOff } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
 import {
@@ -17,7 +18,6 @@ import {
   type DatagridViewConfig,
   parseDatagridViewConfig,
 } from "@/lib/datagrid-schema";
-import { cn } from "@/lib/utils";
 
 import {
   pickCardVisibilityView,
@@ -106,24 +106,26 @@ export function DatagridShownFields({
               <li key={field.id}>
                 <button
                   type="button"
+                  aria-label={
+                    visible ? `Hide ${field.name}` : `Show ${field.name}`
+                  }
                   onClick={() => {
                     toggle(field.id);
                   }}
                   className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-text outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      "size-3.5 shrink-0 rounded-sm border",
-                      visible
-                        ? "border-accent bg-accent"
-                        : "border-border bg-transparent",
-                    )}
-                  />
+                  {visible ? (
+                    <Eye
+                      className="size-3.5 shrink-0 text-muted"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <EyeOff
+                      className="size-3.5 shrink-0 text-muted"
+                      aria-hidden="true"
+                    />
+                  )}
                   <span className="min-w-0 flex-1 truncate">{field.name}</span>
-                  <span className="text-xs text-muted">
-                    {visible ? "Shown" : "Hidden"}
-                  </span>
                 </button>
               </li>
             );

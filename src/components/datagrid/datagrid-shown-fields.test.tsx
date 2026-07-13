@@ -120,7 +120,7 @@ describe("DatagridShownFields", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Shown on cards" }));
-    await user.click(screen.getByRole("button", { name: /Age/ }));
+    await user.click(screen.getByRole("button", { name: "Hide Age" }));
 
     await waitFor(() => {
       expect(patched?.config).toBeDefined();
