@@ -174,7 +174,6 @@ describe("DatagridPage", () => {
       screen.getByRole("button", { name: "New view" }),
     ).toBeInTheDocument();
 
-    // Menu create remains available once the strip is visible.
     await user.click(screen.getByRole("button", { name: "View options" }));
     expect(
       await screen.findByRole("menuitem", { name: "New view" }),

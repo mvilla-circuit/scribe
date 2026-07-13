@@ -18,6 +18,60 @@ interface DatagridViewTabsProps {
   views: DatagridView[];
 }
 
+interface ViewTabProps {
+  isActive: boolean;
+  onDelete: (viewId: string) => void;
+  onSelect: (viewId: string) => void;
+  view: DatagridView;
+}
+
+function ViewTab({ isActive, onDelete, onSelect, view }: ViewTabProps) {
+  return (
+    <div className="group/viewtab relative flex items-center">
+      <button
+        type="button"
+        onClick={() => {
+          onSelect(view.id);
+        }}
+        className={cn(
+          "-mb-px border-b-2 px-2 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          isActive
+            ? "border-accent text-text"
+            : "border-transparent text-muted hover:text-text",
+        )}
+      >
+        {view.name}
+      </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label={`Actions for ${view.name}`}
+            className={cn(
+              "ml-0.5 flex size-5 items-center justify-center rounded text-muted outline-none",
+              "opacity-0 transition-opacity hover:bg-hover hover:text-text",
+              "focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring",
+              "group-hover/viewtab:opacity-100",
+            )}
+          >
+            <MoreHorizontal className="size-3.5" aria-hidden="true" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem
+            className="text-danger"
+            onSelect={() => {
+              onDelete(view.id);
+            }}
+          >
+            Delete view
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
 export function DatagridViewTabs({
   activeViewId,
   onCreateView,
@@ -30,48 +84,13 @@ export function DatagridViewTabs({
   return (
     <div className="flex items-center gap-1 border-b border-border">
       {views.map((view) => (
-        <div key={view.id} className="group/viewtab relative flex items-center">
-          <button
-            type="button"
-            onClick={() => {
-              onSelect(view.id);
-            }}
-            className={cn(
-              "-mb-px border-b-2 px-2 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              activeViewId === view.id
-                ? "border-accent text-text"
-                : "border-transparent text-muted hover:text-text",
-            )}
-          >
-            {view.name}
-          </button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                aria-label={`Actions for ${view.name}`}
-                className={cn(
-                  "ml-0.5 flex size-5 items-center justify-center rounded text-muted outline-none",
-                  "opacity-0 transition-opacity hover:bg-hover hover:text-text",
-                  "focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring",
-                  "group-hover/viewtab:opacity-100",
-                )}
-              >
-                <MoreHorizontal className="size-3.5" aria-hidden="true" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem
-                className="text-danger"
-                onSelect={() => {
-                  onDelete(view.id);
-                }}
-              >
-                Delete view
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <ViewTab
+          key={view.id}
+          view={view}
+          isActive={activeViewId === view.id}
+          onSelect={onSelect}
+          onDelete={onDelete}
+        />
       ))}
       <Tooltip content="New view">
         <button
