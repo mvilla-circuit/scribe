@@ -95,13 +95,13 @@ export function DatagridRowCardView({
             </span>
           )}
           {!notFound && resolved && resolved.fieldsPreview.length > 0 && (
-            <ul className="scribe-dgrowcard-fields">
+            <div className="scribe-dgrowcard-fields">
               {resolved.fieldsPreview.map((line) => (
-                <li key={line.fieldId} className="scribe-dgrowcard-field">
+                <div key={line.fieldId} className="scribe-dgrowcard-field">
                   {line.text}
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </div>
       </CardSurface>

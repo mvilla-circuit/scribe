@@ -83,6 +83,13 @@ describe("DatagridRowCardView", () => {
     expect(screen.getByRole("link")).toContainElement(media);
   });
 
+  it("renders one left-aligned field line per preview value", () => {
+    renderCard({ datagridId: "dg-1", rowId: "row-1" });
+    // Div stack (not prose <ul>) keeps fields flush with the title.
+    expect(screen.getByText("Warrior")).toHaveClass("scribe-dgrowcard-field");
+    expect(screen.getByText("North")).toHaveClass("scribe-dgrowcard-field");
+  });
+
   it("navigates to the source row when activated", async () => {
     const user = userEvent.setup();
     const navigateToDatagridRow = vi.fn();
