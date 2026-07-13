@@ -288,7 +288,7 @@ describe("EntityTags", () => {
 
   it("hides Add tag at rest when tags are assigned", () => {
     renderWithProviders(
-      <CollectionTags
+      <EntityTags
         tags={[{ id: "t1", name: "Fantasy", color: "sky" }]}
         onAdd={vi.fn()}
         onRemove={vi.fn()}
@@ -306,7 +306,7 @@ describe("EntityTags", () => {
 
   it("Add tag reveal classes include masthead hover focus-within and open", () => {
     renderWithProviders(
-      <CollectionTags
+      <EntityTags
         tags={[{ id: "t1", name: "Fantasy", color: "sky" }]}
         onAdd={vi.fn()}
         onRemove={vi.fn()}
