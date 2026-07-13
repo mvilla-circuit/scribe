@@ -13,6 +13,7 @@ interface DatagridPageToolbarProps {
     update: (prev: DatagridViewConfig) => DatagridViewConfig,
   ) => void;
   onCreateRow: () => void;
+  onCreateView: () => void;
   onOpenExport: () => void;
   onOpenFields: () => void;
   onOpenImport: () => void;
@@ -25,6 +26,7 @@ export function DatagridPageToolbar({
   fields,
   onChangeConfig,
   onCreateRow,
+  onCreateView,
   onOpenExport,
   onOpenFields,
   onOpenImport,
@@ -44,6 +46,7 @@ export function DatagridPageToolbar({
         fields={fields}
         config={config}
         onChange={onChangeConfig}
+        onCreateView={onCreateView}
         onOpenFields={onOpenFields}
         onImportCsv={onOpenImport}
         onExportCsv={onOpenExport}

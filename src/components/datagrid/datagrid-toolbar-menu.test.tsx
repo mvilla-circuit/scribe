@@ -23,66 +23,93 @@ function config(over: Partial<DatagridViewConfig> = {}): DatagridViewConfig {
   return { ...DEFAULT_DATAGRID_VIEW_CONFIG, ...over };
 }
 
-describe("DatagridToolbarMenu", () => {
-  it("changes layout from the Layout submenu", async () => {
-    const user = userEvent.setup({ pointerEventsCheck: 0 });
-    const onChange = vi.fn();
-    renderWithProviders(
+type ConfigUpdater = (prev: DatagridViewConfig) => DatagridViewConfig;
+
+function renderMenu({
+  config: viewConfig = config(),
+  onChange = vi.fn<(update: ConfigUpdater) => void>(),
+  onCreateView = vi.fn<() => void>(),
+  onExportCsv = vi.fn<() => void>(),
+  onImportCsv = vi.fn<() => void>(),
+  onOpenFields = vi.fn<() => void>(),
+}: {
+  config?: DatagridViewConfig;
+  onChange?: ReturnType<typeof vi.fn<(update: ConfigUpdater) => void>>;
+  onCreateView?: ReturnType<typeof vi.fn<() => void>>;
+  onExportCsv?: ReturnType<typeof vi.fn<() => void>>;
+  onImportCsv?: ReturnType<typeof vi.fn<() => void>>;
+  onOpenFields?: ReturnType<typeof vi.fn<() => void>>;
+} = {}) {
+  return {
+    onChange,
+    onCreateView,
+    onExportCsv,
+    onImportCsv,
+    onOpenFields,
+    ...renderWithProviders(
       <DatagridToolbarMenu
         fields={fields}
-        config={config({ layout: "table" })}
+        config={viewConfig}
         onChange={onChange}
-        onOpenFields={vi.fn()}
-        onImportCsv={vi.fn()}
-        onExportCsv={vi.fn()}
+        onCreateView={onCreateView}
+        onOpenFields={onOpenFields}
+        onImportCsv={onImportCsv}
+        onExportCsv={onExportCsv}
       />,
-    );
+    ),
+  };
+}
 
-    await user.click(screen.getByRole("button", { name: "View options" }));
+async function openMenu() {
+  const user = userEvent.setup({ pointerEventsCheck: 0 });
+  await user.click(screen.getByRole("button", { name: "View options" }));
+  return user;
+}
+
+describe("DatagridToolbarMenu", () => {
+  it("changes layout from the Layout submenu", async () => {
+    const { onChange } = renderMenu({
+      config: config({ layout: "table" }),
+    });
+    const user = await openMenu();
+
     const layout = await screen.findByRole("menuitem", { name: /Layout/ });
     layout.focus();
     await user.keyboard("{ArrowRight}");
     await user.click(await screen.findByRole("menuitem", { name: "Gallery" }));
 
     expect(onChange).toHaveBeenCalled();
-    const update = onChange.mock.calls.at(-1)?.[0] as (
-      prev: DatagridViewConfig,
-    ) => DatagridViewConfig;
-    expect(update(config({ layout: "table" }))).toMatchObject({
+    const update = onChange.mock.calls.at(-1)?.[0];
+    expect(update?.(config({ layout: "table" }))).toMatchObject({
       layout: "gallery",
     });
   });
 
   it("invokes fields and CSV actions", async () => {
-    const user = userEvent.setup({ pointerEventsCheck: 0 });
-    const onOpenFields = vi.fn();
-    const onImportCsv = vi.fn();
-    const onExportCsv = vi.fn();
-    renderWithProviders(
-      <DatagridToolbarMenu
-        fields={fields}
-        config={config()}
-        onChange={vi.fn()}
-        onOpenFields={onOpenFields}
-        onImportCsv={onImportCsv}
-        onExportCsv={onExportCsv}
-      />,
-    );
+    const { onExportCsv, onImportCsv, onOpenFields } = renderMenu();
 
-    await user.click(screen.getByRole("button", { name: "View options" }));
+    let user = await openMenu();
     await user.click(await screen.findByRole("menuitem", { name: "Fields" }));
     expect(onOpenFields).toHaveBeenCalled();
 
-    await user.click(screen.getByRole("button", { name: "View options" }));
+    user = await openMenu();
     await user.click(
       await screen.findByRole("menuitem", { name: "Import CSV" }),
     );
     expect(onImportCsv).toHaveBeenCalled();
 
-    await user.click(screen.getByRole("button", { name: "View options" }));
+    user = await openMenu();
     await user.click(
       await screen.findByRole("menuitem", { name: "Export CSV" }),
     );
     expect(onExportCsv).toHaveBeenCalled();
+  });
+
+  it("offers New view and calls onCreateView", async () => {
+    const { onCreateView } = renderMenu();
+    const user = await openMenu();
+
+    await user.click(await screen.findByRole("menuitem", { name: "New view" }));
+    expect(onCreateView).toHaveBeenCalled();
   });
 });

@@ -143,7 +143,44 @@ describe("DatagridPage", () => {
     expect(useUIStore.getState().activeCollectionId).toBe("col-1");
   });
 
-  it("deletes a non-last view and selects another", async () => {
+  it("does not render the view tab strip with a single view", () => {
+    const client = seed({ rows: [] });
+    renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
+
+    expect(screen.queryByRole("button", { name: "Table" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "New view" })).toBeNull();
+  });
+
+  it("creating a second view from the menu shows the tab strip", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = seed({ rows: [] });
+    server.use(
+      http.post(
+        "http://supabase.test/rest/v1/datagrid_views",
+        () => new HttpResponse(null, { status: 201 }),
+      ),
+    );
+
+    renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
+
+    expect(screen.queryByRole("button", { name: "New view" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "View options" }));
+    await user.click(await screen.findByRole("menuitem", { name: "New view" }));
+
+    expect(screen.getByRole("button", { name: "Table" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "View 2" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "New view" }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "View options" }));
+    expect(
+      await screen.findByRole("menuitem", { name: "New view" }),
+    ).toBeInTheDocument();
+  });
+
+  it("deleting down to one view hides the tab strip", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const client = seed({ rows: [] });
     client.setQueryData(datagridViewsKey(DGID), [
@@ -171,6 +208,11 @@ describe("DatagridPage", () => {
 
     renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
 
+    expect(screen.getByRole("button", { name: "Table" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "New view" }),
+    ).toBeInTheDocument();
+
     await user.click(screen.getByRole("button", { name: "View 1" }));
     await user.click(
       screen.getByRole("button", { name: "Actions for View 1" }),
@@ -182,19 +224,9 @@ describe("DatagridPage", () => {
         .getQueryData<{ id: string }[]>(datagridViewsKey(DGID))
         ?.map((v) => v.id),
     ).toEqual(["view-1"]);
+    expect(screen.queryByRole("button", { name: "Table" })).toBeNull();
     expect(screen.queryByRole("button", { name: "View 1" })).toBeNull();
-    expect(
-      screen.queryByRole("button", { name: "Actions for View 1" }),
-    ).toBeNull();
-  });
-
-  it("does not offer delete when only one view remains", () => {
-    const client = seed({ rows: [] });
-    renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
-
-    expect(
-      screen.queryByRole("button", { name: "Actions for Table" }),
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: "New view" })).toBeNull();
   });
 
   it("shows a not-found state for an unknown datagrid id", () => {
