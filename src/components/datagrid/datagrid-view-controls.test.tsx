@@ -191,39 +191,16 @@ describe("DatagridViewControls", () => {
     });
   });
 
-  it("hides a column via the Columns menu", async () => {
-    const user = userEvent.setup({ pointerEventsCheck: 0 });
-    const onChange = vi.fn();
-    const initial = config();
+  it("does not offer a Columns submenu (visibility lives in Fields)", () => {
     renderInMenu(
       <DatagridViewControls
         fields={fields}
-        config={initial}
-        onChange={onChange}
+        config={config()}
+        onChange={vi.fn()}
       />,
     );
-    await openSubmenu(user, /Columns/);
-    await user.click(await screen.findByRole("menuitem", { name: /Stage/ }));
-    expect(applyConfigUpdate(onChange, initial)).toMatchObject({
-      visibleFieldIds: ["score"],
-    });
-  });
-
-  it("shows a previously hidden column", async () => {
-    const user = userEvent.setup({ pointerEventsCheck: 0 });
-    const onChange = vi.fn();
-    const initial = config({ visibleFieldIds: ["score"] });
-    renderInMenu(
-      <DatagridViewControls
-        fields={fields}
-        config={initial}
-        onChange={onChange}
-      />,
-    );
-    await openSubmenu(user, /Columns/);
-    await user.click(await screen.findByRole("menuitem", { name: /Stage/ }));
-    expect(applyConfigUpdate(onChange, initial)).toMatchObject({
-      visibleFieldIds: ["stage", "score"],
-    });
+    expect(
+      screen.queryByRole("menuitem", { name: /Columns/ }),
+    ).not.toBeInTheDocument();
   });
 });

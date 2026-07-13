@@ -18,9 +18,15 @@ beforeEach(() => {
 function Harness({
   initial,
   onChange,
+  visibilityMode,
+  visibleIds,
+  onToggleVisibility,
 }: {
   initial: DatagridField[];
   onChange?: (f: DatagridField[]) => void;
+  visibilityMode?: "columns" | "cards" | null;
+  visibleIds?: string[];
+  onToggleVisibility?: (fieldId: string) => void;
 }) {
   const [fields, setFields] = useState(initial);
   return (
@@ -34,6 +40,9 @@ function Harness({
         setFields(next);
         onChange?.(next);
       }}
+      visibilityMode={visibilityMode}
+      visibleIds={visibleIds}
+      onToggleVisibility={onToggleVisibility}
     />
   );
 }
@@ -349,5 +358,42 @@ describe("FieldManager", () => {
       expect.objectContaining({ id: "b" }),
       expect.objectContaining({ id: "a" }),
     ]);
+  });
+
+  it("hides eyes when visibilityMode is null", () => {
+    renderWithProviders(
+      <Harness
+        initial={[{ id: "a", name: "Alpha", type: "text", config: {} }]}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: /Hide Alpha/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("toggles visibility without schema onChange", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const onChange = vi.fn();
+    const onToggleVisibility = vi.fn();
+    renderWithProviders(
+      <Harness
+        initial={[{ id: "a", name: "Alpha", type: "text", config: {} }]}
+        onChange={onChange}
+        visibilityMode="columns"
+        visibleIds={["a"]}
+        onToggleVisibility={onToggleVisibility}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        "Eye icons show or hide table columns. Title stays visible.",
+      ),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "Hide Alpha from table" }),
+    );
+    expect(onToggleVisibility).toHaveBeenCalledWith("a");
+    expect(onChange).not.toHaveBeenCalled();
   });
 });

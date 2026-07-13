@@ -3,11 +3,16 @@ import { describe, expect, it } from "vitest";
 import type { DatagridRowMeta } from "@/data/datagrid-rows";
 import type { Json } from "@/lib/database.types";
 import type { DatagridField } from "@/lib/datagrid-schema";
-import { makeDatagrid, makeDatagridRow } from "@/test/fixtures";
+import {
+  makeDatagrid,
+  makeDatagridRow,
+  makeDatagridView,
+} from "@/test/fixtures";
 
 import {
   buildDatagridLinkOptions,
   buildDatagridRowLinkOptions,
+  indexCardVisibleFieldIdsByDatagrid,
   indexRowsByDatagrid,
   resolveDatagridRow,
 } from "./datagrid-row-resolve";
@@ -227,6 +232,44 @@ describe("buildDatagridRowLinkOptions", () => {
         icon: null,
         subtitle: "Cast",
       },
+    ]);
+  });
+});
+
+describe("indexCardVisibleFieldIdsByDatagrid", () => {
+  it("indexes cardVisibleFieldIds from the default view", () => {
+    const views = [
+      makeDatagridView({
+        id: "v1",
+        datagrid_id: "dg1",
+        is_default: true,
+        config: asJson({
+          layout: "gallery",
+          visibleFieldIds: ["a"],
+          cardVisibleFieldIds: ["b", "c"],
+        }),
+      }),
+    ];
+    expect(indexCardVisibleFieldIdsByDatagrid(views).get("dg1")).toEqual([
+      "b",
+      "c",
+    ]);
+  });
+
+  it("falls back to visibleFieldIds when cardVisibleFieldIds is omitted", () => {
+    const views = [
+      makeDatagridView({
+        id: "v1",
+        datagrid_id: "dg1",
+        is_default: true,
+        config: asJson({
+          layout: "table",
+          visibleFieldIds: ["about"],
+        }),
+      }),
+    ];
+    expect(indexCardVisibleFieldIdsByDatagrid(views).get("dg1")).toEqual([
+      "about",
     ]);
   });
 });

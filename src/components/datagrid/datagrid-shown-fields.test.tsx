@@ -126,14 +126,13 @@ describe("DatagridShownFields", () => {
       expect(patched?.config).toBeDefined();
     });
     const config = parseDatagridViewConfig(patched?.config);
-    expect(config.visibleFieldIds).toEqual(["about", "hair"]);
+    expect(config.cardVisibleFieldIds).toEqual(["about", "hair"]);
 
     const cached = client
       .getQueryData<DatagridView[]>(datagridViewsKey(DGID))
       ?.find((view) => view.id === VIEWID);
-    expect(parseDatagridViewConfig(cached?.config).visibleFieldIds).toEqual([
-      "about",
-      "hair",
-    ]);
+    expect(parseDatagridViewConfig(cached?.config).cardVisibleFieldIds).toEqual(
+      ["about", "hair"],
+    );
   });
 });

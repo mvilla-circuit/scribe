@@ -37,10 +37,11 @@ export function indexRowsByDatagrid(
 }
 
 /**
- * Map each datagrid id → `visibleFieldIds` from its default (or first) view.
- * Empty arrays mean “all fields” for {@link selectVisibleFields}.
+ * Map each datagrid id → `cardVisibleFieldIds` from its default (or first) view.
+ * Empty arrays mean “all fields” for {@link selectVisibleFields}. Parse falls
+ * back to `visibleFieldIds` when the card key was never persisted.
  */
-export function indexVisibleFieldIdsByDatagrid(
+export function indexCardVisibleFieldIdsByDatagrid(
   views: DatagridView[],
 ): Map<string, string[]> {
   const byDatagrid = new Map<string, DatagridView[]>();
@@ -53,7 +54,7 @@ export function indexVisibleFieldIdsByDatagrid(
   for (const [datagridId, list] of byDatagrid) {
     const preferred = list.find((view) => view.is_default) ?? list[0] ?? null;
     const config = parseDatagridViewConfig(preferred?.config ?? null);
-    visible.set(datagridId, config.visibleFieldIds);
+    visible.set(datagridId, config.cardVisibleFieldIds);
   }
   return visible;
 }
@@ -140,8 +141,8 @@ function buildFieldsPreview(
  * and property edits flow through on the next render. Returns null when the
  * target can't be found (loading, deleted, or inaccessible).
  *
- * `visibleFieldIdsByDatagrid` comes from each datagrid's default view — empty
- * / missing means all fields (same semantics as gallery cards).
+ * `visibleFieldIdsByDatagrid` is each datagrid's default-view
+ * `cardVisibleFieldIds` — empty / missing means all fields (same as gallery).
  */
 export function resolveDatagridRow(
   datagrids: Datagrid[],

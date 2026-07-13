@@ -12,8 +12,8 @@ import { useUIStore } from "@/store/ui";
 import {
   buildDatagridLinkOptions,
   buildDatagridRowLinkOptions,
+  indexCardVisibleFieldIdsByDatagrid,
   indexRowsByDatagrid,
-  indexVisibleFieldIdsByDatagrid,
   resolveDatagridRow,
 } from "./datagrid-row-resolve";
 import {
@@ -61,7 +61,7 @@ export function EditorBridgeHost({ children }: { children: ReactNode }) {
     [viewQueries],
   );
   const visibleFieldIdsByDatagrid = useMemo(
-    () => indexVisibleFieldIdsByDatagrid(allViews),
+    () => indexCardVisibleFieldIdsByDatagrid(allViews),
     [allViews],
   );
   const viewsLoading =

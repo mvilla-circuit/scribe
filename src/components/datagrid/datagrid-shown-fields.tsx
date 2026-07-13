@@ -26,8 +26,7 @@ import {
 
 /**
  * Quiet control that toggles which fields appear on gallery cards and embeds.
- * Persists to the datagrid's default (or first) view `visibleFieldIds` — the
- * same list Columns uses when that view is active.
+ * Persists to the datagrid's default (or first) view `cardVisibleFieldIds`.
  */
 export function DatagridShownFields({
   datagridId,
@@ -51,11 +50,11 @@ export function DatagridShownFields({
 
   const effectiveVisible = useMemo(() => {
     const ids =
-      config.visibleFieldIds.length > 0
-        ? config.visibleFieldIds
+      config.cardVisibleFieldIds.length > 0
+        ? config.cardVisibleFieldIds
         : fields.map((f) => f.id);
     return new Set(ids);
-  }, [config.visibleFieldIds, fields]);
+  }, [config.cardVisibleFieldIds, fields]);
 
   const hiddenCount = fields.filter((f) => !effectiveVisible.has(f.id)).length;
 
@@ -74,9 +73,9 @@ export function DatagridShownFields({
   const toggle = (fieldId: string) => {
     persist((prev) => ({
       ...prev,
-      visibleFieldIds: toggleVisibleFieldId(
+      cardVisibleFieldIds: toggleVisibleFieldId(
         fields,
-        prev.visibleFieldIds,
+        prev.cardVisibleFieldIds,
         fieldId,
       ),
     }));

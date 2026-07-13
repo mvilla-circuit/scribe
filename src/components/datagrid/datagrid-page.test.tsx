@@ -11,6 +11,7 @@ import {
 } from "@/data/query-keys";
 import type { Json } from "@/lib/database.types";
 import type { DatagridField } from "@/lib/datagrid-schema";
+import { parseDatagridViewConfig } from "@/lib/datagrid-schema";
 import { useUIStore } from "@/store/ui";
 import {
   makeCollection,
@@ -324,8 +325,8 @@ describe("DatagridPage", () => {
     expect(screen.getByRole("menuitem", { name: /Sort/ })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: /Group/ })).toBeInTheDocument();
     expect(
-      screen.getByRole("menuitem", { name: /Columns/ }),
-    ).toBeInTheDocument();
+      screen.queryByRole("menuitem", { name: /Columns/ }),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("menuitem", { name: /Layout/ }),
     ).toBeInTheDocument();
@@ -371,5 +372,97 @@ describe("DatagridPage", () => {
       )?.[0]?.theme.showSubtitle,
     ).toBe(true);
     expect(screen.getByLabelText("Datagrid subtitle")).toBeInTheDocument();
+  });
+
+  it("hides a table column from the Fields modal without changing card fields", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    server.use(
+      http.patch(
+        "http://supabase.test/rest/v1/datagrid_views",
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    );
+    const client = seed({
+      fields: [
+        { id: "about", name: "About", type: "text", config: {} },
+        { id: "age", name: "Age", type: "number", config: {} },
+      ],
+      rows: [
+        makeDatagridRow({
+          id: "r1",
+          datagrid_id: DGID,
+          title: "Ada",
+          properties: asJson({ about: "Writer", age: 36 }),
+        }),
+      ],
+      viewConfig: {
+        layout: "table",
+        cardVisibleFieldIds: ["about", "age"],
+      },
+    });
+
+    renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
+    await user.click(screen.getByRole("button", { name: "View options" }));
+    await user.click(screen.getByRole("menuitem", { name: "Fields" }));
+    await user.click(
+      screen.getByRole("button", { name: "Hide Age from table" }),
+    );
+
+    await waitFor(() => {
+      const view = client.getQueryData<{ config: unknown }[]>(
+        datagridViewsKey(DGID),
+      )?.[0];
+      const config = parseDatagridViewConfig(view?.config);
+      expect(config.visibleFieldIds).toEqual(["about"]);
+      expect(config.cardVisibleFieldIds).toEqual(["about", "age"]);
+    });
+  });
+
+  it("hides a gallery card field from the Fields modal without changing columns", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    server.use(
+      http.patch(
+        "http://supabase.test/rest/v1/datagrid_views",
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    );
+    const client = seed({
+      fields: [
+        { id: "about", name: "About", type: "text", config: {} },
+        { id: "age", name: "Age", type: "number", config: {} },
+      ],
+      rows: [
+        makeDatagridRow({
+          id: "r1",
+          datagrid_id: DGID,
+          title: "Ada",
+          properties: asJson({ about: "Writer", age: 36 }),
+        }),
+      ],
+      viewConfig: {
+        layout: "gallery",
+        visibleFieldIds: ["about", "age"],
+        cardVisibleFieldIds: ["about", "age"],
+      },
+    });
+
+    renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
+    expect(screen.getByText("Writer")).toBeInTheDocument();
+    expect(screen.getByText("36")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "View options" }));
+    await user.click(screen.getByRole("menuitem", { name: "Fields" }));
+    await user.click(
+      screen.getByRole("button", { name: "Hide Age from cards" }),
+    );
+
+    await waitFor(() => {
+      const view = client.getQueryData<{ config: unknown }[]>(
+        datagridViewsKey(DGID),
+      )?.[0];
+      const config = parseDatagridViewConfig(view?.config);
+      expect(config.cardVisibleFieldIds).toEqual(["about"]);
+      expect(config.visibleFieldIds).toEqual(["about", "age"]);
+    });
   });
 });

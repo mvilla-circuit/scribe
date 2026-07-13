@@ -2,7 +2,6 @@ import {
   ArrowDown,
   ArrowDownAZ,
   ArrowUp,
-  Columns3,
   Filter,
   Group,
   X,
@@ -20,8 +19,6 @@ import { TITLE_FIELD_ID } from "@/lib/datagrid-query";
 import type { DatagridField, DatagridViewConfig } from "@/lib/datagrid-schema";
 import { cn } from "@/lib/utils";
 
-import { toggleVisibleFieldId } from "./datagrid-field-visibility";
-
 // Only these field types make sense to group a board/table into buckets.
 const GROUPABLE = new Set(["select", "status", "multi_select", "checkbox"]);
 
@@ -37,11 +34,11 @@ const rowButtonClass =
   "flex size-6 items-center justify-center rounded text-muted outline-none hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-30";
 
 /**
- * Filter / Sort / Group / Columns as nested submenu items for the datagrid
- * overflow menu. Each edit produces a new {@link DatagridViewConfig} the parent
- * persists onto the saved view. Sort supports multiple ordered clauses; Columns
- * toggles per-field visibility (title is always shown). Active axes surface an
- * accent dot on their submenu trigger.
+ * Filter / Sort / Group as nested submenu items for the datagrid overflow menu.
+ * Each edit produces a new {@link DatagridViewConfig} the parent persists onto
+ * the saved view. Sort supports multiple ordered clauses. Field show/hide lives
+ * in the Fields dialog (layout-aware). Active axes surface an accent dot on
+ * their submenu trigger.
  */
 export function DatagridViewControls({
   fields,
@@ -120,27 +117,6 @@ export function DatagridViewControls({
     fieldId === TITLE_FIELD_ID
       ? "Title"
       : (fields.find((f) => f.id === fieldId)?.name ?? fieldId);
-
-  // Empty visibleFieldIds means "all visible"; expand it so a toggle can hide
-  // the first column.
-  const effectiveVisible = new Set(
-    config.visibleFieldIds.length > 0
-      ? config.visibleFieldIds
-      : fields.map((f) => f.id),
-  );
-
-  const toggleColumn = (fieldId: string) => {
-    onChange((prev) => ({
-      ...prev,
-      visibleFieldIds: toggleVisibleFieldId(
-        fields,
-        prev.visibleFieldIds,
-        fieldId,
-      ),
-    }));
-  };
-
-  const hiddenCount = fields.filter((f) => !effectiveVisible.has(f.id)).length;
 
   return (
     <>
@@ -305,44 +281,6 @@ export function DatagridViewControls({
               {field.name}
             </DropdownMenuItem>
           ))}
-        </DropdownMenuSubContent>
-      </DropdownMenuSub>
-
-      <DropdownMenuSub>
-        <DropdownMenuSubTrigger>
-          <Columns3 className="size-4" aria-hidden="true" />
-          Columns
-          {hiddenCount > 0 && <span className={activeDot} />}
-        </DropdownMenuSubTrigger>
-        <DropdownMenuSubContent>
-          <DropdownMenuLabel>Title · always shown</DropdownMenuLabel>
-          {fields.length > 0 && <DropdownMenuSeparator />}
-          {fields.map((field) => {
-            const visible = effectiveVisible.has(field.id);
-            return (
-              <DropdownMenuItem
-                key={field.id}
-                onSelect={(e) => {
-                  e.preventDefault();
-                  toggleColumn(field.id);
-                }}
-              >
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "size-3.5 rounded-sm border",
-                    visible
-                      ? "border-accent bg-accent"
-                      : "border-border bg-transparent",
-                  )}
-                />
-                {field.name}
-                <span className="ml-auto text-xs text-muted">
-                  {visible ? "Shown" : "Hidden"}
-                </span>
-              </DropdownMenuItem>
-            );
-          })}
         </DropdownMenuSubContent>
       </DropdownMenuSub>
     </>

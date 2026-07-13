@@ -235,7 +235,13 @@ export interface DatagridViewConfig {
   filters: DatagridFilter[];
   sorts: DatagridSort[];
   groupBy: string | null;
+  /** Table column visibility/order. Empty means all fields in schema order. */
   visibleFieldIds: string[];
+  /**
+   * Gallery/board/embed card field visibility/order. Empty means all fields.
+   * When omitted from persisted jsonb, parse falls back to `visibleFieldIds`.
+   */
+  cardVisibleFieldIds: string[];
   columnWidths: Record<string, number>;
   boardFieldId?: string | null;
   coverField?: string | null;
@@ -248,15 +254,16 @@ export const DEFAULT_DATAGRID_VIEW_CONFIG: DatagridViewConfig = {
   sorts: [],
   groupBy: null,
   visibleFieldIds: [],
+  cardVisibleFieldIds: [],
   columnWidths: {},
   boardFieldId: null,
   coverField: null,
 };
 
 /**
- * Apply a view's `visibleFieldIds` to the schema field list. Empty means all
+ * Apply a view's visible-id list to the schema field list. Empty means all
  * fields in schema order; otherwise returns those ids that still exist, in
- * list order (visibility + order for gallery, table, board, and embeds).
+ * list order. Shared by table columns, gallery/board cards, and embeds.
  */
 export function selectVisibleFields(
   fields: DatagridField[],
@@ -394,14 +401,23 @@ export function parseDatagridViewConfig(raw: unknown): DatagridViewConfig {
     row.layout === "gallery" || row.layout === "board" || row.layout === "table"
       ? row.layout
       : DEFAULT_DATAGRID_VIEW_CONFIG.layout;
+  const visibleFieldIds = Array.isArray(row.visibleFieldIds)
+    ? row.visibleFieldIds.filter((id): id is string => typeof id === "string")
+    : [];
+  // Missing cardVisibleFieldIds falls back to column visibility so pre-split
+  // configs keep the same hides on cards; an explicit [] means all card fields.
+  const cardVisibleFieldIds = Array.isArray(row.cardVisibleFieldIds)
+    ? row.cardVisibleFieldIds.filter(
+        (id): id is string => typeof id === "string",
+      )
+    : visibleFieldIds;
   return {
     layout,
     filters: parseFilters(row.filters),
     sorts: parseSorts(row.sorts),
     groupBy: typeof row.groupBy === "string" ? row.groupBy : null,
-    visibleFieldIds: Array.isArray(row.visibleFieldIds)
-      ? row.visibleFieldIds.filter((id): id is string => typeof id === "string")
-      : [],
+    visibleFieldIds,
+    cardVisibleFieldIds,
     columnWidths:
       typeof row.columnWidths === "object" &&
       row.columnWidths !== null &&

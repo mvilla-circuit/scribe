@@ -38,6 +38,7 @@ import {
   DatagridImportDialog,
 } from "./datagrid-csv-dialogs";
 import { FieldManager } from "./datagrid-field-manager";
+import { toggleVisibleFieldId } from "./datagrid-field-visibility";
 import { DatagridGalleryView } from "./datagrid-gallery-view";
 import { DatagridPageToolbar } from "./datagrid-page-toolbar";
 import { DatagridRowModal, DatagridRowSplit } from "./datagrid-row-detail";
@@ -82,7 +83,8 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
     toggleSelectAll,
     updateRow,
     views,
-    visibleFields,
+    columnFields,
+    cardFields,
   } = useDatagridPageModel(datagridId);
   const collectionsQuery = useCollections();
 
@@ -265,7 +267,7 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
     layoutView = (
       <DatagridGalleryView
         rows={orderedRows}
-        fields={visibleFields}
+        fields={cardFields}
         onOpenRow={openRow}
         onCreateRow={handleCreateRow}
         onUploadCover={setRowCover}
@@ -284,7 +286,7 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
       <DatagridBoardView
         rows={orderedRows}
         boardField={boardField}
-        chipFields={visibleFields}
+        chipFields={cardFields}
         onOpenRow={openRow}
         onCreateRow={handleCreateRow}
         onMoveCard={(rowId, key) => {
@@ -302,7 +304,7 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
     layoutView = (
       <DatagridTableView
         rows={orderedRows}
-        fields={visibleFields}
+        fields={columnFields}
         selectedIds={selectedIds}
         onToggleSelect={toggleSelect}
         onToggleSelectAll={toggleSelectAll}
@@ -464,6 +466,33 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
           onOpenChange={setFieldsOpen}
           fields={fields}
           onChange={persistFields}
+          visibilityMode={layout === "table" ? "columns" : "cards"}
+          visibleIds={
+            layout === "table"
+              ? config.visibleFieldIds
+              : config.cardVisibleFieldIds
+          }
+          onToggleVisibility={(fieldId) => {
+            persistConfig((prev) =>
+              layout === "table"
+                ? {
+                    ...prev,
+                    visibleFieldIds: toggleVisibleFieldId(
+                      fields,
+                      prev.visibleFieldIds,
+                      fieldId,
+                    ),
+                  }
+                : {
+                    ...prev,
+                    cardVisibleFieldIds: toggleVisibleFieldId(
+                      fields,
+                      prev.cardVisibleFieldIds,
+                      fieldId,
+                    ),
+                  },
+            );
+          }}
         />
         <DatagridImportDialog
           open={importOpen}

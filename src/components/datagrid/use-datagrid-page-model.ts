@@ -76,9 +76,13 @@ export function useDatagridPageModel(datagridId: string) {
     () => parseDatagridViewConfig(activeView?.config ?? null),
     [activeView?.config],
   );
-  const visibleFields = useMemo<DatagridField[]>(
+  const columnFields = useMemo<DatagridField[]>(
     () => selectVisibleFields(fields, config.visibleFieldIds),
     [config.visibleFieldIds, fields],
+  );
+  const cardFields = useMemo<DatagridField[]>(
+    () => selectVisibleFields(fields, config.cardVisibleFieldIds),
+    [config.cardVisibleFieldIds, fields],
   );
 
   const displayRows = useMemo<DatagridDisplayRow[]>(
@@ -279,6 +283,7 @@ export function useDatagridPageModel(datagridId: string) {
     toggleSelectAll,
     updateRow,
     views,
-    visibleFields,
+    columnFields,
+    cardFields,
   };
 }

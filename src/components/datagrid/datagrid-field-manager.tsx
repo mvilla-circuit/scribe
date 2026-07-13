@@ -18,6 +18,8 @@ import {
   CheckSquare2,
   CircleDot,
   Clock,
+  Eye,
+  EyeOff,
   GitBranch,
   GripVertical,
   Hash,
@@ -28,7 +30,7 @@ import {
   Trash2,
   Type,
 } from "lucide-react";
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { RemovableChip } from "@/components/ui/chip";
@@ -44,6 +46,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { IconButton } from "@/components/ui/icon-button";
 import { InlineRename } from "@/components/ui/inline-rename";
 import { Input } from "@/components/ui/input";
 import { MorandiSwatchGrid } from "@/components/ui/morandi-swatch-grid";
@@ -93,24 +96,38 @@ const OPTION_TYPES = new Set<DatagridFieldType>([
   "status",
 ]);
 
+type FieldVisibilityMode = "columns" | "cards";
+
 interface FieldManagerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   fields: DatagridField[];
   onChange: (fields: DatagridField[]) => void;
+  /**
+   * When set, each field row shows an eye toggle for table columns or card
+   * fields. Persistence stays with the parent via `onToggleVisibility`.
+   */
+  visibilityMode?: FieldVisibilityMode | null;
+  /** Effective visible field ids (expanded when empty means all). */
+  visibleIds?: string[];
+  onToggleVisibility?: (fieldId: string) => void;
 }
 
 /**
  * Dialog to edit a datagrid's property schema: type-first create, rename,
  * retype, drag/keyboard reorder, and delete, plus option editing for
  * select/status fields. Edits route through `datagrid-fields` helpers and
- * `onChange` for the parent to persist onto `datagrids.fields`.
+ * `onChange` for the parent to persist onto `datagrids.fields`. Optional
+ * layout-aware visibility toggles do not write through `onChange`.
  */
 export function FieldManager({
   open,
   onOpenChange,
   fields,
   onChange,
+  visibilityMode = null,
+  visibleIds,
+  onToggleVisibility,
 }: FieldManagerProps) {
   const pendingFocusId = useRef<string | null>(null);
   const nameInputs = useRef(new Map<string, HTMLInputElement>());
@@ -180,6 +197,16 @@ export function FieldManager({
     );
   };
 
+  const effectiveVisible = useMemo(() => {
+    const ids =
+      visibleIds && visibleIds.length > 0
+        ? visibleIds
+        : draftFields.map((field) => field.id);
+    return new Set(ids);
+  }, [draftFields, visibleIds]);
+
+  const showVisibility = visibilityMode != null && onToggleVisibility != null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[min(34rem,calc(100vw-2rem))]">
@@ -187,6 +214,13 @@ export function FieldManager({
         <DialogDescription>
           Add and organize the properties stored on each row.
         </DialogDescription>
+        {showVisibility ? (
+          <p className="mt-1 text-xs text-muted">
+            {visibilityMode === "columns"
+              ? "Eye icons show or hide table columns. Title stays visible."
+              : "Eye icons show or hide fields on cards. Title stays visible."}
+          </p>
+        ) : null}
 
         <div className="mt-4 flex max-h-[60vh] flex-col gap-1 overflow-y-auto">
           {draftFields.length === 0 ? (
@@ -214,6 +248,11 @@ export function FieldManager({
                     onDelete={handleDelete}
                     onMove={handleMove}
                     onOptionsChange={handleOptionsChange}
+                    visibilityMode={showVisibility ? visibilityMode : null}
+                    fieldVisible={effectiveVisible.has(field.id)}
+                    onToggleVisibility={
+                      showVisibility ? onToggleVisibility : undefined
+                    }
                     nameInputRef={(input) => {
                       if (input) nameInputs.current.set(field.id, input);
                       else nameInputs.current.delete(field.id);
@@ -267,6 +306,9 @@ function SortableFieldRow({
   onDelete,
   onMove,
   onOptionsChange,
+  visibilityMode,
+  fieldVisible,
+  onToggleVisibility,
   nameInputRef,
 }: {
   field: DatagridField;
@@ -277,6 +319,9 @@ function SortableFieldRow({
   onDelete: (id: string) => void;
   onMove: (id: string, delta: number) => void;
   onOptionsChange: (id: string, options: DatagridSelectOption[]) => void;
+  visibilityMode: FieldVisibilityMode | null;
+  fieldVisible?: boolean;
+  onToggleVisibility?: (fieldId: string) => void;
   nameInputRef: (input: HTMLInputElement | null) => void;
 }) {
   const [draftName, setDraftName] = useState(field.name);
@@ -381,6 +426,30 @@ function SortableFieldRow({
             </button>
           }
         />
+
+        {visibilityMode && onToggleVisibility ? (
+          <IconButton
+            size="sm"
+            label={
+              fieldVisible
+                ? visibilityMode === "columns"
+                  ? `Hide ${field.name} from table`
+                  : `Hide ${field.name} from cards`
+                : visibilityMode === "columns"
+                  ? `Show ${field.name} on table`
+                  : `Show ${field.name} on cards`
+            }
+            onClick={() => {
+              onToggleVisibility(field.id);
+            }}
+          >
+            {fieldVisible ? (
+              <Eye className="size-3.5" aria-hidden="true" />
+            ) : (
+              <EyeOff className="size-3.5" aria-hidden="true" />
+            )}
+          </IconButton>
+        ) : null}
 
         <button
           type="button"
