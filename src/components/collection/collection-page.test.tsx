@@ -4,6 +4,7 @@ import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  allTaggablesKey,
   booksKey,
   collectionsKey,
   datagridsKey,
@@ -73,6 +74,8 @@ function seed() {
   client.setQueryData(whiteboardsKey, []);
   client.setQueryData(tagsKey, []);
   client.setQueryData(taggablesKey("collection"), []);
+  client.setQueryData(taggablesKey("book"), []);
+  client.setQueryData(allTaggablesKey, []);
   return client;
 }
 
@@ -141,15 +144,18 @@ describe("CollectionPage", () => {
 
   it("renders the tag row below the description", () => {
     const client = seed();
-    client.setQueryData(tagsKey, [{ id: "tag-1", name: "Epic", color: "sky" }]);
-    client.setQueryData(taggablesKey("collection"), [
-      {
+    const tags = [makeTag({ id: "tag-1", name: "Epic", color: "sky" })];
+    const taggables = [
+      makeTaggable({
         id: "tg-1",
         tag_id: "tag-1",
         target_type: "collection",
         target_id: "c1",
-      },
-    ]);
+      }),
+    ];
+    client.setQueryData(tagsKey, tags);
+    client.setQueryData(taggablesKey("collection"), taggables);
+    client.setQueryData(allTaggablesKey, taggables);
 
     renderWithProviders(<CollectionPage collectionId="c1" />, { client });
 
@@ -192,6 +198,26 @@ describe("CollectionPage", () => {
         target_id: "b1",
       }),
     ]);
+    client.setQueryData(allTaggablesKey, [
+      makeTaggable({
+        id: "tg-1",
+        tag_id: "tag-1",
+        target_type: "collection",
+        target_id: "c2",
+      }),
+      makeTaggable({
+        id: "tg-2",
+        tag_id: "tag-1",
+        target_type: "collection",
+        target_id: "b1",
+      }),
+      makeTaggable({
+        id: "tg-3",
+        tag_id: "tag-2",
+        target_type: "book",
+        target_id: "b1",
+      }),
+    ]);
 
     renderWithProviders(<CollectionPage collectionId="c1" />, { client });
 
@@ -217,7 +243,7 @@ describe("CollectionPage", () => {
       makeTag({ id: "tag-3", name: "Series", color: "clay" }),
       makeTag({ id: "tag-4", name: "Romance", color: "plum" }),
     ]);
-    client.setQueryData(taggablesKey("collection"), [
+    const collectionTaggables = [
       makeTaggable({
         id: "tg-1",
         tag_id: "tag-1",
@@ -242,7 +268,9 @@ describe("CollectionPage", () => {
         target_type: "collection",
         target_id: "c2",
       }),
-    ]);
+    ];
+    client.setQueryData(taggablesKey("collection"), collectionTaggables);
+    client.setQueryData(allTaggablesKey, collectionTaggables);
 
     renderWithProviders(<CollectionPage collectionId="c1" />, { client });
 

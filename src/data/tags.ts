@@ -14,7 +14,7 @@ import { swatchForIndex } from "@/lib/swatches";
 import { execWrite, requireUserId } from "./crud";
 import { listHandlers, patchById } from "./optimistic-list";
 import { byPosition, endPositionFor } from "./ordering";
-import { taggablesKey, tagsKey } from "./query-keys";
+import { allTaggablesKey, taggablesKey, tagsKey } from "./query-keys";
 
 /** A library tag row from the `tags` table. */
 export type Tag = Tables<"tags">;
@@ -127,17 +127,44 @@ function buildTag(input: {
   };
 }
 
+function appendTaggable(
+  rows: Taggable[],
+  row: Taggable,
+  targetType: TagTargetType,
+  targetId: string,
+): Taggable[] {
+  if (isAssigned(rows, row.tag_id, targetType, targetId)) return rows;
+  return [...rows, row];
+}
+
 function cacheAssignment(
   qc: QueryClient,
   row: Taggable,
   targetType: TagTargetType,
   targetId: string,
 ): void {
-  qc.setQueryData<Taggable[]>(taggablesKey(targetType), (prev) => {
-    const rows = prev ?? [];
-    if (isAssigned(rows, row.tag_id, targetType, targetId)) return rows;
-    return [...rows, row];
-  });
+  qc.setQueryData<Taggable[]>(taggablesKey(targetType), (prev) =>
+    appendTaggable(prev ?? [], row, targetType, targetId),
+  );
+  qc.setQueryData<Taggable[]>(allTaggablesKey, (prev) =>
+    appendTaggable(prev ?? [], row, targetType, targetId),
+  );
+}
+
+function removeAssignment(
+  rows: Taggable[],
+  tagId: string,
+  targetType: TagTargetType,
+  targetId: string,
+): Taggable[] {
+  return rows.filter(
+    (row) =>
+      !(
+        row.tag_id === tagId &&
+        row.target_type === targetType &&
+        row.target_id === targetId
+      ),
+  );
 }
 
 /** Query hook for all of the signed-in user's tags, ordered by position. */
@@ -161,6 +188,21 @@ export function useTaggables(targetType: TagTargetType) {
         .from("taggables")
         .select("*")
         .eq("target_type", targetType);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+/**
+ * Query hook for every taggable row across target types. Used for library-wide
+ * recent-use suggestion ordering without pairwise per-type merges.
+ */
+export function useAllTaggables() {
+  return useQuery({
+    queryKey: allTaggablesKey,
+    queryFn: async (): Promise<Taggable[]> => {
+      const { data, error } = await supabase.from("taggables").select("*");
       if (error) throw error;
       return data ?? [];
     },
@@ -388,22 +430,33 @@ function useUnassignTagMutation<TInput>(
       const input = normalizeInput(rawInput);
       const key = taggablesKey(input.targetType);
       await qc.cancelQueries({ queryKey: key });
+      await qc.cancelQueries({ queryKey: allTaggablesKey });
       const previous = qc.getQueryData<Taggable[]>(key);
+      const previousAll = qc.getQueryData<Taggable[]>(allTaggablesKey);
       qc.setQueryData<Taggable[]>(key, (prev) =>
-        (prev ?? []).filter(
-          (row) =>
-            !(
-              row.tag_id === input.tagId &&
-              row.target_type === input.targetType &&
-              row.target_id === input.targetId
-            ),
+        removeAssignment(
+          prev ?? [],
+          input.tagId,
+          input.targetType,
+          input.targetId,
         ),
       );
-      return { key, previous };
+      qc.setQueryData<Taggable[]>(allTaggablesKey, (prev) =>
+        removeAssignment(
+          prev ?? [],
+          input.tagId,
+          input.targetType,
+          input.targetId,
+        ),
+      );
+      return { key, previous, previousAll };
     },
     onError: (_error, _input, context) => {
       if (context?.previous) {
         qc.setQueryData(context.key, context.previous);
+      }
+      if (context?.previousAll) {
+        qc.setQueryData(allTaggablesKey, context.previousAll);
       }
       toast.error("Couldn't remove tag");
     },

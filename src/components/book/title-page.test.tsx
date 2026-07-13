@@ -2,7 +2,7 @@ import { fireEvent, screen } from "@testing-library/react";
 import { type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { taggablesKey, tagsKey } from "@/data/query-keys";
+import { allTaggablesKey, taggablesKey, tagsKey } from "@/data/query-keys";
 import { useUIStore } from "@/store/ui";
 import {
   makeBook,
@@ -217,7 +217,14 @@ describe("TitlePage tags", () => {
         target_id: "book-1",
       }),
     ]);
-    client.setQueryData(taggablesKey("collection"), []);
+    client.setQueryData(allTaggablesKey, [
+      makeTaggable({
+        id: "tg-1",
+        tag_id: "tag-1",
+        target_type: "book",
+        target_id: "book-1",
+      }),
+    ]);
 
     renderWithProviders(
       <TitlePage

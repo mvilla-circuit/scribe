@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { taggablesKey, tagsKey } from "@/data/query-keys";
+import { allTaggablesKey, taggablesKey, tagsKey } from "@/data/query-keys";
 import { makeTag, makeTaggable } from "@/test/fixtures";
 import { server } from "@/test/msw/server";
 import {
@@ -30,10 +30,12 @@ beforeEach(() => {
 
 function seed() {
   const client = createTestQueryClient();
-  client.setQueryData(tagsKey, [makeTag({ id: "tag-1", name: "Fantasy" })]);
-  client.setQueryData(taggablesKey("collection"), [
+  const collectionTaggables = [
     makeTaggable({ id: "tg-1", tag_id: "tag-1", target_id: "c1" }),
-  ]);
+  ];
+  client.setQueryData(tagsKey, [makeTag({ id: "tag-1", name: "Fantasy" })]);
+  client.setQueryData(taggablesKey("collection"), collectionTaggables);
+  client.setQueryData(allTaggablesKey, collectionTaggables);
   return client;
 }
 
@@ -62,6 +64,7 @@ describe("CollectionTagsSection", () => {
     const client = createTestQueryClient();
     client.setQueryData(tagsKey, []);
     client.setQueryData(taggablesKey("collection"), []);
+    client.setQueryData(allTaggablesKey, []);
     renderWithProviders(<CollectionTagsSection collectionId="c1" />, {
       client,
     });

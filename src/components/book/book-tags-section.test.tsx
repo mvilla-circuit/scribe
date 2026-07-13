@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { taggablesKey, tagsKey } from "@/data/query-keys";
+import { allTaggablesKey, taggablesKey, tagsKey } from "@/data/query-keys";
 import { makeTag, makeTaggable } from "@/test/fixtures";
 import { server } from "@/test/msw/server";
 import {
@@ -27,16 +27,17 @@ beforeEach(() => {
 
 function seed() {
   const client = createTestQueryClient();
-  client.setQueryData(tagsKey, [makeTag({ id: "tag-1", name: "Fantasy" })]);
-  client.setQueryData(taggablesKey("book"), [
+  const bookTaggables = [
     makeTaggable({
       id: "tg-1",
       tag_id: "tag-1",
       target_type: "book",
       target_id: "b1",
     }),
-  ]);
-  client.setQueryData(taggablesKey("collection"), []);
+  ];
+  client.setQueryData(tagsKey, [makeTag({ id: "tag-1", name: "Fantasy" })]);
+  client.setQueryData(taggablesKey("book"), bookTaggables);
+  client.setQueryData(allTaggablesKey, bookTaggables);
   return client;
 }
 
@@ -65,7 +66,7 @@ describe("BookTagsSection", () => {
     const client = createTestQueryClient();
     client.setQueryData(tagsKey, []);
     client.setQueryData(taggablesKey("book"), []);
-    client.setQueryData(taggablesKey("collection"), []);
+    client.setQueryData(allTaggablesKey, []);
     renderWithProviders(<BookTagsSection bookId="b1" />, { client });
 
     await user.click(screen.getByRole("button", { name: "Add tag" }));
