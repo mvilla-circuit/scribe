@@ -24,14 +24,23 @@ export const DatagridRowPicker = memo(function DatagridRowPicker() {
   const close = useDatagridRowPicker((s) => s.close);
   const open = onSelect !== null;
 
-  const { datagridLinkOptions, datagridRowLinkOptions, watchDatagrid } =
-    useEditorBridge();
+  const {
+    datagridLinkOptions,
+    datagridRowLinkOptions,
+    watchDatagrid,
+    isDatagridLoading,
+  } = useEditorBridge();
 
   const [step, setStep] = useState<Step>("datagrid");
   const [selectedDatagridId, setSelectedDatagridId] = useState<string | null>(
     null,
   );
   const [query, setQuery] = useState("");
+
+  const rowsLoading =
+    step === "row" &&
+    selectedDatagridId !== null &&
+    isDatagridLoading(selectedDatagridId);
 
   const datagridRows = useMemo(
     () =>
@@ -143,7 +152,11 @@ export const DatagridRowPicker = memo(function DatagridRowPicker() {
           />
         </div>
         <div ref={listRef} className="max-h-[20rem] overflow-y-auto p-1.5">
-          {rows.length === 0 ? (
+          {rowsLoading ? (
+            <p className="px-2 py-6 text-center text-sm text-muted">
+              Loading cards…
+            </p>
+          ) : rows.length === 0 ? (
             <p className="px-2 py-6 text-center text-sm text-muted">{empty}</p>
           ) : (
             rows.map((row, idx) => {

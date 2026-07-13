@@ -100,4 +100,27 @@ describe("DatagridRowPicker", () => {
     });
     expect(useDatagridRowPicker.getState().callback).toBeNull();
   });
+
+  it("shows a loading state instead of empty while rows are fetching", async () => {
+    const user = userEvent.setup();
+    const watchDatagrid = vi.fn();
+    useDatagridRowPicker.getState().open(vi.fn());
+
+    render(
+      <EditorBridgeContext.Provider
+        value={makeBridge({
+          watchDatagrid,
+          isDatagridLoading: () => true,
+          datagridRowLinkOptions: () => [],
+        })}
+      >
+        <DatagridRowPicker />
+      </EditorBridgeContext.Provider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: /Characters/i }));
+    expect(watchDatagrid).toHaveBeenCalledWith("dg-1");
+    expect(screen.getByText("Loading cards…")).toBeInTheDocument();
+    expect(screen.queryByText("No cards found.")).not.toBeInTheDocument();
+  });
 });

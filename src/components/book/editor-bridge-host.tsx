@@ -34,7 +34,7 @@ import {
 export function EditorBridgeHost({ children }: { children: ReactNode }) {
   const { data: index = [], isLoading: indexLoading } = usePageIndex();
   const { data: books = [], isLoading: booksLoading } = useBooks();
-  const { data: datagrids = [] } = useDatagrids();
+  const { data: datagrids = [], isLoading: datagridsLoading } = useDatagrids();
   const navigateTo = useUIStore((s) => s.navigateTo);
 
   // Build the id map once per index, not inside every card's resolve call.
@@ -72,6 +72,8 @@ export function EditorBridgeHost({ children }: { children: ReactNode }) {
 
   const isDatagridLoading = useCallback(
     (datagridId: string) => {
+      // Resolve needs the datagrid list entry for the card title crumb.
+      if (datagridsLoading) return true;
       const indexOf = watchedIds.indexOf(datagridId);
       // Not watched yet → treat as loading so embeds don't flash "not found"
       // before their useEffect registers the watch.
@@ -80,7 +82,7 @@ export function EditorBridgeHost({ children }: { children: ReactNode }) {
       const viewQuery = viewQueries[indexOf];
       return Boolean(rowQuery?.isLoading || viewQuery?.isLoading);
     },
-    [rowQueries, viewQueries, watchedIds],
+    [datagridsLoading, rowQueries, viewQueries, watchedIds],
   );
 
   const resolve = useCallback<EditorBridge["resolvePageTarget"]>(
