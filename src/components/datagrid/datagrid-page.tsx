@@ -189,6 +189,15 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
     );
   };
 
+  const setRowCover = async (rowId: string, file: File) => {
+    const previous =
+      orderedRows.find((row) => row.id === rowId)?.cover_url ?? null;
+    const coverUrl = await uploadCover.mutateAsync(file);
+    await updateRow.mutateAsync({ id: rowId, cover_url: coverUrl });
+    void deleteCoverObject(previous);
+    return coverUrl;
+  };
+
   const openRow = (rowId: string) => {
     setActiveDatagridRow(rowId, datagridId);
   };
@@ -241,6 +250,7 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
         fields={visibleFields}
         onOpenRow={openRow}
         onCreateRow={handleCreateRow}
+        onUploadCover={setRowCover}
         relationTargets={relationTargets}
       />
     );

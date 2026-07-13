@@ -3,6 +3,7 @@ import { type ReactNode, useState } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { EditableText } from "@/components/ui/editable-text";
+import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { useDragResize } from "@/components/ui/use-drag-resize";
 import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";
@@ -88,11 +89,20 @@ function RowPanelContent({
   onClose: () => void;
   variant: PanelVariant;
 }) {
-  const { row, fields, properties, relationTargets, rename, patchProperty } =
-    useDatagridRowDetail(datagridId, rowId);
+  const {
+    row,
+    fields,
+    properties,
+    relationTargets,
+    rename,
+    setCover,
+    clearCover,
+    patchProperty,
+  } = useDatagridRowDetail(datagridId, rowId);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const styles = PANEL_STYLES[variant];
   const title = row?.title ?? "Untitled";
+  const coverUrl = row?.cover_url ?? null;
 
   return (
     <>
@@ -104,7 +114,17 @@ function RowPanelContent({
         onClose={onClose}
         headerClassName={styles.headerClassName}
       >
+        <PageCover
+          coverUrl={coverUrl}
+          onUpload={setCover}
+          onRemove={clearCover}
+        />
         <div className={styles.bodyClassName}>
+          {!coverUrl && (
+            <div className="group/masthead mb-2">
+              <AddCoverButton onUpload={setCover} />
+            </div>
+          )}
           <EditableText
             value={title}
             ariaLabel="Row title"

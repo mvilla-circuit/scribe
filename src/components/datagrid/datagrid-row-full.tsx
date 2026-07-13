@@ -3,6 +3,7 @@ import { useState } from "react";
 import { NavHistoryControls } from "@/components/book/nav-history-controls";
 import { EditableText } from "@/components/ui/editable-text";
 import { Masthead } from "@/components/ui/masthead";
+import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { useCollections } from "@/data/collections";
 import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";
@@ -34,6 +35,8 @@ export function DatagridRowFull({
     relationTargets,
     rename,
     setIcon,
+    setCover,
+    clearCover,
     patchProperty,
     isLoading,
   } = useDatagridRowDetail(datagridId, rowId);
@@ -110,6 +113,12 @@ export function DatagridRowFull({
     >
       {bar}
 
+      <PageCover
+        coverUrl={row.cover_url}
+        onUpload={setCover}
+        onRemove={clearCover}
+      />
+
       <article className="mx-auto w-full max-w-[68ch] px-8 py-12 sm:py-16">
         <Masthead
           icon={row.icon}
@@ -118,6 +127,9 @@ export function DatagridRowFull({
             setIcon(null);
           }}
           changeIconLabel="Change row icon"
+          actions={
+            row.cover_url ? undefined : <AddCoverButton onUpload={setCover} />
+          }
         >
           <EditableText
             value={row.title || "Untitled"}

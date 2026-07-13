@@ -1,4 +1,5 @@
 import { fireEvent, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import type { DatagridField, DatagridRelationRef } from "@/lib/datagrid-schema";
@@ -124,5 +125,60 @@ describe("DatagridGalleryView", () => {
     );
     expect(screen.getByText("Neighbor row")).toBeInTheDocument();
     expect(screen.queryByText("row-1")).toBeNull();
+  });
+
+  it("shows the cover image from row data", () => {
+    const covered: DatagridDisplayRow[] = [
+      {
+        id: "r1",
+        title: "Card one",
+        icon: null,
+        cover_url: "https://example.test/card.png",
+        properties: { f1: "o1" },
+        created_at: "2026-01-01T00:00:00.000Z",
+        updated_at: "2026-01-01T00:00:00.000Z",
+      },
+    ];
+    renderWithProviders(
+      <DatagridGalleryView
+        rows={covered}
+        fields={fields}
+        onOpenRow={vi.fn()}
+        onCreateRow={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("cover-card-media")).toHaveAttribute(
+      "src",
+      "https://example.test/card.png",
+    );
+  });
+
+  it("uploads a cover from the media overlay without opening the row", async () => {
+    const user = userEvent.setup();
+    const onOpenRow = vi.fn();
+    const onUploadCover = vi
+      .fn()
+      .mockResolvedValue("https://example.test/new.png");
+    const cover = new File(["cover"], "cover.png", { type: "image/png" });
+
+    renderWithProviders(
+      <DatagridGalleryView
+        rows={rows}
+        fields={fields}
+        onOpenRow={onOpenRow}
+        onCreateRow={vi.fn()}
+        onUploadCover={onUploadCover}
+      />,
+    );
+
+    const overlay = screen.getByTestId("cover-card-media-overlay");
+    const upload = screen.getByRole("button", { name: "Upload cover" });
+    expect(overlay).toContainElement(upload);
+    await user.click(upload);
+    await user.upload(screen.getByLabelText("Choose cover image"), cover);
+
+    expect(onUploadCover).toHaveBeenCalledWith("r1", cover);
+    expect(onOpenRow).not.toHaveBeenCalled();
   });
 });

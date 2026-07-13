@@ -1,5 +1,5 @@
 import { fireEvent, screen, within } from "@testing-library/react";
-import { forwardRef } from "react";
+import { forwardRef, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -24,8 +24,67 @@ import { DatagridRowModal, DatagridRowSplit } from "./datagrid-row-detail";
 import { DatagridRowFull } from "./datagrid-row-full";
 import { RowOpenModeControl } from "./datagrid-row-open-mode-control";
 
+const coverHooks = vi.hoisted(() => ({
+  upload: { mutateAsync: vi.fn() },
+  deleteCoverObject: vi.fn(),
+}));
+
 vi.mock("@/lib/auth", () => ({
   useAuth: () => ({ session: { user: { id: "user-1" } } }),
+}));
+
+vi.mock("@/data/cover-upload", () => ({
+  useUploadCover: () => coverHooks.upload,
+  deleteCoverObject: (...args: unknown[]) =>
+    coverHooks.deleteCoverObject(...args),
+}));
+
+vi.mock("@/components/ui/page-cover", () => ({
+  PageCover: ({
+    coverUrl,
+    onRemove,
+  }: {
+    coverUrl: string | null;
+    onRemove: () => void;
+  }) =>
+    coverUrl ? (
+      <section aria-label="Page cover">
+        <img src={coverUrl} alt="Page cover" />
+        <button type="button" onClick={onRemove}>
+          Remove cover
+        </button>
+      </section>
+    ) : null,
+  AddCoverButton: ({
+    onUpload,
+  }: {
+    onUpload: (file: File) => Promise<string>;
+  }) => (
+    <button
+      type="button"
+      aria-label="Add cover"
+      onClick={() => {
+        void onUpload(new File(["cover"], "cover.png", { type: "image/png" }));
+      }}
+    >
+      Add cover
+    </button>
+  ),
+}));
+
+vi.mock("@/components/ui/masthead", () => ({
+  Masthead: ({
+    children,
+    actions,
+  }: {
+    children: ReactNode;
+    actions?: ReactNode;
+  }) => (
+    <header>
+      {actions}
+      {children}
+    </header>
+  ),
 }));
 
 vi.mock("@/editor/lazy-editor", () => ({
@@ -43,7 +102,7 @@ const fields: DatagridField[] = [
   { id: "f1", name: "Notes", type: "text", config: {} },
 ];
 
-function seed() {
+function seed(coverUrl: string | null = null) {
   const client = createTestQueryClient();
   client.setQueryData(collectionsKey, [
     makeCollection({ id: "col-1", name: "Docs" }),
@@ -56,6 +115,7 @@ function seed() {
       id: ROWID,
       datagrid_id: DGID,
       title: "First",
+      cover_url: coverUrl,
       properties: asJson({ f1: "hello" }),
     }),
   ]);
@@ -67,6 +127,11 @@ function seed() {
 }
 
 beforeEach(() => {
+  vi.clearAllMocks();
+  Element.prototype.hasPointerCapture = () => false;
+  Element.prototype.setPointerCapture = vi.fn();
+  Element.prototype.releasePointerCapture = vi.fn();
+  Element.prototype.scrollIntoView = vi.fn();
   useUIStore.setState({
     activeDatagridId: DGID,
     activeDatagridRowId: ROWID,
@@ -204,6 +269,58 @@ describe("DatagridRowFull", () => {
     );
     expect(screen.getByRole("textbox", { name: "Notes" })).toHaveValue("hello");
     expect(screen.getByTestId("scribe-editor")).toBeInTheDocument();
+  });
+
+  it("offers Add cover when the full row has no cover", () => {
+    renderWithProviders(<DatagridRowFull datagridId={DGID} rowId={ROWID} />, {
+      client: seed(),
+    });
+
+    expect(
+      screen.getByRole("button", { name: "Add cover" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the row cover when one is set", () => {
+    renderWithProviders(<DatagridRowFull datagridId={DGID} rowId={ROWID} />, {
+      client: seed("https://example.test/row.png"),
+    });
+
+    expect(screen.getByRole("img", { name: "Page cover" })).toHaveAttribute(
+      "src",
+      "https://example.test/row.png",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Add cover" }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("opened row covers", () => {
+  it("shows Remove cover on a modal row with a cover", () => {
+    renderWithProviders(
+      <DatagridRowModal datagridId={DGID} rowId={ROWID} onClose={vi.fn()} />,
+      { client: seed("https://example.test/row.png") },
+    );
+
+    expect(screen.getByRole("img", { name: "Page cover" })).toHaveAttribute(
+      "src",
+      "https://example.test/row.png",
+    );
+    expect(
+      screen.getByRole("button", { name: "Remove cover" }),
+    ).toBeInTheDocument();
+  });
+
+  it("offers Add cover on a split row without a cover", () => {
+    renderWithProviders(
+      <DatagridRowSplit datagridId={DGID} rowId={ROWID} onClose={vi.fn()} />,
+      { client: seed() },
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Add cover" }),
+    ).toBeInTheDocument();
   });
 });
 

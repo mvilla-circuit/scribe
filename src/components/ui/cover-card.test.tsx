@@ -161,6 +161,76 @@ describe("CoverCard", () => {
     expect(screen.queryByTestId("footer-extra")).not.toBeInTheDocument();
   });
 
+  it("renders mediaOverlay as a sibling of the open button", () => {
+    render(
+      <CoverCard
+        title="Card"
+        icon={null}
+        coverUrl={null}
+        fallback={<span>fallback</span>}
+        onOpen={vi.fn()}
+        mediaOverlay={
+          <button type="button" aria-label="Upload cover">
+            Upload
+          </button>
+        }
+      />,
+    );
+
+    const card = screen.getByTestId("cover-card");
+    const openButton = screen.getByRole("button", { name: /Card/ });
+    const overlay = screen.getByTestId("cover-card-media-overlay");
+    const upload = screen.getByRole("button", { name: "Upload cover" });
+
+    expect(card).toContainElement(openButton);
+    expect(card).toContainElement(overlay);
+    expect(overlay).toContainElement(upload);
+    expect(openButton.contains(upload)).toBe(false);
+    expect(overlay).toHaveClass(
+      "pointer-events-none",
+      "group-hover:pointer-events-auto",
+      "group-focus-within:pointer-events-auto",
+    );
+  });
+
+  it("does not open the card when mediaOverlay content is clicked", async () => {
+    const user = userEvent.setup();
+    const onOpen = vi.fn();
+    render(
+      <CoverCard
+        title="Card"
+        icon={null}
+        coverUrl={null}
+        fallback={<span>fallback</span>}
+        onOpen={onOpen}
+        mediaOverlay={
+          <button type="button" aria-label="Upload cover">
+            Upload
+          </button>
+        }
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Upload cover" }));
+    expect(onOpen).not.toHaveBeenCalled();
+  });
+
+  it("omits the media overlay when mediaOverlay is not provided", () => {
+    render(
+      <CoverCard
+        title="Card"
+        icon={null}
+        coverUrl={null}
+        fallback={<span>fallback</span>}
+        onOpen={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.queryByTestId("cover-card-media-overlay"),
+    ).not.toBeInTheDocument();
+  });
+
   it("keeps the more-actions chip visible while its menu is open", async () => {
     const user = userEvent.setup();
     renderWithProviders(
