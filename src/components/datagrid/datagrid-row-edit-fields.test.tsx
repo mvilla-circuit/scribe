@@ -78,6 +78,17 @@ beforeEach(() => {
 });
 
 describe("DatagridRowEditFields", () => {
+  it("right-aligns the Edit Fields control", () => {
+    renderWithProviders(
+      <DatagridRowEditFields datagridId={DGID} fields={fields} />,
+      { client: seed() },
+    );
+    expect(screen.getByTestId("edit-fields-align")).toHaveClass("justify-end");
+    expect(
+      screen.getByRole("button", { name: "Edit Fields" }),
+    ).toBeInTheDocument();
+  });
+
   it("opens FieldManager and persists via useUpdateDatagrid", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     let patched: Record<string, unknown> | undefined;

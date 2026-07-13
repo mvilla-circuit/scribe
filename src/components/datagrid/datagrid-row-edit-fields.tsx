@@ -29,15 +29,17 @@ export function DatagridRowEditFields({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => {
-          setOpen(true);
-        }}
-        className="font-sans text-xs text-muted outline-none hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        Edit Fields
-      </button>
+      <div className="flex justify-end" data-testid="edit-fields-align">
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(true);
+          }}
+          className="font-sans text-xs text-muted outline-none hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          Edit Fields
+        </button>
+      </div>
       <FieldManager
         open={open}
         onOpenChange={setOpen}
