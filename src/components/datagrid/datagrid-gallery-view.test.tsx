@@ -87,7 +87,7 @@ describe("DatagridGalleryView", () => {
     expect(onOpenRow).toHaveBeenCalledWith("r1");
   });
 
-  it("creates a row from the ghost card", () => {
+  it("creates a card from the ghost tile", () => {
     const onCreateRow = vi.fn();
     renderWithProviders(
       <DatagridGalleryView
@@ -97,7 +97,7 @@ describe("DatagridGalleryView", () => {
         onCreateRow={onCreateRow}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "New row" }));
+    fireEvent.click(screen.getByRole("button", { name: "New card" }));
     expect(onCreateRow).toHaveBeenCalled();
   });
 

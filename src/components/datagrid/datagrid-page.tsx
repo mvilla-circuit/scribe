@@ -213,7 +213,9 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
           <div className="flex gap-2">
             <Button variant="primary" onClick={handleCreateRow}>
               <Plus className="size-4" aria-hidden="true" />
-              New row
+              {layout === "gallery" || layout === "board"
+                ? "New card"
+                : "New row"}
             </Button>
             <Button
               variant="secondary"

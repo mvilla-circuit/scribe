@@ -106,6 +106,13 @@ describe("DatagridBoardView", () => {
     expect(onMoveCard).toHaveBeenCalledWith("r1", "done");
   });
 
+  it("creates a card from the dashed tile", () => {
+    const onCreateRow = vi.fn();
+    renderWithProviders(<DatagridBoardView {...baseProps({ onCreateRow })} />);
+    fireEvent.click(screen.getByRole("button", { name: "New card" }));
+    expect(onCreateRow).toHaveBeenCalled();
+  });
+
   it("resolves a relation chip's title via relationTargets, not a raw id", () => {
     const relationRows: DatagridDisplayRow[] = [
       {

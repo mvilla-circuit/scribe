@@ -161,7 +161,7 @@ export function DatagridBoardView({
           <span className="text-base leading-none" aria-hidden="true">
             +
           </span>
-          New row
+          New card
         </DashedAddTile>
       </div>
     </div>

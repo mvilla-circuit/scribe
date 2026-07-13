@@ -103,6 +103,25 @@ describe("DatagridPage", () => {
     const client = seed({ rows: [] });
     renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
     expect(screen.getByText("This datagrid is empty")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New row" })).toBeInTheDocument();
+  });
+
+  it("uses New card on the empty-state CTA for gallery layout", () => {
+    const client = seed({ rows: [], viewConfig: { layout: "gallery" } });
+    renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
+    expect(
+      screen.getByRole("button", { name: "New card" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "New row" })).toBeNull();
+  });
+
+  it("uses New card on the empty-state CTA for board layout", () => {
+    const client = seed({ rows: [], viewConfig: { layout: "board" } });
+    renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
+    expect(
+      screen.getByRole("button", { name: "New card" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "New row" })).toBeNull();
   });
 
   it("prompts to add a group field on a board view without one", () => {

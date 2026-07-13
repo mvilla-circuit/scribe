@@ -3,13 +3,13 @@ import { CoverCard } from "@/components/ui/cover-card";
 import { DashedAddTile } from "@/components/ui/dashed-add-tile";
 import type { DatagridField } from "@/lib/datagrid-schema";
 
-import { RowPropertyChips } from "./datagrid-cell";
+import { DatagridCardFields } from "./datagrid-card-fields";
 import type { RelationTargets } from "./datagrid-relations";
 import type { DatagridDisplayRow } from "./datagrid-view-model";
 
 interface GalleryViewProps {
   rows: DatagridDisplayRow[];
-  /** Visible non-title fields, in view order, used for the card's chips. */
+  /** Visible non-title fields, in view order, used for the card value stack. */
   fields: DatagridField[];
   onOpenRow: (id: string) => void;
   onCreateRow: () => void;
@@ -19,8 +19,8 @@ interface GalleryViewProps {
 
 /**
  * The gallery layout: landscape CoverCards (wider than a book cover) with an
- * optional cover image, the row title, and up to a few property chips. A dashed
- * ghost card at the end adds a record.
+ * optional cover image, the row title, and a vertical field-value stack. A
+ * dashed ghost card at the end adds a record.
  */
 export function DatagridGalleryView({
   rows,
@@ -44,7 +44,7 @@ export function DatagridGalleryView({
           aspect="album"
           footerExtra={
             <div className="mt-1.5">
-              <RowPropertyChips
+              <DatagridCardFields
                 fields={fields}
                 row={row}
                 relationTargets={relationTargets}
@@ -61,7 +61,7 @@ export function DatagridGalleryView({
         <span className="text-lg leading-none" aria-hidden="true">
           +
         </span>
-        New row
+        New card
       </DashedAddTile>
     </div>
   );
