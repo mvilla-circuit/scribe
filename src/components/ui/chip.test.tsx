@@ -113,6 +113,8 @@ describe("RemovableChip", () => {
     );
 
     const removeButton = screen.getByRole("button", { name: "Remove Fantasy" });
+    // eslint-disable-next-line testing-library/no-node-access -- shell is a non-interactive span without a queryable role
+    const shell = screen.getByText("Fantasy").parentElement;
 
     expect(removeButton.className).toMatch(/group-hover\/chip:max-w-/);
     expect(removeButton.className).toMatch(/group-hover\/chip:opacity-100/);
@@ -122,6 +124,8 @@ describe("RemovableChip", () => {
     );
     expect(removeButton.className).toMatch(/focus-visible:max-w-/);
     expect(removeButton.className).toMatch(/focus-visible:opacity-100/);
+    expect(shell?.className).toMatch(/group-hover\/chip:pr-/);
+    expect(shell?.className).toMatch(/group-focus-within\/chip:pr-/);
   });
 
   it("always mode keeps full-size remove chrome", () => {
