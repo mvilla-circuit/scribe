@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -148,6 +148,38 @@ describe("DatagridPage", () => {
     renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
     expect(screen.getByText("Card")).toBeInTheDocument();
     expect(screen.queryByRole("table")).toBeNull();
+  });
+
+  it("deletes a gallery card after confirm", async () => {
+    server.use(
+      http.delete(
+        "http://supabase.test/rest/v1/datagrid_rows",
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    );
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = seed({
+      rows: [
+        makeDatagridRow({ id: "r1", datagrid_id: DGID, title: "Card one" }),
+      ],
+      viewConfig: { layout: "gallery" },
+    });
+
+    renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
+
+    await user.click(
+      screen.getByRole("button", { name: "Actions for Card one" }),
+    );
+    await user.click(screen.getByRole("menuitem", { name: "Delete" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent('Delete "Card one"?');
+    expect(dialog).toHaveTextContent("This permanently deletes the card.");
+    await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+
+    await waitFor(() => {
+      expect(client.getQueryData(datagridRowsKey(DGID))!).toEqual([]);
+    });
   });
 
   it("opens a row into the UI store from the table", () => {

@@ -180,6 +180,18 @@ export function useDatagridPageModel(datagridId: string) {
     deleteRows.mutate({ ids: [...selectedIds] });
     clearSelection();
   }, [clearSelection, deleteRows, selectedIds]);
+  const deleteRow = useCallback(
+    (id: string) => {
+      deleteRows.mutate({ ids: [id] });
+      setSelectedIds((previous) => {
+        if (!previous.has(id)) return previous;
+        const next = new Set(previous);
+        next.delete(id);
+        return next;
+      });
+    },
+    [deleteRows],
+  );
   const bulkSetProperty = useCallback(
     (fieldId: string, value: DatagridPropertyValue) => {
       if (selectedIds.size === 0) return;
@@ -246,6 +258,7 @@ export function useDatagridPageModel(datagridId: string) {
     csvRows,
     datagrid,
     datagridsQuery,
+    deleteRow,
     deleteSelected,
     fields,
     handleCreateRow,

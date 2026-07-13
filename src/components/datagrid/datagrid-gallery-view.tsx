@@ -1,9 +1,10 @@
 import { ImagePlus } from "lucide-react";
-import { type ChangeEvent, useRef, useState } from "react";
+import { type ChangeEvent, useMemo, useRef, useState } from "react";
 
-import { DatagridIcon } from "@/components/sidebar/icons";
+import { DatagridIcon, TrashIcon } from "@/components/sidebar/icons";
 import { CoverCard } from "@/components/ui/cover-card";
 import { DashedAddTile } from "@/components/ui/dashed-add-tile";
+import { type RowAction } from "@/components/ui/row-action-menu";
 import { Tooltip } from "@/components/ui/tooltip";
 import { COVER_IMAGE_ACCEPT } from "@/data/cover-upload";
 import type { DatagridField } from "@/lib/datagrid-schema";
@@ -26,6 +27,8 @@ interface GalleryViewProps {
    * calm hover/focus media overlay that uploads without opening the row.
    */
   onUploadCover?: (rowId: string, file: File) => Promise<string>;
+  /** When set, each card gets a hover/context Delete action that calls this. */
+  onDeleteRow?: (rowId: string) => void;
 }
 
 /**
@@ -104,37 +107,19 @@ export function DatagridGalleryView({
   onCreateRow,
   relationTargets,
   onUploadCover,
+  onDeleteRow,
 }: GalleryViewProps) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {rows.map((row) => (
-        <CoverCard
+        <GalleryCard
           key={row.id}
-          title={row.title}
-          icon={row.icon}
-          coverUrl={row.cover_url}
-          fallback={<DatagridIcon size={26} />}
-          onOpen={() => {
-            onOpenRow(row.id);
-          }}
-          aspect="album"
-          mediaOverlay={
-            onUploadCover ? (
-              <GalleryCoverUpload
-                rowId={row.id}
-                onUploadCover={onUploadCover}
-              />
-            ) : undefined
-          }
-          footerExtra={
-            <div className="mt-1.5">
-              <DatagridCardFields
-                fields={fields}
-                row={row}
-                relationTargets={relationTargets}
-              />
-            </div>
-          }
+          row={row}
+          fields={fields}
+          relationTargets={relationTargets}
+          onOpenRow={onOpenRow}
+          onUploadCover={onUploadCover}
+          onDeleteRow={onDeleteRow}
         />
       ))}
 
@@ -148,5 +133,63 @@ export function DatagridGalleryView({
         New card
       </DashedAddTile>
     </div>
+  );
+}
+
+function GalleryCard({
+  row,
+  fields,
+  relationTargets,
+  onOpenRow,
+  onUploadCover,
+  onDeleteRow,
+}: {
+  row: DatagridDisplayRow;
+  fields: DatagridField[];
+  relationTargets?: RelationTargets;
+  onOpenRow: (id: string) => void;
+  onUploadCover?: (rowId: string, file: File) => Promise<string>;
+  onDeleteRow?: (rowId: string) => void;
+}) {
+  const actions = useMemo<RowAction[] | undefined>(() => {
+    if (!onDeleteRow) return undefined;
+    return [
+      {
+        icon: <TrashIcon size={15} />,
+        label: "Delete",
+        danger: true,
+        onSelect: () => {
+          onDeleteRow(row.id);
+        },
+      },
+    ];
+  }, [onDeleteRow, row.id]);
+
+  return (
+    <CoverCard
+      title={row.title}
+      icon={row.icon}
+      coverUrl={row.cover_url}
+      fallback={<DatagridIcon size={26} />}
+      onOpen={() => {
+        onOpenRow(row.id);
+      }}
+      aspect="album"
+      actions={actions}
+      mediaOverlay={
+        onUploadCover ? (
+          <GalleryCoverUpload rowId={row.id} onUploadCover={onUploadCover} />
+        ) : undefined
+      }
+      footerExtra={
+        <div className="mt-1.5">
+          <DatagridCardFields
+            fields={fields}
+            row={row}
+            relationTargets={relationTargets}
+          />
+        </div>
+      }
+    />
   );
 }

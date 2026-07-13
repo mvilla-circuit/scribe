@@ -196,4 +196,26 @@ describe("DatagridGalleryView", () => {
     expect(onUploadCover).toHaveBeenCalledWith("r1", cover);
     expect(onOpenRow).not.toHaveBeenCalled();
   });
+
+  it("offers Delete in the card actions menu and reports the row id", async () => {
+    const user = userEvent.setup();
+    const onDeleteRow = vi.fn();
+
+    renderWithProviders(
+      <DatagridGalleryView
+        rows={rows}
+        fields={fields}
+        onOpenRow={vi.fn()}
+        onCreateRow={vi.fn()}
+        onDeleteRow={onDeleteRow}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Actions for Card one" }),
+    );
+    await user.click(screen.getByRole("menuitem", { name: "Delete" }));
+
+    expect(onDeleteRow).toHaveBeenCalledWith("r1");
+  });
 });

@@ -3,6 +3,7 @@ import { type ReactNode, useMemo, useState } from "react";
 
 import { FontControl } from "@/components/book/font-control";
 import { NavHistoryControls } from "@/components/book/nav-history-controls";
+import { leafDeleteTitle } from "@/components/leaf-delete-copy";
 import { DatagridIcon } from "@/components/sidebar/icons";
 import {
   Breadcrumb,
@@ -10,6 +11,7 @@ import {
   BreadcrumbSep,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EditableText } from "@/components/ui/editable-text";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Masthead } from "@/components/ui/masthead";
@@ -59,6 +61,7 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
     csvRows,
     datagrid,
     datagridsQuery,
+    deleteRow,
     deleteSelected,
     fields,
     handleCreateRow,
@@ -96,6 +99,10 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
   const [fieldsOpen, setFieldsOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
 
   // Fonts cascade global -> datagrid (book parity; no page-level layer here).
   const { data: profile } = useProfile();
@@ -206,6 +213,13 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
     navigateTo({ datagridId });
   };
 
+  const confirmPendingDelete = () => {
+    const target = pendingDelete;
+    if (!target) return;
+    if (activeRowId === target.id) closeRow();
+    deleteRow(target.id);
+  };
+
   let layoutView: ReactNode;
   if (isTrulyEmpty) {
     layoutView = (
@@ -255,6 +269,13 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
         onOpenRow={openRow}
         onCreateRow={handleCreateRow}
         onUploadCover={setRowCover}
+        onDeleteRow={(rowId) => {
+          const row = orderedRows.find((candidate) => candidate.id === rowId);
+          setPendingDelete({
+            id: rowId,
+            title: row?.title || "Untitled",
+          });
+        }}
         relationTargets={relationTargets}
       />
     );
@@ -473,6 +494,17 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
           onClose={closeRow}
         />
       )}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        title={pendingDelete ? leafDeleteTitle(pendingDelete.title) : ""}
+        description="This permanently deletes the card."
+        confirmLabel="Delete"
+        danger
+        onConfirm={confirmPendingDelete}
+      />
     </div>
   );
 }
