@@ -46,7 +46,33 @@ describe("parseDatagridViewConfig", () => {
     ).toMatchObject({
       layout: "board",
       visibleFieldIds: ["a", "b"],
+      // Omitted cardVisibleFieldIds falls back to column visibility.
+      cardVisibleFieldIds: ["a", "b"],
       boardFieldId: "status",
+    });
+  });
+
+  it("parses cardVisibleFieldIds when present", () => {
+    expect(
+      parseDatagridViewConfig({
+        visibleFieldIds: ["a"],
+        cardVisibleFieldIds: ["b", "c"],
+      }),
+    ).toMatchObject({
+      visibleFieldIds: ["a"],
+      cardVisibleFieldIds: ["b", "c"],
+    });
+  });
+
+  it("honors an explicit empty cardVisibleFieldIds (all card fields)", () => {
+    expect(
+      parseDatagridViewConfig({
+        visibleFieldIds: ["a"],
+        cardVisibleFieldIds: [],
+      }),
+    ).toMatchObject({
+      visibleFieldIds: ["a"],
+      cardVisibleFieldIds: [],
     });
   });
 

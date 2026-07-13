@@ -3,11 +3,14 @@ import { type ReactNode, useState } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { EditableText } from "@/components/ui/editable-text";
+import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { useDragResize } from "@/components/ui/use-drag-resize";
 import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";
 
 import { DatagridRowBody } from "./datagrid-row-body";
+import { DatagridRowBreadcrumbs } from "./datagrid-row-breadcrumbs";
+import { DatagridRowFieldsBar } from "./datagrid-row-fields-bar";
 import { RowOpenModeControl } from "./datagrid-row-open-mode-control";
 import { DatagridRowProperties } from "./datagrid-row-properties";
 import { useDatagridRowDetail } from "./use-datagrid-row-detail";
@@ -22,22 +25,21 @@ const CLOSE_BUTTON_CLASS =
 
 const PANEL_STYLES = {
   modal: {
-    headerClassName:
-      "flex items-center gap-2 border-b border-border px-5 py-2.5",
+    headerClassName: "flex items-center gap-2 border-b border-border px-8 py-3",
     titleClassName:
       "text-2xl font-semibold leading-tight tracking-tight text-text",
-    bodyClassName: "min-h-0 flex-1 overflow-y-auto px-6 py-5",
-    propertiesClassName: "mt-5",
-    editorClassName: "mt-6 border-t border-border pt-5",
+    bodyClassName: "min-h-0 flex-1 overflow-y-auto px-8 pb-8 pt-8",
+    propertiesClassName: "mt-6",
+    editorClassName: "mt-8 border-t border-border pt-6",
   },
   split: {
     headerClassName:
-      "flex items-center gap-2 border-b border-border px-4 py-2.5",
+      "flex items-center gap-2 border-b border-border px-6 py-2.5",
     titleClassName:
       "text-xl font-semibold leading-tight tracking-tight text-text",
-    bodyClassName: "min-h-0 flex-1 overflow-y-auto bg-bg px-5 py-4",
-    propertiesClassName: "mt-4",
-    editorClassName: "mt-5 border-t border-border pt-4",
+    bodyClassName: "min-h-0 flex-1 overflow-y-auto bg-bg px-6 pb-6 pt-6",
+    propertiesClassName: "mt-5",
+    editorClassName: "mt-6 border-t border-border pt-5",
   },
 } as const;
 
@@ -47,18 +49,21 @@ function RowPanelChrome({
   saveState,
   onClose,
   headerClassName,
+  datagridId,
   children,
 }: {
   saveState: SaveState;
   onClose: () => void;
   headerClassName: string;
+  datagridId: string;
   children: ReactNode;
 }) {
   return (
     <>
       <div className={headerClassName}>
-        <SaveStatus state={saveState} />
-        <div className="ml-auto flex items-center gap-1.5">
+        <DatagridRowBreadcrumbs datagridId={datagridId} />
+        <span className="ml-auto flex shrink-0 items-center gap-1.5">
+          <SaveStatus state={saveState} />
           <RowOpenModeControl />
           <button
             type="button"
@@ -68,7 +73,7 @@ function RowPanelChrome({
           >
             <X className="size-4" aria-hidden="true" />
           </button>
-        </div>
+        </span>
       </div>
       {children}
     </>
@@ -87,11 +92,20 @@ function RowPanelContent({
   onClose: () => void;
   variant: PanelVariant;
 }) {
-  const { row, fields, properties, relationTargets, rename, patchProperty } =
-    useDatagridRowDetail(datagridId, rowId);
+  const {
+    row,
+    fields,
+    properties,
+    relationTargets,
+    rename,
+    setCover,
+    clearCover,
+    patchProperty,
+  } = useDatagridRowDetail(datagridId, rowId);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const styles = PANEL_STYLES[variant];
   const title = row?.title ?? "Untitled";
+  const coverUrl = row?.cover_url ?? null;
 
   return (
     <>
@@ -102,8 +116,19 @@ function RowPanelContent({
         saveState={saveState}
         onClose={onClose}
         headerClassName={styles.headerClassName}
+        datagridId={datagridId}
       >
-        <div className={styles.bodyClassName}>
+        <PageCover
+          coverUrl={coverUrl}
+          onUpload={setCover}
+          onRemove={clearCover}
+        />
+        <div className={styles.bodyClassName} data-testid="row-panel-body">
+          {!coverUrl && (
+            <div className="group/masthead mb-3">
+              <AddCoverButton onUpload={setCover} />
+            </div>
+          )}
           <EditableText
             value={title}
             ariaLabel="Row title"
@@ -121,9 +146,11 @@ function RowPanelContent({
               relationTargets={relationTargets}
               onPatch={patchProperty}
             />
+            <DatagridRowFieldsBar datagridId={datagridId} fields={fields} />
           </div>
           <div
             className={styles.editorClassName}
+            data-testid="row-panel-editor"
             style={{ fontFamily: "var(--font-text)" }}
           >
             <DatagridRowBody rowId={rowId} onSaveStateChange={setSaveState} />

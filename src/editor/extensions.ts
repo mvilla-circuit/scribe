@@ -12,6 +12,7 @@ import StarterKit from "@tiptap/starter-kit";
 
 import { Callout } from "./extensions/callout";
 import { Column, Columns } from "./extensions/columns";
+import { DatagridRowCard } from "./extensions/datagrid-row-card";
 import { Essay } from "./extensions/essay";
 import { Indent } from "./extensions/indent";
 import { LinkCard } from "./extensions/link-card";
@@ -128,6 +129,7 @@ export function buildExtensions(spellcheck?: SpellcheckOptions): Extensions {
     Essay,
     LinkCard,
     PageLink,
+    DatagridRowCard,
     Quote,
 
     // Tab / Shift-Tab block indentation for paragraphs and headings.

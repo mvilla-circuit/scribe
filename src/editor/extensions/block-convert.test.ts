@@ -144,6 +144,7 @@ describe("CONVERTIBLE_SOURCES", () => {
       "table",
       "linkCard",
       "pageLink",
+      "datagridRowCard",
       "essay",
       "columns",
     ]) {

@@ -3,12 +3,13 @@ import { useState } from "react";
 import { NavHistoryControls } from "@/components/book/nav-history-controls";
 import { EditableText } from "@/components/ui/editable-text";
 import { Masthead } from "@/components/ui/masthead";
-import { useCollections } from "@/data/collections";
+import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";
-import { useUIStore } from "@/store/ui";
 
 import { DatagridRowBody } from "./datagrid-row-body";
+import { DatagridRowBreadcrumbs } from "./datagrid-row-breadcrumbs";
+import { DatagridRowFieldsBar } from "./datagrid-row-fields-bar";
 import { RowOpenModeControl } from "./datagrid-row-open-mode-control";
 import { DatagridRowProperties } from "./datagrid-row-properties";
 import { useDatagridRowDetail } from "./use-datagrid-row-detail";
@@ -26,24 +27,18 @@ export function DatagridRowFull({
   rowId: string;
 }) {
   const {
-    datagrid,
     row,
     fields,
     properties,
     relationTargets,
     rename,
     setIcon,
+    setCover,
+    clearCover,
     patchProperty,
     isLoading,
   } = useDatagridRowDetail(datagridId, rowId);
-  const collectionsQuery = useCollections();
-  const navigateTo = useUIStore((s) => s.navigateTo);
-  const setActiveCollection = useUIStore((s) => s.setActiveCollection);
   const [saveState, setSaveState] = useState<SaveState>("idle");
-
-  const collection =
-    collectionsQuery.data?.find((c) => c.id === datagrid?.collection_id) ??
-    null;
 
   const bar = (
     <nav
@@ -52,29 +47,7 @@ export function DatagridRowFull({
       className="sticky top-0 z-20 flex items-center gap-1 bg-bg px-8 py-3 text-sm text-muted"
     >
       <NavHistoryControls />
-      {collection && (
-        <>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveCollection(collection.id);
-            }}
-            className="min-w-0 shrink truncate rounded-sm px-1 outline-none hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {collection.name || "Collection"}
-          </button>
-          <span className="shrink-0 select-none text-muted/50">/</span>
-        </>
-      )}
-      <button
-        type="button"
-        onClick={() => {
-          navigateTo({ datagridId });
-        }}
-        className="min-w-0 shrink truncate rounded-sm px-1 outline-none hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        {datagrid?.name || "Datagrid"}
-      </button>
+      <DatagridRowBreadcrumbs datagridId={datagridId} label={false} />
       <span className="ml-auto flex shrink-0 items-center gap-2">
         <SaveStatus state={saveState} />
         <RowOpenModeControl />
@@ -109,6 +82,12 @@ export function DatagridRowFull({
     >
       {bar}
 
+      <PageCover
+        coverUrl={row.cover_url}
+        onUpload={setCover}
+        onRemove={clearCover}
+      />
+
       <article className="mx-auto w-full max-w-[68ch] px-8 py-12 sm:py-16">
         <Masthead
           icon={row.icon}
@@ -117,6 +96,9 @@ export function DatagridRowFull({
             setIcon(null);
           }}
           changeIconLabel="Change row icon"
+          actions={
+            row.cover_url ? undefined : <AddCoverButton onUpload={setCover} />
+          }
         >
           <EditableText
             value={row.title || "Untitled"}
@@ -128,8 +110,8 @@ export function DatagridRowFull({
           />
         </Masthead>
 
-        {fields.length > 0 && (
-          <div className="mt-6">
+        <div className="mt-6">
+          {fields.length > 0 && (
             <DatagridRowProperties
               fields={fields}
               properties={properties}
@@ -138,8 +120,9 @@ export function DatagridRowFull({
               relationTargets={relationTargets}
               onPatch={patchProperty}
             />
-          </div>
-        )}
+          )}
+          <DatagridRowFieldsBar datagridId={datagridId} fields={fields} />
+        </div>
 
         <div
           className="mt-8 border-t border-border pt-6"

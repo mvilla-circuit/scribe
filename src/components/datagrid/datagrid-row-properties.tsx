@@ -33,7 +33,7 @@ export function DatagridRowProperties({
   if (fields.length === 0) return null;
 
   return (
-    <dl className="grid grid-cols-[minmax(5rem,9rem)_1fr] items-start gap-x-4 gap-y-1">
+    <dl className="grid grid-cols-[minmax(5rem,9rem)_1fr] items-start gap-x-4 gap-y-2">
       {fields.map((field) => (
         <Fragment key={field.id}>
           <dt className="truncate py-2 text-xs text-muted">{field.name}</dt>

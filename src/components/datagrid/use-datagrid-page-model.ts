@@ -25,6 +25,7 @@ import {
   parseDatagridFields,
   parseDatagridProperties,
   parseDatagridViewConfig,
+  selectVisibleFields,
 } from "@/lib/datagrid-schema";
 import { matchesNormalizedQuery } from "@/lib/text-match";
 
@@ -75,13 +76,14 @@ export function useDatagridPageModel(datagridId: string) {
     () => parseDatagridViewConfig(activeView?.config ?? null),
     [activeView?.config],
   );
-  const visibleFields = useMemo<DatagridField[]>(() => {
-    if (config.visibleFieldIds.length === 0) return fields;
-    const byId = new Map(fields.map((field) => [field.id, field]));
-    return config.visibleFieldIds
-      .map((id) => byId.get(id))
-      .filter((field): field is DatagridField => field !== undefined);
-  }, [config.visibleFieldIds, fields]);
+  const columnFields = useMemo<DatagridField[]>(
+    () => selectVisibleFields(fields, config.visibleFieldIds),
+    [config.visibleFieldIds, fields],
+  );
+  const cardFields = useMemo<DatagridField[]>(
+    () => selectVisibleFields(fields, config.cardVisibleFieldIds),
+    [config.cardVisibleFieldIds, fields],
+  );
 
   const displayRows = useMemo<DatagridDisplayRow[]>(
     () =>
@@ -182,6 +184,18 @@ export function useDatagridPageModel(datagridId: string) {
     deleteRows.mutate({ ids: [...selectedIds] });
     clearSelection();
   }, [clearSelection, deleteRows, selectedIds]);
+  const deleteRow = useCallback(
+    (id: string) => {
+      deleteRows.mutate({ ids: [id] });
+      setSelectedIds((previous) => {
+        if (!previous.has(id)) return previous;
+        const next = new Set(previous);
+        next.delete(id);
+        return next;
+      });
+    },
+    [deleteRows],
+  );
   const bulkSetProperty = useCallback(
     (fieldId: string, value: DatagridPropertyValue) => {
       if (selectedIds.size === 0) return;
@@ -248,6 +262,7 @@ export function useDatagridPageModel(datagridId: string) {
     csvRows,
     datagrid,
     datagridsQuery,
+    deleteRow,
     deleteSelected,
     fields,
     handleCreateRow,
@@ -268,6 +283,7 @@ export function useDatagridPageModel(datagridId: string) {
     toggleSelectAll,
     updateRow,
     views,
-    visibleFields,
+    columnFields,
+    cardFields,
   };
 }

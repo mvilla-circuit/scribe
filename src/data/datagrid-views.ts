@@ -89,13 +89,11 @@ export function newDefaultViewRow(
   );
 }
 
-/** Query hook for one datagrid's saved views, ordered by position. */
-export function useDatagridViews(datagridId: string | null) {
-  return useQuery({
-    queryKey: datagridViewsKey(datagridId ?? ""),
-    enabled: datagridId !== null,
+/** Shared query options for one datagrid's views (usable with `useQueries`). */
+export function datagridViewsQueryOptions(datagridId: string) {
+  return {
+    queryKey: datagridViewsKey(datagridId),
     queryFn: async (): Promise<DatagridView[]> => {
-      if (datagridId === null) return [];
       const { data, error } = await supabase
         .from("datagrid_views")
         .select("*")
@@ -104,6 +102,14 @@ export function useDatagridViews(datagridId: string | null) {
       if (error) throw error;
       return (data ?? []).slice().sort(byPosition);
     },
+  };
+}
+
+/** Query hook for one datagrid's saved views, ordered by position. */
+export function useDatagridViews(datagridId: string | null) {
+  return useQuery({
+    ...datagridViewsQueryOptions(datagridId ?? ""),
+    enabled: datagridId !== null,
   });
 }
 

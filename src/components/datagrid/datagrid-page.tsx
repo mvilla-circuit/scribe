@@ -3,6 +3,7 @@ import { type ReactNode, useMemo, useState } from "react";
 
 import { FontControl } from "@/components/book/font-control";
 import { NavHistoryControls } from "@/components/book/nav-history-controls";
+import { leafDeleteTitle } from "@/components/leaf-delete-copy";
 import { DatagridIcon } from "@/components/sidebar/icons";
 import {
   Breadcrumb,
@@ -10,6 +11,7 @@ import {
   BreadcrumbSep,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EditableText } from "@/components/ui/editable-text";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Masthead } from "@/components/ui/masthead";
@@ -36,6 +38,7 @@ import {
   DatagridImportDialog,
 } from "./datagrid-csv-dialogs";
 import { FieldManager } from "./datagrid-field-manager";
+import { toggleVisibleFieldId } from "./datagrid-field-visibility";
 import { DatagridGalleryView } from "./datagrid-gallery-view";
 import { DatagridPageToolbar } from "./datagrid-page-toolbar";
 import { DatagridRowModal, DatagridRowSplit } from "./datagrid-row-detail";
@@ -59,6 +62,7 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
     csvRows,
     datagrid,
     datagridsQuery,
+    deleteRow,
     deleteSelected,
     fields,
     handleCreateRow,
@@ -79,7 +83,8 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
     toggleSelectAll,
     updateRow,
     views,
-    visibleFields,
+    columnFields,
+    cardFields,
   } = useDatagridPageModel(datagridId);
   const collectionsQuery = useCollections();
 
@@ -96,6 +101,10 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
   const [fieldsOpen, setFieldsOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
 
   // Fonts cascade global -> datagrid (book parity; no page-level layer here).
   const { data: profile } = useProfile();
@@ -161,6 +170,19 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
     collectionsQuery.data?.find((c) => c.id === datagrid.collection_id) ?? null;
 
   const layout = config.layout;
+  const isCardLayout = layout === "gallery" || layout === "board";
+  const fieldVisibility =
+    layout === "table"
+      ? {
+          mode: "columns" as const,
+          key: "visibleFieldIds" as const,
+          ids: config.visibleFieldIds,
+        }
+      : {
+          mode: "cards" as const,
+          key: "cardVisibleFieldIds" as const,
+          ids: config.cardVisibleFieldIds,
+        };
   const showSubtitle = datagridShowSubtitle(datagrid);
   const toggleSubtitle = () => {
     updateDatagrid.mutate({
@@ -189,12 +211,28 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
     );
   };
 
+  const setRowCover = async (rowId: string, file: File) => {
+    const previous =
+      orderedRows.find((row) => row.id === rowId)?.cover_url ?? null;
+    const coverUrl = await uploadCover.mutateAsync(file);
+    await updateRow.mutateAsync({ id: rowId, cover_url: coverUrl });
+    void deleteCoverObject(previous);
+    return coverUrl;
+  };
+
   const openRow = (rowId: string) => {
     setActiveDatagridRow(rowId, datagridId);
   };
 
   const closeRow = () => {
     navigateTo({ datagridId });
+  };
+
+  const confirmPendingDelete = () => {
+    const target = pendingDelete;
+    if (!target) return;
+    if (activeRowId === target.id) closeRow();
+    deleteRow(target.id);
   };
 
   let layoutView: ReactNode;
@@ -208,12 +246,16 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
           </div>
         }
         title="This datagrid is empty"
-        body="Add a row to start building records, or import existing data from a CSV."
+        body={
+          isCardLayout
+            ? "Add a card to start building records, or import existing data from a CSV."
+            : "Add a row to start building records, or import existing data from a CSV."
+        }
         cta={
           <div className="flex gap-2">
             <Button variant="primary" onClick={handleCreateRow}>
               <Plus className="size-4" aria-hidden="true" />
-              New row
+              {isCardLayout ? "New card" : "New row"}
             </Button>
             <Button
               variant="secondary"
@@ -236,9 +278,17 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
     layoutView = (
       <DatagridGalleryView
         rows={orderedRows}
-        fields={visibleFields}
+        fields={cardFields}
         onOpenRow={openRow}
         onCreateRow={handleCreateRow}
+        onUploadCover={setRowCover}
+        onDeleteRow={(rowId) => {
+          const row = orderedRows.find((candidate) => candidate.id === rowId);
+          setPendingDelete({
+            id: rowId,
+            title: row?.title || "Untitled",
+          });
+        }}
         relationTargets={relationTargets}
       />
     );
@@ -247,7 +297,7 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
       <DatagridBoardView
         rows={orderedRows}
         boardField={boardField}
-        chipFields={visibleFields}
+        chipFields={cardFields}
         onOpenRow={openRow}
         onCreateRow={handleCreateRow}
         onMoveCard={(rowId, key) => {
@@ -265,7 +315,7 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
     layoutView = (
       <DatagridTableView
         rows={orderedRows}
-        fields={visibleFields}
+        fields={columnFields}
         selectedIds={selectedIds}
         onToggleSelect={toggleSelect}
         onToggleSelectAll={toggleSelectAll}
@@ -427,6 +477,18 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
           onOpenChange={setFieldsOpen}
           fields={fields}
           onChange={persistFields}
+          visibilityMode={fieldVisibility.mode}
+          visibleIds={fieldVisibility.ids}
+          onToggleVisibility={(fieldId) => {
+            persistConfig((prev) => ({
+              ...prev,
+              [fieldVisibility.key]: toggleVisibleFieldId(
+                fields,
+                prev[fieldVisibility.key],
+                fieldId,
+              ),
+            }));
+          }}
         />
         <DatagridImportDialog
           open={importOpen}
@@ -457,6 +519,17 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
           onClose={closeRow}
         />
       )}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        title={pendingDelete ? leafDeleteTitle(pendingDelete.title) : ""}
+        description="This permanently deletes the card."
+        confirmLabel="Delete"
+        danger
+        onConfirm={confirmPendingDelete}
+      />
     </div>
   );
 }

@@ -57,7 +57,7 @@ interface CellValueProps {
  * Read-only display of one property value, dispatched by field type: select and
  * status render a single swatch chip, multi_select a chip row, checkbox a tick,
  * url a link, dates/numbers as plain text, and relations as icon+title chips.
- * Shared by the table's non-editing cells, gallery property chips, and board
+ * Shared by the table's non-editing cells, gallery card fields, and board
  * cards so every surface renders a value identically.
  */
 export function CellValue({
@@ -163,8 +163,8 @@ export function CellValue({
 const MAX_CARD_CHIPS = 3;
 
 /**
- * Up to a few property values under a card title. Shared by gallery and board
- * so both surfaces render chips identically.
+ * Up to a few property values under a card title. Used by the board layout;
+ * gallery cards use {@link DatagridCardFields} instead.
  */
 export function RowPropertyChips({
   fields,

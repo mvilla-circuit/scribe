@@ -235,7 +235,13 @@ export interface DatagridViewConfig {
   filters: DatagridFilter[];
   sorts: DatagridSort[];
   groupBy: string | null;
+  /** Table column visibility/order. Empty means all fields in schema order. */
   visibleFieldIds: string[];
+  /**
+   * Gallery/board/embed card field visibility/order. Empty means all fields.
+   * When omitted from persisted jsonb, parse falls back to `visibleFieldIds`.
+   */
+  cardVisibleFieldIds: string[];
   columnWidths: Record<string, number>;
   boardFieldId?: string | null;
   coverField?: string | null;
@@ -248,10 +254,43 @@ export const DEFAULT_DATAGRID_VIEW_CONFIG: DatagridViewConfig = {
   sorts: [],
   groupBy: null,
   visibleFieldIds: [],
+  cardVisibleFieldIds: [],
   columnWidths: {},
   boardFieldId: null,
   coverField: null,
 };
+
+/**
+ * Persisted id list meaning “hide every property field” (title-only cards /
+ * columns). Distinct from `[]`, which still means “show all”.
+ */
+const NONE_VISIBLE_FIELD_ID = "__none__";
+
+/** Canonical stored value for the title-only / no-fields sentinel. */
+export const NONE_VISIBLE_FIELD_IDS: string[] = [NONE_VISIBLE_FIELD_ID];
+
+/** True when the id list is the title-only / no-fields sentinel. */
+export function isNoneVisibleFieldIds(ids: string[]): boolean {
+  return ids.length === 1 && ids[0] === NONE_VISIBLE_FIELD_ID;
+}
+
+/**
+ * Apply a view's visible-id list to the schema field list.
+ * - `[]` means all fields in schema order (legacy + default).
+ * - {@link NONE_VISIBLE_FIELD_IDS} means no property fields (title-only).
+ * - Otherwise returns those ids that still exist, in list order.
+ */
+export function selectVisibleFields(
+  fields: DatagridField[],
+  visibleFieldIds: string[],
+): DatagridField[] {
+  if (visibleFieldIds.length === 0) return fields;
+  if (isNoneVisibleFieldIds(visibleFieldIds)) return [];
+  const byId = new Map(fields.map((field) => [field.id, field]));
+  return visibleFieldIds
+    .map((id) => byId.get(id))
+    .filter((field): field is DatagridField => field !== undefined);
+}
 
 const FIELD_TYPES = new Set<string>([
   "text",
@@ -290,6 +329,11 @@ function isPropertyValue(value: unknown): value is DatagridPropertyValue {
       (value.every((item) => typeof item === "string") ||
         value.every(isRelationRef)))
   );
+}
+
+function parseStringIds(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((id): id is string => typeof id === "string");
 }
 
 function parseFilters(raw: unknown): DatagridFilter[] {
@@ -378,14 +422,19 @@ export function parseDatagridViewConfig(raw: unknown): DatagridViewConfig {
     row.layout === "gallery" || row.layout === "board" || row.layout === "table"
       ? row.layout
       : DEFAULT_DATAGRID_VIEW_CONFIG.layout;
+  const visibleFieldIds = parseStringIds(row.visibleFieldIds);
+  // Missing cardVisibleFieldIds falls back to column visibility so pre-split
+  // configs keep the same hides on cards; an explicit [] means all card fields.
+  const cardVisibleFieldIds = Array.isArray(row.cardVisibleFieldIds)
+    ? parseStringIds(row.cardVisibleFieldIds)
+    : visibleFieldIds;
   return {
     layout,
     filters: parseFilters(row.filters),
     sorts: parseSorts(row.sorts),
     groupBy: typeof row.groupBy === "string" ? row.groupBy : null,
-    visibleFieldIds: Array.isArray(row.visibleFieldIds)
-      ? row.visibleFieldIds.filter((id): id is string => typeof id === "string")
-      : [],
+    visibleFieldIds,
+    cardVisibleFieldIds,
     columnWidths:
       typeof row.columnWidths === "object" &&
       row.columnWidths !== null &&

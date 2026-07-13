@@ -34,6 +34,13 @@ interface CoverCardProps {
    * feature-specific data shape.
    */
   footerExtra?: ReactNode;
+  /**
+   * Optional media-area control (e.g. a calm cover upload). Rendered as a
+   * sibling of the open button — never nested inside it — so the control stays
+   * keyboard-reachable without nesting interactive elements. Visibility follows
+   * card hover / focus-within, matching PageCover.
+   */
+  mediaOverlay?: ReactNode;
 }
 
 function CoverCardComponent({
@@ -46,6 +53,7 @@ function CoverCardComponent({
   actions,
   aspect = "book",
   footerExtra,
+  mediaOverlay,
 }: CoverCardProps) {
   const label = title || "Untitled";
   const subtitleText = subtitle?.trim() || null;
@@ -98,6 +106,18 @@ function CoverCardComponent({
           </span>
         </div>
       </button>
+      {mediaOverlay ? (
+        <div
+          data-testid="cover-card-media-overlay"
+          className={cn(
+            "absolute left-1.5 top-1.5 z-10 opacity-0 motion-safe:transition-opacity motion-reduce:transition-none",
+            "pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto",
+            "group-hover:opacity-100 group-focus-within:opacity-100",
+          )}
+        >
+          {mediaOverlay}
+        </div>
+      ) : null}
       {actionsList ? (
         <CoverCardActions actions={actionsList} label={label} />
       ) : null}
