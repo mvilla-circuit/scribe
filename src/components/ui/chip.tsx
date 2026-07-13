@@ -19,8 +19,8 @@ const REMOVE_BUTTON_BASE =
 const REMOVE_BUTTON_ALWAYS =
   "size-3.5 transition-opacity hover:opacity-70 motion-reduce:transition-none";
 
-const REMOVE_REVEAL_TRANSITION =
-  "transition-[max-width,opacity] duration-150 ease-out motion-reduce:transition-none";
+const REMOVE_REVEAL_BASE =
+  "size-3.5 transition-[max-width,opacity] duration-150 ease-out motion-reduce:transition-none";
 
 /**
  * Collapse at rest; expand on chip hover/focus (and when the control itself is
@@ -151,8 +151,7 @@ export function RemovableChip({
         className={cn(
           REMOVE_BUTTON_BASE,
           removeReveal === "always" && REMOVE_BUTTON_ALWAYS,
-          removeReveal === "hover" && REMOVE_REVEAL_TRANSITION,
-          removeReveal === "hover" && "size-3.5",
+          removeReveal === "hover" && REMOVE_REVEAL_BASE,
           removeClassName,
           // Collapse classes come last so the rest-state (max-w-0/opacity-0)
           // always wins over any width/opacity in `removeClassName`.
