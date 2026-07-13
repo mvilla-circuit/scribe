@@ -5,10 +5,49 @@ on:
     branches: [main]
   pull_request:
 
+# Cancel superseded runs on the same PR (or ref) as new pushes arrive. Main
+# pushes are allowed to finish so we never abandon a run that gates a release.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# dorny/paths-filter reads the PR's changed files via the API on private repos.
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
+  # Detects which areas a PR touches so the expensive Rust/macOS jobs can be
+  # skipped on frontend-only changes. Runs on every event (incl. main pushes) so
+  # it is never "skipped" — a skipped `needs` dependency would otherwise cascade
+  # and skip the jobs below. On non-PR events its outputs are ignored (the
+  # downstream `if` short-circuits on `github.event_name`), so main pushes always
+  # run the full matrix regardless of what paths-filter computes there.
+  changes:
+    name: Detect changed areas
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      rust: ${{ steps.filter.outputs.rust }}
+      tauri: ${{ steps.filter.outputs.tauri }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            rust:
+              - 'src-tauri/**'
+            tauri:
+              - 'src-tauri/**'
+              - 'package.json'
+              - 'package-lock.json'
+
   web:
     name: Typecheck, lint, circular, dead code, format & build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
 
@@ -44,6 +83,7 @@ jobs:
   e2e:
     name: Playwright E2E
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
 
@@ -55,14 +95,34 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright browsers
+      # Cache the browser binaries (~150MB download) keyed on the exact
+      # Playwright version so a version bump busts the cache.
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      # On a cache hit the browser binaries are restored but the apt system
+      # libraries from `--with-deps` are NOT — they must be reinstalled each run.
+      - name: Install Playwright browsers (cache miss)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright system deps (cache hit)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
 
       - name: Run end-to-end tests
         run: npm run e2e
 
       - name: Upload Playwright report
-        if: ${{ !cancelled() }}
+        if: ${{ failure() }}
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
@@ -71,7 +131,11 @@ jobs:
 
   rust:
     name: Rust fmt & clippy
+    needs: changes
+    # Always run on main pushes; on PRs only when Rust sources changed.
+    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.rust == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: src-tauri
@@ -108,7 +172,12 @@ jobs:
 
   tauri-build:
     name: Tauri build (macOS)
+    needs: changes
+    # macOS runners bill at 10x, so skip on frontend-only PRs. Always run on main
+    # pushes and whenever Rust/Tauri or dependency manifests change.
+    if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.tauri == 'true' }}
     runs-on: macos-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
 
@@ -134,3 +203,31 @@ jobs:
       # tauri.conf.json. --no-bundle skips installer/bundle generation.
       - name: Build Tauri app (no bundle)
         run: npm run tauri build -- --no-bundle
+
+  # Single stable status that summarizes the matrix. Safe to make a required
+  # check later: it passes when every required job succeeded or was legitimately
+  # skipped, and fails if any of them failed or was cancelled.
+  ci-success:
+    name: CI success
+    if: ${{ always() }}
+    needs: [changes, web, e2e, rust, tauri-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check required job results
+        run: |
+          for entry in \
+            "changes:${{ needs.changes.result }}" \
+            "web:${{ needs.web.result }}" \
+            "e2e:${{ needs.e2e.result }}" \
+            "rust:${{ needs.rust.result }}" \
+            "tauri-build:${{ needs.tauri-build.result }}"; do
+            name="${entry%%:*}"
+            status="${entry##*:}"
+            echo "$name: $status"
+            if [ "$status" = "failure" ] || [ "$status" = "cancelled" ]; then
+              echo "::error::Required job '$name' did not pass ($status)"
+              exit 1
+            fi
+          done
+          echo "All required jobs passed or were skipped."
