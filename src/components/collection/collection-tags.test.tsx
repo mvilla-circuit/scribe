@@ -272,6 +272,52 @@ describe("CollectionTags", () => {
     expect(onRecolor).toHaveBeenCalledWith("t1", "moss");
   });
 
+  it("hides Add tag at rest when tags are assigned", () => {
+    renderWithProviders(
+      <CollectionTags
+        tags={[{ id: "t1", name: "Fantasy", color: "sky" }]}
+        onAdd={vi.fn()}
+        onRemove={vi.fn()}
+        onRecolor={vi.fn()}
+        onRename={vi.fn()}
+      />,
+    );
+
+    const addButton = screen.getByRole("button", { name: "Add tag" });
+
+    expect(addButton).toHaveClass("opacity-0");
+    expect(addButton).toHaveClass("max-w-0");
+    expect(addButton).toHaveClass("overflow-hidden");
+  });
+
+  it("Add tag reveal classes include masthead hover focus-within and open", () => {
+    renderWithProviders(
+      <CollectionTags
+        tags={[{ id: "t1", name: "Fantasy", color: "sky" }]}
+        onAdd={vi.fn()}
+        onRemove={vi.fn()}
+        onRecolor={vi.fn()}
+        onRename={vi.fn()}
+      />,
+    );
+
+    const addButton = screen.getByRole("button", { name: "Add tag" });
+
+    expect(addButton.className).toMatch(/group-hover\/masthead:max-w-/);
+    expect(addButton.className).toMatch(/group-hover\/masthead:opacity-100/);
+    expect(addButton.className).toMatch(/group-focus-within\/masthead:max-w-/);
+    expect(addButton.className).toMatch(
+      /group-focus-within\/masthead:opacity-100/,
+    );
+    expect(addButton.className).toMatch(/focus-visible:max-w-/);
+    expect(addButton.className).toMatch(/focus-visible:opacity-100/);
+    expect(addButton.className).toMatch(/data-\[state=open\]:max-w-/);
+    expect(addButton.className).toMatch(/data-\[state=open\]:opacity-100/);
+    expect(addButton.className).toMatch(/duration-150/);
+    expect(addButton.className).toMatch(/ease-out/);
+    expect(addButton).toHaveClass("motion-reduce:transition-none");
+  });
+
   it("removes via the hover X on the chip", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const onRemove = vi.fn();
