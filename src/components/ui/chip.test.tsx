@@ -124,8 +124,13 @@ describe("RemovableChip", () => {
     );
     expect(removeButton.className).toMatch(/focus-visible:max-w-/);
     expect(removeButton.className).toMatch(/focus-visible:opacity-100/);
-    expect(shell?.className).toMatch(/group-hover\/chip:pr-/);
-    expect(shell?.className).toMatch(/group-focus-within\/chip:pr-/);
+    // Shell padding/gap must react to the shell's OWN hover/focus, not
+    // group-hover/chip (which only targets descendants, never the group itself).
+    expect(shell?.className).toMatch(/(?<!group-)hover:gap-/);
+    expect(shell?.className).toMatch(/(?<!group-)hover:pr-/);
+    expect(shell?.className).toMatch(/focus-within:gap-/);
+    expect(shell?.className).toMatch(/focus-within:pr-/);
+    expect(shell?.className).not.toMatch(/group-hover\/chip:/);
   });
 
   it("always mode keeps full-size remove chrome", () => {
