@@ -148,4 +148,16 @@ describe("DatagridRowFull Edit Fields", () => {
     );
     expect(screen.getByText("Number")).toBeInTheDocument();
   });
+
+  it("places Edit Fields after the property list", () => {
+    renderWithProviders(<DatagridRowFull datagridId={DGID} rowId={ROWID} />, {
+      client: seed(),
+    });
+    const fieldLabel = screen.getByText("Notes");
+    const editFields = screen.getByRole("button", { name: "Edit Fields" });
+    expect(
+      fieldLabel.compareDocumentPosition(editFields) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
 });

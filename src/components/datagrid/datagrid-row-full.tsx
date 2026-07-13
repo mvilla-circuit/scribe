@@ -142,9 +142,6 @@ export function DatagridRowFull({
         </Masthead>
 
         <div className="mt-6">
-          <div className="mb-2">
-            <DatagridRowEditFields datagridId={datagridId} fields={fields} />
-          </div>
           {fields.length > 0 && (
             <DatagridRowProperties
               fields={fields}
@@ -155,6 +152,9 @@ export function DatagridRowFull({
               onPatch={patchProperty}
             />
           )}
+          <div className={fields.length > 0 ? "mt-2" : undefined}>
+            <DatagridRowEditFields datagridId={datagridId} fields={fields} />
+          </div>
         </div>
 
         <div

@@ -134,9 +134,6 @@ function RowPanelContent({
             style={{ fontFamily: "var(--font-display)" }}
           />
           <div className={styles.propertiesClassName}>
-            <div className="mb-2">
-              <DatagridRowEditFields datagridId={datagridId} fields={fields} />
-            </div>
             <DatagridRowProperties
               fields={fields}
               properties={properties}
@@ -145,6 +142,9 @@ function RowPanelContent({
               relationTargets={relationTargets}
               onPatch={patchProperty}
             />
+            <div className={fields.length > 0 ? "mt-2" : undefined}>
+              <DatagridRowEditFields datagridId={datagridId} fields={fields} />
+            </div>
           </div>
           <div
             className={styles.editorClassName}

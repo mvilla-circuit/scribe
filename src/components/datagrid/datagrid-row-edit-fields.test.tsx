@@ -150,4 +150,20 @@ describe("Edit Fields on modal and split rows", () => {
       within(panel).getByRole("button", { name: "Edit Fields" }),
     ).toBeInTheDocument();
   });
+
+  it("places Edit Fields after the property list on the modal", () => {
+    renderWithProviders(
+      <DatagridRowModal datagridId={DGID} rowId={ROWID} onClose={vi.fn()} />,
+      { client: seed() },
+    );
+    const rowDialog = screen.getByRole("dialog");
+    const fieldLabel = within(rowDialog).getByText("Notes");
+    const editFields = within(rowDialog).getByRole("button", {
+      name: "Edit Fields",
+    });
+    expect(
+      fieldLabel.compareDocumentPosition(editFields) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
 });

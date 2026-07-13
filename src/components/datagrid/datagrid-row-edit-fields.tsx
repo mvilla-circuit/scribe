@@ -6,7 +6,8 @@ import type { DatagridField } from "@/lib/datagrid-schema";
 import { FieldManager } from "./datagrid-field-manager";
 
 /**
- * Quiet "Edit Fields" control for opened-row surfaces. Owns local FieldManager
+ * Quiet "Edit Fields" control for opened-row surfaces. Renders after the
+ * property list so schema chrome stays with properties. Owns local FieldManager
  * dialog state so schema edits still work when MainPane unmounts DatagridPage
  * (full open mode). Persists through `useUpdateDatagrid({ fields })`.
  */
