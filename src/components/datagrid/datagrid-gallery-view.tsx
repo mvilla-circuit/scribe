@@ -140,7 +140,7 @@ export function DatagridGalleryView({
 
       <DashedAddTile
         onClick={onCreateRow}
-        className="aspect-[4/3] min-h-32 flex-col gap-1.5"
+        className="h-full min-h-32 flex-col gap-1.5"
       >
         <span className="text-lg leading-none" aria-hidden="true">
           +

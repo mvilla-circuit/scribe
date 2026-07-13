@@ -102,6 +102,21 @@ describe("DatagridGalleryView", () => {
     expect(onCreateRow).toHaveBeenCalled();
   });
 
+  it("stretches the New card tile to the row height (not media aspect alone)", () => {
+    renderWithProviders(
+      <DatagridGalleryView
+        rows={rows}
+        fields={fields}
+        onOpenRow={vi.fn()}
+        onCreateRow={vi.fn()}
+      />,
+    );
+    const addTile = screen.getByRole("button", { name: "New card" });
+    expect(addTile).toHaveClass("h-full");
+    expect(addTile).not.toHaveClass("aspect-[4/3]");
+    expect(screen.getByTestId("cover-card")).toHaveClass("h-full");
+  });
+
   it("resolves a relation chip's title via relationTargets, not a raw id", () => {
     const relationRows: DatagridDisplayRow[] = [
       {
