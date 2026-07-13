@@ -139,12 +139,17 @@ function CardFieldValue({
   relationTargets?: RelationTargets;
 }) {
   switch (field.type) {
+    case "url":
+      // Plain text — CoverCard wraps the card in a <button>, so nested <a>
+      // from CellValue would be invalid HTML.
+      return typeof value === "string" && value !== "" ? (
+        <ScalarLine>{value}</ScalarLine>
+      ) : null;
     case "relation":
     case "select":
     case "status":
     case "multi_select":
     case "checkbox":
-    case "url":
       return (
         <CellValue
           field={field}

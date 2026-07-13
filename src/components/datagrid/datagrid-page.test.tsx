@@ -113,6 +113,9 @@ describe("DatagridPage", () => {
       screen.getByRole("button", { name: "New card" }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "New row" })).toBeNull();
+    expect(
+      screen.getByText(/Add a card to start building records/),
+    ).toBeInTheDocument();
   });
 
   it("uses New card on the empty-state CTA for board layout", () => {
@@ -122,6 +125,9 @@ describe("DatagridPage", () => {
       screen.getByRole("button", { name: "New card" }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "New row" })).toBeNull();
+    expect(
+      screen.getByText(/Add a card to start building records/),
+    ).toBeInTheDocument();
   });
 
   it("prompts to add a group field on a board view without one", () => {
