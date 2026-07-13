@@ -4,12 +4,11 @@ import { NavHistoryControls } from "@/components/book/nav-history-controls";
 import { EditableText } from "@/components/ui/editable-text";
 import { Masthead } from "@/components/ui/masthead";
 import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
-import { useCollections } from "@/data/collections";
 import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";
-import { useUIStore } from "@/store/ui";
 
 import { DatagridRowBody } from "./datagrid-row-body";
+import { DatagridRowBreadcrumbs } from "./datagrid-row-breadcrumbs";
 import { DatagridRowEditFields } from "./datagrid-row-edit-fields";
 import { RowOpenModeControl } from "./datagrid-row-open-mode-control";
 import { DatagridRowProperties } from "./datagrid-row-properties";
@@ -28,7 +27,6 @@ export function DatagridRowFull({
   rowId: string;
 }) {
   const {
-    datagrid,
     row,
     fields,
     properties,
@@ -40,14 +38,7 @@ export function DatagridRowFull({
     patchProperty,
     isLoading,
   } = useDatagridRowDetail(datagridId, rowId);
-  const collectionsQuery = useCollections();
-  const navigateTo = useUIStore((s) => s.navigateTo);
-  const setActiveCollection = useUIStore((s) => s.setActiveCollection);
   const [saveState, setSaveState] = useState<SaveState>("idle");
-
-  const collection =
-    collectionsQuery.data?.find((c) => c.id === datagrid?.collection_id) ??
-    null;
 
   const bar = (
     <nav
@@ -56,29 +47,7 @@ export function DatagridRowFull({
       className="sticky top-0 z-20 flex items-center gap-1 bg-bg px-8 py-3 text-sm text-muted"
     >
       <NavHistoryControls />
-      {collection && (
-        <>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveCollection(collection.id);
-            }}
-            className="min-w-0 shrink truncate rounded-sm px-1 outline-none hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {collection.name || "Collection"}
-          </button>
-          <span className="shrink-0 select-none text-muted/50">/</span>
-        </>
-      )}
-      <button
-        type="button"
-        onClick={() => {
-          navigateTo({ datagridId });
-        }}
-        className="min-w-0 shrink truncate rounded-sm px-1 outline-none hover:text-text focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        {datagrid?.name || "Datagrid"}
-      </button>
+      <DatagridRowBreadcrumbs datagridId={datagridId} label={false} />
       <span className="ml-auto flex shrink-0 items-center gap-2">
         <SaveStatus state={saveState} />
         <RowOpenModeControl />

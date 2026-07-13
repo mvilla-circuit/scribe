@@ -9,6 +9,7 @@ import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";
 
 import { DatagridRowBody } from "./datagrid-row-body";
+import { DatagridRowBreadcrumbs } from "./datagrid-row-breadcrumbs";
 import { DatagridRowEditFields } from "./datagrid-row-edit-fields";
 import { RowOpenModeControl } from "./datagrid-row-open-mode-control";
 import { DatagridRowProperties } from "./datagrid-row-properties";
@@ -48,18 +49,21 @@ function RowPanelChrome({
   saveState,
   onClose,
   headerClassName,
+  datagridId,
   children,
 }: {
   saveState: SaveState;
   onClose: () => void;
   headerClassName: string;
+  datagridId: string;
   children: ReactNode;
 }) {
   return (
     <>
       <div className={headerClassName}>
-        <SaveStatus state={saveState} />
-        <div className="ml-auto flex items-center gap-1.5">
+        <DatagridRowBreadcrumbs datagridId={datagridId} />
+        <span className="ml-auto flex shrink-0 items-center gap-1.5">
+          <SaveStatus state={saveState} />
           <RowOpenModeControl />
           <button
             type="button"
@@ -69,7 +73,7 @@ function RowPanelChrome({
           >
             <X className="size-4" aria-hidden="true" />
           </button>
-        </div>
+        </span>
       </div>
       {children}
     </>
@@ -112,6 +116,7 @@ function RowPanelContent({
         saveState={saveState}
         onClose={onClose}
         headerClassName={styles.headerClassName}
+        datagridId={datagridId}
       >
         <PageCover
           coverUrl={coverUrl}
