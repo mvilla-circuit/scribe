@@ -4,6 +4,7 @@ import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  allTaggablesKey,
   booksKey,
   collectionsKey,
   datagridsKey,
@@ -73,6 +74,8 @@ function seed() {
   client.setQueryData(whiteboardsKey, []);
   client.setQueryData(tagsKey, []);
   client.setQueryData(taggablesKey("collection"), []);
+  client.setQueryData(taggablesKey("book"), []);
+  client.setQueryData(allTaggablesKey, []);
   return client;
 }
 
@@ -141,15 +144,18 @@ describe("CollectionPage", () => {
 
   it("renders the tag row below the description", () => {
     const client = seed();
-    client.setQueryData(tagsKey, [{ id: "tag-1", name: "Epic", color: "sky" }]);
-    client.setQueryData(taggablesKey("collection"), [
-      {
+    const tags = [makeTag({ id: "tag-1", name: "Epic", color: "sky" })];
+    const taggables = [
+      makeTaggable({
         id: "tg-1",
         tag_id: "tag-1",
         target_type: "collection",
         target_id: "c1",
-      },
-    ]);
+      }),
+    ];
+    client.setQueryData(tagsKey, tags);
+    client.setQueryData(taggablesKey("collection"), taggables);
+    client.setQueryData(allTaggablesKey, taggables);
 
     renderWithProviders(<CollectionPage collectionId="c1" />, { client });
 
@@ -161,26 +167,56 @@ describe("CollectionPage", () => {
     ).toBeTruthy();
   });
 
-  it("shows tags only on collection cards, never on books or docs", () => {
+  it("shows tags on collection and book cards, never on docs", () => {
     const client = seed();
-    client.setQueryData(tagsKey, [{ id: "tag-1", name: "Epic", color: "sky" }]);
-    // Assign the tag both to the child collection ("Side Tales", id "c2")
-    // and — as if by coincidence — to the book's id, to prove the gallery
-    // wiring keys off each child's *kind*, not merely whether some taggable
-    // row happens to reference its id.
+    client.setQueryData(tagsKey, [
+      makeTag({ id: "tag-1", name: "Epic", color: "sky" }),
+      makeTag({ id: "tag-2", name: "Draft", color: "moss" }),
+    ]);
+    // Collection-typed row pointing at the book's id must not paint the book
+    // card — gallery wiring keys off each child's kind + matching taggables
+    // cache, not merely whether some row references its id.
     client.setQueryData(taggablesKey("collection"), [
-      {
+      makeTaggable({
         id: "tg-1",
         tag_id: "tag-1",
         target_type: "collection",
         target_id: "c2",
-      },
-      {
+      }),
+      makeTaggable({
         id: "tg-2",
         tag_id: "tag-1",
         target_type: "collection",
         target_id: "b1",
-      },
+      }),
+    ]);
+    client.setQueryData(taggablesKey("book"), [
+      makeTaggable({
+        id: "tg-3",
+        tag_id: "tag-2",
+        target_type: "book",
+        target_id: "b1",
+      }),
+    ]);
+    client.setQueryData(allTaggablesKey, [
+      makeTaggable({
+        id: "tg-1",
+        tag_id: "tag-1",
+        target_type: "collection",
+        target_id: "c2",
+      }),
+      makeTaggable({
+        id: "tg-2",
+        tag_id: "tag-1",
+        target_type: "collection",
+        target_id: "b1",
+      }),
+      makeTaggable({
+        id: "tg-3",
+        tag_id: "tag-2",
+        target_type: "book",
+        target_id: "b1",
+      }),
     ]);
 
     renderWithProviders(<CollectionPage collectionId="c1" />, { client });
@@ -190,11 +226,62 @@ describe("CollectionPage", () => {
     });
     expect(within(collectionCard).getByText("Epic")).toBeInTheDocument();
 
-    const bookCard = screen.getByRole("button", { name: "First Light" });
+    const bookCard = screen.getByRole("button", { name: /^First Light/ });
+    expect(within(bookCard).getByText("Draft")).toBeInTheDocument();
     expect(within(bookCard).queryByText("Epic")).not.toBeInTheDocument();
 
     const docCard = screen.getByRole("button", { name: "Opening scene" });
     expect(within(docCard).queryByText("Epic")).not.toBeInTheDocument();
+    expect(within(docCard).queryByText("Draft")).not.toBeInTheDocument();
+  });
+
+  it("shows every assigned tag on gallery cards without a +N overflow", () => {
+    const client = seed();
+    client.setQueryData(tagsKey, [
+      makeTag({ id: "tag-1", name: "Epic", color: "sky" }),
+      makeTag({ id: "tag-2", name: "Draft", color: "moss" }),
+      makeTag({ id: "tag-3", name: "Series", color: "clay" }),
+      makeTag({ id: "tag-4", name: "Romance", color: "plum" }),
+    ]);
+    const collectionTaggables = [
+      makeTaggable({
+        id: "tg-1",
+        tag_id: "tag-1",
+        target_type: "collection",
+        target_id: "c2",
+      }),
+      makeTaggable({
+        id: "tg-2",
+        tag_id: "tag-2",
+        target_type: "collection",
+        target_id: "c2",
+      }),
+      makeTaggable({
+        id: "tg-3",
+        tag_id: "tag-3",
+        target_type: "collection",
+        target_id: "c2",
+      }),
+      makeTaggable({
+        id: "tg-4",
+        tag_id: "tag-4",
+        target_type: "collection",
+        target_id: "c2",
+      }),
+    ];
+    client.setQueryData(taggablesKey("collection"), collectionTaggables);
+    client.setQueryData(allTaggablesKey, collectionTaggables);
+
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+
+    const collectionCard = screen.getByRole("button", {
+      name: /^Side Tales/,
+    });
+    expect(within(collectionCard).getByText("Epic")).toBeInTheDocument();
+    expect(within(collectionCard).getByText("Draft")).toBeInTheDocument();
+    expect(within(collectionCard).getByText("Series")).toBeInTheDocument();
+    expect(within(collectionCard).getByText("Romance")).toBeInTheDocument();
+    expect(within(collectionCard).queryByText(/^\+/)).not.toBeInTheDocument();
   });
 
   it("shows every tag on a child collection cover card with no overflow count", () => {

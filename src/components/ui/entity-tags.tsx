@@ -1,34 +1,46 @@
 import { Plus, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  type SyntheticEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
-import { RemovableChip } from "@/components/ui/chip";
+import { DEFAULT_SWATCH, swatchDotStyle } from "@/lib/swatches";
+import { matchesNormalizedQuery } from "@/lib/text-match";
+import { cn, resolveEditedValue } from "@/lib/utils";
+
+import { RemovableChip } from "./chip";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { MorandiSwatchGrid } from "@/components/ui/morandi-swatch-grid";
-import { DEFAULT_SWATCH, swatchDotStyle } from "@/lib/swatches";
-import { matchesNormalizedQuery } from "@/lib/text-match";
-import { cn, resolveEditedValue } from "@/lib/utils";
+} from "./dropdown-menu";
+import { Input } from "./input";
+import { MorandiSwatchGrid } from "./morandi-swatch-grid";
 
-import { type TagChipData } from "./tag-chip";
+/** Minimal tag data rendered by an entity tag surface. */
+interface EntityTag {
+  id: string;
+  name: string;
+  color: string | null;
+}
 
-/** A tag assigned to (or assignable to) a collection. */
-type CollectionTag = TagChipData;
-
-export interface CollectionTagsProps {
-  tags: CollectionTag[];
+/** Props for the shared presentational entity tag editor. */
+export interface EntityTagsProps {
+  tags: EntityTag[];
   onAdd: (name: string, color: string) => void;
   onRemove: (tagId: string) => void;
   onRecolor: (tagId: string, color: string) => void;
   onRename: (tagId: string, name: string) => void;
-  /** Optional suggestions for typeahead from existing library tags. */
-  suggestions?: CollectionTag[];
-  /** Deletes a library tag from the suggestions list (and everywhere it was used). */
+  /** Accessible label for the root tag group. */
+  ariaLabel?: string;
+  /** Optional suggestions for typeahead from existing tags. */
+  suggestions?: EntityTag[];
+  /** Deletes a tag from the suggestions list and its other uses. */
   onDeleteSuggestion?: (tagId: string) => void;
 }
 
@@ -38,33 +50,34 @@ function preventCloseAutoFocus(event: Event): void {
   event.preventDefault();
 }
 
+function stopMenuEvent(event: SyntheticEvent): void {
+  event.preventDefault();
+  event.stopPropagation();
+}
+
 /**
- * The masthead's tag row: a chip per assigned tag (click opens the shared
- * name + color editor; hover reveals a quick-remove X) and a trailing
- * "Add tag" control that opens the same editor shape for creates.
+ * A shared entity tag row with editable chips and a trailing add control.
  */
-export function CollectionTags({
+export function EntityTags({
   tags,
   onAdd,
   onRemove,
   onRecolor,
   onRename,
+  ariaLabel = "Tags",
   suggestions = [],
   onDeleteSuggestion,
-}: CollectionTagsProps) {
-  const assignedNames = useMemo(
-    () => new Set(tags.map((tag) => tag.name.toLowerCase())),
-    [tags],
-  );
-  const availableSuggestions = useMemo(
-    () =>
-      suggestions.filter((tag) => !assignedNames.has(tag.name.toLowerCase())),
-    [suggestions, assignedNames],
-  );
+}: EntityTagsProps) {
+  const availableSuggestions = useMemo(() => {
+    const assignedNames = new Set(tags.map((tag) => tag.name.toLowerCase()));
+    return suggestions.filter(
+      (tag) => !assignedNames.has(tag.name.toLowerCase()),
+    );
+  }, [suggestions, tags]);
 
   return (
     <div
-      aria-label="Collection tags"
+      aria-label={ariaLabel}
       className="mt-2 flex flex-wrap items-center gap-1.5"
     >
       {tags.map((tag) => (
@@ -92,7 +105,7 @@ export function CollectionTags({
 }
 
 interface TagChipMenuProps {
-  tag: CollectionTag;
+  tag: EntityTag;
   onRecolor: (color: string) => void;
   onRename: (name: string) => void;
   onRemove: () => void;
@@ -156,7 +169,7 @@ const ADD_TAG_REVEAL =
   "opacity-0 transition-opacity motion-reduce:transition-none focus-visible:opacity-100 group-hover/masthead:opacity-100 group-focus-within/masthead:opacity-100 data-[state=open]:opacity-100";
 
 interface AddTagControlProps {
-  suggestions: CollectionTag[];
+  suggestions: EntityTag[];
   onAdd: (name: string, color: string) => void;
   onDeleteSuggestion?: (tagId: string) => void;
 }
@@ -232,10 +245,10 @@ interface TagEditorPanelProps {
   color: string;
   colorGroupLabel: string;
   colorButtonLabel: (hue: string) => string;
-  suggestions?: CollectionTag[];
+  suggestions?: EntityTag[];
   onCommitName: (name: string) => void;
   onPickColor: (hue: string) => void;
-  onPickSuggestion?: (tag: CollectionTag) => void;
+  onPickSuggestion?: (tag: EntityTag) => void;
   onDeleteSuggestion?: (tagId: string) => void;
   onCancel: () => void;
 }
@@ -274,21 +287,19 @@ function TagEditorPanel({
         ref={inputRef}
         aria-label={nameLabel}
         value={draft}
-        onChange={(e) => {
-          setDraft(e.target.value);
+        onChange={(event) => {
+          setDraft(event.target.value);
         }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            // A blank or unchanged name settles the same way an inline rename
-            // does: close without a redundant (or empty) commit.
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
             const outcome = resolveEditedValue(draft, {
               previous: initialName,
             });
             if (outcome.commit) onCommitName(outcome.value);
             else onCancel();
-          } else if (e.key === "Escape") {
-            e.preventDefault();
+          } else if (event.key === "Escape") {
+            event.preventDefault();
             onCancel();
           }
         }}
@@ -329,13 +340,9 @@ function TagEditorPanel({
                   <button
                     type="button"
                     aria-label={`Delete ${tag.name}`}
-                    onPointerDown={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                    }}
+                    onPointerDown={stopMenuEvent}
                     onClick={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
+                      stopMenuEvent(event);
                       onDeleteSuggestion(tag.id);
                     }}
                     className="mr-1 flex size-5 shrink-0 items-center justify-center rounded-md text-muted outline-none hover:bg-elevated hover:text-text focus-visible:ring-2 focus-visible:ring-ring"

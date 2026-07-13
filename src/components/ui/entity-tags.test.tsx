@@ -2,9 +2,8 @@ import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { EntityTags } from "@/components/ui/entity-tags";
 import { renderWithProviders } from "@/test/render-with-query";
-
-import { CollectionTags } from "./collection-tags";
 
 // Radix dropdowns probe pointer-capture / scroll focused items into view;
 // jsdom implements neither, so polyfill them for the color/remove menu to
@@ -16,10 +15,25 @@ beforeEach(() => {
   Element.prototype.scrollIntoView = vi.fn();
 });
 
-describe("CollectionTags", () => {
+describe("EntityTags", () => {
+  it("uses the provided root aria-label", () => {
+    renderWithProviders(
+      <EntityTags
+        ariaLabel="Book tags"
+        tags={[]}
+        onAdd={vi.fn()}
+        onRemove={vi.fn()}
+        onRecolor={vi.fn()}
+        onRename={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText("Book tags")).toBeInTheDocument();
+  });
+
   it("renders assigned tag chips", () => {
     renderWithProviders(
-      <CollectionTags
+      <EntityTags
         tags={[
           { id: "t1", name: "Fantasy", color: "sky" },
           { id: "t2", name: "Draft", color: "honey" },
@@ -37,7 +51,7 @@ describe("CollectionTags", () => {
 
   it("shows Add tag when none assigned", () => {
     renderWithProviders(
-      <CollectionTags
+      <EntityTags
         tags={[]}
         onAdd={vi.fn()}
         onRemove={vi.fn()}
@@ -52,7 +66,7 @@ describe("CollectionTags", () => {
   it("opens a dropdown with name field and color palette when adding", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     renderWithProviders(
-      <CollectionTags
+      <EntityTags
         tags={[]}
         onAdd={vi.fn()}
         onRemove={vi.fn()}
@@ -80,7 +94,7 @@ describe("CollectionTags", () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const onAdd = vi.fn();
     renderWithProviders(
-      <CollectionTags
+      <EntityTags
         tags={[]}
         onAdd={onAdd}
         onRemove={vi.fn()}
@@ -101,7 +115,7 @@ describe("CollectionTags", () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const onAdd = vi.fn();
     renderWithProviders(
-      <CollectionTags
+      <EntityTags
         tags={[]}
         onAdd={onAdd}
         onRemove={vi.fn()}
@@ -121,7 +135,7 @@ describe("CollectionTags", () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const onAdd = vi.fn();
     renderWithProviders(
-      <CollectionTags
+      <EntityTags
         tags={[]}
         onAdd={onAdd}
         onRemove={vi.fn()}
@@ -146,7 +160,7 @@ describe("CollectionTags", () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const onDeleteSuggestion = vi.fn();
     renderWithProviders(
-      <CollectionTags
+      <EntityTags
         tags={[]}
         onAdd={vi.fn()}
         onRemove={vi.fn()}
@@ -166,7 +180,7 @@ describe("CollectionTags", () => {
   it("opens the same editor dropdown when clicking an existing tag", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     renderWithProviders(
-      <CollectionTags
+      <EntityTags
         tags={[{ id: "t1", name: "Fantasy", color: "sky" }]}
         onAdd={vi.fn()}
         onRemove={vi.fn()}
@@ -190,7 +204,7 @@ describe("CollectionTags", () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const onRename = vi.fn();
     renderWithProviders(
-      <CollectionTags
+      <EntityTags
         tags={[{ id: "t1", name: "Fantasy", color: "sky" }]}
         onAdd={vi.fn()}
         onRemove={vi.fn()}
@@ -212,7 +226,7 @@ describe("CollectionTags", () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const onRename = vi.fn();
     renderWithProviders(
-      <CollectionTags
+      <EntityTags
         tags={[{ id: "t1", name: "Fantasy", color: "sky" }]}
         onAdd={vi.fn()}
         onRemove={vi.fn()}
@@ -236,7 +250,7 @@ describe("CollectionTags", () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const onRename = vi.fn();
     renderWithProviders(
-      <CollectionTags
+      <EntityTags
         tags={[{ id: "t1", name: "Fantasy", color: "sky" }]}
         onAdd={vi.fn()}
         onRemove={vi.fn()}
@@ -255,7 +269,7 @@ describe("CollectionTags", () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const onRecolor = vi.fn();
     renderWithProviders(
-      <CollectionTags
+      <EntityTags
         tags={[{ id: "t1", name: "Fantasy", color: "sky" }]}
         onAdd={vi.fn()}
         onRemove={vi.fn()}
@@ -274,7 +288,7 @@ describe("CollectionTags", () => {
 
   it("hides Add tag at rest when tags are assigned", () => {
     renderWithProviders(
-      <CollectionTags
+      <EntityTags
         tags={[{ id: "t1", name: "Fantasy", color: "sky" }]}
         onAdd={vi.fn()}
         onRemove={vi.fn()}
@@ -292,7 +306,7 @@ describe("CollectionTags", () => {
 
   it("Add tag reveal classes include masthead hover focus-within and open", () => {
     renderWithProviders(
-      <CollectionTags
+      <EntityTags
         tags={[{ id: "t1", name: "Fantasy", color: "sky" }]}
         onAdd={vi.fn()}
         onRemove={vi.fn()}
@@ -318,7 +332,7 @@ describe("CollectionTags", () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const onRemove = vi.fn();
     renderWithProviders(
-      <CollectionTags
+      <EntityTags
         tags={[{ id: "t1", name: "Fantasy", color: "sky" }]}
         onAdd={vi.fn()}
         onRemove={onRemove}

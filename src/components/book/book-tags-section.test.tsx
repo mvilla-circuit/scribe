@@ -11,16 +11,13 @@ import {
   renderWithProviders,
 } from "@/test/render-with-query";
 
-import { CollectionTagsSection } from "./collection-tags-section";
+import { BookTagsSection } from "./book-tags-section";
 
 vi.mock("@/lib/auth", () => ({
   useAuth: () => ({ session: { user: { id: "user-1" } } }),
 }));
 vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 
-// Radix dropdowns probe pointer-capture / scroll focused items into view;
-// jsdom implements neither, so polyfill them for the color/remove menu to
-// open (matches the pattern in row-action-menu.test.tsx).
 beforeEach(() => {
   Element.prototype.hasPointerCapture = () => false;
   Element.prototype.setPointerCapture = vi.fn();
@@ -30,22 +27,27 @@ beforeEach(() => {
 
 function seed() {
   const client = createTestQueryClient();
-  const collectionTaggables = [
-    makeTaggable({ id: "tg-1", tag_id: "tag-1", target_id: "c1" }),
+  const bookTaggables = [
+    makeTaggable({
+      id: "tg-1",
+      tag_id: "tag-1",
+      target_type: "book",
+      target_id: "b1",
+    }),
   ];
   client.setQueryData(tagsKey, [makeTag({ id: "tag-1", name: "Fantasy" })]);
-  client.setQueryData(taggablesKey("collection"), collectionTaggables);
-  client.setQueryData(allTaggablesKey, collectionTaggables);
+  client.setQueryData(taggablesKey("book"), bookTaggables);
+  client.setQueryData(allTaggablesKey, bookTaggables);
   return client;
 }
 
-describe("CollectionTagsSection", () => {
-  it("shows the tags already assigned to this collection", () => {
-    renderWithProviders(<CollectionTagsSection collectionId="c1" />, {
+describe("BookTagsSection", () => {
+  it("shows the tags already assigned to this book", () => {
+    renderWithProviders(<BookTagsSection bookId="b1" />, {
       client: seed(),
     });
 
-    expect(screen.getByLabelText("Collection tags")).toBeInTheDocument();
+    expect(screen.getByLabelText("Book tags")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Fantasy" })).toBeInTheDocument();
   });
 
@@ -63,11 +65,9 @@ describe("CollectionTagsSection", () => {
     const user = userEvent.setup();
     const client = createTestQueryClient();
     client.setQueryData(tagsKey, []);
-    client.setQueryData(taggablesKey("collection"), []);
+    client.setQueryData(taggablesKey("book"), []);
     client.setQueryData(allTaggablesKey, []);
-    renderWithProviders(<CollectionTagsSection collectionId="c1" />, {
-      client,
-    });
+    renderWithProviders(<BookTagsSection bookId="b1" />, { client });
 
     await user.click(screen.getByRole("button", { name: "Add tag" }));
     await user.type(screen.getByLabelText("New tag name"), "Draft");
@@ -86,7 +86,7 @@ describe("CollectionTagsSection", () => {
       ),
     );
     const user = userEvent.setup({ pointerEventsCheck: 0 });
-    renderWithProviders(<CollectionTagsSection collectionId="c1" />, {
+    renderWithProviders(<BookTagsSection bookId="b1" />, {
       client: seed(),
     });
 
@@ -97,31 +97,6 @@ describe("CollectionTagsSection", () => {
       expect(
         screen.queryByRole("button", { name: "Fantasy" }),
       ).not.toBeInTheDocument();
-    });
-  });
-
-  it("recolors a tag through the mutation", async () => {
-    server.use(
-      http.patch(
-        "http://supabase.test/rest/v1/tags",
-        () => new HttpResponse(null, { status: 204 }),
-      ),
-    );
-    const user = userEvent.setup({ pointerEventsCheck: 0 });
-    const client = seed();
-    renderWithProviders(<CollectionTagsSection collectionId="c1" />, {
-      client,
-    });
-
-    await user.click(screen.getByRole("button", { name: "Fantasy" }));
-    await user.click(
-      await screen.findByRole("button", { name: "Moss for Fantasy" }),
-    );
-
-    await waitFor(() => {
-      expect(
-        client.getQueryData<{ id: string; color: string | null }[]>(tagsKey),
-      ).toEqual([expect.objectContaining({ id: "tag-1", color: "moss" })]);
     });
   });
 });

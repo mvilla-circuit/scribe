@@ -62,7 +62,9 @@ import { useCreateEntry, useDeleteEntry, useEntries } from "@/data/entries";
 import { useFolders } from "@/data/folders";
 import { endPositionFor } from "@/data/ordering";
 import {
+  tagsForBook,
   tagsForCollection,
+  useBookTaggables,
   useCollectionTaggables,
   useTags,
 } from "@/data/tags";
@@ -109,6 +111,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   const whiteboardsQuery = useWhiteboards();
   const tagsQuery = useTags();
   const taggablesQuery = useCollectionTaggables();
+  const bookTaggablesQuery = useBookTaggables();
 
   const collections = useMemo(
     () => collectionsQuery.data ?? [],
@@ -129,6 +132,10 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   const taggables = useMemo(
     () => taggablesQuery.data ?? [],
     [taggablesQuery.data],
+  );
+  const bookTaggables = useMemo(
+    () => bookTaggablesQuery.data ?? [],
+    [bookTaggablesQuery.data],
   );
 
   const collection = collections.find((c) => c.id === collectionId) ?? null;
@@ -395,12 +402,17 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
     }
   };
 
-  // Only collections carry tags today; other gallery kinds simply have no
-  // tags prop passed, regardless of what the taggables cache holds.
-  const tagsFor = (child: GalleryChild): GalleryTag[] | undefined =>
-    child.kind === "collection"
-      ? tagsForCollection(tags, taggables, child.id)
-      : undefined;
+  // Collections and books carry tags; other gallery kinds leave the prop off
+  // regardless of what the taggables caches hold.
+  const tagsFor = (child: GalleryChild): GalleryTag[] | undefined => {
+    if (child.kind === "collection") {
+      return tagsForCollection(tags, taggables, child.id);
+    }
+    if (child.kind === "book") {
+      return tagsForBook(tags, bookTaggables, child.id);
+    }
+    return undefined;
+  };
 
   const actionsFor = (child: GalleryChild): RowAction[] => {
     switch (child.kind) {

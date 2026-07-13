@@ -94,6 +94,12 @@ export const datagridViewsKey = (datagridId: string) =>
 /** All library tags for the signed-in user. */
 export const tagsKey = ["tags"] as const;
 
-/** Tag assignments for a given polymorphic target type (e.g. collections). */
+/**
+ * Tag assignments for one polymorphic target type (e.g. `"book"`), or the full
+ * unfiltered list when called with `"all"` for cross-type suggestion ranking.
+ */
 export const taggablesKey = (targetType: string) =>
   ["taggables", targetType] as const;
+
+/** Cache key for every taggable row, used for library-wide recent-use order. */
+export const allTaggablesKey = taggablesKey("all");

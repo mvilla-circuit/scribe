@@ -2,7 +2,7 @@ import { waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
 
-import { taggablesKey, tagsKey } from "@/data/query-keys";
+import { allTaggablesKey, taggablesKey, tagsKey } from "@/data/query-keys";
 import { swatchForIndex } from "@/lib/swatches";
 import { makeTag, makeTaggable } from "@/test/fixtures";
 import { server } from "@/test/msw/server";
@@ -15,9 +15,12 @@ import {
   type Tag,
   type Taggable,
   tagsByRecentUse,
+  tagsForBook,
   tagsForCollection,
+  useAssignBookTag,
   useAssignCollectionTag,
   useDeleteTag,
+  useUnassignBookTag,
   useUnassignCollectionTag,
   useUpdateTagColor,
   useUpdateTagName,
@@ -32,7 +35,89 @@ vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 
 const TAGS_URL = "http://supabase.test/rest/v1/tags";
 const TAGGABLES_URL = "http://supabase.test/rest/v1/taggables";
+const BOOK_TAGGABLES_KEY = taggablesKey("book");
 const COLLECTION_TAGGABLES_KEY = taggablesKey("collection");
+const ALL_TAGGABLES_KEY = allTaggablesKey;
+
+describe("tagsForBook", () => {
+  it("joins book taggables", () => {
+    const tags = [
+      makeTag({ id: "tag-1", name: "Fantasy" }),
+      makeTag({ id: "tag-2", name: "Sci-Fi" }),
+    ];
+    const taggables = [
+      makeTaggable({
+        id: "t1",
+        tag_id: "tag-1",
+        target_type: "book",
+        target_id: "book-1",
+      }),
+      makeTaggable({
+        id: "t2",
+        tag_id: "tag-2",
+        target_type: "book",
+        target_id: "book-2",
+      }),
+    ];
+
+    expect(tagsForBook(tags, taggables, "book-1")).toEqual([tags[0]]);
+  });
+
+  it("returns assigned tags in alphabetical order by name", () => {
+    const tags = [
+      makeTag({ id: "tag-1", name: "Wealthy", position: 1 }),
+      makeTag({ id: "tag-2", name: "New Adult", position: 2 }),
+      makeTag({ id: "tag-3", name: "Thriller", position: 3 }),
+    ];
+    const taggables = [
+      makeTaggable({
+        id: "t1",
+        tag_id: "tag-1",
+        target_type: "book",
+        target_id: "book-1",
+      }),
+      makeTaggable({
+        id: "t2",
+        tag_id: "tag-2",
+        target_type: "book",
+        target_id: "book-1",
+      }),
+      makeTaggable({
+        id: "t3",
+        tag_id: "tag-3",
+        target_type: "book",
+        target_id: "book-1",
+      }),
+    ];
+
+    expect(
+      tagsForBook(tags, taggables, "book-1").map((tag) => tag.name),
+    ).toEqual(["New Adult", "Thriller", "Wealthy"]);
+  });
+
+  it("ignores collection rows with the same id", () => {
+    const tags = [
+      makeTag({ id: "tag-1", name: "Book tag" }),
+      makeTag({ id: "tag-2", name: "Collection tag" }),
+    ];
+    const taggables = [
+      makeTaggable({
+        id: "t1",
+        tag_id: "tag-1",
+        target_type: "book",
+        target_id: "shared-id",
+      }),
+      makeTaggable({
+        id: "t2",
+        tag_id: "tag-2",
+        target_type: "collection",
+        target_id: "shared-id",
+      }),
+    ];
+
+    expect(tagsForBook(tags, taggables, "shared-id")).toEqual([tags[0]]);
+  });
+});
 
 describe("tagsForCollection", () => {
   it("joins tags and taggables to the tags assigned to one collection", () => {
@@ -102,6 +187,189 @@ describe("tagsByRecentUse", () => {
       "old",
       "fresh",
     ]);
+  });
+});
+
+describe("useAssignBookTag", () => {
+  it("creates and assigns", async () => {
+    let insertedTaggable:
+      | { tag_id?: unknown; target_type?: unknown; target_id?: unknown }
+      | undefined;
+    server.use(
+      http.post(TAGS_URL, () => new HttpResponse(null, { status: 201 })),
+      http.post(TAGGABLES_URL, async ({ request }) => {
+        insertedTaggable = (await request.json()) as typeof insertedTaggable;
+        return new HttpResponse(null, { status: 201 });
+      }),
+    );
+
+    const client = createTestQueryClient();
+    client.setQueryData(tagsKey, []);
+    client.setQueryData(BOOK_TAGGABLES_KEY, []);
+    client.setQueryData(ALL_TAGGABLES_KEY, []);
+
+    const { result } = renderHookWithQuery(() => useAssignBookTag(), {
+      client,
+    });
+    result.current.mutate({ bookId: "book-1", name: "Fantasy" });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    const createdTagId = client.getQueryData<Tag[]>(tagsKey)?.[0]?.id;
+    expect(insertedTaggable).toMatchObject({
+      tag_id: createdTagId,
+      target_type: "book",
+      target_id: "book-1",
+    });
+    expect(
+      client.getQueryData<Taggable[]>(BOOK_TAGGABLES_KEY)?.[0],
+    ).toMatchObject({
+      tag_id: createdTagId,
+      target_type: "book",
+      target_id: "book-1",
+    });
+    expect(
+      client.getQueryData<Taggable[]>(ALL_TAGGABLES_KEY)?.[0],
+    ).toMatchObject({
+      tag_id: createdTagId,
+      target_type: "book",
+      target_id: "book-1",
+    });
+  });
+
+  it("reuses existing tag by name", async () => {
+    let sawTagInsert = false;
+    server.use(
+      http.post(TAGS_URL, () => {
+        sawTagInsert = true;
+        return new HttpResponse(null, { status: 201 });
+      }),
+      http.post(TAGGABLES_URL, () => new HttpResponse(null, { status: 201 })),
+    );
+
+    const client = createTestQueryClient();
+    client.setQueryData(tagsKey, [makeTag({ id: "tag-1", name: "Fantasy" })]);
+    client.setQueryData(BOOK_TAGGABLES_KEY, []);
+
+    const { result } = renderHookWithQuery(() => useAssignBookTag(), {
+      client,
+    });
+    result.current.mutate({ bookId: "book-1", name: "FANTASY" });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(sawTagInsert).toBe(false);
+    expect(client.getQueryData<Tag[]>(tagsKey)).toHaveLength(1);
+    expect(
+      client.getQueryData<Taggable[]>(BOOK_TAGGABLES_KEY)?.[0],
+    ).toMatchObject({
+      tag_id: "tag-1",
+      target_type: "book",
+      target_id: "book-1",
+    });
+  });
+});
+
+describe("useUnassignBookTag", () => {
+  it("removes edge only", async () => {
+    server.use(
+      http.delete(TAGGABLES_URL, () => new HttpResponse(null, { status: 204 })),
+    );
+
+    const client = createTestQueryClient();
+    const tag = makeTag({ id: "tag-1", name: "Fantasy" });
+    const edge = makeTaggable({
+      id: "taggable-1",
+      tag_id: "tag-1",
+      target_type: "book",
+      target_id: "book-1",
+    });
+    client.setQueryData(tagsKey, [tag]);
+    client.setQueryData(BOOK_TAGGABLES_KEY, [edge]);
+    client.setQueryData(ALL_TAGGABLES_KEY, [edge]);
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+
+    const { result } = renderHookWithQuery(() => useUnassignBookTag(), {
+      client,
+    });
+    result.current.mutate({ bookId: "book-1", tagId: "tag-1" });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(client.getQueryData<Taggable[]>(BOOK_TAGGABLES_KEY)).toEqual([]);
+    expect(client.getQueryData<Taggable[]>(ALL_TAGGABLES_KEY)).toEqual([]);
+    expect(client.getQueryData<Tag[]>(tagsKey)).toEqual([tag]);
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: BOOK_TAGGABLES_KEY,
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ALL_TAGGABLES_KEY,
+    });
+  });
+
+  it("defers settle invalidation while another unassign is in flight", async () => {
+    const pendingDeletes: (() => void)[] = [];
+    server.use(
+      http.delete(TAGGABLES_URL, async () => {
+        await new Promise<void>((resolve) => {
+          pendingDeletes.push(resolve);
+        });
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    const client = createTestQueryClient();
+    client.setQueryData(tagsKey, [
+      makeTag({ id: "tag-1", name: "Fantasy" }),
+      makeTag({ id: "tag-2", name: "Draft" }),
+    ]);
+    client.setQueryData(BOOK_TAGGABLES_KEY, [
+      makeTaggable({
+        id: "tg-1",
+        tag_id: "tag-1",
+        target_type: "book",
+        target_id: "book-1",
+      }),
+      makeTaggable({
+        id: "tg-2",
+        tag_id: "tag-2",
+        target_type: "book",
+        target_id: "book-1",
+      }),
+    ]);
+    client.setQueryData(ALL_TAGGABLES_KEY, []);
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+
+    const { result } = renderHookWithQuery(() => useUnassignBookTag(), {
+      client,
+    });
+    result.current.mutate({ bookId: "book-1", tagId: "tag-1" });
+    result.current.mutate({ bookId: "book-1", tagId: "tag-2" });
+
+    await waitFor(() => {
+      expect(pendingDeletes).toHaveLength(2);
+    });
+
+    pendingDeletes[0]?.();
+    // First settle must not refetch while the sibling unassign is still open.
+    await Promise.resolve();
+    expect(invalidateSpy).not.toHaveBeenCalled();
+
+    pendingDeletes[1]?.();
+    await waitFor(() => {
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: BOOK_TAGGABLES_KEY,
+      });
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ALL_TAGGABLES_KEY,
+    });
   });
 });
 
@@ -487,6 +755,54 @@ describe("useDeleteTag", () => {
     expect(
       client
         .getQueryData<Taggable[]>(COLLECTION_TAGGABLES_KEY)
+        ?.map((row) => row.tag_id),
+    ).toEqual(["tag-2"]);
+  });
+
+  it("strips tag from book taggables cache", async () => {
+    server.use(
+      http.delete(TAGS_URL, () => new HttpResponse(null, { status: 204 })),
+    );
+
+    const client = createTestQueryClient();
+    client.setQueryData(tagsKey, [
+      makeTag({ id: "tag-1", name: "Fantasy" }),
+      makeTag({ id: "tag-2", name: "Draft" }),
+    ]);
+    client.setQueryData(COLLECTION_TAGGABLES_KEY, [
+      makeTaggable({ id: "ct-1", tag_id: "tag-1", target_id: "c1" }),
+      makeTaggable({ id: "ct-2", tag_id: "tag-2", target_id: "c1" }),
+    ]);
+    client.setQueryData(BOOK_TAGGABLES_KEY, [
+      makeTaggable({
+        id: "bt-1",
+        tag_id: "tag-1",
+        target_type: "book",
+        target_id: "b1",
+      }),
+      makeTaggable({
+        id: "bt-2",
+        tag_id: "tag-2",
+        target_type: "book",
+        target_id: "b1",
+      }),
+    ]);
+
+    const { result } = renderHookWithQuery(() => useDeleteTag(), { client });
+    result.current.mutate({ tagId: "tag-1" });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(
+      client
+        .getQueryData<Taggable[]>(COLLECTION_TAGGABLES_KEY)
+        ?.map((row) => row.tag_id),
+    ).toEqual(["tag-2"]);
+    expect(
+      client
+        .getQueryData<Taggable[]>(BOOK_TAGGABLES_KEY)
         ?.map((row) => row.tag_id),
     ).toEqual(["tag-2"]);
   });

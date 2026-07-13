@@ -28,6 +28,7 @@ import { useWhiteboards } from "@/data/whiteboards";
 import { useCascadedFonts } from "@/fonts/use-cascaded-fonts";
 import { useUIStore } from "@/store/ui";
 
+import { BookTagsSection } from "./book-tags-section";
 import { FontControl } from "./font-control";
 import { ChevronsDownUpIcon, ChevronsUpDownIcon } from "./icons";
 import { NavHistoryControls } from "./nav-history-controls";
@@ -255,6 +256,7 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
           }
         >
           {titleBlock}
+          <BookTagsSection bookId={book.id} />
         </Masthead>
 
         <TableOfContents

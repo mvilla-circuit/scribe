@@ -22,8 +22,8 @@ interface CollectionListRowProps {
   onOpen: () => void;
   actions?: RowAction[];
   /**
-   * Tags to show under the subtitle. Omitted entirely for kinds that can't
-   * carry tags (only collections do today).
+   * Tags to show under the subtitle. Omitted entirely for kinds that don't
+   * carry tags (collections and books do; entries/datagrids/whiteboards don't).
    */
   tags?: GalleryTag[];
 }
