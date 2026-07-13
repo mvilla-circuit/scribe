@@ -25,6 +25,7 @@ import {
   parseDatagridFields,
   parseDatagridProperties,
   parseDatagridViewConfig,
+  selectVisibleFields,
 } from "@/lib/datagrid-schema";
 import { matchesNormalizedQuery } from "@/lib/text-match";
 
@@ -75,13 +76,10 @@ export function useDatagridPageModel(datagridId: string) {
     () => parseDatagridViewConfig(activeView?.config ?? null),
     [activeView?.config],
   );
-  const visibleFields = useMemo<DatagridField[]>(() => {
-    if (config.visibleFieldIds.length === 0) return fields;
-    const byId = new Map(fields.map((field) => [field.id, field]));
-    return config.visibleFieldIds
-      .map((id) => byId.get(id))
-      .filter((field): field is DatagridField => field !== undefined);
-  }, [config.visibleFieldIds, fields]);
+  const visibleFields = useMemo<DatagridField[]>(
+    () => selectVisibleFields(fields, config.visibleFieldIds),
+    [config.visibleFieldIds, fields],
+  );
 
   const displayRows = useMemo<DatagridDisplayRow[]>(
     () =>

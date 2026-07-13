@@ -3,6 +3,7 @@ import { type ReactNode, useCallback, useMemo } from "react";
 
 import { useBooks } from "@/data/books";
 import { datagridRowsQueryOptions } from "@/data/datagrid-rows";
+import { datagridViewsQueryOptions } from "@/data/datagrid-views";
 import { useDatagrids } from "@/data/datagrids";
 import { usePageIndex } from "@/data/page-index";
 import { type EditorBridge, EditorBridgeContext } from "@/editor/editor-bridge";
@@ -12,6 +13,7 @@ import {
   buildDatagridLinkOptions,
   buildDatagridRowLinkOptions,
   indexRowsByDatagrid,
+  indexVisibleFieldIdsByDatagrid,
   resolveDatagridRow,
 } from "./datagrid-row-resolve";
 import {
@@ -49,6 +51,22 @@ export function EditorBridgeHost({ children }: { children: ReactNode }) {
   const rowsLoading =
     datagrids.length > 0 && rowQueries.some((query) => query.isLoading);
 
+  // Default-view field visibility for embed card previews (same list gallery
+  // cards use when that view is active).
+  const viewQueries = useQueries({
+    queries: datagrids.map((grid) => datagridViewsQueryOptions(grid.id)),
+  });
+  const allViews = useMemo(
+    () => viewQueries.flatMap((query) => query.data ?? []),
+    [viewQueries],
+  );
+  const visibleFieldIdsByDatagrid = useMemo(
+    () => indexVisibleFieldIdsByDatagrid(allViews),
+    [allViews],
+  );
+  const viewsLoading =
+    datagrids.length > 0 && viewQueries.some((query) => query.isLoading);
+
   const resolve = useCallback<EditorBridge["resolvePageTarget"]>(
     (targetType, targetId) =>
       resolvePageTarget(books, byId, targetType, targetId),
@@ -69,8 +87,14 @@ export function EditorBridgeHost({ children }: { children: ReactNode }) {
 
   const resolveRow = useCallback<EditorBridge["resolveDatagridRow"]>(
     (datagridId, rowId) =>
-      resolveDatagridRow(datagrids, rowsByDatagrid, datagridId, rowId),
-    [datagrids, rowsByDatagrid],
+      resolveDatagridRow(
+        datagrids,
+        rowsByDatagrid,
+        datagridId,
+        rowId,
+        visibleFieldIdsByDatagrid,
+      ),
+    [datagrids, rowsByDatagrid, visibleFieldIdsByDatagrid],
   );
 
   const datagridLinkOptions = useMemo(
@@ -103,7 +127,12 @@ export function EditorBridgeHost({ children }: { children: ReactNode }) {
 
   const bridge = useMemo<EditorBridge>(
     () => ({
-      loading: indexLoading || booksLoading || datagridsLoading || rowsLoading,
+      loading:
+        indexLoading ||
+        booksLoading ||
+        datagridsLoading ||
+        rowsLoading ||
+        viewsLoading,
       resolvePageTarget: resolve,
       pageLinkOptions,
       navigateToPage,
@@ -117,6 +146,7 @@ export function EditorBridgeHost({ children }: { children: ReactNode }) {
       booksLoading,
       datagridsLoading,
       rowsLoading,
+      viewsLoading,
       resolve,
       pageLinkOptions,
       navigateToPage,

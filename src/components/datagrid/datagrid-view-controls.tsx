@@ -20,6 +20,8 @@ import { TITLE_FIELD_ID } from "@/lib/datagrid-query";
 import type { DatagridField, DatagridViewConfig } from "@/lib/datagrid-schema";
 import { cn } from "@/lib/utils";
 
+import { toggleVisibleFieldId } from "./datagrid-field-visibility";
+
 // Only these field types make sense to group a board/table into buckets.
 const GROUPABLE = new Set(["select", "status", "multi_select", "checkbox"]);
 
@@ -128,21 +130,14 @@ export function DatagridViewControls({
   );
 
   const toggleColumn = (fieldId: string) => {
-    onChange((prev) => {
-      const currentVisible = new Set(
-        prev.visibleFieldIds.length > 0
-          ? prev.visibleFieldIds
-          : fields.map((f) => f.id),
-      );
-      if (currentVisible.has(fieldId)) currentVisible.delete(fieldId);
-      else currentVisible.add(fieldId);
-      return {
-        ...prev,
-        visibleFieldIds: fields
-          .filter((f) => currentVisible.has(f.id))
-          .map((f) => f.id),
-      };
-    });
+    onChange((prev) => ({
+      ...prev,
+      visibleFieldIds: toggleVisibleFieldId(
+        fields,
+        prev.visibleFieldIds,
+        fieldId,
+      ),
+    }));
   };
 
   const hiddenCount = fields.filter((f) => !effectiveVisible.has(f.id)).length;

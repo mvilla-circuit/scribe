@@ -253,6 +253,22 @@ export const DEFAULT_DATAGRID_VIEW_CONFIG: DatagridViewConfig = {
   coverField: null,
 };
 
+/**
+ * Apply a view's `visibleFieldIds` to the schema field list. Empty means all
+ * fields in schema order; otherwise returns those ids that still exist, in
+ * list order (visibility + order for gallery, table, board, and embeds).
+ */
+export function selectVisibleFields(
+  fields: DatagridField[],
+  visibleFieldIds: string[],
+): DatagridField[] {
+  if (visibleFieldIds.length === 0) return fields;
+  const byId = new Map(fields.map((field) => [field.id, field]));
+  return visibleFieldIds
+    .map((id) => byId.get(id))
+    .filter((field): field is DatagridField => field !== undefined);
+}
+
 const FIELD_TYPES = new Set<string>([
   "text",
   "number",

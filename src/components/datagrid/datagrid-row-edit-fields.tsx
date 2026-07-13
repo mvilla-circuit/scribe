@@ -27,6 +27,7 @@ export function DatagridRowEditFields({
     [datagridId, updateDatagrid],
   );
 
+  // Keep Edit Fields right-aligned even when sharing the row with Shown on cards.
   return (
     <>
       <div className="flex justify-end" data-testid="edit-fields-align">

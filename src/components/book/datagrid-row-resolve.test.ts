@@ -150,6 +150,34 @@ describe("resolveDatagridRow", () => {
       { fieldId: "done", text: "Yes" },
     ]);
   });
+
+  it("limits field previews to the view's visibleFieldIds", () => {
+    const fields = [
+      textField("a", "A"),
+      textField("b", "B"),
+      textField("c", "C"),
+    ];
+    const datagrids = [
+      makeDatagrid({ id: "dg1", name: "Grid", fields: asJson(fields) }),
+    ];
+    const byDatagrid = indexRowsByDatagrid([
+      meta({
+        id: "r1",
+        datagrid_id: "dg1",
+        title: "Row",
+        properties: asJson({ a: "one", b: "two", c: "three" }),
+      }),
+    ]);
+    const visible = new Map([["dg1", ["c", "a"]]]);
+
+    expect(
+      resolveDatagridRow(datagrids, byDatagrid, "dg1", "r1", visible)
+        ?.fieldsPreview,
+    ).toEqual([
+      { fieldId: "c", text: "three" },
+      { fieldId: "a", text: "one" },
+    ]);
+  });
 });
 
 describe("buildDatagridLinkOptions", () => {

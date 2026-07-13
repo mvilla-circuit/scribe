@@ -1,4 +1,5 @@
 import type { DatagridRowMeta } from "@/data/datagrid-rows";
+import type { DatagridView } from "@/data/datagrid-views";
 import type { Datagrid } from "@/data/datagrids";
 import type {
   DatagridLinkOption,
@@ -12,6 +13,8 @@ import {
   type DatagridPropertyValue,
   parseDatagridFields,
   parseDatagridProperties,
+  parseDatagridViewConfig,
+  selectVisibleFields,
 } from "@/lib/datagrid-schema";
 
 /** Soft cap matching gallery cards — keep embed previews scannable. */
@@ -31,6 +34,28 @@ export function indexRowsByDatagrid(
     else byDatagrid.set(row.datagrid_id, [row]);
   }
   return byDatagrid;
+}
+
+/**
+ * Map each datagrid id → `visibleFieldIds` from its default (or first) view.
+ * Empty arrays mean “all fields” for {@link selectVisibleFields}.
+ */
+export function indexVisibleFieldIdsByDatagrid(
+  views: DatagridView[],
+): Map<string, string[]> {
+  const byDatagrid = new Map<string, DatagridView[]>();
+  for (const view of views) {
+    const list = byDatagrid.get(view.datagrid_id);
+    if (list) list.push(view);
+    else byDatagrid.set(view.datagrid_id, [view]);
+  }
+  const visible = new Map<string, string[]>();
+  for (const [datagridId, list] of byDatagrid) {
+    const preferred = list.find((view) => view.is_default) ?? list[0] ?? null;
+    const config = parseDatagridViewConfig(preferred?.config ?? null);
+    visible.set(datagridId, config.visibleFieldIds);
+  }
+  return visible;
 }
 
 function formatDate(value: string): string {
@@ -114,12 +139,16 @@ function buildFieldsPreview(
  * shown on its card. Pure over the current datagrids + indexed rows so renames
  * and property edits flow through on the next render. Returns null when the
  * target can't be found (loading, deleted, or inaccessible).
+ *
+ * `visibleFieldIdsByDatagrid` comes from each datagrid's default view — empty
+ * / missing means all fields (same semantics as gallery cards).
  */
 export function resolveDatagridRow(
   datagrids: Datagrid[],
   byDatagrid: Map<string, DatagridRowMeta[]>,
   datagridId: string | null,
   rowId: string | null,
+  visibleFieldIdsByDatagrid: ReadonlyMap<string, string[]> = new Map(),
 ): ResolvedDatagridRow | null {
   if (!datagridId || !rowId) return null;
   const datagrid = datagrids.find((grid) => grid.id === datagridId);
@@ -127,7 +156,10 @@ export function resolveDatagridRow(
   const row = byDatagrid.get(datagridId)?.find((r) => r.id === rowId);
   if (!row) return null;
 
-  const fields = parseDatagridFields(datagrid.fields);
+  const fields = selectVisibleFields(
+    parseDatagridFields(datagrid.fields),
+    visibleFieldIdsByDatagrid.get(datagridId) ?? [],
+  );
   return {
     title: row.title.trim() === "" ? "Untitled" : row.title,
     icon: row.icon,

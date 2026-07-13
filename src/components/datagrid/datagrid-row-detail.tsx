@@ -13,6 +13,7 @@ import { DatagridRowBreadcrumbs } from "./datagrid-row-breadcrumbs";
 import { DatagridRowEditFields } from "./datagrid-row-edit-fields";
 import { RowOpenModeControl } from "./datagrid-row-open-mode-control";
 import { DatagridRowProperties } from "./datagrid-row-properties";
+import { DatagridShownFields } from "./datagrid-shown-fields";
 import { useDatagridRowDetail } from "./use-datagrid-row-detail";
 
 const SPLIT_MIN = 340;
@@ -146,7 +147,8 @@ function RowPanelContent({
               relationTargets={relationTargets}
               onPatch={patchProperty}
             />
-            <div className={fields.length > 0 ? "mt-3" : undefined}>
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <DatagridShownFields datagridId={datagridId} fields={fields} />
               <DatagridRowEditFields datagridId={datagridId} fields={fields} />
             </div>
           </div>
