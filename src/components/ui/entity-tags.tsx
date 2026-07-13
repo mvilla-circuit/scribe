@@ -1,5 +1,11 @@
 import { Plus, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  type SyntheticEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { DEFAULT_SWATCH, swatchDotStyle } from "@/lib/swatches";
 import { matchesNormalizedQuery } from "@/lib/text-match";
@@ -44,6 +50,11 @@ function preventCloseAutoFocus(event: Event): void {
   event.preventDefault();
 }
 
+function stopMenuEvent(event: SyntheticEvent): void {
+  event.preventDefault();
+  event.stopPropagation();
+}
+
 /**
  * A shared entity tag row with editable chips and a trailing add control.
  */
@@ -57,15 +68,12 @@ export function EntityTags({
   suggestions = [],
   onDeleteSuggestion,
 }: EntityTagsProps) {
-  const assignedNames = useMemo(
-    () => new Set(tags.map((tag) => tag.name.toLowerCase())),
-    [tags],
-  );
-  const availableSuggestions = useMemo(
-    () =>
-      suggestions.filter((tag) => !assignedNames.has(tag.name.toLowerCase())),
-    [suggestions, assignedNames],
-  );
+  const availableSuggestions = useMemo(() => {
+    const assignedNames = new Set(tags.map((tag) => tag.name.toLowerCase()));
+    return suggestions.filter(
+      (tag) => !assignedNames.has(tag.name.toLowerCase()),
+    );
+  }, [suggestions, tags]);
 
   return (
     <div
@@ -332,13 +340,9 @@ function TagEditorPanel({
                   <button
                     type="button"
                     aria-label={`Delete ${tag.name}`}
-                    onPointerDown={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                    }}
+                    onPointerDown={stopMenuEvent}
                     onClick={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
+                      stopMenuEvent(event);
                       onDeleteSuggestion(tag.id);
                     }}
                     className="mr-1 flex size-5 shrink-0 items-center justify-center rounded-md text-muted outline-none hover:bg-elevated hover:text-text focus-visible:ring-2 focus-visible:ring-ring"

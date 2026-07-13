@@ -95,17 +95,27 @@ function findTagByName(tags: Tag[], name: string): Tag | undefined {
   return tags.find((tag) => tag.name.toLowerCase() === lower);
 }
 
+function matchesAssignment(
+  row: Taggable,
+  tagId: string,
+  targetType: TagTargetType,
+  targetId: string,
+): boolean {
+  return (
+    row.tag_id === tagId &&
+    row.target_type === targetType &&
+    row.target_id === targetId
+  );
+}
+
 function isAssigned(
   rows: Taggable[],
   tagId: string,
   targetType: TagTargetType,
   targetId: string,
 ): boolean {
-  return rows.some(
-    (row) =>
-      row.tag_id === tagId &&
-      row.target_type === targetType &&
-      row.target_id === targetId,
+  return rows.some((row) =>
+    matchesAssignment(row, tagId, targetType, targetId),
   );
 }
 
@@ -158,13 +168,16 @@ function removeAssignment(
   targetId: string,
 ): Taggable[] {
   return rows.filter(
-    (row) =>
-      !(
-        row.tag_id === tagId &&
-        row.target_type === targetType &&
-        row.target_id === targetId
-      ),
+    (row) => !matchesAssignment(row, tagId, targetType, targetId),
   );
+}
+
+async function fetchTaggables(targetType?: TagTargetType): Promise<Taggable[]> {
+  let query = supabase.from("taggables").select("*");
+  if (targetType) query = query.eq("target_type", targetType);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data ?? [];
 }
 
 /** Query hook for all of the signed-in user's tags, ordered by position. */
@@ -175,22 +188,11 @@ export function useTags() {
   });
 }
 
-/**
- * Query hook for tag assignments on one target type.
- *
- * @public
- */
+/** Query hook for tag assignments on one target type. */
 export function useTaggables(targetType: TagTargetType) {
   return useQuery({
     queryKey: taggablesKey(targetType),
-    queryFn: async (): Promise<Taggable[]> => {
-      const { data, error } = await supabase
-        .from("taggables")
-        .select("*")
-        .eq("target_type", targetType);
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryFn: () => fetchTaggables(targetType),
   });
 }
 
@@ -201,19 +203,11 @@ export function useTaggables(targetType: TagTargetType) {
 export function useAllTaggables() {
   return useQuery({
     queryKey: allTaggablesKey,
-    queryFn: async (): Promise<Taggable[]> => {
-      const { data, error } = await supabase.from("taggables").select("*");
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryFn: () => fetchTaggables(),
   });
 }
 
-/**
- * Query hook for tag assignments on books.
- *
- * @public
- */
+/** Query hook for tag assignments on books. */
 export function useBookTaggables() {
   return useTaggables("book");
 }
@@ -226,8 +220,6 @@ export function useCollectionTaggables() {
 /**
  * Joins tags and taggables in memory for one polymorphic target, ordered
  * alphabetically by tag name.
- *
- * @public
  */
 export function tagsForTarget(
   tags: Tag[],
@@ -383,8 +375,6 @@ function useAssignTagMutation<TInput>(
  * When creating a tag, `color` is applied only to the new row. Reusing an
  * existing name keeps that tag's color; pass a separate recolor mutation to
  * change it.
- *
- * @public
  */
 export function useAssignTag() {
   return useAssignTagMutation<AssignTagInput>((input) => input);
@@ -466,8 +456,6 @@ function useUnassignTagMutation<TInput>(
 /**
  * Mutation hook that removes a taggable edge from a polymorphic target while
  * leaving the library tag row intact.
- *
- * @public
  */
 export function useUnassignTag() {
   return useUnassignTagMutation<UnassignTagInput>((input) => input);

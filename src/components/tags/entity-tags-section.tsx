@@ -15,6 +15,12 @@ import {
   useUpdateTagName,
 } from "@/data/tags";
 
+interface EntityTagsSectionProps {
+  targetType: TagTargetType;
+  targetId: string;
+  ariaLabel: string;
+}
+
 /**
  * Shared masthead seam for entity tags: joins the library `tags` list and
  * typed `taggables` for one target, ranks suggestions from the full taggables
@@ -24,36 +30,24 @@ export function EntityTagsSection({
   targetType,
   targetId,
   ariaLabel,
-}: {
-  targetType: TagTargetType;
-  targetId: string;
-  ariaLabel: string;
-}) {
-  const tagsQuery = useTags();
-  const taggablesQuery = useTaggables(targetType);
-  const allTaggablesQuery = useAllTaggables();
+}: EntityTagsSectionProps) {
+  const { data: tagsData } = useTags();
+  const { data: taggablesData } = useTaggables(targetType);
+  const { data: allTaggablesData } = useAllTaggables();
   const assignTag = useAssignTag();
   const unassignTag = useUnassignTag();
   const updateTagColor = useUpdateTagColor();
   const updateTagName = useUpdateTagName();
   const deleteTag = useDeleteTag();
 
-  const tags = useMemo(() => tagsQuery.data ?? [], [tagsQuery.data]);
-  const taggables = useMemo(
-    () => taggablesQuery.data ?? [],
-    [taggablesQuery.data],
-  );
-  const allTaggables = useMemo(
-    () => allTaggablesQuery.data ?? [],
-    [allTaggablesQuery.data],
-  );
   const assigned = useMemo(
-    () => tagsForTarget(tags, taggables, targetType, targetId),
-    [tags, taggables, targetType, targetId],
+    () =>
+      tagsForTarget(tagsData ?? [], taggablesData ?? [], targetType, targetId),
+    [tagsData, taggablesData, targetType, targetId],
   );
   const suggestions = useMemo(
-    () => tagsByRecentUse(tags, allTaggables),
-    [tags, allTaggables],
+    () => tagsByRecentUse(tagsData ?? [], allTaggablesData ?? []),
+    [tagsData, allTaggablesData],
   );
 
   return (
