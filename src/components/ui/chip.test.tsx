@@ -80,7 +80,7 @@ describe("RemovableChip", () => {
     expect(screen.queryByText("Fantasy")).not.toBeInTheDocument();
   });
 
-  it("keeps the remove control hidden until hover when removeReveal is hover", () => {
+  it("collapses remove control width at rest when removeReveal is hover", () => {
     render(
       <RemovableChip
         name="Fantasy"
@@ -90,9 +90,68 @@ describe("RemovableChip", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Remove Fantasy" })).toHaveClass(
-      "opacity-0",
+    const removeButton = screen.getByRole("button", { name: "Remove Fantasy" });
+    // eslint-disable-next-line testing-library/no-node-access -- shell is a non-interactive span without a queryable role
+    const shell = screen.getByText("Fantasy").parentElement;
+
+    expect(shell).not.toHaveClass("gap-1");
+    expect(shell).not.toHaveClass("pr-1");
+    expect(removeButton).toHaveClass("max-w-0");
+    expect(removeButton).toHaveClass("overflow-hidden");
+    expect(removeButton).toHaveClass("opacity-0");
+  });
+
+  it("reveals remove control on chip hover, focus-within, and remove focus-visible", () => {
+    render(
+      <RemovableChip
+        name="Fantasy"
+        color="sky"
+        onRemove={vi.fn()}
+        removeReveal="hover"
+      />,
     );
+
+    const removeButton = screen.getByRole("button", { name: "Remove Fantasy" });
+
+    expect(removeButton.className).toMatch(/group-hover\/chip:max-w-/);
+    expect(removeButton.className).toMatch(/group-hover\/chip:opacity-100/);
+    expect(removeButton.className).toMatch(/group-focus-within\/chip:max-w-/);
+    expect(removeButton.className).toMatch(
+      /group-focus-within\/chip:opacity-100/,
+    );
+    expect(removeButton.className).toMatch(/focus-visible:max-w-/);
+    expect(removeButton.className).toMatch(/focus-visible:opacity-100/);
+  });
+
+  it("always mode keeps full-size remove chrome", () => {
+    render(<RemovableChip name="Fantasy" color="sky" onRemove={vi.fn()} />);
+
+    const removeButton = screen.getByRole("button", { name: "Remove Fantasy" });
+    // eslint-disable-next-line testing-library/no-node-access -- shell is a non-interactive span without a queryable role
+    const shell = screen.getByText("Fantasy").parentElement;
+
+    expect(shell).toHaveClass("gap-1");
+    expect(shell).toHaveClass("pr-1");
+    expect(removeButton).toHaveClass("size-3.5");
+    expect(removeButton).not.toHaveClass("max-w-0");
+    expect(removeButton).not.toHaveClass("opacity-0");
+  });
+
+  it("gates remove reveal transitions behind motion-reduce", () => {
+    render(
+      <RemovableChip
+        name="Fantasy"
+        color="sky"
+        onRemove={vi.fn()}
+        removeReveal="hover"
+      />,
+    );
+
+    const removeButton = screen.getByRole("button", { name: "Remove Fantasy" });
+
+    expect(removeButton.className).toMatch(/duration-150/);
+    expect(removeButton.className).toMatch(/ease-out/);
+    expect(removeButton).toHaveClass("motion-reduce:transition-none");
   });
 });
 
