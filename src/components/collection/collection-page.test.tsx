@@ -126,7 +126,7 @@ describe("CollectionPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("uses text-xl and mt-1 for the masthead description", () => {
+  it("sizes the masthead description with text-xl and mt-1", () => {
     renderWithProviders(<CollectionPage collectionId="c1" />, {
       client: seed(),
     });
@@ -134,6 +134,7 @@ describe("CollectionPage", () => {
     expect(screen.getByLabelText("Collection description")).toHaveClass(
       "mt-1",
       "text-xl",
+      "leading-snug",
       "text-muted",
     );
   });

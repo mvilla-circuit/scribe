@@ -1,23 +1,51 @@
 import { screen, within } from "@testing-library/react";
+import { type ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "@/test/render-with-query";
 
 import { Masthead } from "./masthead";
 
+function renderMasthead({
+  icon = null,
+  actions,
+  children,
+}: {
+  icon?: string | null;
+  actions?: ReactNode;
+  children: ReactNode;
+}) {
+  return renderWithProviders(
+    <Masthead
+      icon={icon}
+      onSelectIcon={vi.fn()}
+      onRemoveIcon={vi.fn()}
+      changeIconLabel="Change icon"
+      actions={actions}
+    >
+      {children}
+    </Masthead>,
+  );
+}
+
+/** Title stays on the title line; subtitle stays a sibling under masthead-title. */
+function expectTitleLineExcludesSubtitle(subtitle: string) {
+  const titleLine = screen.getByTestId("masthead-title-line");
+  const subtitleEl = screen.getByText(subtitle);
+
+  expect(titleLine).toContainElement(
+    screen.getByRole("heading", { name: "Series" }),
+  );
+  expect(titleLine).not.toContainElement(subtitleEl);
+  expect(screen.getByTestId("masthead-title")).toContainElement(subtitleEl);
+}
+
 describe("Masthead", () => {
   it("renders Add icon and actions in the same header row", () => {
-    renderWithProviders(
-      <Masthead
-        icon={null}
-        onSelectIcon={vi.fn()}
-        onRemoveIcon={vi.fn()}
-        changeIconLabel="Change icon"
-        actions={<button type="button">Add cover</button>}
-      >
-        <h1>Series</h1>
-      </Masthead>,
-    );
+    renderMasthead({
+      actions: <button type="button">Add cover</button>,
+      children: <h1>Series</h1>,
+    });
 
     const header = screen.getByRole("banner");
     expect(
@@ -29,17 +57,11 @@ describe("Masthead", () => {
   });
 
   it("hangs the set icon beside the title so affordance actions cannot shift it", () => {
-    renderWithProviders(
-      <Masthead
-        icon="📘"
-        onSelectIcon={vi.fn()}
-        onRemoveIcon={vi.fn()}
-        changeIconLabel="Change icon"
-        actions={<button type="button">Add cover</button>}
-      >
-        <h1>Series</h1>
-      </Masthead>,
-    );
+    renderMasthead({
+      icon: "📘",
+      actions: <button type="button">Add cover</button>,
+      children: <h1>Series</h1>,
+    });
 
     const iconButton = screen.getByRole("button", { name: "Change icon" });
     const titleBlock = screen.getByTestId("masthead-title");
@@ -56,16 +78,10 @@ describe("Masthead", () => {
   });
 
   it("keeps stacked icon margin and clears it only at xl when hanging", () => {
-    renderWithProviders(
-      <Masthead
-        icon="📘"
-        onSelectIcon={vi.fn()}
-        onRemoveIcon={vi.fn()}
-        changeIconLabel="Change icon"
-      >
-        <h1>Series</h1>
-      </Masthead>,
-    );
+    renderMasthead({
+      icon: "📘",
+      children: <h1>Series</h1>,
+    });
 
     expect(screen.getByTestId("masthead-icon")).toHaveClass(
       "mb-2",
@@ -79,69 +95,39 @@ describe("Masthead", () => {
   });
 
   it("centers the hanging icon on the title line, not the full masthead block", () => {
-    renderWithProviders(
-      <Masthead
-        icon="📘"
-        onSelectIcon={vi.fn()}
-        onRemoveIcon={vi.fn()}
-        changeIconLabel="Change icon"
-      >
-        <h1>Series</h1>
-        <p>A subtitle</p>
-      </Masthead>,
-    );
+    renderMasthead({
+      icon: "📘",
+      children: [<h1 key="title">Series</h1>, <p key="sub">A subtitle</p>],
+    });
 
     const titleLine = screen.getByTestId("masthead-title-line");
-    const icon = screen.getByTestId("masthead-icon");
-
-    expect(titleLine).toContainElement(icon);
-    expect(titleLine).toContainElement(
-      screen.getByRole("heading", { name: "Series" }),
-    );
-    expect(titleLine).not.toContainElement(screen.getByText("A subtitle"));
-    expect(screen.getByTestId("masthead-title")).toContainElement(
-      screen.getByText("A subtitle"),
-    );
+    expect(titleLine).toContainElement(screen.getByTestId("masthead-icon"));
+    expectTitleLineExcludesSubtitle("A subtitle");
   });
 
   it("flattens fragment children so a book-style title block still centers on the title", () => {
-    renderWithProviders(
-      <Masthead
-        icon="📘"
-        onSelectIcon={vi.fn()}
-        onRemoveIcon={vi.fn()}
-        changeIconLabel="Change icon"
-      >
+    renderMasthead({
+      icon: "📘",
+      children: (
         <>
           <h1>Series</h1>
           <p>A subtitle</p>
         </>
-      </Masthead>,
-    );
+      ),
+    });
 
-    const titleLine = screen.getByTestId("masthead-title-line");
-
-    expect(titleLine).toContainElement(
-      screen.getByRole("heading", { name: "Series" }),
+    expect(screen.getByTestId("masthead-title-line")).toContainElement(
+      screen.getByTestId("masthead-icon"),
     );
-    expect(titleLine).not.toContainElement(screen.getByText("A subtitle"));
-    expect(screen.getByTestId("masthead-title")).toContainElement(
-      screen.getByText("A subtitle"),
-    );
+    expectTitleLineExcludesSubtitle("A subtitle");
   });
 
   it("keeps the in-flow margin when Add cover is present beside an icon", () => {
-    renderWithProviders(
-      <Masthead
-        icon="📘"
-        onSelectIcon={vi.fn()}
-        onRemoveIcon={vi.fn()}
-        changeIconLabel="Change icon"
-        actions={<button type="button">Add cover</button>}
-      >
-        <h1>Series</h1>
-      </Masthead>,
-    );
+    renderMasthead({
+      icon: "📘",
+      actions: <button type="button">Add cover</button>,
+      children: <h1>Series</h1>,
+    });
 
     const row = screen.getByTestId("masthead-actions-row");
     expect(row).toHaveClass("mb-2");

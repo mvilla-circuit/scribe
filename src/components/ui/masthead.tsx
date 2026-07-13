@@ -17,16 +17,15 @@ interface MastheadProps {
    */
   actions?: ReactNode;
   /**
-   * The title block shown with the icon. The first child is treated as the
-   * title line the icon vertically centers against; any further siblings
-   * (subtitle, tags, …) render below that line. Fragments are flattened so
-   * book/document title blocks (`<>title + subtitle</>`) still center on the
-   * title alone.
+   * The title block shown with the icon. The first child is the title line
+   * the icon vertically centers against; further siblings (subtitle, tags, …)
+   * render below. Fragments are flattened so book/document title blocks
+   * (`<>title + subtitle</>`) still center on the title alone.
    */
   children: ReactNode;
 }
 
-/** Flatten React fragments so a single `<>…</>` child expands into siblings. */
+/** Expand `<>…</>` children into a flat sibling list (nested fragments too). */
 function flattenChildren(children: ReactNode): ReactNode[] {
   return Children.toArray(children).flatMap((child) => {
     if (
@@ -58,9 +57,7 @@ export function Masthead({
   children,
 }: MastheadProps) {
   const showActionsRow = !icon || Boolean(actions);
-  const childArray = flattenChildren(children);
-  const titleChild = childArray[0];
-  const restChildren = childArray.slice(1);
+  const [titleChild, ...restChildren] = flattenChildren(children);
 
   return (
     <header className="group/masthead relative">
