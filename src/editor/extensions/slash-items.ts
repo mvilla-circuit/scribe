@@ -6,6 +6,7 @@ import {
   CodeBlockIcon,
   Columns2Icon,
   Columns3Icon,
+  DatagridCardIcon,
   DividerIcon,
   EssayIcon,
   PageLinkIcon,
@@ -19,6 +20,8 @@ import type { IconProps } from "@/lib/make-icon";
 import { BASIC_BLOCK_TYPES } from "./block-types";
 import { calloutContent } from "./callout";
 import { columnsContent } from "./columns";
+import { insertDatagridRowCard } from "./datagrid-row-card";
+import { useDatagridRowPicker } from "./datagrid-row-picker-store";
 import { essayContent } from "./essay";
 import { insertLinkCard } from "./link-card-commands";
 import { useLinkPrompt } from "./link-prompt-store";
@@ -146,6 +149,18 @@ const slashItems: SlashItem[] = [
       at(editor, range).run();
       usePagePicker.getState().open((target) => {
         insertPageLink(editor, target);
+      });
+    },
+  },
+  {
+    title: "Datagrid card",
+    description: "Embed a card from a datagrid",
+    icon: DatagridCardIcon,
+    aliases: ["datagrid", "database", "row", "card", "embed"],
+    run: (editor, range) => {
+      at(editor, range).run();
+      useDatagridRowPicker.getState().open((target) => {
+        insertDatagridRowCard(editor, target);
       });
     },
   },

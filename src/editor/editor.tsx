@@ -17,6 +17,7 @@ import { getSharedChecker } from "@/lib/spellcheck/checker";
 import { BlockHandle } from "./block-handle";
 import { BubbleToolbar } from "./bubble-toolbar";
 import { buildExtensions } from "./extensions";
+import { DatagridRowPicker } from "./extensions/datagrid-row-picker";
 import { LinkPrompt } from "./extensions/link-prompt";
 import { PagePicker } from "./extensions/page-picker";
 import {
@@ -377,6 +378,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
           <BlockHandle editor={editor} />
           <TableControls editor={editor} />
           <PagePicker />
+          <DatagridRowPicker />
           <LinkPrompt />
           <SpellPopover />
         </>

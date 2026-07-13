@@ -48,6 +48,7 @@ import {
   Smile,
   Strikethrough,
   Table,
+  Table2,
   TableCellsMerge,
   TableCellsSplit,
   TextQuote,
@@ -95,6 +96,7 @@ export const TableIcon = makeIcon(Table);
 export const BookmarkIcon = makeIcon(Bookmark);
 export const PageLinkIcon = makeIcon(FileText);
 export const BookIcon = makeIcon(Book);
+export const DatagridCardIcon = makeIcon(Table2);
 
 // Inline block-control icons (open / copy / refresh / add / remove / emoji).
 export const ExternalLinkIcon = makeIcon(ExternalLink);
