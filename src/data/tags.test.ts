@@ -312,6 +312,65 @@ describe("useUnassignBookTag", () => {
       queryKey: ALL_TAGGABLES_KEY,
     });
   });
+
+  it("defers settle invalidation while another unassign is in flight", async () => {
+    const pendingDeletes: (() => void)[] = [];
+    server.use(
+      http.delete(TAGGABLES_URL, async () => {
+        await new Promise<void>((resolve) => {
+          pendingDeletes.push(resolve);
+        });
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    const client = createTestQueryClient();
+    client.setQueryData(tagsKey, [
+      makeTag({ id: "tag-1", name: "Fantasy" }),
+      makeTag({ id: "tag-2", name: "Draft" }),
+    ]);
+    client.setQueryData(BOOK_TAGGABLES_KEY, [
+      makeTaggable({
+        id: "tg-1",
+        tag_id: "tag-1",
+        target_type: "book",
+        target_id: "book-1",
+      }),
+      makeTaggable({
+        id: "tg-2",
+        tag_id: "tag-2",
+        target_type: "book",
+        target_id: "book-1",
+      }),
+    ]);
+    client.setQueryData(ALL_TAGGABLES_KEY, []);
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+
+    const { result } = renderHookWithQuery(() => useUnassignBookTag(), {
+      client,
+    });
+    result.current.mutate({ bookId: "book-1", tagId: "tag-1" });
+    result.current.mutate({ bookId: "book-1", tagId: "tag-2" });
+
+    await waitFor(() => {
+      expect(pendingDeletes).toHaveLength(2);
+    });
+
+    pendingDeletes[0]?.();
+    // First settle must not refetch while the sibling unassign is still open.
+    await Promise.resolve();
+    expect(invalidateSpy).not.toHaveBeenCalled();
+
+    pendingDeletes[1]?.();
+    await waitFor(() => {
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: BOOK_TAGGABLES_KEY,
+      });
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ALL_TAGGABLES_KEY,
+    });
+  });
 });
 
 describe("useAssignCollectionTag", () => {

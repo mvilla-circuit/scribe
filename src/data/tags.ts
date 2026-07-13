@@ -400,11 +400,17 @@ export function useAssignCollectionTag() {
   }));
 }
 
+const UNASSIGN_MUTATION_KEY = ["taggables", "unassign"] as const;
+
 function useUnassignTagMutation<TInput>(
   normalizeInput: (input: TInput) => UnassignTagInput,
 ) {
   const qc = useQueryClient();
   return useMutation({
+    // Scope concurrent-settle deferral to unassign mutations so an in-flight
+    // sibling can't be clobbered by an earlier settle's refetch (same recipe as
+    // optimisticListHandlers / invalidateOnSettle).
+    mutationKey: UNASSIGN_MUTATION_KEY,
     mutationFn: async (rawInput: TInput) => {
       const input = normalizeInput(rawInput);
       await execWrite(
@@ -451,6 +457,9 @@ function useUnassignTagMutation<TInput>(
       toast.error("Couldn't remove tag");
     },
     onSettled: (_data, _error, rawInput) => {
+      // Defer refetch until the last in-flight unassign settles so an earlier
+      // settle can't restore edges another unassign already removed optimistically.
+      if (qc.isMutating({ mutationKey: UNASSIGN_MUTATION_KEY }) > 1) return;
       const input = normalizeInput(rawInput);
       void qc.invalidateQueries({ queryKey: taggablesKey(input.targetType) });
       void qc.invalidateQueries({ queryKey: allTaggablesKey });
