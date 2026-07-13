@@ -2,9 +2,18 @@ import { fireEvent, screen } from "@testing-library/react";
 import { type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { taggablesKey, tagsKey } from "@/data/query-keys";
 import { useUIStore } from "@/store/ui";
-import { makeBook, makeCollection } from "@/test/fixtures";
-import { renderWithProviders } from "@/test/render-with-query";
+import {
+  makeBook,
+  makeCollection,
+  makeTag,
+  makeTaggable,
+} from "@/test/fixtures";
+import {
+  createTestQueryClient,
+  renderWithProviders,
+} from "@/test/render-with-query";
 
 import { TitlePage } from "./title-page";
 
@@ -15,6 +24,10 @@ const hooks = vi.hoisted(() => ({
   createDocument: { mutate: vi.fn() },
   bookCoverUrl: null as string | null,
   collections: [] as ReturnType<typeof makeCollection>[],
+}));
+
+vi.mock("@/lib/auth", () => ({
+  useAuth: () => ({ session: { user: { id: "user-1" } } }),
 }));
 
 vi.mock("@/components/ui/page-cover", () => ({
@@ -189,5 +202,39 @@ describe("TitlePage breadcrumb", () => {
     fireEvent.click(screen.getByRole("button", { name: "Field Notes" }));
 
     expect(useUIStore.getState().activeCollectionId).toBe("c1");
+  });
+});
+
+describe("TitlePage tags", () => {
+  it("renders book tags under the title", () => {
+    const client = createTestQueryClient();
+    client.setQueryData(tagsKey, [makeTag({ id: "tag-1", name: "Epic" })]);
+    client.setQueryData(taggablesKey("book"), [
+      makeTaggable({
+        id: "tg-1",
+        tag_id: "tag-1",
+        target_type: "book",
+        target_id: "book-1",
+      }),
+    ]);
+    client.setQueryData(taggablesKey("collection"), []);
+
+    renderWithProviders(
+      <TitlePage
+        book={makeBook({ id: "book-1", title: "First Light" })}
+        documents={[]}
+        loading={false}
+      />,
+      { client },
+    );
+
+    expect(screen.getByLabelText("Book tags")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Epic" })).toBeInTheDocument();
+    expect(
+      screen
+        .getByLabelText("Book title")
+        .compareDocumentPosition(screen.getByLabelText("Book tags")) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });

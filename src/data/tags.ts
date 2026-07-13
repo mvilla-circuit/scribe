@@ -12,11 +12,7 @@ import { supabase } from "@/lib/supabase";
 import { swatchForIndex } from "@/lib/swatches";
 
 import { execWrite, requireUserId } from "./crud";
-import {
-  listHandlers,
-  optimisticListHandlers,
-  patchById,
-} from "./optimistic-list";
+import { listHandlers, patchById } from "./optimistic-list";
 import { byPosition, endPositionFor } from "./ordering";
 import { taggablesKey, tagsKey } from "./query-keys";
 
@@ -26,23 +22,43 @@ export type Tag = Tables<"tags">;
 /** A tag assignment row from the polymorphic `taggables` table. */
 export type Taggable = Tables<"taggables">;
 
-// The only `taggables.target_type` this module deals with; books/entries have
-// their own tagging surfaces built on the same table.
-const COLLECTION_TARGET_TYPE = "collection";
-const COLLECTION_TAGGABLES_KEY = taggablesKey(COLLECTION_TARGET_TYPE);
+/** A supported polymorphic target for a tag assignment. */
+export type TagTargetType = "book" | "collection" | "entry";
 
 // Postgres unique-violation SQLSTATE, raised by the `(tag_id, target_type,
 // target_id)` unique constraint on `taggables` when a pair is assigned twice.
 const UNIQUE_VIOLATION = "23505";
 
+interface AssignTagInput {
+  targetType: TagTargetType;
+  targetId: string;
+  name: string;
+  /** Optional palette hue; when omitted, the next Morandi swatch is used. */
+  color?: string;
+}
 interface AssignCollectionTagInput {
   collectionId: string;
   name: string;
   /** Optional palette hue; when omitted, the next Morandi swatch is used. */
   color?: string;
 }
+interface AssignBookTagInput {
+  bookId: string;
+  name: string;
+  /** Optional palette hue; when omitted, the next Morandi swatch is used. */
+  color?: string;
+}
+interface UnassignTagInput {
+  targetType: TagTargetType;
+  targetId: string;
+  tagId: string;
+}
 interface UnassignCollectionTagInput {
   collectionId: string;
+  tagId: string;
+}
+interface UnassignBookTagInput {
+  bookId: string;
   tagId: string;
 }
 interface UpdateTagColorInput {
@@ -79,13 +95,17 @@ function findTagByName(tags: Tag[], name: string): Tag | undefined {
   return tags.find((tag) => tag.name.toLowerCase() === lower);
 }
 
-function isAssignedToCollection(
+function isAssigned(
   rows: Taggable[],
   tagId: string,
-  collectionId: string,
+  targetType: TagTargetType,
+  targetId: string,
 ): boolean {
   return rows.some(
-    (row) => row.tag_id === tagId && row.target_id === collectionId,
+    (row) =>
+      row.tag_id === tagId &&
+      row.target_type === targetType &&
+      row.target_id === targetId,
   );
 }
 
@@ -107,14 +127,15 @@ function buildTag(input: {
   };
 }
 
-function cacheCollectionAssignment(
+function cacheAssignment(
   qc: QueryClient,
   row: Taggable,
-  collectionId: string,
+  targetType: TagTargetType,
+  targetId: string,
 ): void {
-  qc.setQueryData<Taggable[]>(COLLECTION_TAGGABLES_KEY, (prev) => {
+  qc.setQueryData<Taggable[]>(taggablesKey(targetType), (prev) => {
     const rows = prev ?? [];
-    if (isAssignedToCollection(rows, row.tag_id, collectionId)) return rows;
+    if (isAssigned(rows, row.tag_id, targetType, targetId)) return rows;
     return [...rows, row];
   });
 }
@@ -127,15 +148,19 @@ export function useTags() {
   });
 }
 
-/** Query hook for the tag assignments on collections. */
-export function useCollectionTaggables() {
+/**
+ * Query hook for tag assignments on one target type.
+ *
+ * @public
+ */
+export function useTaggables(targetType: TagTargetType) {
   return useQuery({
-    queryKey: COLLECTION_TAGGABLES_KEY,
+    queryKey: taggablesKey(targetType),
     queryFn: async (): Promise<Taggable[]> => {
       const { data, error } = await supabase
         .from("taggables")
         .select("*")
-        .eq("target_type", COLLECTION_TARGET_TYPE);
+        .eq("target_type", targetType);
       if (error) throw error;
       return data ?? [];
     },
@@ -143,25 +168,63 @@ export function useCollectionTaggables() {
 }
 
 /**
- * Joins `tags` and `taggables` in memory to the tags assigned to one
- * collection, so callers don't each hand-roll the filter/lookup over the two
- * independently-cached lists.
+ * Query hook for tag assignments on books.
+ *
+ * @public
  */
-export function tagsForCollection(
+export function useBookTaggables() {
+  return useTaggables("book");
+}
+
+/** Query hook for tag assignments on collections. */
+export function useCollectionTaggables() {
+  return useTaggables("collection");
+}
+
+/**
+ * Joins tags and taggables in memory for one polymorphic target, ordered
+ * alphabetically by tag name.
+ *
+ * @public
+ */
+export function tagsForTarget(
   tags: Tag[],
   taggables: Taggable[],
-  collectionId: string,
+  targetType: TagTargetType,
+  targetId: string,
 ): Tag[] {
   const tagIds = new Set(
     taggables
       .filter(
         (taggable) =>
-          taggable.target_type === COLLECTION_TARGET_TYPE &&
-          taggable.target_id === collectionId,
+          taggable.target_type === targetType &&
+          taggable.target_id === targetId,
       )
       .map((taggable) => taggable.tag_id),
   );
-  return tags.filter((tag) => tagIds.has(tag.id));
+  return tags
+    .filter((tag) => tagIds.has(tag.id))
+    .sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    );
+}
+
+/** Returns the tags assigned to one book. */
+export function tagsForBook(
+  tags: Tag[],
+  taggables: Taggable[],
+  bookId: string,
+): Tag[] {
+  return tagsForTarget(tags, taggables, "book", bookId);
+}
+
+/** Returns the tags assigned to one collection. */
+export function tagsForCollection(
+  tags: Tag[],
+  taggables: Taggable[],
+  collectionId: string,
+): Tag[] {
+  return tagsForTarget(tags, taggables, "collection", collectionId);
 }
 
 /**
@@ -188,23 +251,15 @@ export function tagsByRecentUse(tags: Tag[], taggables: Taggable[]): Tag[] {
   });
 }
 
-/**
- * Mutation hook that assigns a tag (by name) to a collection. Reuses an
- * existing tag case-insensitively; otherwise creates one with the next
- * palette swatch and end position. A pairing that's already assigned — or
- * rejected by the database's unique constraint in a race — is a success
- * no-op rather than an error, so callers never need to pre-check membership.
- *
- * When creating a tag, `color` is applied only to the new row. Reusing an
- * existing name keeps that tag's color; pass a separate recolor mutation to
- * change it.
- */
-export function useAssignCollectionTag() {
+function useAssignTagMutation<TInput>(
+  normalizeInput: (input: TInput) => AssignTagInput,
+) {
   const qc = useQueryClient();
   const { session } = useAuth();
 
   return useMutation({
-    mutationFn: async (input: AssignCollectionTagInput): Promise<Tag> => {
+    mutationFn: async (rawInput: TInput): Promise<Tag> => {
+      const input = normalizeInput(rawInput);
       const userId = requireUserId(session);
       const name = input.name.trim();
       if (!name) throw new Error("Tag name is required");
@@ -244,9 +299,9 @@ export function useAssignCollectionTag() {
         }
       }
 
-      const taggables =
-        qc.getQueryData<Taggable[]>(COLLECTION_TAGGABLES_KEY) ?? [];
-      if (isAssignedToCollection(taggables, tag.id, input.collectionId)) {
+      const key = taggablesKey(input.targetType);
+      const taggables = qc.getQueryData<Taggable[]>(key) ?? [];
+      if (isAssigned(taggables, tag.id, input.targetType, input.targetId)) {
         return tag;
       }
 
@@ -254,8 +309,8 @@ export function useAssignCollectionTag() {
         id: crypto.randomUUID(),
         user_id: userId,
         tag_id: tag.id,
-        target_type: COLLECTION_TARGET_TYPE,
-        target_id: input.collectionId,
+        target_type: input.targetType,
+        target_id: input.targetId,
         created_at: now,
       };
       const { error } = await supabase.from("taggables").insert({
@@ -267,7 +322,7 @@ export function useAssignCollectionTag() {
       });
       if (error && error.code !== UNIQUE_VIOLATION) throw error;
 
-      cacheCollectionAssignment(qc, assignment, input.collectionId);
+      cacheAssignment(qc, assignment, input.targetType, input.targetId);
       return tag;
     },
     onError: () => {
@@ -277,37 +332,110 @@ export function useAssignCollectionTag() {
 }
 
 /**
- * Mutation hook that removes a tag from a collection. Deletes only the
- * `taggables` edge — the tag row itself, and its assignments to any other
- * collection, are left untouched.
+ * Mutation hook that assigns a tag by name to a polymorphic target. Reuses an
+ * existing tag case-insensitively; otherwise creates one with the next
+ * palette swatch and end position. A pairing that's already assigned — or
+ * rejected by the database's unique constraint in a race — is a success
+ * no-op rather than an error, so callers never need to pre-check membership.
+ *
+ * When creating a tag, `color` is applied only to the new row. Reusing an
+ * existing name keeps that tag's color; pass a separate recolor mutation to
+ * change it.
+ *
+ * @public
  */
-export function useUnassignCollectionTag() {
+export function useAssignTag() {
+  return useAssignTagMutation<AssignTagInput>((input) => input);
+}
+
+/** Mutation hook that assigns a tag by name to a book. */
+export function useAssignBookTag() {
+  return useAssignTagMutation<AssignBookTagInput>((input) => ({
+    targetType: "book",
+    targetId: input.bookId,
+    name: input.name,
+    color: input.color,
+  }));
+}
+
+/** Mutation hook that assigns a tag by name to a collection. */
+export function useAssignCollectionTag() {
+  return useAssignTagMutation<AssignCollectionTagInput>((input) => ({
+    targetType: "collection",
+    targetId: input.collectionId,
+    name: input.name,
+    color: input.color,
+  }));
+}
+
+function useUnassignTagMutation<TInput>(
+  normalizeInput: (input: TInput) => UnassignTagInput,
+) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: UnassignCollectionTagInput) => {
+    mutationFn: async (rawInput: TInput) => {
+      const input = normalizeInput(rawInput);
       await execWrite(
         supabase
           .from("taggables")
           .delete()
           .eq("tag_id", input.tagId)
-          .eq("target_type", COLLECTION_TARGET_TYPE)
-          .eq("target_id", input.collectionId),
+          .eq("target_type", input.targetType)
+          .eq("target_id", input.targetId),
       );
     },
-    ...optimisticListHandlers<Taggable, UnassignCollectionTagInput>({
-      qc,
-      key: COLLECTION_TAGGABLES_KEY,
-      sort: (a, b) => a.created_at.localeCompare(b.created_at),
-      update: (prev, input) =>
-        prev.filter(
+    onMutate: async (rawInput) => {
+      const input = normalizeInput(rawInput);
+      const key = taggablesKey(input.targetType);
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<Taggable[]>(key);
+      qc.setQueryData<Taggable[]>(key, (prev) =>
+        (prev ?? []).filter(
           (row) =>
             !(
-              row.tag_id === input.tagId && row.target_id === input.collectionId
+              row.tag_id === input.tagId &&
+              row.target_type === input.targetType &&
+              row.target_id === input.targetId
             ),
         ),
-      errorMessage: "Couldn't remove tag",
-    }),
+      );
+      return { key, previous };
+    },
+    onError: (_error, _input, context) => {
+      if (context?.previous) {
+        qc.setQueryData(context.key, context.previous);
+      }
+      toast.error("Couldn't remove tag");
+    },
   });
+}
+
+/**
+ * Mutation hook that removes a taggable edge from a polymorphic target while
+ * leaving the library tag row intact.
+ *
+ * @public
+ */
+export function useUnassignTag() {
+  return useUnassignTagMutation<UnassignTagInput>((input) => input);
+}
+
+/** Mutation hook that removes a taggable edge from a book. */
+export function useUnassignBookTag() {
+  return useUnassignTagMutation<UnassignBookTagInput>((input) => ({
+    targetType: "book",
+    targetId: input.bookId,
+    tagId: input.tagId,
+  }));
+}
+
+/** Mutation hook that removes a taggable edge from a collection. */
+export function useUnassignCollectionTag() {
+  return useUnassignTagMutation<UnassignCollectionTagInput>((input) => ({
+    targetType: "collection",
+    targetId: input.collectionId,
+    tagId: input.tagId,
+  }));
 }
 
 /** Mutation hook that updates a tag's palette swatch color. */
@@ -357,7 +485,7 @@ export function useUpdateTagName() {
 /**
  * Mutation hook that deletes a library tag. Cascades through `taggables` in
  * the database; the cache drops the tag and every assignment that pointed at
- * it so the suggestions list and collection chips update together.
+ * it so the suggestions list and all target chips update together.
  */
 export function useDeleteTag() {
   const qc = useQueryClient();
@@ -366,15 +494,15 @@ export function useDeleteTag() {
       execWrite(supabase.from("tags").delete().eq("id", input.tagId)),
     onMutate: async (input) => {
       await qc.cancelQueries({ queryKey: tagsKey });
-      await qc.cancelQueries({ queryKey: COLLECTION_TAGGABLES_KEY });
+      await qc.cancelQueries({ queryKey: ["taggables"] });
       const previousTags = qc.getQueryData<Tag[]>(tagsKey);
-      const previousTaggables = qc.getQueryData<Taggable[]>(
-        COLLECTION_TAGGABLES_KEY,
-      );
+      const previousTaggables = qc.getQueriesData<Taggable[]>({
+        queryKey: ["taggables"],
+      });
       qc.setQueryData<Tag[]>(tagsKey, (prev) =>
         (prev ?? []).filter((tag) => tag.id !== input.tagId),
       );
-      qc.setQueryData<Taggable[]>(COLLECTION_TAGGABLES_KEY, (prev) =>
+      qc.setQueriesData<Taggable[]>({ queryKey: ["taggables"] }, (prev) =>
         (prev ?? []).filter((row) => row.tag_id !== input.tagId),
       );
       return { previousTags, previousTaggables };
@@ -383,8 +511,8 @@ export function useDeleteTag() {
       if (context?.previousTags) {
         qc.setQueryData(tagsKey, context.previousTags);
       }
-      if (context?.previousTaggables) {
-        qc.setQueryData(COLLECTION_TAGGABLES_KEY, context.previousTaggables);
+      for (const [key, taggables] of context?.previousTaggables ?? []) {
+        qc.setQueryData(key, taggables);
       }
       toast.error("Couldn't delete tag");
     },

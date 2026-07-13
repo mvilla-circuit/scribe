@@ -3,64 +3,60 @@ import { useMemo } from "react";
 import { EntityTags } from "@/components/ui/entity-tags";
 import {
   tagsByRecentUse,
-  tagsForCollection,
-  useAssignCollectionTag,
+  tagsForBook,
+  useAssignBookTag,
   useBookTaggables,
   useCollectionTaggables,
   useDeleteTag,
   useTags,
-  useUnassignCollectionTag,
+  useUnassignBookTag,
   useUpdateTagColor,
   useUpdateTagName,
 } from "@/data/tags";
 
 /**
- * Masthead seam for a collection's tags: joins the library `tags` list and
- * `taggables` assignments down to this collection, and routes chip edits
- * through the assign/unassign/recolor/rename/delete mutations.
+ * Masthead seam for a book's tags: joins the library `tags` list and
+ * `taggables` assignments down to this book, and routes chip edits through
+ * the assign/unassign/recolor/rename/delete mutations.
  */
-export function CollectionTagsSection({
-  collectionId,
-}: {
-  collectionId: string;
-}) {
+export function BookTagsSection({ bookId }: { bookId: string }) {
   const tagsQuery = useTags();
-  const taggablesQuery = useCollectionTaggables();
   const bookTaggablesQuery = useBookTaggables();
-  const assignTag = useAssignCollectionTag();
-  const unassignTag = useUnassignCollectionTag();
+  const collectionTaggablesQuery = useCollectionTaggables();
+  const assignTag = useAssignBookTag();
+  const unassignTag = useUnassignBookTag();
   const updateTagColor = useUpdateTagColor();
   const updateTagName = useUpdateTagName();
   const deleteTag = useDeleteTag();
 
   const tags = useMemo(() => tagsQuery.data ?? [], [tagsQuery.data]);
-  const taggables = useMemo(
-    () => taggablesQuery.data ?? [],
-    [taggablesQuery.data],
-  );
   const bookTaggables = useMemo(
     () => bookTaggablesQuery.data ?? [],
     [bookTaggablesQuery.data],
   );
+  const collectionTaggables = useMemo(
+    () => collectionTaggablesQuery.data ?? [],
+    [collectionTaggablesQuery.data],
+  );
   const assigned = useMemo(
-    () => tagsForCollection(tags, taggables, collectionId),
-    [tags, taggables, collectionId],
+    () => tagsForBook(tags, bookTaggables, bookId),
+    [tags, bookTaggables, bookId],
   );
   const suggestions = useMemo(
-    () => tagsByRecentUse(tags, [...taggables, ...bookTaggables]),
-    [tags, taggables, bookTaggables],
+    () => tagsByRecentUse(tags, [...collectionTaggables, ...bookTaggables]),
+    [tags, collectionTaggables, bookTaggables],
   );
 
   return (
     <EntityTags
-      ariaLabel="Collection tags"
+      ariaLabel="Book tags"
       tags={assigned}
       suggestions={suggestions}
       onAdd={(name, color) => {
-        assignTag.mutate({ collectionId, name, color });
+        assignTag.mutate({ bookId, name, color });
       }}
       onRemove={(tagId) => {
-        unassignTag.mutate({ collectionId, tagId });
+        unassignTag.mutate({ bookId, tagId });
       }}
       onRecolor={(tagId, color) => {
         updateTagColor.mutate({ tagId, color });
