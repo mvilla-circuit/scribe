@@ -34,4 +34,13 @@ describe("TagChipsRow", () => {
     expect(screen.getByText("Epic")).toBeInTheDocument();
     expect(screen.queryByText(/^\+/)).not.toBeInTheDocument();
   });
+
+  it("shows all tags when max is omitted", () => {
+    render(<TagChipsRow tags={TAGS} />);
+
+    for (const tag of TAGS) {
+      expect(screen.getByText(tag.name)).toBeInTheDocument();
+    }
+    expect(screen.queryByText(/^\+/)).not.toBeInTheDocument();
+  });
 });

@@ -23,7 +23,7 @@ export interface TagChipsRowProps extends Omit<
 /**
  * A read-only row of tag chips. When `max` is set, remaining tags collapse into
  * a muted `+N`. Renders nothing for an empty list, so callers can spread it in
- * unconditionally. Shared by `CoverCard` and `CollectionListRow`.
+ * unconditionally. Shared by `GalleryCoverCard` and `CollectionListRow`.
  */
 export function TagChipsRow({
   tags,

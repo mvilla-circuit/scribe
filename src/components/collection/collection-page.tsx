@@ -693,10 +693,6 @@ function galleryFallback(child: GalleryChild) {
   }
 }
 
-// Grid cards are narrower than list rows, so a card caps at fewer chips
-// before collapsing the rest into a "+N".
-const MAX_VISIBLE_GRID_TAGS = 3;
-
 function GalleryCoverCard({
   child,
   onOpen,
@@ -722,7 +718,6 @@ function GalleryCoverCard({
       footerExtra={
         <TagChipsRow
           tags={tags ?? []}
-          max={MAX_VISIBLE_GRID_TAGS}
           className="mt-1.5"
           data-testid="cover-card-tags"
         />

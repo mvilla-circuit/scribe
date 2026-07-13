@@ -19,6 +19,8 @@ import {
   makeCollection,
   makeDatagrid,
   makeEntry,
+  makeTag,
+  makeTaggable,
   makeWhiteboard,
 } from "@/test/fixtures";
 import { server } from "@/test/msw/server";
@@ -180,6 +182,37 @@ describe("CollectionPage", () => {
 
     const docCard = screen.getByRole("button", { name: "Opening scene" });
     expect(within(docCard).queryByText("Epic")).not.toBeInTheDocument();
+  });
+
+  it("shows every tag on a child collection cover card with no overflow count", () => {
+    const client = seed();
+    const tags = [
+      makeTag({ id: "tag-1", name: "Fantasy", color: "sky" }),
+      makeTag({ id: "tag-2", name: "Epic", color: "moss" }),
+      makeTag({ id: "tag-3", name: "Series", color: "clay" }),
+      makeTag({ id: "tag-4", name: "Draft", color: "plum" }),
+    ];
+    client.setQueryData(tagsKey, tags);
+    client.setQueryData(
+      taggablesKey("collection"),
+      tags.map((tag, index) =>
+        makeTaggable({
+          id: `tg-${index + 1}`,
+          tag_id: tag.id,
+          target_id: "c2",
+        }),
+      ),
+    );
+
+    renderWithProviders(<CollectionPage collectionId="c1" />, { client });
+
+    const collectionCard = screen.getByRole("button", {
+      name: /^Side Tales/,
+    });
+    for (const tag of tags) {
+      expect(within(collectionCard).getByText(tag.name)).toBeInTheDocument();
+    }
+    expect(within(collectionCard).queryByText(/^\+/)).not.toBeInTheDocument();
   });
 
   it("shows datagrid cards belonging to the collection", () => {
