@@ -286,8 +286,8 @@ describe("CollectionTags", () => {
     const addButton = screen.getByRole("button", { name: "Add tag" });
 
     expect(addButton).toHaveClass("opacity-0");
-    expect(addButton).toHaveClass("max-w-0");
-    expect(addButton).toHaveClass("overflow-hidden");
+    expect(addButton).not.toHaveClass("max-w-0");
+    expect(addButton.className).not.toMatch(/transition-/);
   });
 
   it("Add tag reveal classes include masthead hover focus-within and open", () => {
@@ -303,19 +303,14 @@ describe("CollectionTags", () => {
 
     const addButton = screen.getByRole("button", { name: "Add tag" });
 
-    expect(addButton.className).toMatch(/group-hover\/masthead:max-w-/);
     expect(addButton.className).toMatch(/group-hover\/masthead:opacity-100/);
-    expect(addButton.className).toMatch(/group-focus-within\/masthead:max-w-/);
     expect(addButton.className).toMatch(
       /group-focus-within\/masthead:opacity-100/,
     );
-    expect(addButton.className).toMatch(/focus-visible:max-w-/);
     expect(addButton.className).toMatch(/focus-visible:opacity-100/);
-    expect(addButton.className).toMatch(/data-\[state=open\]:max-w-/);
     expect(addButton.className).toMatch(/data-\[state=open\]:opacity-100/);
-    expect(addButton.className).toMatch(/duration-150/);
-    expect(addButton.className).toMatch(/ease-out/);
-    expect(addButton).toHaveClass("motion-reduce:transition-none");
+    expect(addButton.className).not.toMatch(/duration-150/);
+    expect(addButton.className).not.toMatch(/group-hover\/masthead:max-w-/);
   });
 
   it("removes via the hover X on the chip", async () => {

@@ -148,12 +148,9 @@ function TagChipMenu({ tag, onRecolor, onRename, onRemove }: TagChipMenuProps) {
   );
 }
 
-const ADD_TAG_REVEAL_TRANSITION =
-  "transition-[max-width,opacity] duration-150 ease-out motion-reduce:transition-none";
-
-/** Collapse at rest; expand on masthead hover/focus and when the menu is open. */
-const ADD_TAG_REVEAL_COLLAPSE =
-  "max-w-0 overflow-hidden opacity-0 group-hover/masthead:max-w-24 group-hover/masthead:opacity-100 group-focus-within/masthead:max-w-24 group-focus-within/masthead:opacity-100 focus-visible:max-w-24 focus-visible:opacity-100 data-[state=open]:max-w-24 data-[state=open]:opacity-100";
+/** Instant opacity reveal on masthead hover/focus (no width animation). */
+const ADD_TAG_REVEAL =
+  "opacity-0 focus-visible:opacity-100 group-hover/masthead:opacity-100 group-focus-within/masthead:opacity-100 data-[state=open]:opacity-100";
 
 interface AddTagControlProps {
   suggestions: CollectionTag[];
@@ -188,8 +185,7 @@ function AddTagControl({
           aria-label="Add tag"
           className={cn(
             "inline-flex shrink-0 items-center gap-0.5 rounded-full py-0.5 pl-1.5 pr-2 text-xs font-medium text-muted outline-none hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring",
-            ADD_TAG_REVEAL_TRANSITION,
-            ADD_TAG_REVEAL_COLLAPSE,
+            ADD_TAG_REVEAL,
           )}
         >
           <Plus className="size-3 shrink-0" aria-hidden="true" />
