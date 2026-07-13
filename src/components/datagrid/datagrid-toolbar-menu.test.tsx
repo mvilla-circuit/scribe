@@ -32,6 +32,7 @@ describe("DatagridToolbarMenu", () => {
         fields={fields}
         config={config({ layout: "table" })}
         onChange={onChange}
+        onCreateView={vi.fn()}
         onOpenFields={vi.fn()}
         onImportCsv={vi.fn()}
         onExportCsv={vi.fn()}
@@ -63,6 +64,7 @@ describe("DatagridToolbarMenu", () => {
         fields={fields}
         config={config()}
         onChange={vi.fn()}
+        onCreateView={vi.fn()}
         onOpenFields={onOpenFields}
         onImportCsv={onImportCsv}
         onExportCsv={onExportCsv}
@@ -84,5 +86,25 @@ describe("DatagridToolbarMenu", () => {
       await screen.findByRole("menuitem", { name: "Export CSV" }),
     );
     expect(onExportCsv).toHaveBeenCalled();
+  });
+
+  it("offers New view and calls onCreateView", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const onCreateView = vi.fn();
+    renderWithProviders(
+      <DatagridToolbarMenu
+        fields={fields}
+        config={config()}
+        onChange={vi.fn()}
+        onCreateView={onCreateView}
+        onOpenFields={vi.fn()}
+        onImportCsv={vi.fn()}
+        onExportCsv={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "View options" }));
+    await user.click(await screen.findByRole("menuitem", { name: "New view" }));
+    expect(onCreateView).toHaveBeenCalled();
   });
 });

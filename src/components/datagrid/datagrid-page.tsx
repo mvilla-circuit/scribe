@@ -380,7 +380,7 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
               views={views}
               activeViewId={activeView?.id ?? null}
               onSelect={setActiveViewId}
-              onCreate={handleNewView}
+              onCreateView={handleNewView}
               onDelete={handleDeleteView}
             />
 
@@ -400,6 +400,7 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
                 setExportOpen(true);
               }}
               onCreateRow={handleCreateRow}
+              onCreateView={handleNewView}
             />
 
             {layoutView}

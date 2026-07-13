@@ -3,6 +3,7 @@ import {
   Download,
   LayoutGrid,
   MoreHorizontal,
+  Plus,
   SlidersHorizontal,
   Table2,
   Upload,
@@ -43,19 +44,22 @@ interface DatagridToolbarMenuProps {
   fields: DatagridField[];
   config: DatagridViewConfig;
   onChange: (update: (prev: DatagridViewConfig) => DatagridViewConfig) => void;
+  onCreateView: () => void;
   onOpenFields: () => void;
   onImportCsv: () => void;
   onExportCsv: () => void;
 }
 
 /**
- * Overflow menu for datagrid view chrome: filter/sort/group/columns, layout,
- * fields manager, and CSV import/export. Keeps the toolbar to search + New.
+ * Overflow menu for datagrid view chrome: create view, filter/sort/group/
+ * columns, layout, fields manager, and CSV import/export. Keeps the toolbar
+ * to search + New.
  */
 export function DatagridToolbarMenu({
   fields,
   config,
   onChange,
+  onCreateView,
   onOpenFields,
   onImportCsv,
   onExportCsv,
@@ -74,6 +78,13 @@ export function DatagridToolbarMenu({
         </DropdownMenuTrigger>
       </Tooltip>
       <DropdownMenuContent align="end" className="min-w-48">
+        <DropdownMenuItem onSelect={onCreateView}>
+          <Plus className="size-4" aria-hidden="true" />
+          New view
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
         <DatagridViewControls
           fields={fields}
           config={config}
