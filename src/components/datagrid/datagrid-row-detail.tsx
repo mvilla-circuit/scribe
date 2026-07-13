@@ -24,22 +24,21 @@ const CLOSE_BUTTON_CLASS =
 
 const PANEL_STYLES = {
   modal: {
-    headerClassName:
-      "flex items-center gap-2 border-b border-border px-5 py-2.5",
+    headerClassName: "flex items-center gap-2 border-b border-border px-8 py-3",
     titleClassName:
       "text-2xl font-semibold leading-tight tracking-tight text-text",
-    bodyClassName: "min-h-0 flex-1 overflow-y-auto px-6 py-5",
-    propertiesClassName: "mt-5",
-    editorClassName: "mt-6 border-t border-border pt-5",
+    bodyClassName: "min-h-0 flex-1 overflow-y-auto px-8 pb-8 pt-8",
+    propertiesClassName: "mt-6",
+    editorClassName: "mt-8 border-t border-border pt-6",
   },
   split: {
     headerClassName:
-      "flex items-center gap-2 border-b border-border px-4 py-2.5",
+      "flex items-center gap-2 border-b border-border px-6 py-2.5",
     titleClassName:
       "text-xl font-semibold leading-tight tracking-tight text-text",
-    bodyClassName: "min-h-0 flex-1 overflow-y-auto bg-bg px-5 py-4",
-    propertiesClassName: "mt-4",
-    editorClassName: "mt-5 border-t border-border pt-4",
+    bodyClassName: "min-h-0 flex-1 overflow-y-auto bg-bg px-6 pb-6 pt-6",
+    propertiesClassName: "mt-5",
+    editorClassName: "mt-6 border-t border-border pt-5",
   },
 } as const;
 
@@ -119,9 +118,9 @@ function RowPanelContent({
           onUpload={setCover}
           onRemove={clearCover}
         />
-        <div className={styles.bodyClassName}>
+        <div className={styles.bodyClassName} data-testid="row-panel-body">
           {!coverUrl && (
-            <div className="group/masthead mb-2">
+            <div className="group/masthead mb-3">
               <AddCoverButton onUpload={setCover} />
             </div>
           )}
@@ -142,12 +141,13 @@ function RowPanelContent({
               relationTargets={relationTargets}
               onPatch={patchProperty}
             />
-            <div className={fields.length > 0 ? "mt-2" : undefined}>
+            <div className={fields.length > 0 ? "mt-3" : undefined}>
               <DatagridRowEditFields datagridId={datagridId} fields={fields} />
             </div>
           </div>
           <div
             className={styles.editorClassName}
+            data-testid="row-panel-editor"
             style={{ fontFamily: "var(--font-text)" }}
           >
             <DatagridRowBody rowId={rowId} onSaveStateChange={setSaveState} />

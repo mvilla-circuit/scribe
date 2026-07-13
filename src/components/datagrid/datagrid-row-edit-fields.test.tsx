@@ -177,4 +177,14 @@ describe("Edit Fields on modal and split rows", () => {
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
+
+  it("uses editorial peek spacing on the modal body", () => {
+    renderWithProviders(
+      <DatagridRowModal datagridId={DGID} rowId={ROWID} onClose={vi.fn()} />,
+      { client: seed() },
+    );
+    const body = screen.getByTestId("row-panel-body");
+    expect(body).toHaveClass("px-8", "pt-8", "pb-8");
+    expect(screen.getByTestId("row-panel-editor")).toHaveClass("mt-8", "pt-6");
+  });
 });
