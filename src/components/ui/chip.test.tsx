@@ -146,6 +146,27 @@ describe("RemovableChip", () => {
     expect(removeButton).not.toHaveClass("opacity-0");
   });
 
+  it("reveals wide enough to fit the largest consumer remove size", () => {
+    // The datagrid passes the largest in-use removeClassName (size-5 = 20px);
+    // it must stay under the revealed max-w-6 (24px) ceiling or overflow-hidden
+    // would clip the icon. Pin both so a change to either is deliberate.
+    render(
+      <RemovableChip
+        name="Fantasy"
+        color="sky"
+        onRemove={vi.fn()}
+        removeReveal="hover"
+        removeClassName="size-5"
+      />,
+    );
+
+    const removeButton = screen.getByRole("button", { name: "Remove Fantasy" });
+
+    expect(removeButton).toHaveClass("size-5");
+    expect(removeButton.className).toMatch(/group-hover\/chip:max-w-6\b/);
+    expect(removeButton.className).toMatch(/focus-visible:max-w-6\b/);
+  });
+
   it("gates remove reveal transitions behind motion-reduce", () => {
     render(
       <RemovableChip
