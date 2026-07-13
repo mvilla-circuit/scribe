@@ -171,6 +171,18 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
 
   const layout = config.layout;
   const isCardLayout = layout === "gallery" || layout === "board";
+  const fieldVisibility =
+    layout === "table"
+      ? {
+          mode: "columns" as const,
+          key: "visibleFieldIds" as const,
+          ids: config.visibleFieldIds,
+        }
+      : {
+          mode: "cards" as const,
+          key: "cardVisibleFieldIds" as const,
+          ids: config.cardVisibleFieldIds,
+        };
   const showSubtitle = datagridShowSubtitle(datagrid);
   const toggleSubtitle = () => {
     updateDatagrid.mutate({
@@ -465,21 +477,17 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
           onOpenChange={setFieldsOpen}
           fields={fields}
           onChange={persistFields}
-          visibilityMode={layout === "table" ? "columns" : "cards"}
-          visibleIds={
-            layout === "table"
-              ? config.visibleFieldIds
-              : config.cardVisibleFieldIds
-          }
+          visibilityMode={fieldVisibility.mode}
+          visibleIds={fieldVisibility.ids}
           onToggleVisibility={(fieldId) => {
-            persistConfig((prev) => {
-              const key =
-                layout === "table" ? "visibleFieldIds" : "cardVisibleFieldIds";
-              return {
-                ...prev,
-                [key]: toggleVisibleFieldId(fields, prev[key], fieldId),
-              };
-            });
+            persistConfig((prev) => ({
+              ...prev,
+              [fieldVisibility.key]: toggleVisibleFieldId(
+                fields,
+                prev[fieldVisibility.key],
+                fieldId,
+              ),
+            }));
           }}
         />
         <DatagridImportDialog
