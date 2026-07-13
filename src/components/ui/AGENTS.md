@@ -35,7 +35,7 @@ file.
 | Elevated floating panel       | `Popover` / `PopoverContent`                                                                    |
 | Grid/list (or similar) toggle | `SegmentedControl`                                                                              |
 | Breadcrumb trail              | `Breadcrumb` / `BreadcrumbLink` / `BreadcrumbSep`                                               |
-| Page header icon + title      | `Masthead`                                                                                      |
+| Page header icon + title      | `Masthead` (icon centers on first child; fragments flatten)                                     |
 | Always-on title edit          | `EditableText`                                                                                  |
 | One-shot row rename           | `InlineRename`                                                                                  |
 | Gallery card shell            | `CoverCard` (`footerExtra` for tags/chips)                                                      |

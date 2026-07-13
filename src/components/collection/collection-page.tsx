@@ -510,7 +510,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
                 description: description || null,
               });
             }}
-            className="mt-1.5 text-base leading-snug text-muted"
+            className="mt-1 text-xl leading-snug text-muted"
           />
           <CollectionTagsSection collectionId={collection.id} />
         </Masthead>

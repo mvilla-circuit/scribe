@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { Children, Fragment, isValidElement, type ReactNode } from "react";
 
 import { DocumentIcon } from "@/components/ui/document-icon";
 import { IconPicker } from "@/components/ui/icon-picker";
@@ -16,20 +16,38 @@ interface MastheadProps {
    * (e.g. "Add cover"). Revealed with the same masthead hover/focus group.
    */
   actions?: ReactNode;
-  /** The title block (title, subtitle, and any meta) shown with the icon. */
+  /**
+   * The title block shown with the icon. The first child is the title line
+   * the icon vertically centers against; further siblings (subtitle, tags, …)
+   * render below. Fragments are flattened so book/document title blocks
+   * (`<>title + subtitle</>`) still center on the title alone.
+   */
   children: ReactNode;
+}
+
+/** Expand `<>…</>` children into a flat sibling list (nested fragments too). */
+function flattenChildren(children: ReactNode): ReactNode[] {
+  return Children.toArray(children).flatMap((child) => {
+    if (
+      isValidElement<{ children?: ReactNode }>(child) &&
+      child.type === Fragment
+    ) {
+      return flattenChildren(child.props.children);
+    }
+    return [child];
+  });
 }
 
 // The shared title masthead for the book cover and document pages: an icon plus
 // the title block, composed so the two read as one header.
 //
-// On wide viewports the set icon "hangs" in the left margin of the title block
-// (an absolute `right-full` offset), so it stays vertically aligned with the
-// title even when affordance actions (Add cover, …) sit above. On narrower
-// viewports there's no room in the margin, so the icon drops onto its own row
-// directly above the title (the classic stacked layout). The empty "Add icon"
-// affordance always stays stacked with any actions, since a wide pill doesn't
-// belong in the margin.
+// On wide viewports the set icon "hangs" in the left margin of the title line
+// (an absolute `right-full` offset), vertically centered on that line alone so
+// a subtitle or tags below cannot pull it down. On narrower viewports there's
+// no room in the margin, so the icon drops onto its own row directly above the
+// title (the classic stacked layout). The empty "Add icon" affordance always
+// stays stacked with any actions, since a wide pill doesn't belong in the
+// margin.
 export function Masthead({
   icon,
   onSelectIcon,
@@ -39,6 +57,7 @@ export function Masthead({
   children,
 }: MastheadProps) {
   const showActionsRow = !icon || Boolean(actions);
+  const [titleChild, ...restChildren] = flattenChildren(children);
 
   return (
     <header className="group/masthead relative">
@@ -59,20 +78,23 @@ export function Masthead({
         </div>
       )}
       <div data-testid="masthead-title" className="relative">
-        {icon && (
-          <div
-            data-testid="masthead-icon"
-            className="mb-2 xl:absolute xl:right-full xl:top-0 xl:mb-0 xl:mr-3"
-          >
-            <MastheadIconControl
-              icon={icon}
-              onSelect={onSelectIcon}
-              onRemove={onRemoveIcon}
-              changeLabel={changeIconLabel}
-            />
-          </div>
-        )}
-        {children}
+        <div data-testid="masthead-title-line" className="relative">
+          {icon && (
+            <div
+              data-testid="masthead-icon"
+              className="mb-2 xl:absolute xl:right-full xl:top-1/2 xl:mb-0 xl:mr-3 xl:-translate-y-1/2"
+            >
+              <MastheadIconControl
+                icon={icon}
+                onSelect={onSelectIcon}
+                onRemove={onRemoveIcon}
+                changeLabel={changeIconLabel}
+              />
+            </div>
+          )}
+          {titleChild}
+        </div>
+        {restChildren}
       </div>
     </header>
   );

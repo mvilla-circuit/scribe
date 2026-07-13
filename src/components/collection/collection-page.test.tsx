@@ -126,6 +126,19 @@ describe("CollectionPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("sizes the masthead description with text-xl and mt-1", () => {
+    renderWithProviders(<CollectionPage collectionId="c1" />, {
+      client: seed(),
+    });
+
+    expect(screen.getByLabelText("Collection description")).toHaveClass(
+      "mt-1",
+      "text-xl",
+      "leading-snug",
+      "text-muted",
+    );
+  });
+
   it("renders the tag row below the description", () => {
     const client = seed();
     client.setQueryData(tagsKey, [{ id: "tag-1", name: "Epic", color: "sky" }]);
