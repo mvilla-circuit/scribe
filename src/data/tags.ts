@@ -450,6 +450,11 @@ function useUnassignTagMutation<TInput>(
       }
       toast.error("Couldn't remove tag");
     },
+    onSettled: (_data, _error, rawInput) => {
+      const input = normalizeInput(rawInput);
+      void qc.invalidateQueries({ queryKey: taggablesKey(input.targetType) });
+      void qc.invalidateQueries({ queryKey: allTaggablesKey });
+    },
   });
 }
 

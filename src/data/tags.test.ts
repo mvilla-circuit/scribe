@@ -2,7 +2,7 @@ import { waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
 
-import { taggablesKey, tagsKey } from "@/data/query-keys";
+import { allTaggablesKey, taggablesKey, tagsKey } from "@/data/query-keys";
 import { swatchForIndex } from "@/lib/swatches";
 import { makeTag, makeTaggable } from "@/test/fixtures";
 import { server } from "@/test/msw/server";
@@ -37,6 +37,7 @@ const TAGS_URL = "http://supabase.test/rest/v1/tags";
 const TAGGABLES_URL = "http://supabase.test/rest/v1/taggables";
 const BOOK_TAGGABLES_KEY = taggablesKey("book");
 const COLLECTION_TAGGABLES_KEY = taggablesKey("collection");
+const ALL_TAGGABLES_KEY = allTaggablesKey;
 
 describe("tagsForBook", () => {
   it("joins book taggables", () => {
@@ -205,6 +206,7 @@ describe("useAssignBookTag", () => {
     const client = createTestQueryClient();
     client.setQueryData(tagsKey, []);
     client.setQueryData(BOOK_TAGGABLES_KEY, []);
+    client.setQueryData(ALL_TAGGABLES_KEY, []);
 
     const { result } = renderHookWithQuery(() => useAssignBookTag(), {
       client,
@@ -223,6 +225,13 @@ describe("useAssignBookTag", () => {
     });
     expect(
       client.getQueryData<Taggable[]>(BOOK_TAGGABLES_KEY)?.[0],
+    ).toMatchObject({
+      tag_id: createdTagId,
+      target_type: "book",
+      target_id: "book-1",
+    });
+    expect(
+      client.getQueryData<Taggable[]>(ALL_TAGGABLES_KEY)?.[0],
     ).toMatchObject({
       tag_id: createdTagId,
       target_type: "book",
@@ -273,15 +282,16 @@ describe("useUnassignBookTag", () => {
 
     const client = createTestQueryClient();
     const tag = makeTag({ id: "tag-1", name: "Fantasy" });
+    const edge = makeTaggable({
+      id: "taggable-1",
+      tag_id: "tag-1",
+      target_type: "book",
+      target_id: "book-1",
+    });
     client.setQueryData(tagsKey, [tag]);
-    client.setQueryData(BOOK_TAGGABLES_KEY, [
-      makeTaggable({
-        id: "taggable-1",
-        tag_id: "tag-1",
-        target_type: "book",
-        target_id: "book-1",
-      }),
-    ]);
+    client.setQueryData(BOOK_TAGGABLES_KEY, [edge]);
+    client.setQueryData(ALL_TAGGABLES_KEY, [edge]);
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
 
     const { result } = renderHookWithQuery(() => useUnassignBookTag(), {
       client,
@@ -293,7 +303,14 @@ describe("useUnassignBookTag", () => {
     });
 
     expect(client.getQueryData<Taggable[]>(BOOK_TAGGABLES_KEY)).toEqual([]);
+    expect(client.getQueryData<Taggable[]>(ALL_TAGGABLES_KEY)).toEqual([]);
     expect(client.getQueryData<Tag[]>(tagsKey)).toEqual([tag]);
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: BOOK_TAGGABLES_KEY,
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ALL_TAGGABLES_KEY,
+    });
   });
 });
 
