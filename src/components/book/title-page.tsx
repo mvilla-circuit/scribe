@@ -158,8 +158,12 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
         onCommit={(title) => {
           renameBook.mutate({ id: book.id, title });
         }}
-        className="text-[2.75rem] font-semibold leading-tight tracking-tight text-text"
-        style={{ fontFamily: titleFont }}
+        className="leading-tight tracking-tight text-text"
+        style={{
+          fontFamily: titleFont,
+          fontSize: "var(--font-display-size)",
+          fontWeight: "var(--font-display-regular)",
+        }}
       />
       {showSubtitle && (
         <EditableText

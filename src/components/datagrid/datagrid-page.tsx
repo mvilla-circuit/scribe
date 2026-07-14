@@ -404,8 +404,12 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
               onCommit={(name) => {
                 renameDatagrid.mutate({ id: datagridId, name });
               }}
-              className="text-2xl font-semibold leading-tight tracking-tight text-text"
-              style={{ fontFamily: "var(--font-display)" }}
+              className="leading-tight tracking-tight text-text"
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "var(--font-display-size)",
+                fontWeight: "var(--font-display-regular)",
+              }}
             />
             {showSubtitle && (
               <EditableText

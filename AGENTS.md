@@ -81,8 +81,9 @@ adding or changing UI, hold to the direction inferred from the existing styles
   stable system sans (`--font-sans`) — never serif or mono. The reading surface
   uses the editorial roles `--font-display` (titles/headings), `--font-text`
   (body), and `--font-code`, which are repointed at runtime to the user's chosen
-  catalog fonts. Body prose is ~17px at 1.7 line-height; headings get tight
-  tracking and clear hierarchy. Keep generous line-height and paragraph rhythm.
+  catalog fonts. Body/title/code sizes are metric-driven baselines (px via
+  `--font-*-size`); derived type uses em/rem. Keep generous line-height and
+  paragraph rhythm.
 - **Shape & spacing**: use the radius scale (`--radius-sm` 6 / `--radius-md` 8 /
   `--radius-lg` 12). Favor soft, rounded, framed surfaces (cards, popovers) over
   hard rules. Space the reading surface in `em` units so rhythm scales with type.

@@ -26,11 +26,13 @@ const mocks = vi.hoisted(() => {
 
 vi.mock("./catalog", () => ({
   FONT_REGISTRY: mocks.registry,
+  FONT_ROLES: ["display", "text", "code"],
   resolveFontEntry: (fontId: string | undefined, role: string) =>
     (fontId && mocks.registry[fontId]) || { stack: `default-${role}` },
 }));
 
-const { ensureFontLoaded, fontStackFor } = await import("./load-font");
+const { ensureFontLoaded, fontStackFor, fontVarsFor } =
+  await import("./load-font");
 
 describe("fontStackFor", () => {
   it("returns the resolved entry's stack for a known id", () => {
@@ -40,6 +42,37 @@ describe("fontStackFor", () => {
   it("returns the role default stack for an unknown id", () => {
     expect(fontStackFor("nope", "display")).toBe("default-display");
     expect(fontStackFor(undefined, "code")).toBe("default-code");
+  });
+});
+
+describe("fontVarsFor", () => {
+  it("emits stacks and optical metrics for every resolved role", () => {
+    expect(
+      fontVarsFor({
+        display: "web-cache",
+        text: "web-concurrent",
+        code: "web-fail",
+      }),
+    ).toMatchObject({
+      "--font-display": "cache-stack",
+      "--font-text": "concurrent-stack",
+      "--font-code": "fail-stack",
+      "--font-display-size": "50px",
+      "--font-display-regular": "400",
+      "--font-display-bold": "700",
+      "--font-display-line": "1.42",
+      "--font-display-spacing": "-0.01em",
+      "--font-text-size": "17px",
+      "--font-text-regular": "400",
+      "--font-text-bold": "700",
+      "--font-text-line": "1.7",
+      "--font-text-spacing": "0em",
+      "--font-code-size": "16px",
+      "--font-code-regular": "400",
+      "--font-code-bold": "700",
+      "--font-code-line": "1.55",
+      "--font-code-spacing": "0em",
+    });
   });
 });
 

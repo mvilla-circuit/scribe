@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { ScribeLogo } from "@/components/scribe-logo";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 
@@ -50,8 +51,12 @@ export function AuthScreen() {
     <main className="flex h-full items-center justify-center px-6">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-8 shadow-card">
         <div className="mb-8 text-center">
-          <h1 className="font-serif text-3xl font-semibold italic tracking-tight text-text">
-            Scribe
+          <h1 className="flex justify-center">
+            <ScribeLogo
+              iconSize={22}
+              textClassName="text-3xl"
+              className="justify-center"
+            />
           </h1>
           <p className="mt-2 text-sm text-muted">Sign in to start writing.</p>
         </div>

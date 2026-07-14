@@ -7,8 +7,10 @@
 
 .scribe-prose {
   position: relative; /* anchors the absolutely-positioned block drag handle */
-  font-size: 1.0625rem; /* 17px base — easy on the eyes for long reading */
-  line-height: 1.7;
+  font-size: var(--font-text-size);
+  font-weight: var(--font-text-regular);
+  line-height: var(--font-text-line);
+  letter-spacing: var(--font-text-spacing);
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -43,21 +45,22 @@
 .scribe-prose h2,
 .scribe-prose h3 {
   font-family: var(--font-display, inherit);
-  font-weight: 700;
-  line-height: 1.25;
-  letter-spacing: -0.012em;
+  font-weight: var(--font-display-regular);
+  line-height: var(--font-display-line);
+  letter-spacing: var(--font-display-spacing);
   color: var(--color-text);
 }
+/* Ratios mirror DISPLAY_H1/H2/H3 in fonts/type-scale.ts. */
 .scribe-prose h1 {
-  font-size: 1.9rem;
+  font-size: calc(var(--font-display-size) * 0.79);
   margin-top: 1.6em;
 }
 .scribe-prose h2 {
-  font-size: 1.5rem;
+  font-size: calc(var(--font-display-size) * 0.64);
   margin-top: 1.5em;
 }
 .scribe-prose h3 {
-  font-size: 1.22rem;
+  font-size: calc(var(--font-display-size) * 0.52);
   margin-top: 1.3em;
 }
 /* Don't push the very first block down inside the body. */
@@ -239,18 +242,22 @@
 }
 .scribe-prose pre {
   margin: 1.2em 0;
+  font-family: var(--font-code);
+  font-size: var(--font-code-size);
+  font-weight: var(--font-code-regular);
   background: var(--color-sidebar);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 0.9em 1.1em;
   overflow-x: auto;
-  line-height: 1.55;
+  line-height: var(--font-code-line);
+  letter-spacing: var(--font-code-spacing);
 }
 .scribe-prose pre code {
   background: none;
   border: none;
   padding: 0;
-  font-size: 0.875em;
+  font-size: inherit;
   color: var(--color-text);
 }
 
@@ -330,10 +337,19 @@
 }
 
 /* --- Marks --- */
-.scribe-prose strong {
-  font-weight: 700;
+.scribe-prose strong,
+.scribe-prose b {
+  font-weight: var(--font-text-bold);
   /* No explicit color here: forcing one would override the inline color mark,
    * so bold text (e.g. inside a heading) could never take a custom color. */
+}
+.scribe-prose h1 strong,
+.scribe-prose h1 b,
+.scribe-prose h2 strong,
+.scribe-prose h2 b,
+.scribe-prose h3 strong,
+.scribe-prose h3 b {
+  font-weight: var(--font-display-bold);
 }
 /* Underline: a thick, marker-like bar with rounded ends rather than the
  * browser's tight hairline. Drawn as a bottom-anchored `background` gradient

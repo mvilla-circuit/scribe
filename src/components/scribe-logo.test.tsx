@@ -1,15 +1,31 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ScribeLogo } from "./scribe-logo";
 
+const { ensureFontLoaded } = vi.hoisted(() => ({
+  ensureFontLoaded: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock("@/fonts/load-font", () => ({ ensureFontLoaded }));
+
 describe("ScribeLogo", () => {
-  it("renders the Scribe wordmark in a serif italic face", () => {
+  beforeEach(() => {
+    ensureFontLoaded.mockClear();
+  });
+
+  it("renders the Scribe wordmark in the Cardillac brand face", () => {
     render(<ScribeLogo />);
 
     const wordmark = screen.getByText("Scribe");
     expect(wordmark).toHaveClass("italic");
-    expect(wordmark).toHaveClass("font-serif");
+    expect(wordmark).toHaveStyle({ fontFamily: "var(--font-brand)" });
+  });
+
+  it("eagerly loads the Cardillac brand face", () => {
+    render(<ScribeLogo />);
+
+    expect(ensureFontLoaded).toHaveBeenCalledWith("cardillac");
   });
 
   it("renders the feather brand icon alongside the wordmark", () => {

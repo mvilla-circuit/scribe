@@ -105,8 +105,12 @@ export function DatagridRowFull({
             ariaLabel="Row title"
             placeholder="Untitled"
             onCommit={rename}
-            className="text-[2.6rem] font-semibold leading-tight tracking-tight text-text"
-            style={{ fontFamily: "var(--font-display)" }}
+            className="leading-tight tracking-tight text-text"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "var(--font-display-size)",
+              fontWeight: "var(--font-display-regular)",
+            }}
           />
         </Masthead>
 

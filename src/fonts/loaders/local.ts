@@ -1,0 +1,229 @@
+type LocalFontId = (typeof LOCAL_FONT_IDS)[number];
+
+interface LocalFontConfig {
+  family: string;
+  basename: string;
+  format: "opentype" | "woff2";
+  variant: "static" | "variable";
+}
+
+/** Font ids backed by font files bundled with Scribe. */
+export const LOCAL_FONT_IDS = [
+  "cardillac",
+  "bespoke-serif",
+  "bespoke-slab",
+  "bespoke-sans",
+  "erode",
+  "gambetta",
+  "recia",
+  "rowan",
+  "sentient",
+  "zodiak",
+  "chubbo",
+  "neco",
+  "amulya",
+  "general-sans",
+  "satoshi",
+  "supreme",
+  "switzer",
+  "tabular",
+  "frygia",
+  "industry",
+] as const;
+
+const LOCAL_FONT_CONFIG = {
+  cardillac: {
+    family: "Cardillac",
+    basename: "Cardillac",
+    format: "opentype",
+    variant: "static",
+  },
+  "bespoke-serif": {
+    family: "Bespoke Serif",
+    basename: "BespokeSerif",
+    format: "woff2",
+    variant: "variable",
+  },
+  "bespoke-slab": {
+    family: "Bespoke Slab",
+    basename: "BespokeSlab",
+    format: "woff2",
+    variant: "variable",
+  },
+  "bespoke-sans": {
+    family: "Bespoke Sans",
+    basename: "BespokeSans",
+    format: "woff2",
+    variant: "variable",
+  },
+  erode: {
+    family: "Erode",
+    basename: "Erode",
+    format: "woff2",
+    variant: "variable",
+  },
+  gambetta: {
+    family: "Gambetta",
+    basename: "Gambetta",
+    format: "woff2",
+    variant: "variable",
+  },
+  recia: {
+    family: "Recia",
+    basename: "Recia",
+    format: "woff2",
+    variant: "variable",
+  },
+  rowan: {
+    family: "Rowan",
+    basename: "Rowan",
+    format: "woff2",
+    variant: "variable",
+  },
+  sentient: {
+    family: "Sentient",
+    basename: "Sentient",
+    format: "woff2",
+    variant: "variable",
+  },
+  zodiak: {
+    family: "Zodiak",
+    basename: "Zodiak",
+    format: "woff2",
+    variant: "variable",
+  },
+  chubbo: {
+    family: "Chubbo",
+    basename: "Chubbo",
+    format: "woff2",
+    variant: "variable",
+  },
+  neco: {
+    family: "Neco",
+    basename: "Neco",
+    format: "woff2",
+    variant: "variable",
+  },
+  amulya: {
+    family: "Amulya",
+    basename: "Amulya",
+    format: "woff2",
+    variant: "variable",
+  },
+  "general-sans": {
+    family: "General Sans",
+    basename: "GeneralSans",
+    format: "woff2",
+    variant: "variable",
+  },
+  satoshi: {
+    family: "Satoshi",
+    basename: "Satoshi",
+    format: "woff2",
+    variant: "variable",
+  },
+  supreme: {
+    family: "Supreme",
+    basename: "Supreme",
+    format: "woff2",
+    variant: "variable",
+  },
+  switzer: {
+    family: "Switzer",
+    basename: "Switzer",
+    format: "woff2",
+    variant: "variable",
+  },
+  tabular: {
+    family: "Tabular",
+    basename: "Tabular",
+    format: "woff2",
+    variant: "variable",
+  },
+  frygia: {
+    family: "Frygia",
+    basename: "Frygia",
+    format: "woff2",
+    variant: "static",
+  },
+  industry: {
+    family: "Industry",
+    basename: "Industry",
+    format: "woff2",
+    variant: "static",
+  },
+} as const satisfies Record<LocalFontId, LocalFontConfig>;
+
+const LOCAL_FONT_ASSETS = import.meta.glob<string>("../assets/*.{otf,woff2}", {
+  eager: true,
+  import: "default",
+  query: "?url",
+});
+
+/** Returns whether an id has a bundled local font loader. */
+export function isLocalFont(id: string): id is LocalFontId {
+  return (LOCAL_FONT_IDS as readonly string[]).includes(id);
+}
+
+function assetUrl(filename: string): string {
+  const asset = LOCAL_FONT_ASSETS[`../assets/${filename}`];
+  if (!asset) throw new Error(`Missing local font asset: ${filename}`);
+  return asset;
+}
+
+function fontFace(
+  config: LocalFontConfig,
+  suffix: string,
+  weight: string,
+  style: "normal" | "italic",
+): string {
+  const extension = config.format === "opentype" ? "otf" : "woff2";
+  const url = assetUrl(`${config.basename}-${suffix}.${extension}`);
+  return `@font-face {
+  font-family: "${config.family}";
+  src: url("${url}") format("${config.format}");
+  font-weight: ${weight};
+  font-style: ${style};
+  font-display: swap;
+}`;
+}
+
+function fontFacesFor(config: LocalFontConfig): string {
+  if (config.variant === "variable") {
+    return [
+      fontFace(config, "Variable", "100 900", "normal"),
+      fontFace(config, "VariableItalic", "100 900", "italic"),
+    ].join("\n\n");
+  }
+
+  return [
+    fontFace(config, "Regular", "400", "normal"),
+    fontFace(config, "Bold", "700", "normal"),
+    fontFace(config, "Italic", "400", "italic"),
+    fontFace(config, "BoldItalic", "700", "italic"),
+  ].join("\n\n");
+}
+
+/**
+ * Creates a lazy loader that registers a bundled local font's faces once.
+ *
+ * Unknown ids reject when the returned loader is invoked. This makes a catalog
+ * configuration error visible to its caller while preserving a consistent
+ * `() => Promise<unknown>` loader interface.
+ */
+export function localLoader(id: string): () => Promise<unknown> {
+  return () => {
+    if (!isLocalFont(id)) {
+      return Promise.reject(new Error(`Unknown local font: ${id}`));
+    }
+
+    const selector = `style[data-scribe-local-fonts="${id}"]`;
+    if (document.head.querySelector(selector)) return Promise.resolve();
+
+    const style = document.createElement("style");
+    style.dataset.scribeLocalFonts = id;
+    style.textContent = fontFacesFor(LOCAL_FONT_CONFIG[id]);
+    document.head.append(style);
+    return Promise.resolve();
+  };
+}

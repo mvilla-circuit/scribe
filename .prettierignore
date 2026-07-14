@@ -4,3 +4,8 @@ src-tauri/gen
 package-lock.json
 src/lib/database.types.ts
 supabase/.temp
+# Local font labs (not part of the app bundle)
+font-lab.html
+type-lab.html
+mono-lab.html
+fonts/

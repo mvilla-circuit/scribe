@@ -139,8 +139,12 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
               renameEntry.mutate({ id: entry.id, title });
             }}
             onEnter={() => editorRef.current?.focusStart()}
-            className="text-[2.6rem] font-semibold leading-tight tracking-tight text-text"
-            style={{ fontFamily: "var(--font-display)" }}
+            className="leading-tight tracking-tight text-text"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "var(--font-display-size)",
+              fontWeight: "var(--font-display-regular)",
+            }}
           />
         </Masthead>
 

@@ -1,10 +1,9 @@
-import { Feather } from "lucide-react";
 import { useMemo } from "react";
 
+import { ScribeLogo } from "@/components/scribe-logo";
 import { useBooks } from "@/data/books";
 import { useCollections } from "@/data/collections";
 import { useCreateRootItem } from "@/data/use-create-root-item";
-import { makeIcon } from "@/lib/make-icon";
 import { useSessionUser } from "@/lib/session-user";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
@@ -21,8 +20,6 @@ import { DocumentIcon } from "./ui/document-icon";
 import { Skeleton } from "./ui/skeleton";
 import { Tooltip } from "./ui/tooltip";
 import { useGreeting } from "./use-greeting";
-
-const BrandIcon = makeIcon(Feather);
 
 const MAX_RECENT = 6;
 
@@ -98,14 +95,7 @@ export function MainEmptyState() {
       <div className="scribe-surface-in flex flex-1 flex-col items-center px-8 py-12">
         <div className="w-full max-w-3xl">
           <header className="flex flex-col items-start">
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-selected text-accent">
-                <BrandIcon size={20} />
-              </span>
-              <span className="font-serif text-3xl font-semibold italic tracking-tight text-text">
-                Scribe
-              </span>
-            </div>
+            <ScribeLogo iconSize={22} textClassName="text-3xl" />
             <h2 className="mt-6 text-2xl font-semibold tracking-tight text-text">
               {greeting}
               {firstName ? `, ${firstName}` : ""}

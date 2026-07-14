@@ -508,8 +508,12 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
             onCommit={(name) => {
               renameCollection.mutate({ id: collection.id, name });
             }}
-            className="text-4xl font-semibold leading-tight tracking-tight text-text"
-            style={{ fontFamily: "var(--font-display)" }}
+            className="leading-tight tracking-tight text-text"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "var(--font-display-size)",
+              fontWeight: "var(--font-display-regular)",
+            }}
           />
           <EditableText
             value={collection.description ?? ""}

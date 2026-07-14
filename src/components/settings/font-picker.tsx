@@ -10,6 +10,7 @@ import {
   ROLE_FONTS,
 } from "@/fonts/catalog";
 import { ensureFontLoaded } from "@/fonts/load-font";
+import { metricsFor } from "@/fonts/metrics";
 import { makeIcon } from "@/lib/make-icon";
 import { matchesNormalizedQuery } from "@/lib/text-match";
 import { cn } from "@/lib/utils";
@@ -148,24 +149,28 @@ export function FontPicker({
           )}
           <FontGroup
             label="System"
+            role={role}
             fonts={groups.system}
             selectedId={selectedId}
             onSelect={select}
           />
           <FontGroup
             label="Serif"
+            role={role}
             fonts={groups.serif}
             selectedId={selectedId}
             onSelect={select}
           />
           <FontGroup
             label="Sans"
+            role={role}
             fonts={groups.sans}
             selectedId={selectedId}
             onSelect={select}
           />
           <FontGroup
             label="Monospace"
+            role={role}
             fonts={groups.mono}
             selectedId={selectedId}
             onSelect={select}
@@ -226,11 +231,13 @@ function InheritOption({
 
 function FontGroup({
   label,
+  role,
   fonts,
   selectedId,
   onSelect,
 }: {
   label: string;
+  role: FontRole;
   fonts: FontEntry[];
   selectedId: string | undefined;
   onSelect: (fontId: string) => void;
@@ -245,6 +252,7 @@ function FontGroup({
         <FontOption
           key={font.id}
           font={font}
+          role={role}
           selected={font.id === selectedId}
           onSelect={() => {
             onSelect(font.id);
@@ -257,23 +265,27 @@ function FontGroup({
 
 function FontOption({
   font,
+  role,
   selected,
   onSelect,
 }: {
   font: FontEntry;
+  role: FontRole;
   selected: boolean;
   onSelect: () => void;
 }) {
-  // Load the preview face on first render; the browser repaints this row in the
-  // real font as soon as it arrives (System options need nothing).
-  useEffect(() => {
-    void ensureFontLoaded(font.id);
-  }, [font.id]);
+  const metrics = metricsFor(role, font.id);
 
   return (
     <button
       type="button"
       onClick={onSelect}
+      onPointerEnter={() => {
+        void ensureFontLoaded(font.id);
+      }}
+      onFocus={() => {
+        void ensureFontLoaded(font.id);
+      }}
       style={{ fontFamily: font.stack }}
       className={cn(
         "flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left outline-none transition-colors hover:bg-hover focus-visible:bg-hover",
@@ -284,8 +296,12 @@ function FontOption({
         <span className="truncate text-[0.95rem] text-text">{font.family}</span>
         {selected && <CheckIcon size={15} className="shrink-0 text-accent" />}
       </span>
-      <span className="truncate text-xs text-muted">
-        The quick brown fox <span style={{ fontWeight: 700 }}>jumps</span>{" "}
+      <span
+        className="truncate text-xs text-muted"
+        style={{ fontWeight: metrics.regular }}
+      >
+        The quick brown fox{" "}
+        <span style={{ fontWeight: metrics.bold }}>jumps</span>{" "}
         <span style={{ fontStyle: "italic" }}>over the lazy dog</span>
       </span>
     </button>

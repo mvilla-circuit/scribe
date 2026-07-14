@@ -14,6 +14,7 @@ import {
   type ResolvedFonts,
   resolveFontEntry,
 } from "./catalog";
+import { metricsFor } from "./metrics";
 
 const loaded = new Set<string>();
 const inflight = new Map<string, Promise<void>>();
@@ -58,16 +59,35 @@ export function fontStackFor(
 }
 
 /**
- * Builds the `--font-display/text/code` custom properties for a resolved
- * role -> fontId map. Shared by the global hook (assigned to the document root)
- * and the scoped hook (an inline style on the reading surface) so both compute
- * the same variables the same way.
+ * Builds font-family and optical-metric custom properties for a resolved role ->
+ * fontId map. Shared by the global hook (assigned to the document root) and the
+ * scoped hook (an inline style on the reading surface) so both compute the same
+ * variables the same way.
  */
 export function fontVarsFor(resolved: ResolvedFonts): CSSProperties {
+  const display = metricsFor("display", resolved.display);
+  const text = metricsFor("text", resolved.text);
+  const code = metricsFor("code", resolved.code);
+
   return {
     "--font-display": fontStackFor(resolved.display, "display"),
+    "--font-display-size": `${display.size}px`,
+    "--font-display-regular": `${display.regular}`,
+    "--font-display-bold": `${display.bold}`,
+    "--font-display-line": `${display.line}`,
+    "--font-display-spacing": `${display.spacing}em`,
     "--font-text": fontStackFor(resolved.text, "text"),
+    "--font-text-size": `${text.size}px`,
+    "--font-text-regular": `${text.regular}`,
+    "--font-text-bold": `${text.bold}`,
+    "--font-text-line": `${text.line}`,
+    "--font-text-spacing": `${text.spacing}em`,
     "--font-code": fontStackFor(resolved.code, "code"),
+    "--font-code-size": `${code.size}px`,
+    "--font-code-regular": `${code.regular}`,
+    "--font-code-bold": `${code.bold}`,
+    "--font-code-line": `${code.line}`,
+    "--font-code-spacing": `${code.spacing}em`,
   };
 }
 

@@ -1,58 +1,43 @@
-// Curated, self-hosted typography catalog for Phase 6.
-//
-// Three purpose roles drive the reading surface: Display (titles), Text (body),
-// and Code (monospace). Each role offers a System default plus a hand-picked set
-// of families bundled via `@fontsource`. Every web family here ships a *true*
-// bold and italic (regular / bold / italic / bold-italic), so the editor's
-// bold/italic render real cuts rather than synthesized slants.
-//
-// Fonts are loaded lazily (see loadFont.ts). Every family ships the same four
-// Latin subset stylesheets (400 / 700 / 400-italic / 700-italic), so the loader
-// is derived from the font id via `import.meta.glob` rather than hand-writing
-// four imports per entry — a chosen font still pulls only its own small woff2
-// files on demand, fully offline once bundled, no API key.
-
-// Banned fonts — DO NOT re-add. These were removed for not meeting the
-// elegant/editorial bar; every replacement ships a true bold and italic.
-//   Serif:  Cormorant         → Petrona
-//           Spectral          → Vollkorn
-//           EB Garamond       → Gentium Book Plus
-//           Libre Baskerville → Literata
-//   Sans:   Jost              → Plus Jakarta Sans
-//           Epilogue          → Albert Sans
-//           Red Hat Display   → Hanken Grotesk
-//           Nunito Sans       → Figtree
+import nameToId from "./_name-to-id.json";
+import { FONT_ALIASES } from "./aliases";
+import { LOCAL_FONT_IDS, localLoader } from "./loaders/local";
+import { weightUnionFor } from "./metrics";
 
 /** The three typography roles that drive the reading surface. */
 export type FontRole = "display" | "text" | "code";
 type FontStyle = "serif" | "sans" | "mono";
 
 /**
- * A (partial) role -> fontId map. Stored at each level of the cascade
- * (global / book / page); unset roles inherit from the level above.
+ * A partial role-to-font map stored at each level of the font cascade.
  */
 export type FontMap = Partial<Record<FontRole, string>>;
-/** A fully-resolved map with every role present (after applying defaults). */
+
+/** A fully-resolved map with every role present. */
 export type ResolvedFonts = Record<FontRole, string>;
 
-/** A single selectable font: its id, label, CSS stack, and lazy CSS loader. */
+/** A selectable font with its CSS stack and optional lazy CSS loader. */
 export interface FontEntry {
-  /** Stable id stored in the DB (matches the `@fontsource` slug for web fonts). */
+  /** Stable id stored in the database. */
   id: string;
   /** Display label and primary CSS family name. */
   family: string;
   style: FontStyle;
-  /** The full `font-family` stack assigned to the role's CSS variable. */
+  /** The complete CSS `font-family` stack. */
   stack: string;
-  /** True for the per-role System defaults, which need no web font load. */
+  /** True when the face is supplied by the operating system. */
   system?: boolean;
-  /** Dynamically imports the font's CSS. Absent for System defaults. */
+  /** Lazily imports the font's CSS assets. */
   load?: () => Promise<unknown>;
 }
 
-// --- Font-family stacks -----------------------------------------------------
-// Fallbacks mirror the kind of face so a font that hasn't loaded yet (or fails
-// offline) degrades to a sensible system equivalent rather than the UI sans.
+/**
+ * Family labels indexed by catalog id, generated from the locked lab snapshot.
+ */
+export const FONT_FAMILIES: Readonly<Record<string, string>> =
+  Object.fromEntries(
+    Object.entries(nameToId).map(([family, id]) => [id, family]),
+  );
+
 function stackFor(style: FontStyle, family: string): string {
   const quoted = `"${family}"`;
   switch (style) {
@@ -65,36 +50,40 @@ function stackFor(style: FontStyle, family: string): string {
   }
 }
 
-// --- Lazy CSS loaders -------------------------------------------------------
-// Every catalog family ships these four Latin subset stylesheets. Vite resolves
-// the glob at build time into per-file lazy import chunks, so `FONT_SHEETS` is a
-// path -> dynamic-importer map covering every installed `@fontsource` package.
-const FONT_SHEETS = import.meta.glob([
-  "/node_modules/@fontsource/*/latin-400.css",
-  "/node_modules/@fontsource/*/latin-700.css",
-  "/node_modules/@fontsource/*/latin-400-italic.css",
-  "/node_modules/@fontsource/*/latin-700-italic.css",
-]);
+const FONT_SHEETS = import.meta.glob("/node_modules/@fontsource/*/latin-*.css");
 
-const FONT_WEIGHTS = ["400", "700", "400-italic", "700-italic"] as const;
-
-// Builds a font's loader from its id: imports the four subset stylesheets for
-// that family in parallel. Rejects on a missing sheet so `ensureFontLoaded`'s
-// catch can fall back to the system stack rather than silently loading nothing.
-function fontsourceLoader(id: string): () => Promise<unknown> {
-  return () =>
-    Promise.all(
-      FONT_WEIGHTS.map((weight) => {
-        const path = `/node_modules/@fontsource/${id}/latin-${weight}.css`;
-        const sheet = FONT_SHEETS[path];
-        return sheet
-          ? sheet()
-          : Promise.reject(new Error(`Missing font stylesheet: ${path}`));
-      }),
-    );
+function nearestHundred(weight: number): string {
+  return `${Math.round(weight / 100) * 100}`;
 }
 
-function webFont(id: string, family: string, style: FontStyle): FontEntry {
+/**
+ * Lazily loads the regular, italic, and metric-derived cuts available for a
+ * Fontsource family. Missing optional cuts are skipped so an unsupported
+ * optical weight never prevents the usable cuts from loading.
+ */
+function fontsourceLoader(id: string): () => Promise<unknown> {
+  return () => {
+    const weights = new Set(["400", "700"]);
+    for (const weight of weightUnionFor(id)) {
+      weights.add(nearestHundred(weight));
+    }
+
+    const paths = [...weights].flatMap((weight) => [
+      `/node_modules/@fontsource/${id}/latin-${weight}.css`,
+      `/node_modules/@fontsource/${id}/latin-${weight}-italic.css`,
+    ]);
+    const sheets = paths
+      .map((path) => FONT_SHEETS[path])
+      .filter((sheet): sheet is () => Promise<unknown> => sheet !== undefined);
+
+    return sheets.length > 0
+      ? Promise.all(sheets.map((sheet) => sheet()))
+      : Promise.reject(new Error(`Missing font stylesheets for: ${id}`));
+  };
+}
+
+function webFont(id: string, style: FontStyle): FontEntry {
+  const family = FONT_FAMILIES[id] ?? id;
   return {
     id,
     family,
@@ -104,167 +93,316 @@ function webFont(id: string, family: string, style: FontStyle): FontEntry {
   };
 }
 
-// --- System defaults (no web font) ------------------------------------------
-const SYSTEM_SERIF: FontEntry = {
-  id: "system-serif",
-  family: "System (New York)",
-  style: "serif",
-  stack: '"New York", "Iowan Old Style", Georgia, serif',
-  system: true,
-};
-const SYSTEM_SANS: FontEntry = {
-  id: "system-sans",
-  family: "System",
-  style: "sans",
-  stack:
+function localFont(id: string, style: FontStyle): FontEntry {
+  const family = FONT_FAMILIES[id] ?? id;
+  return {
+    id,
+    family,
+    style,
+    stack: stackFor(style, family),
+    load: localLoader(id),
+  };
+}
+
+function systemFont(
+  id: string,
+  family: string,
+  style: FontStyle,
+  stack: string,
+): FontEntry {
+  return { id, family, style, stack, system: true };
+}
+
+const SYSTEM_FONTS: Record<string, FontEntry> = {
+  "system-serif": systemFont(
+    "system-serif",
+    "System (New York)",
+    "serif",
+    '"New York", "Iowan Old Style", Georgia, serif',
+  ),
+  "system-sans": systemFont(
+    "system-sans",
+    "System (San Francisco)",
+    "sans",
     '-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif',
-  system: true,
-};
-const SYSTEM_MONO: FontEntry = {
-  id: "system-mono",
-  family: "System",
-  style: "mono",
-  stack: '"SF Mono", ui-monospace, Menlo, monospace',
-  system: true,
-};
-
-// Vollkorn works beautifully as both a display and a reading serif, so it is
-// offered in both roles from a single shared entry.
-const vollkorn = webFont("vollkorn", "Vollkorn", "serif");
-
-// Ubuntu's humanist sans family reads well in both titles and body, so each
-// sans member is offered in the Display and Text sans groups from a shared
-// entry (the mono members live in the Code role below).
-const ubuntu = webFont("ubuntu", "Ubuntu", "sans");
-const ubuntuSans = webFont("ubuntu-sans", "Ubuntu Sans", "sans");
-
-// --- Display (titles / headlines) -------------------------------------------
-const DISPLAY_SERIF: FontEntry[] = [
-  webFont("playfair-display", "Playfair Display", "serif"),
-  webFont("fraunces", "Fraunces", "serif"),
-  webFont("petrona", "Petrona", "serif"),
-  webFont("bodoni-moda", "Bodoni Moda", "serif"),
-  vollkorn,
-  webFont("gentium-book-plus", "Gentium Book Plus", "serif"),
-  webFont("literata", "Literata", "serif"),
-  webFont("crimson-pro", "Crimson Pro", "serif"),
-];
-
-const DISPLAY_SANS: FontEntry[] = [
-  webFont("montserrat", "Montserrat", "sans"),
-  webFont("raleway", "Raleway", "sans"),
-  webFont("archivo", "Archivo", "sans"),
-  webFont("libre-franklin", "Libre Franklin", "sans"),
-  webFont("poppins", "Poppins", "sans"),
-  webFont("plus-jakarta-sans", "Plus Jakarta Sans", "sans"),
-  webFont("albert-sans", "Albert Sans", "sans"),
-  webFont("hanken-grotesk", "Hanken Grotesk", "sans"),
-  ubuntu,
-  ubuntuSans,
-];
-
-// --- Text (body / reading) --------------------------------------------------
-const TEXT_SERIF: FontEntry[] = [
-  webFont("lora", "Lora", "serif"),
-  webFont("source-serif-4", "Source Serif 4", "serif"),
-  webFont("newsreader", "Newsreader", "serif"),
-  vollkorn,
-  webFont("merriweather", "Merriweather", "serif"),
-  webFont("pt-serif", "PT Serif", "serif"),
-  webFont("noto-serif", "Noto Serif", "serif"),
-  webFont("bitter", "Bitter", "serif"),
-];
-
-const TEXT_SANS: FontEntry[] = [
-  webFont("inter", "Inter", "sans"),
-  webFont("work-sans", "Work Sans", "sans"),
-  webFont("ibm-plex-sans", "IBM Plex Sans", "sans"),
-  webFont("dm-sans", "DM Sans", "sans"),
-  webFont("source-sans-3", "Source Sans 3", "sans"),
-  webFont("open-sans", "Open Sans", "sans"),
-  webFont("figtree", "Figtree", "sans"),
-  webFont("rubik", "Rubik", "sans"),
-  webFont("roboto", "Roboto", "sans"),
-  ubuntu,
-  ubuntuSans,
-];
-
-// --- Code (monospace) -------------------------------------------------------
-const CODE: FontEntry[] = [
-  webFont("jetbrains-mono", "JetBrains Mono", "mono"),
-  webFont("source-code-pro", "Source Code Pro", "mono"),
-  webFont("ibm-plex-mono", "IBM Plex Mono", "mono"),
-  webFont("roboto-mono", "Roboto Mono", "mono"),
-  webFont("space-mono", "Space Mono", "mono"),
-  webFont("ubuntu-mono", "Ubuntu Mono", "mono"),
-  webFont("red-hat-mono", "Red Hat Mono", "mono"),
-  webFont("anonymous-pro", "Anonymous Pro", "mono"),
-  webFont("cousine", "Cousine", "mono"),
-  webFont("victor-mono", "Victor Mono", "mono"),
-  webFont("spline-sans-mono", "Spline Sans Mono", "mono"),
-  webFont("azeret-mono", "Azeret Mono", "mono"),
-  webFont("b612-mono", "B612 Mono", "mono"),
-  webFont("courier-prime", "Courier Prime", "mono"),
-  webFont("sometype-mono", "Sometype Mono", "mono"),
-  webFont("chivo-mono", "Chivo Mono", "mono"),
-  webFont("ubuntu-sans-mono", "Ubuntu Sans Mono", "mono"),
-];
-
-// --- Public API -------------------------------------------------------------
-
-/**
- * The ordered font options shown in each role's picker: the System default
- * first, then (for display/text) a Serif group followed by a Sans group.
- */
-export const ROLE_FONTS: Record<FontRole, FontEntry[]> = {
-  display: [SYSTEM_SERIF, ...DISPLAY_SERIF, ...DISPLAY_SANS],
-  text: [SYSTEM_SANS, SYSTEM_SERIF, ...TEXT_SERIF, ...TEXT_SANS],
-  code: [SYSTEM_MONO, ...CODE],
+  ),
+  "system-mono": systemFont(
+    "system-mono",
+    "System (SF Mono)",
+    "mono",
+    '"SF Mono", ui-monospace, Menlo, monospace',
+  ),
+  georgia: systemFont("georgia", "Georgia", "serif", "Georgia, serif"),
+  "hoefler-text": systemFont(
+    "hoefler-text",
+    "Hoefler Text",
+    "serif",
+    '"Hoefler Text", Baskerville, Georgia, serif',
+  ),
+  palatino: systemFont(
+    "palatino",
+    "Palatino",
+    "serif",
+    '"Palatino Linotype", Palatino, Georgia, serif',
+  ),
+  "avenir-next": systemFont(
+    "avenir-next",
+    "Avenir Next",
+    "sans",
+    '"Avenir Next", Avenir, system-ui, sans-serif',
+  ),
+  verdana: systemFont(
+    "verdana",
+    "Verdana",
+    "sans",
+    "Verdana, system-ui, sans-serif",
+  ),
+  menlo: systemFont("menlo", "Menlo", "mono", "Menlo, ui-monospace, monospace"),
+  "sf-mono": systemFont(
+    "sf-mono",
+    "SF Mono",
+    "mono",
+    '"SF Mono", Menlo, ui-monospace, monospace',
+  ),
 };
 
-// The System default font entry for each role, used when the profile has no
-// explicit mapping yet (preserving the pre-Phase-6 look).
-const DEFAULT_FONT: Record<FontRole, FontEntry> = {
-  display: SYSTEM_SERIF,
-  text: SYSTEM_SANS,
-  code: SYSTEM_MONO,
-};
+const LOCAL_IDS = new Set<string>(LOCAL_FONT_IDS);
+const entries = new Map<string, FontEntry>(Object.entries(SYSTEM_FONTS));
 
-/**
- * The System default font id for each role, used when no level of the cascade
- * sets that role (preserving the pre-Phase-6 look).
- */
-export const DEFAULT_FONT_ID: Record<FontRole, string> = {
-  display: DEFAULT_FONT.display.id,
-  text: DEFAULT_FONT.text.id,
-  code: DEFAULT_FONT.code.id,
-};
+function entryFor(id: string, style: FontStyle): FontEntry {
+  const existing = entries.get(id);
+  if (existing) return existing;
+  const entry = LOCAL_IDS.has(id) ? localFont(id, style) : webFont(id, style);
+  entries.set(id, entry);
+  return entry;
+}
 
-/** Flat id -> entry lookup across every role (deduped; Vollkorn appears once). */
-export const FONT_REGISTRY: Record<string, FontEntry> = Object.fromEntries(
+function group(ids: readonly string[], style: FontStyle): FontEntry[] {
+  return ids.map((id) => entryFor(id, style));
+}
+
+const DISPLAY_SERIF = group(
   [
-    SYSTEM_SERIF,
-    SYSTEM_SANS,
-    SYSTEM_MONO,
-    ...ROLE_FONTS.display,
-    ...ROLE_FONTS.text,
-    ...ROLE_FONTS.code,
-  ].map((f) => [f.id, f]),
+    "system-serif",
+    "aleo",
+    "arvo",
+    "besley",
+    "bespoke-serif",
+    "bespoke-slab",
+    "bitter",
+    "brygada-1918",
+    "cardillac",
+    "crimson-pro",
+    "erode",
+    "fraunces",
+    "gambetta",
+    "georgia",
+    "hoefler-text",
+    "literata",
+    "merriweather",
+    "noto-serif",
+    "noto-serif-display",
+    "old-standard-tt",
+    "petrona",
+    "playfair-display",
+    "recia",
+    "roboto-serif",
+    "rowan",
+    "sentient",
+    "source-serif-4",
+    "stix-two-text",
+    "vollkorn",
+    "zilla-slab",
+    "zodiak",
+    "chubbo",
+    "neco",
+  ],
+  "serif",
 );
 
-/** The three typography roles, in cascade/resolution order. */
+const DISPLAY_SANS = group(
+  [
+    "albert-sans",
+    "amulya",
+    "archivo",
+    "atkinson-hyperlegible",
+    "avenir-next",
+    "barlow",
+    "be-vietnam-pro",
+    "bespoke-sans",
+    "chivo",
+    "epilogue",
+    "figtree",
+    "fira-sans",
+    "geist",
+    "general-sans",
+    "ibm-plex-sans",
+    "industry",
+    "instrument-sans",
+    "inter",
+    "kanit",
+    "libre-franklin",
+    "montserrat",
+    "mulish",
+    "open-sans",
+    "plus-jakarta-sans",
+    "poppins",
+    "public-sans",
+    "raleway",
+    "red-hat-display",
+    "red-hat-text",
+    "roboto",
+    "rubik",
+    "saira",
+    "satoshi",
+    "sora",
+    "source-sans-3",
+    "supreme",
+    "switzer",
+    "ubuntu",
+    "urbanist",
+    "work-sans",
+  ],
+  "sans",
+);
+
+const TEXT_SERIF = group(
+  [
+    "system-serif",
+    "bespoke-serif",
+    "bespoke-slab",
+    "crimson-pro",
+    "erode",
+    "gambetta",
+    "gentium-book-plus",
+    "georgia",
+    "hoefler-text",
+    "libre-caslon-text",
+    "literata",
+    "lora",
+    "merriweather",
+    "neuton",
+    "newsreader",
+    "noto-serif",
+    "old-standard-tt",
+    "palatino",
+    "petrona",
+    "piazzolla",
+    "pt-serif",
+    "recia",
+    "roboto-serif",
+    "rowan",
+    "sentient",
+    "source-serif-4",
+    "stix-two-text",
+    "tinos",
+    "vollkorn",
+    "zilla-slab",
+    "chubbo",
+    "amulya",
+  ],
+  "serif",
+);
+
+const TEXT_SANS = group(
+  [
+    "system-sans",
+    "barlow",
+    "be-vietnam-pro",
+    "bespoke-sans",
+    "chivo",
+    "epilogue",
+    "figtree",
+    "fira-sans",
+    "frygia",
+    "geist",
+    "general-sans",
+    "hanken-grotesk",
+    "ibm-plex-sans",
+    "industry",
+    "inter",
+    "mulish",
+    "nunito-sans",
+    "open-sans",
+    "overpass",
+    "plus-jakarta-sans",
+    "pt-sans",
+    "public-sans",
+    "red-hat-text",
+    "roboto",
+    "rubik",
+    "saira",
+    "satoshi",
+    "source-sans-3",
+    "supreme",
+    "switzer",
+    "ubuntu-sans",
+    "verdana",
+    "work-sans",
+  ],
+  "sans",
+);
+
+const CODE = group(
+  [
+    "system-mono",
+    "chivo-mono",
+    "geist-mono",
+    "jetbrains-mono",
+    "lilex",
+    "menlo",
+    "roboto-mono",
+    "sf-mono",
+    "sometype-mono",
+    "source-code-pro",
+    "space-mono",
+    "spline-sans-mono",
+    "tabular",
+    "ubuntu-mono",
+  ],
+  "mono",
+);
+
+/**
+ * Ordered picker options for each role. Entries appearing in several roles
+ * are resolved through a shared registry object.
+ */
+export const ROLE_FONTS: Record<FontRole, FontEntry[]> = {
+  display: DISPLAY_SERIF.concat(DISPLAY_SANS),
+  text: TEXT_SERIF.concat(TEXT_SANS),
+  code: CODE,
+};
+
+const DEFAULT_FONT: Record<FontRole, FontEntry> = {
+  display: entryFor("system-serif", "serif"),
+  text: entryFor("system-sans", "sans"),
+  code: entryFor("system-mono", "mono"),
+};
+
+/** Default stored id for every typography role. */
+export const DEFAULT_FONT_ID: Record<FontRole, string> = {
+  display: "system-serif",
+  text: "system-sans",
+  code: "system-mono",
+};
+
+/** Flat id-to-entry lookup across every catalog role. */
+export const FONT_REGISTRY: Record<string, FontEntry> =
+  Object.fromEntries(entries);
+
+/** Typography roles in cascade resolution order. */
 export const FONT_ROLES: FontRole[] = ["display", "text", "code"];
 
 /**
- * Resolves a font id to its entry, falling back to the role's System default
- * when the id is unknown (e.g. a font removed from the catalog).
+ * Resolves an id to its catalog entry, applying legacy aliases before falling
+ * back to the role's System default. Stored JSONB maps are never rewritten.
  */
 export function resolveFontEntry(
   fontId: string | undefined,
   role: FontRole,
 ): FontEntry {
   if (fontId) {
-    const entry = FONT_REGISTRY[fontId];
+    const entry = FONT_REGISTRY[FONT_ALIASES[fontId] ?? fontId];
     if (entry) return entry;
   }
   return DEFAULT_FONT[role];

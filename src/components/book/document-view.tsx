@@ -156,8 +156,12 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
             renameDocument.mutate({ id: document.id, title });
           }}
           onEnter={() => editorRef.current?.focusStart()}
-          className="text-[2.6rem] font-semibold leading-tight tracking-tight text-text"
-          style={{ fontFamily: titleFont }}
+          className="leading-tight tracking-tight text-text"
+          style={{
+            fontFamily: titleFont,
+            fontSize: "var(--font-display-size)",
+            fontWeight: "var(--font-display-regular)",
+          }}
         />
 
         {/* Notion-style quiet affordance: hidden until the title is hovered or

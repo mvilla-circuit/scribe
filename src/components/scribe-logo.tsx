@@ -1,5 +1,7 @@
 import { Feather } from "lucide-react";
+import { useEffect } from "react";
 
+import { ensureFontLoaded } from "@/fonts/load-font";
 import { makeIcon } from "@/lib/make-icon";
 import { cn } from "@/lib/utils";
 
@@ -19,9 +21,9 @@ interface ScribeLogoProps {
 
 /**
  * The Scribe logo: the feather brand mark beside the "Scribe" wordmark, set in
- * the stable system serif face and italicized. The serif/italic treatment is a
- * deliberate exception to the sans-only chrome rule — it is the one place the
- * brand signs its name.
+ * Cardillac and italicized. The serif/italic treatment is a deliberate
+ * exception to the sans-only chrome rule — it is the one place the brand signs
+ * its name.
  */
 export function ScribeLogo({
   iconSize = 18,
@@ -29,6 +31,10 @@ export function ScribeLogo({
   textClassName,
   iconClassName,
 }: ScribeLogoProps) {
+  useEffect(() => {
+    void ensureFontLoaded("cardillac");
+  }, []);
+
   return (
     <span
       className={cn("inline-flex select-none items-center gap-1.5", className)}
@@ -39,9 +45,10 @@ export function ScribeLogo({
       />
       <span
         className={cn(
-          "font-serif font-semibold italic tracking-tight text-text",
+          "font-semibold italic tracking-tight text-text",
           textClassName,
         )}
+        style={{ fontFamily: "var(--font-brand)" }}
       >
         Scribe
       </span>
