@@ -20,6 +20,7 @@ describe("editor typography CSS contract", () => {
       "--font-display-spacing",
       "--font-code-size",
       "--font-code-regular",
+      "--font-code-bold",
       "--font-code-line",
       "--font-code-spacing",
     ]) {

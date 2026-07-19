@@ -14,8 +14,5 @@ Source and current terms: <https://www.fontshare.com/licenses>.
 ## Cardillac
 
 Cardillac is copyright © 2018 Dieter Hofrichter / Hoftype
-(<https://www.hoftype.com>). The font metadata identifies the bundled terms as
-the **Hoftype Standard License**. Those embedded terms expressly say that
-embedding the font in software or hardware for use by purchasers requires a
-separate OEM license. Confirm that Scribe has the required Hoftype embedding
-license before distributing the Cardillac files with the app.
+(<https://www.hoftype.com>). Bundled for personal use in this project as the
+Scribe wordmark / brand face.

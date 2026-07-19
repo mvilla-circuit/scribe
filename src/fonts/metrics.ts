@@ -3,7 +3,9 @@
  *
  * Metrics are keyed by `(role, fontId)` so the same face (e.g. Literata) can
  * use different size/weight/line/tracking as a title vs body. Values come from
- * the locked type-lab / mono-lab snapshots in `metrics.json`.
+ * the locked type-lab / mono-lab snapshots in `metrics.json`. Fontsource
+ * weights are the exact lab cut when available; otherwise the nearest higher
+ * cut, or the package maximum when no higher cut exists.
  */
 
 import type { FontRole } from "./catalog";

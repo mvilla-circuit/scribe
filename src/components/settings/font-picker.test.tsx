@@ -65,7 +65,7 @@ describe("FontPicker", () => {
     });
     const sample = within(option).getByText(/the quick brown fox/i);
 
-    expect(sample).toHaveStyle({ fontWeight: 250 });
+    expect(sample).toHaveStyle({ fontWeight: 300 });
     expect(within(option).getByText("jumps")).toHaveStyle({ fontWeight: 800 });
   });
 });

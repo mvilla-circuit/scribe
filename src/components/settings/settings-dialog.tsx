@@ -87,23 +87,43 @@ function FontPreview() {
       </p>
       <div className="rounded-lg border border-border bg-bg p-5">
         <p
-          className="text-2xl font-semibold leading-tight tracking-tight text-text"
-          style={{ fontFamily: "var(--font-display)" }}
+          className="text-text"
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "var(--font-display-size)",
+            fontWeight: "var(--font-display-regular)",
+            lineHeight: "var(--font-display-line)",
+            letterSpacing: "var(--font-display-spacing)",
+          }}
         >
           The Voyage Begins
         </p>
         <p
-          className="mt-3 text-[0.95rem] leading-relaxed text-text"
-          style={{ fontFamily: "var(--font-text)" }}
+          className="mt-3 text-text"
+          style={{
+            fontFamily: "var(--font-text)",
+            fontSize: "var(--font-text-size)",
+            fontWeight: "var(--font-text-regular)",
+            lineHeight: "var(--font-text-line)",
+            letterSpacing: "var(--font-text-spacing)",
+          }}
         >
           Body text sets the pace of a long read. It should feel{" "}
-          <strong className="font-bold">comfortably solid</strong> in bold and{" "}
-          <em className="italic">gracefully slanted</em> in italics — never
-          synthesized.
+          <strong style={{ fontWeight: "var(--font-text-bold)" }}>
+            comfortably solid
+          </strong>{" "}
+          in bold and <em className="italic">gracefully slanted</em> in italics
+          — never synthesized.
         </p>
         <p
-          className="mt-3 text-sm text-text"
-          style={{ fontFamily: "var(--font-code)" }}
+          className="mt-3 text-text"
+          style={{
+            fontFamily: "var(--font-code)",
+            fontSize: "var(--font-code-size)",
+            fontWeight: "var(--font-code-regular)",
+            lineHeight: "var(--font-code-line)",
+            letterSpacing: "var(--font-code-spacing)",
+          }}
         >
           const greet = (name) =&gt; "Hello, " + name;
         </p>

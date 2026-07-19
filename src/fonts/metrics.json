@@ -2,7 +2,7 @@
   "display": {
     "aleo": {
       "size": 48,
-      "regular": 250,
+      "regular": 300,
       "bold": 800,
       "line": 1.42,
       "spacing": -0.01
@@ -10,14 +10,14 @@
     "arvo": {
       "size": 46,
       "regular": 400,
-      "bold": 900,
+      "bold": 700,
       "line": 1.45,
       "spacing": -0.01
     },
     "besley": {
       "size": 44,
       "regular": 400,
-      "bold": 750,
+      "bold": 800,
       "line": 1.42,
       "spacing": -0.01
     },
@@ -37,14 +37,14 @@
     },
     "bitter": {
       "size": 50,
-      "regular": 250,
+      "regular": 300,
       "bold": 800,
       "line": 1.42,
       "spacing": -0.01
     },
     "brygada-1918": {
       "size": 50,
-      "regular": 100,
+      "regular": 400,
       "bold": 700,
       "line": 1.42,
       "spacing": -0.01
@@ -58,8 +58,8 @@
     },
     "crimson-pro": {
       "size": 60,
-      "regular": 250,
-      "bold": 750,
+      "regular": 300,
+      "bold": 800,
       "line": 1.25,
       "spacing": -0.01
     },
@@ -72,7 +72,7 @@
     },
     "fraunces": {
       "size": 50,
-      "regular": 250,
+      "regular": 300,
       "bold": 700,
       "line": 1.42,
       "spacing": -0.01
@@ -114,7 +114,7 @@
     },
     "noto-serif": {
       "size": 50,
-      "regular": 250,
+      "regular": 300,
       "bold": 800,
       "line": 1.42,
       "spacing": -0.01
@@ -128,14 +128,14 @@
     },
     "old-standard-tt": {
       "size": 52,
-      "regular": 500,
-      "bold": 600,
+      "regular": 700,
+      "bold": 700,
       "line": 1.42,
       "spacing": -0.01
     },
     "petrona": {
       "size": 55,
-      "regular": 250,
+      "regular": 300,
       "bold": 800,
       "line": 1.42,
       "spacing": -0.01
@@ -143,7 +143,7 @@
     "playfair-display": {
       "size": 50,
       "regular": 400,
-      "bold": 750,
+      "bold": 800,
       "line": 1.42,
       "spacing": -0.01
     },
@@ -156,7 +156,7 @@
     },
     "roboto-serif": {
       "size": 45,
-      "regular": 250,
+      "regular": 300,
       "bold": 800,
       "line": 1.42,
       "spacing": -0.01
@@ -178,7 +178,7 @@
     "source-serif-4": {
       "size": 48,
       "regular": 300,
-      "bold": 750,
+      "bold": 800,
       "line": 1.42,
       "spacing": -0.01
     },
@@ -233,8 +233,8 @@
     },
     "albert-sans": {
       "size": 50,
-      "regular": 250,
-      "bold": 750,
+      "regular": 300,
+      "bold": 800,
       "line": 1.42,
       "spacing": -0.01
     },
@@ -254,7 +254,7 @@
     },
     "atkinson-hyperlegible": {
       "size": 50,
-      "regular": 500,
+      "regular": 700,
       "bold": 700,
       "line": 1.42,
       "spacing": -0.01
@@ -296,7 +296,7 @@
     },
     "epilogue": {
       "size": 46,
-      "regular": 250,
+      "regular": 300,
       "bold": 800,
       "line": 1.42,
       "spacing": -0.01
@@ -373,7 +373,7 @@
     },
     "montserrat": {
       "size": 46,
-      "regular": 250,
+      "regular": 300,
       "bold": 800,
       "line": 1.42,
       "spacing": -0.01
@@ -415,7 +415,7 @@
     },
     "raleway": {
       "size": 50,
-      "regular": 250,
+      "regular": 300,
       "bold": 800,
       "line": 1.42,
       "spacing": -0.01
@@ -493,7 +493,7 @@
     "ubuntu": {
       "size": 52,
       "regular": 300,
-      "bold": 800,
+      "bold": 700,
       "line": 1.42,
       "spacing": -0.01
     },
@@ -550,8 +550,8 @@
     },
     "gentium-book-plus": {
       "size": 19,
-      "regular": 500,
-      "bold": 600,
+      "regular": 700,
+      "bold": 700,
       "line": 1.47,
       "spacing": 0.01
     },
@@ -571,8 +571,8 @@
     },
     "libre-caslon-text": {
       "size": 17,
-      "regular": 500,
-      "bold": 600,
+      "regular": 700,
+      "bold": 700,
       "line": 1.65,
       "spacing": 0.01
     },
@@ -620,8 +620,8 @@
     },
     "old-standard-tt": {
       "size": 19,
-      "regular": 500,
-      "bold": 600,
+      "regular": 700,
+      "bold": 700,
       "line": 1.47,
       "spacing": 0.01
     },
@@ -648,8 +648,8 @@
     },
     "pt-serif": {
       "size": 18,
-      "regular": 500,
-      "bold": 600,
+      "regular": 700,
+      "bold": 700,
       "line": 1.55,
       "spacing": 0.01
     },
@@ -704,8 +704,8 @@
     },
     "tinos": {
       "size": 20,
-      "regular": 500,
-      "bold": 600,
+      "regular": 700,
+      "bold": 700,
       "line": 1.39,
       "spacing": 0.01
     },
@@ -872,8 +872,8 @@
     },
     "pt-sans": {
       "size": 19,
-      "regular": 500,
-      "bold": 600,
+      "regular": 700,
+      "bold": 700,
       "line": 1.46,
       "spacing": 0.01
     },
@@ -1035,8 +1035,8 @@
     },
     "space-mono": {
       "size": 16,
-      "regular": 500,
-      "bold": 600,
+      "regular": 700,
+      "bold": 700,
       "line": 1.7,
       "spacing": 0
     },
@@ -1063,8 +1063,8 @@
     },
     "ubuntu-mono": {
       "size": 17,
-      "regular": 500,
-      "bold": 600,
+      "regular": 700,
+      "bold": 700,
       "line": 1.7,
       "spacing": 0
     }

@@ -260,6 +260,12 @@
   font-size: inherit;
   color: var(--color-text);
 }
+.scribe-prose pre strong,
+.scribe-prose pre b,
+.scribe-prose code strong,
+.scribe-prose code b {
+  font-weight: var(--font-code-bold);
+}
 
 /* --- Horizontal rule: a centered hairline, not a heavy bar --- */
 /* Scoped under `.ProseMirror >` so this out-ranks the generic `> * + *`
