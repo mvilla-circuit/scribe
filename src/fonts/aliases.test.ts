@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { FONT_ALIASES } from "./aliases";
+import { canonicalizeFontId, FONT_ALIASES } from "./aliases";
 
 describe("FONT_ALIASES", () => {
   it("maps every retired production catalog id to a shortlisted successor", () => {
@@ -17,5 +17,12 @@ describe("FONT_ALIASES", () => {
       "ubuntu-sans-mono": "ubuntu-mono",
       "victor-mono": "jetbrains-mono",
     });
+  });
+});
+
+describe("canonicalizeFontId", () => {
+  it("rewrites aliases and leaves current ids unchanged", () => {
+    expect(canonicalizeFontId("dm-sans")).toBe("inter");
+    expect(canonicalizeFontId("inter")).toBe("inter");
   });
 });

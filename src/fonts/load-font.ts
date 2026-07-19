@@ -7,6 +7,7 @@
 
 import type { CSSProperties } from "react";
 
+import { canonicalizeFontId } from "./aliases";
 import {
   FONT_REGISTRY,
   FONT_ROLES,
@@ -23,27 +24,30 @@ const inflight = new Map<string, Promise<void>>();
  * Ensures the font's web CSS is loaded. System defaults (no `load`) resolve
  * immediately. Failures (e.g. truly offline before first load) are swallowed so
  * the UI simply falls back to the stack's system fallback rather than throwing.
+ *
+ * Legacy ids are canonicalized so a stored alias still loads its successor.
  */
 export function ensureFontLoaded(fontId: string): Promise<void> {
-  const entry = FONT_REGISTRY[fontId];
-  if (!entry?.load || loaded.has(fontId)) return Promise.resolve();
+  const id = canonicalizeFontId(fontId);
+  const entry = FONT_REGISTRY[id];
+  if (!entry?.load || loaded.has(id)) return Promise.resolve();
 
-  const existing = inflight.get(fontId);
+  const existing = inflight.get(id);
   if (existing) return existing;
 
   const promise = entry
     .load()
     .then(() => {
-      loaded.add(fontId);
+      loaded.add(id);
     })
     .catch(() => {
       // Leave it unloaded; a later attempt can retry.
     })
     .finally(() => {
-      inflight.delete(fontId);
+      inflight.delete(id);
     });
 
-  inflight.set(fontId, promise);
+  inflight.set(id, promise);
   return promise;
 }
 

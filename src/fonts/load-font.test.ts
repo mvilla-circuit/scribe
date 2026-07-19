@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => {
   const cacheLoad = vi.fn(() => Promise.resolve());
   const concurrentLoad = vi.fn(() => Promise.resolve());
   const failLoad = vi.fn(() => Promise.reject(new Error("offline")));
+  const aliasLoad = vi.fn(() => Promise.resolve());
 
   const registry: Record<
     string,
@@ -19,9 +20,14 @@ const mocks = vi.hoisted(() => {
       load: concurrentLoad,
     },
     "web-fail": { id: "web-fail", stack: "fail-stack", load: failLoad },
+    "web-alias-target": {
+      id: "web-alias-target",
+      stack: "alias-stack",
+      load: aliasLoad,
+    },
   };
 
-  return { cacheLoad, concurrentLoad, failLoad, registry };
+  return { cacheLoad, concurrentLoad, failLoad, aliasLoad, registry };
 });
 
 vi.mock("./catalog", () => ({
@@ -29,6 +35,12 @@ vi.mock("./catalog", () => ({
   FONT_ROLES: ["display", "text", "code"],
   resolveFontEntry: (fontId: string | undefined, role: string) =>
     (fontId && mocks.registry[fontId]) || { stack: `default-${role}` },
+}));
+
+vi.mock("./aliases", () => ({
+  canonicalizeFontId: (fontId: string) =>
+    fontId === "legacy-web" ? "web-alias-target" : fontId,
+  FONT_ALIASES: { "legacy-web": "web-alias-target" },
 }));
 
 const { ensureFontLoaded, fontStackFor, fontVarsFor } =
@@ -89,6 +101,11 @@ describe("ensureFontLoaded", () => {
     await ensureFontLoaded("web-cache");
     await ensureFontLoaded("web-cache");
     expect(mocks.cacheLoad).toHaveBeenCalledTimes(1);
+  });
+
+  it("loads the successor when given a legacy alias id", async () => {
+    await ensureFontLoaded("legacy-web");
+    expect(mocks.aliasLoad).toHaveBeenCalledTimes(1);
   });
 
   it("de-dupes concurrent loads of the same font", async () => {

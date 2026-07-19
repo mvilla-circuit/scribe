@@ -1,5 +1,5 @@
 import nameToId from "./_name-to-id.json";
-import { FONT_ALIASES } from "./aliases";
+import { canonicalizeFontId } from "./aliases";
 import { LOCAL_FONT_IDS, localLoader } from "./loaders/local";
 import { weightUnionFor } from "./metrics";
 
@@ -402,7 +402,7 @@ export function resolveFontEntry(
   role: FontRole,
 ): FontEntry {
   if (fontId) {
-    const entry = FONT_REGISTRY[FONT_ALIASES[fontId] ?? fontId];
+    const entry = FONT_REGISTRY[canonicalizeFontId(fontId)];
     if (entry) return entry;
   }
   return DEFAULT_FONT[role];

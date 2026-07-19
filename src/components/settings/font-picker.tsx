@@ -53,9 +53,13 @@ export function FontPicker({
 
   const inheritMode = onInherit != null;
   const isInheriting = inheritMode && !overridden;
-  // Only highlight a concrete option as selected when it is this level's own
-  // choice; while inheriting, the "Inherit" row is the selected one instead.
-  const selectedId = inheritMode ? (overridden ? value : undefined) : value;
+  // Highlight against the canonical catalog id so a stored legacy alias
+  // (e.g. dm-sans → inter) still marks the successor option selected.
+  const selectedId = inheritMode
+    ? overridden
+      ? current.id
+      : undefined
+    : current.id;
 
   // Keep the trigger's preview face available.
   useEffect(() => {

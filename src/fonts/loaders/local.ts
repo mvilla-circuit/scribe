@@ -5,6 +5,13 @@ interface LocalFontConfig {
   basename: string;
   format: "opentype" | "woff2";
   variant: "static" | "variable";
+  /**
+   * Declared CSS weights for static Regular/Bold files. Lab metrics for these
+   * faces use mid-weights (500/600) even though the files are named Regular/Bold;
+   * declaring those targets makes `font-weight` match without inventing cuts.
+   */
+  regularWeight?: number;
+  boldWeight?: number;
 }
 
 /** Font ids backed by font files bundled with Scribe. */
@@ -37,6 +44,8 @@ const LOCAL_FONT_CONFIG = {
     basename: "Cardillac",
     format: "opentype",
     variant: "static",
+    regularWeight: 500,
+    boldWeight: 600,
   },
   "bespoke-serif": {
     family: "Bespoke Serif",
@@ -145,12 +154,16 @@ const LOCAL_FONT_CONFIG = {
     basename: "Frygia",
     format: "woff2",
     variant: "static",
+    regularWeight: 500,
+    boldWeight: 600,
   },
   industry: {
     family: "Industry",
     basename: "Industry",
     format: "woff2",
     variant: "static",
+    regularWeight: 500,
+    boldWeight: 600,
   },
 } as const satisfies Record<LocalFontId, LocalFontConfig>;
 
@@ -196,11 +209,13 @@ function fontFacesFor(config: LocalFontConfig): string {
     ].join("\n\n");
   }
 
+  const regular = String(config.regularWeight ?? 400);
+  const bold = String(config.boldWeight ?? 700);
   return [
-    fontFace(config, "Regular", "400", "normal"),
-    fontFace(config, "Bold", "700", "normal"),
-    fontFace(config, "Italic", "400", "italic"),
-    fontFace(config, "BoldItalic", "700", "italic"),
+    fontFace(config, "Regular", regular, "normal"),
+    fontFace(config, "Bold", bold, "normal"),
+    fontFace(config, "Italic", regular, "italic"),
+    fontFace(config, "BoldItalic", bold, "italic"),
   ].join("\n\n");
 }
 

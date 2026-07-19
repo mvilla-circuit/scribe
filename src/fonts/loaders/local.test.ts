@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it } from "vitest";
 import { isLocalFont, localLoader } from "./local";
 
 afterEach(() => {
-  document.querySelector('[data-scribe-local-fonts="tabular"]')?.remove();
+  for (const id of ["tabular", "cardillac", "frygia", "industry"]) {
+    document.querySelector(`[data-scribe-local-fonts="${id}"]`)?.remove();
+  }
 });
 
 describe("localLoader", () => {
@@ -19,6 +21,19 @@ describe("localLoader", () => {
     expect(styles[0]?.textContent).toContain("Tabular-VariableItalic.woff2");
     expect(styles[0]?.textContent).toContain("font-weight: 100 900");
     expect(styles[0]?.textContent).toContain("font-style: italic");
+  });
+
+  it("maps static Regular/Bold cuts to lab metric weights (500/600)", async () => {
+    for (const id of ["cardillac", "frygia", "industry"] as const) {
+      await expect(localLoader(id)()).resolves.toBeUndefined();
+      const css = document.querySelector(
+        `[data-scribe-local-fonts="${id}"]`,
+      )?.textContent;
+      expect(css).toContain("font-weight: 500");
+      expect(css).toContain("font-weight: 600");
+      expect(css).not.toContain("font-weight: 400");
+      expect(css).not.toContain("font-weight: 700");
+    }
   });
 
   it("rejects an unknown local font id", async () => {
