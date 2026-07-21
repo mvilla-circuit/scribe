@@ -79,6 +79,32 @@ describe("FontPicker", () => {
     expect(ensureFontReady).toHaveBeenCalledWith("arvo", expect.any(Array));
   });
 
+  it("keeps the trigger on chrome type until the selected face is cut-ready", async () => {
+    let finishAleo!: () => void;
+    ensureFontReady.mockImplementation((fontId: string) => {
+      if (fontId === "aleo") {
+        return new Promise<boolean>((resolve) => {
+          finishAleo = () => {
+            loadedIds.add(fontId);
+            resolve(true);
+          };
+        });
+      }
+      return Promise.resolve(false);
+    });
+
+    renderPicker("aleo");
+    const trigger = screen.getByRole("button", { name: /aleo/i });
+    const label = within(trigger).getByText("Aleo");
+
+    expect(label.style.fontFamily).toBe("");
+
+    finishAleo();
+    await waitFor(() => {
+      expect(label.style.fontFamily).toMatch(/Aleo/i);
+    });
+  });
+
   it("keeps unloaded option samples on chrome type so hover load does not FOUT", async () => {
     const user = userEvent.setup();
     let finishArvo!: () => void;

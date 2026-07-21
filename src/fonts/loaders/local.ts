@@ -1,3 +1,5 @@
+import { CARDILLAC_FONT_ASSETS } from "@scribe/cardillac-assets";
+
 type LocalFontId = (typeof LOCAL_FONT_IDS)[number];
 
 interface LocalFontConfig {
@@ -167,7 +169,10 @@ const LOCAL_FONT_CONFIG = {
   },
 } as const satisfies Record<LocalFontId, LocalFontConfig>;
 
-const LOCAL_FONT_ASSETS = import.meta.glob<string>("../assets/*.{otf,woff2}", {
+// Shared locals (Fontshare / other app fonts). Cardillac lives under
+// `brand-assets/` and is wired only via `@scribe/cardillac-assets` — Vite
+// aliases that to an empty stub for commercial production builds.
+const SHARED_FONT_ASSETS = import.meta.glob<string>("../assets/*.{otf,woff2}", {
   eager: true,
   import: "default",
   query: "?url",
@@ -179,7 +184,9 @@ export function isLocalFont(id: string): id is LocalFontId {
 }
 
 function assetUrl(filename: string): string {
-  const asset = LOCAL_FONT_ASSETS[`../assets/${filename}`];
+  const asset = filename.startsWith("Cardillac-")
+    ? CARDILLAC_FONT_ASSETS[`./brand-assets/${filename}`]
+    : SHARED_FONT_ASSETS[`../assets/${filename}`];
   if (!asset) throw new Error(`Missing local font asset: ${filename}`);
   return asset;
 }

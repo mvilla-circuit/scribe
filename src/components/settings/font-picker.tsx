@@ -59,12 +59,10 @@ export function FontPicker({
   const listRef = useRef<HTMLDivElement>(null);
   const current = resolveFontEntry(value, role);
   const triggerMetrics = metricsFor(role, current.id);
-  // Apply the trigger face only after cuts are ready (same anti-FOUT policy as
-  // option rows). Until then the label stays on chrome sans. Track readiness by
-  // font id so a selection change resets the face without syncing setState in
-  // the effect body.
+  // Apply the trigger face only after ensureFontReady (not merely CSS inject /
+  // isFontLoaded). System faces with no loader can paint immediately.
   const [readyFontId, setReadyFontId] = useState<string | null>(() =>
-    isFontLoaded(current.id) ? current.id : null,
+    current.load ? null : current.id,
   );
   const triggerReady = readyFontId === current.id;
 

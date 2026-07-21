@@ -16,16 +16,14 @@ Source and current terms: <https://www.fontshare.com/licenses>.
 Cardillac is copyright © 2018 Dieter Hofrichter / Hoftype
 (<https://www.hoftype.com>).
 
-Bundled as **woff2** static cuts for the Scribe wordmark only (not offered in
-the user font picker). These files are for **personal use in this project**.
+Bundled as **woff2** static cuts under `src/fonts/brand-assets/` for the Scribe
+wordmark only (not offered in the user font picker). Personal use only.
 
 ### Shipping gate
 
-Cardillac assets load only when `isCardillacAllowed()` is true:
+Vite aliases `@scribe/cardillac-assets` to the real module for `vite` serve /
+tests, and to an empty stub for `vite build` unless `VITE_ALLOW_CARDILLAC=true`.
+Runtime `isCardillacAllowed()` also skips injection when disallowed.
 
-- Vite **DEV** (local `npm run tauri dev` / `npm run dev`), or
-- `VITE_ALLOW_CARDILLAC=true` in the build env (personal production builds)
-
-Commercial / App Store / public redistribution builds must leave
-`VITE_ALLOW_CARDILLAC` unset or set it to `false`. Do not embed Cardillac
-without a commercial grant from Hoftype — or replace `--font-brand` first.
+Commercial / App Store builds must leave `VITE_ALLOW_CARDILLAC` unset. Do not
+embed Cardillac without a Hoftype grant — or replace `--font-brand` first.

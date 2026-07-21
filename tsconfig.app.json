@@ -10,7 +10,8 @@
     /* Path aliasing: `@/x` resolves to `src/x` (mirrored in vite.config.ts).
        `paths` is resolved relative to this file, so no (deprecated) baseUrl. */
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@scribe/cardillac-assets": ["./src/fonts/cardillac-assets.ts"]
     },
 
     /* Bundler mode */
