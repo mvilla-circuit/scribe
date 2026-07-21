@@ -8,6 +8,7 @@
  * cut, or the package maximum when no higher cut exists.
  */
 
+import { canonicalizeFontId } from "./aliases";
 import type { FontRole } from "./catalog";
 import raw from "./metrics.json";
 
@@ -40,11 +41,14 @@ export const ROLE_METRIC_DEFAULTS: Record<FontRole, FontMetrics> = {
 };
 
 /**
- * Looks up lab-locked metrics for a font in a role. Unknown ids return the
- * role default so the reading surface always has a usable baseline.
+ * Looks up lab-locked metrics for a font in a role. Legacy ids are
+ * canonicalized first so metrics stay aligned with `resolveFontEntry` /
+ * loaders. Unknown ids return the role default so the reading surface always
+ * has a usable baseline.
  */
 export function metricsFor(role: FontRole, fontId: string): FontMetrics {
-  return METRICS[role][fontId] ?? ROLE_METRIC_DEFAULTS[role];
+  const id = canonicalizeFontId(fontId);
+  return METRICS[role][id] ?? ROLE_METRIC_DEFAULTS[role];
 }
 
 /**
@@ -52,9 +56,10 @@ export function metricsFor(role: FontRole, fontId: string): FontMetrics {
  * shared face loads every cut the cascade might need.
  */
 export function weightUnionFor(fontId: string): number[] {
+  const id = canonicalizeFontId(fontId);
   const weights = new Set<number>();
   for (const role of Object.keys(METRICS) as FontRole[]) {
-    const m = METRICS[role][fontId];
+    const m = METRICS[role][id];
     if (!m) continue;
     weights.add(m.regular);
     weights.add(m.bold);

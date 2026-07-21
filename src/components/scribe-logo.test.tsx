@@ -1,31 +1,49 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ScribeLogo } from "./scribe-logo";
 
-const { ensureFontLoaded } = vi.hoisted(() => ({
-  ensureFontLoaded: vi.fn(() => Promise.resolve()),
+const { ensureFontReady } = vi.hoisted(() => ({
+  ensureFontReady: vi.fn(() => Promise.resolve(true)),
 }));
 
-vi.mock("@/fonts/load-font", () => ({ ensureFontLoaded }));
+vi.mock("@/fonts/load-font", () => ({ ensureFontReady }));
 
 describe("ScribeLogo", () => {
   beforeEach(() => {
-    ensureFontLoaded.mockClear();
+    ensureFontReady.mockClear();
+    ensureFontReady.mockImplementation(() => Promise.resolve(true));
   });
 
-  it("renders the Scribe wordmark in the Cardillac brand face", () => {
+  it("renders the Scribe wordmark in the Cardillac brand face", async () => {
     render(<ScribeLogo />);
 
     const wordmark = screen.getByText("Scribe");
     expect(wordmark).toHaveClass("italic");
     expect(wordmark).toHaveStyle({ fontFamily: "var(--font-brand)" });
+    await waitFor(() => {
+      expect(wordmark).toHaveStyle({ opacity: "1" });
+    });
   });
 
-  it("eagerly loads the Cardillac brand face", () => {
+  it("waits for Cardillac cuts before showing the wordmark", async () => {
+    let finish!: (ready: boolean) => void;
+    ensureFontReady.mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finish = resolve;
+        }),
+    );
+
     render(<ScribeLogo />);
 
-    expect(ensureFontLoaded).toHaveBeenCalledWith("cardillac");
+    expect(ensureFontReady).toHaveBeenCalledWith("cardillac", [500, 600]);
+    expect(screen.getByText("Scribe")).toHaveStyle({ opacity: "0" });
+
+    finish(true);
+    await waitFor(() => {
+      expect(screen.getByText("Scribe")).toHaveStyle({ opacity: "1" });
+    });
   });
 
   it("renders the feather brand icon alongside the wordmark", () => {

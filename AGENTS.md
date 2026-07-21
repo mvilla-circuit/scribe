@@ -7,6 +7,7 @@ This file applies to the whole repo. Scoped `AGENTS.md` files add area-specific 
 - [`src/components/ui/AGENTS.md`](src/components/ui/AGENTS.md) — design-system primitives
 - [`src/editor/AGENTS.md`](src/editor/AGENTS.md) — TipTap/ProseMirror editor
 - [`src/data/AGENTS.md`](src/data/AGENTS.md) — React Query data layer
+- [`src/fonts/AGENTS.md`](src/fonts/AGENTS.md) — font catalog, metrics, loaders
 - [`src/store/AGENTS.md`](src/store/AGENTS.md) — Zustand UI state
 - [`e2e/AGENTS.md`](e2e/AGENTS.md) — Playwright end-to-end specs
 - [`src-tauri/AGENTS.md`](src-tauri/AGENTS.md) — Rust/Tauri shell

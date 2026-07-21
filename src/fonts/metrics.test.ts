@@ -40,4 +40,8 @@ describe("metricsFor", () => {
       );
     }
   });
+
+  it("canonicalizes legacy aliases before looking up metrics", () => {
+    expect(metricsFor("text", "dm-sans")).toEqual(metricsFor("text", "inter"));
+  });
 });

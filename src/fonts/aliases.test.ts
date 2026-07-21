@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { canonicalizeFontId, FONT_ALIASES } from "./aliases";
+import { FONT_REGISTRY } from "./catalog";
 
 describe("FONT_ALIASES", () => {
   it("maps every retired production catalog id to a shortlisted successor", () => {
@@ -17,6 +18,12 @@ describe("FONT_ALIASES", () => {
       "ubuntu-sans-mono": "ubuntu-mono",
       "victor-mono": "jetbrains-mono",
     });
+  });
+
+  it("points every alias at a live FONT_REGISTRY id", () => {
+    for (const [legacy, target] of Object.entries(FONT_ALIASES)) {
+      expect(FONT_REGISTRY[target], `${legacy} → ${target}`).toBeDefined();
+    }
   });
 });
 

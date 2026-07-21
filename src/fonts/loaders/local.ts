@@ -42,7 +42,7 @@ const LOCAL_FONT_CONFIG = {
   cardillac: {
     family: "Cardillac",
     basename: "Cardillac",
-    format: "opentype",
+    format: "woff2",
     variant: "static",
     regularWeight: 500,
     boldWeight: 600,

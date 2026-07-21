@@ -33,6 +33,8 @@ describe("localLoader", () => {
       expect(css).toContain("font-weight: 600");
       expect(css).not.toContain("font-weight: 400");
       expect(css).not.toContain("font-weight: 700");
+      expect(css).toContain(".woff2");
+      expect(css).not.toContain(".otf");
     }
   });
 

@@ -1,12 +1,15 @@
 import { Feather } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
-import { ensureFontLoaded } from "@/fonts/load-font";
+import { ensureFontReady } from "@/fonts/load-font";
 import { makeIcon } from "@/lib/make-icon";
 import { cn } from "@/lib/utils";
 
 // The Scribe brand mark: a feather/quill pen, drawn in the chrome icon style.
 const ScribeMark = makeIcon(Feather);
+
+/** Cardillac lab weights used by the wordmark (semibold + italic). */
+const BRAND_WEIGHTS = [500, 600] as const;
 
 interface ScribeLogoProps {
   /** Pixel size of the leading feather mark. Defaults to 18. */
@@ -31,8 +34,18 @@ export function ScribeLogo({
   textClassName,
   iconClassName,
 }: ScribeLogoProps) {
+  // Hide the wordmark until Cardillac cuts are ready so we don't FOUT from the
+  // --font-brand stack fallback (New York) into the real face.
+  const [faceReady, setFaceReady] = useState(false);
+
   useEffect(() => {
-    void ensureFontLoaded("cardillac");
+    let cancelled = false;
+    void ensureFontReady("cardillac", BRAND_WEIGHTS).then((ready) => {
+      if (!cancelled && ready) setFaceReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
@@ -48,7 +61,10 @@ export function ScribeLogo({
           "font-semibold italic tracking-tight text-text",
           textClassName,
         )}
-        style={{ fontFamily: "var(--font-brand)" }}
+        style={{
+          fontFamily: "var(--font-brand)",
+          opacity: faceReady ? 1 : 0,
+        }}
       >
         Scribe
       </span>
