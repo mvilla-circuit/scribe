@@ -21,6 +21,18 @@ const loaded = new Set<string>();
 const inflight = new Map<string, Promise<void>>();
 
 /**
+ * True when the font needs no web CSS, or its CSS has already been loaded this
+ * session. Used by the font picker to avoid applying a face before `@font-face`
+ * rules exist (which would FOUT from the stack fallback into the real glyphs).
+ */
+export function isFontLoaded(fontId: string): boolean {
+  const id = canonicalizeFontId(fontId);
+  const entry = FONT_REGISTRY[id];
+  if (!entry?.load) return true;
+  return loaded.has(id);
+}
+
+/**
  * Ensures the font's web CSS is loaded. System defaults (no `load`) resolve
  * immediately. Failures (e.g. truly offline before first load) are swallowed so
  * the UI simply falls back to the stack's system fallback rather than throwing.
@@ -49,6 +61,36 @@ export function ensureFontLoaded(fontId: string): Promise<void> {
 
   inflight.set(id, promise);
   return promise;
+}
+
+/**
+ * Loads the font's CSS and waits until the given cuts are available to the
+ * browser (so callers can paint the face without a `font-display: swap` FOUT).
+ * Returns false when the CSS failed to load.
+ */
+export async function ensureFontReady(
+  fontId: string,
+  weights: readonly number[] = [400, 700],
+): Promise<boolean> {
+  await ensureFontLoaded(fontId);
+  if (!isFontLoaded(fontId)) return false;
+
+  const id = canonicalizeFontId(fontId);
+  const entry = FONT_REGISTRY[id];
+  if (!entry?.load) return true;
+
+  const fonts = globalThis.document?.fonts;
+  if (fonts && typeof fonts.load === "function") {
+    const family = `"${entry.family}"`;
+    await Promise.all(
+      weights.flatMap((weight) => [
+        fonts.load(`${weight} 16px ${family}`),
+        fonts.load(`italic ${weight} 16px ${family}`),
+      ]),
+    );
+  }
+
+  return true;
 }
 
 /**

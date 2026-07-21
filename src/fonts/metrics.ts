@@ -35,7 +35,7 @@ const METRICS = raw as MetricsTable;
  */
 export const ROLE_METRIC_DEFAULTS: Record<FontRole, FontMetrics> = {
   display: { size: 50, regular: 400, bold: 700, line: 1.42, spacing: -0.01 },
-  text: { size: 17, regular: 400, bold: 700, line: 1.7, spacing: 0 },
+  text: { size: 16, regular: 400, bold: 700, line: 1.55, spacing: 0 },
   code: { size: 16, regular: 400, bold: 700, line: 1.55, spacing: 0 },
 };
 

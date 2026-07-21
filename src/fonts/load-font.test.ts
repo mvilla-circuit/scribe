@@ -10,18 +10,47 @@ const mocks = vi.hoisted(() => {
 
   const registry: Record<
     string,
-    { id: string; stack: string; system?: boolean; load?: () => Promise<void> }
+    {
+      id: string;
+      family: string;
+      stack: string;
+      system?: boolean;
+      load?: () => Promise<void>;
+    }
   > = {
-    "system-serif": { id: "system-serif", stack: "system-stack", system: true },
-    "web-cache": { id: "web-cache", stack: "cache-stack", load: cacheLoad },
+    "system-serif": {
+      id: "system-serif",
+      family: "System Serif",
+      stack: "system-stack",
+      system: true,
+    },
+    "web-cache": {
+      id: "web-cache",
+      family: "Cache",
+      stack: "cache-stack",
+      load: cacheLoad,
+    },
     "web-concurrent": {
       id: "web-concurrent",
+      family: "Concurrent",
       stack: "concurrent-stack",
       load: concurrentLoad,
     },
-    "web-fail": { id: "web-fail", stack: "fail-stack", load: failLoad },
+    "web-fail": {
+      id: "web-fail",
+      family: "Fail",
+      stack: "fail-stack",
+      load: failLoad,
+    },
+    "web-ready": {
+      id: "web-ready",
+      family: "Ready",
+      stack: "ready-stack",
+      load: () => Promise.resolve(),
+    },
     "web-alias-target": {
       id: "web-alias-target",
+      family: "Alias",
       stack: "alias-stack",
       load: aliasLoad,
     },
@@ -43,9 +72,13 @@ vi.mock("./aliases", () => ({
   FONT_ALIASES: { "legacy-web": "web-alias-target" },
 }));
 
-const { ensureFontLoaded, fontStackFor, fontVarsFor } =
-  await import("./load-font");
-
+const {
+  ensureFontLoaded,
+  ensureFontReady,
+  fontStackFor,
+  fontVarsFor,
+  isFontLoaded,
+} = await import("./load-font");
 describe("fontStackFor", () => {
   it("returns the resolved entry's stack for a known id", () => {
     expect(fontStackFor("web-cache", "text")).toBe("cache-stack");
@@ -74,10 +107,10 @@ describe("fontVarsFor", () => {
       "--font-display-bold": "700",
       "--font-display-line": "1.42",
       "--font-display-spacing": "-0.01em",
-      "--font-text-size": "17px",
+      "--font-text-size": "16px",
       "--font-text-regular": "400",
       "--font-text-bold": "700",
-      "--font-text-line": "1.7",
+      "--font-text-line": "1.55",
       "--font-text-spacing": "0em",
       "--font-code-size": "16px",
       "--font-code-regular": "400",
@@ -88,11 +121,42 @@ describe("fontVarsFor", () => {
   });
 });
 
+describe("isFontLoaded", () => {
+  it("is true for system fonts that need no loader", () => {
+    expect(isFontLoaded("system-serif")).toBe(true);
+  });
+
+  it("is false for web fonts until ensureFontLoaded succeeds", async () => {
+    expect(isFontLoaded("web-ready")).toBe(false);
+    await ensureFontLoaded("web-ready");
+    expect(isFontLoaded("web-ready")).toBe(true);
+  });
+});
+
+describe("ensureFontReady", () => {
+  it("waits for document.fonts cuts after CSS loads", async () => {
+    const load = vi.fn(() => Promise.resolve([] as FontFace[]));
+    Object.defineProperty(document, "fonts", {
+      configurable: true,
+      value: { load },
+    });
+
+    await expect(ensureFontReady("web-ready", [400, 700])).resolves.toBe(true);
+    expect(load).toHaveBeenCalledWith('400 16px "Ready"');
+    expect(load).toHaveBeenCalledWith('italic 400 16px "Ready"');
+    expect(load).toHaveBeenCalledWith('700 16px "Ready"');
+    expect(load).toHaveBeenCalledWith('italic 700 16px "Ready"');
+  });
+
+  it("returns false when the CSS loader fails", async () => {
+    await expect(ensureFontReady("web-fail")).resolves.toBe(false);
+  });
+});
+
 describe("ensureFontLoaded", () => {
   it("resolves immediately for system fonts without a loader", async () => {
     await expect(ensureFontLoaded("system-serif")).resolves.toBeUndefined();
   });
-
   it("resolves immediately for ids missing from the registry", async () => {
     await expect(ensureFontLoaded("unknown-id")).resolves.toBeUndefined();
   });
@@ -116,6 +180,7 @@ describe("ensureFontLoaded", () => {
   });
 
   it("swallows loader failures so the UI can fall back", async () => {
+    mocks.failLoad.mockClear();
     await expect(ensureFontLoaded("web-fail")).resolves.toBeUndefined();
     expect(mocks.failLoad).toHaveBeenCalledTimes(1);
   });

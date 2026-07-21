@@ -24,7 +24,10 @@ export interface FontEntry {
   style: FontStyle;
   /** The complete CSS `font-family` stack. */
   stack: string;
-  /** True when the face is supplied by the operating system. */
+  /**
+   * True for the per-role System picker defaults (New York / San Francisco /
+   * SF Mono). Other platform faces omit this and group by `style` instead.
+   */
   system?: boolean;
   /** Lazily imports the font's CSS assets. */
   load?: () => Promise<unknown>;
@@ -104,7 +107,8 @@ function localFont(id: string, style: FontStyle): FontEntry {
   };
 }
 
-function systemFont(
+/** Role defaults shown in the picker System group (New York / SF / SF Mono). */
+function systemDefaultFont(
   id: string,
   family: string,
   style: FontStyle,
@@ -113,52 +117,70 @@ function systemFont(
   return { id, family, style, stack, system: true };
 }
 
+/**
+ * Platform faces that need no web load, but belong in Serif/Sans/Mono — not the
+ * System picker group.
+ */
+function platformFont(
+  id: string,
+  family: string,
+  style: FontStyle,
+  stack: string,
+): FontEntry {
+  return { id, family, style, stack };
+}
+
 const SYSTEM_FONTS: Record<string, FontEntry> = {
-  "system-serif": systemFont(
+  "system-serif": systemDefaultFont(
     "system-serif",
     "System (New York)",
     "serif",
     '"New York", "Iowan Old Style", Georgia, serif',
   ),
-  "system-sans": systemFont(
+  "system-sans": systemDefaultFont(
     "system-sans",
     "System (San Francisco)",
     "sans",
     '-apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif',
   ),
-  "system-mono": systemFont(
+  "system-mono": systemDefaultFont(
     "system-mono",
     "System (SF Mono)",
     "mono",
     '"SF Mono", ui-monospace, Menlo, monospace',
   ),
-  georgia: systemFont("georgia", "Georgia", "serif", "Georgia, serif"),
-  "hoefler-text": systemFont(
+  georgia: platformFont("georgia", "Georgia", "serif", "Georgia, serif"),
+  "hoefler-text": platformFont(
     "hoefler-text",
     "Hoefler Text",
     "serif",
     '"Hoefler Text", Baskerville, Georgia, serif',
   ),
-  palatino: systemFont(
+  palatino: platformFont(
     "palatino",
     "Palatino",
     "serif",
     '"Palatino Linotype", Palatino, Georgia, serif',
   ),
-  "avenir-next": systemFont(
+  "avenir-next": platformFont(
     "avenir-next",
     "Avenir Next",
     "sans",
     '"Avenir Next", Avenir, system-ui, sans-serif',
   ),
-  verdana: systemFont(
+  verdana: platformFont(
     "verdana",
     "Verdana",
     "sans",
     "Verdana, system-ui, sans-serif",
   ),
-  menlo: systemFont("menlo", "Menlo", "mono", "Menlo, ui-monospace, monospace"),
-  "sf-mono": systemFont(
+  menlo: platformFont(
+    "menlo",
+    "Menlo",
+    "mono",
+    "Menlo, ui-monospace, monospace",
+  ),
+  "sf-mono": platformFont(
     "sf-mono",
     "SF Mono",
     "mono",

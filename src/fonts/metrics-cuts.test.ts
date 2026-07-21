@@ -21,7 +21,8 @@ describe("Fontsource metric cuts", () => {
     for (const role of FONT_ROLES) {
       for (const [id, { regular, bold }] of Object.entries(metrics[role])) {
         const entry = FONT_REGISTRY[id];
-        if (entry?.system || isLocalFont(id)) continue;
+        // Skip role defaults, locals, and platform faces (no Fontsource package).
+        if (entry?.system || isLocalFont(id) || !entry?.load) continue;
 
         const weights = availableWeights(id);
         expect(weights, `${role}/${id} regular`).toContain(regular);

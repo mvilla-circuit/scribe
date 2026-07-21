@@ -91,7 +91,11 @@ describe("ROLE_FONTS", () => {
     }
   });
 
-  it("marks operating-system faces as system fonts", () => {
+  it("keeps only New York / San Francisco / SF Mono in the System group", () => {
+    for (const id of ["system-serif", "system-sans", "system-mono"]) {
+      expect(FONT_REGISTRY[id]?.system).toBe(true);
+      expect(FONT_REGISTRY[id]?.load).toBeUndefined();
+    }
     for (const id of [
       "georgia",
       "hoefler-text",
@@ -101,8 +105,9 @@ describe("ROLE_FONTS", () => {
       "menlo",
       "sf-mono",
     ]) {
-      expect(FONT_REGISTRY[id]?.system).toBe(true);
+      expect(FONT_REGISTRY[id]?.system).toBeUndefined();
       expect(FONT_REGISTRY[id]?.load).toBeUndefined();
+      expect(FONT_REGISTRY[id]?.style).toMatch(/^(serif|sans|mono)$/);
     }
   });
 });
