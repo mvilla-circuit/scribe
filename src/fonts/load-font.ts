@@ -75,27 +75,27 @@ export async function ensureFontReady(
   fontId: string,
   weights: readonly number[] = [400, 700],
 ): Promise<boolean> {
-  await ensureFontLoaded(fontId);
-  if (!isFontLoaded(fontId)) return false;
-
   const id = canonicalizeFontId(fontId);
+  await ensureFontLoaded(id);
+  if (!isFontLoaded(id)) return false;
+
   const entry = FONT_REGISTRY[id];
   if (!entry?.load) return true;
 
   const fonts = globalThis.document?.fonts;
-  if (fonts && typeof fonts.load === "function") {
-    const family = `"${entry.family}"`;
-    try {
-      await Promise.all(
-        weights.flatMap((weight) => [
-          fonts.load(`${weight} 16px ${family}`),
-          fonts.load(`italic ${weight} 16px ${family}`),
-        ]),
-      );
-    } catch {
-      // CSS is present; callers may still paint the stack without a hard fail.
-      return false;
-    }
+  if (!fonts || typeof fonts.load !== "function") return true;
+
+  const family = `"${entry.family}"`;
+  try {
+    await Promise.all(
+      weights.flatMap((weight) => [
+        fonts.load(`${weight} 16px ${family}`),
+        fonts.load(`italic ${weight} 16px ${family}`),
+      ]),
+    );
+  } catch {
+    // CSS is present; callers may still paint the stack without a hard fail.
+    return false;
   }
 
   return true;
@@ -119,30 +119,17 @@ export function fontStackFor(
  * variables the same way.
  */
 export function fontVarsFor(resolved: ResolvedFonts): CSSProperties {
-  const display = metricsFor("display", resolved.display);
-  const text = metricsFor("text", resolved.text);
-  const code = metricsFor("code", resolved.code);
-
-  return {
-    "--font-display": fontStackFor(resolved.display, "display"),
-    "--font-display-size": `${display.size}px`,
-    "--font-display-regular": `${display.regular}`,
-    "--font-display-bold": `${display.bold}`,
-    "--font-display-line": `${display.line}`,
-    "--font-display-spacing": `${display.spacing}em`,
-    "--font-text": fontStackFor(resolved.text, "text"),
-    "--font-text-size": `${text.size}px`,
-    "--font-text-regular": `${text.regular}`,
-    "--font-text-bold": `${text.bold}`,
-    "--font-text-line": `${text.line}`,
-    "--font-text-spacing": `${text.spacing}em`,
-    "--font-code": fontStackFor(resolved.code, "code"),
-    "--font-code-size": `${code.size}px`,
-    "--font-code-regular": `${code.regular}`,
-    "--font-code-bold": `${code.bold}`,
-    "--font-code-line": `${code.line}`,
-    "--font-code-spacing": `${code.spacing}em`,
-  };
+  const vars: CSSProperties = {};
+  for (const role of FONT_ROLES) {
+    const m = metricsFor(role, resolved[role]);
+    vars[`--font-${role}`] = fontStackFor(resolved[role], role);
+    vars[`--font-${role}-size`] = `${m.size}px`;
+    vars[`--font-${role}-regular`] = `${m.regular}`;
+    vars[`--font-${role}-bold`] = `${m.bold}`;
+    vars[`--font-${role}-line`] = `${m.line}`;
+    vars[`--font-${role}-spacing`] = `${m.spacing}em`;
+  }
+  return vars;
 }
 
 /** Lazily loads the web CSS for every role's font in a resolved map. */

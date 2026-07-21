@@ -40,134 +40,44 @@ export const LOCAL_FONT_IDS = [
   "industry",
 ] as const;
 
+function variableFont(family: string, basename: string): LocalFontConfig {
+  return { family, basename, format: "woff2", variant: "variable" };
+}
+
+/** Static faces whose Regular/Bold files map to lab mid-weights (500/600). */
+function staticMidWeight(family: string, basename: string): LocalFontConfig {
+  return {
+    family,
+    basename,
+    format: "woff2",
+    variant: "static",
+    regularWeight: 500,
+    boldWeight: 600,
+  };
+}
+
 const LOCAL_FONT_CONFIG = {
-  cardillac: {
-    family: "Cardillac",
-    basename: "Cardillac",
-    format: "woff2",
-    variant: "static",
-    regularWeight: 500,
-    boldWeight: 600,
-  },
-  "bespoke-serif": {
-    family: "Bespoke Serif",
-    basename: "BespokeSerif",
-    format: "woff2",
-    variant: "variable",
-  },
-  "bespoke-slab": {
-    family: "Bespoke Slab",
-    basename: "BespokeSlab",
-    format: "woff2",
-    variant: "variable",
-  },
-  "bespoke-sans": {
-    family: "Bespoke Sans",
-    basename: "BespokeSans",
-    format: "woff2",
-    variant: "variable",
-  },
-  erode: {
-    family: "Erode",
-    basename: "Erode",
-    format: "woff2",
-    variant: "variable",
-  },
-  gambetta: {
-    family: "Gambetta",
-    basename: "Gambetta",
-    format: "woff2",
-    variant: "variable",
-  },
-  recia: {
-    family: "Recia",
-    basename: "Recia",
-    format: "woff2",
-    variant: "variable",
-  },
-  rowan: {
-    family: "Rowan",
-    basename: "Rowan",
-    format: "woff2",
-    variant: "variable",
-  },
-  sentient: {
-    family: "Sentient",
-    basename: "Sentient",
-    format: "woff2",
-    variant: "variable",
-  },
-  zodiak: {
-    family: "Zodiak",
-    basename: "Zodiak",
-    format: "woff2",
-    variant: "variable",
-  },
-  chubbo: {
-    family: "Chubbo",
-    basename: "Chubbo",
-    format: "woff2",
-    variant: "variable",
-  },
-  neco: {
-    family: "Neco",
-    basename: "Neco",
-    format: "woff2",
-    variant: "variable",
-  },
-  amulya: {
-    family: "Amulya",
-    basename: "Amulya",
-    format: "woff2",
-    variant: "variable",
-  },
-  "general-sans": {
-    family: "General Sans",
-    basename: "GeneralSans",
-    format: "woff2",
-    variant: "variable",
-  },
-  satoshi: {
-    family: "Satoshi",
-    basename: "Satoshi",
-    format: "woff2",
-    variant: "variable",
-  },
-  supreme: {
-    family: "Supreme",
-    basename: "Supreme",
-    format: "woff2",
-    variant: "variable",
-  },
-  switzer: {
-    family: "Switzer",
-    basename: "Switzer",
-    format: "woff2",
-    variant: "variable",
-  },
-  tabular: {
-    family: "Tabular",
-    basename: "Tabular",
-    format: "woff2",
-    variant: "variable",
-  },
-  frygia: {
-    family: "Frygia",
-    basename: "Frygia",
-    format: "woff2",
-    variant: "static",
-    regularWeight: 500,
-    boldWeight: 600,
-  },
-  industry: {
-    family: "Industry",
-    basename: "Industry",
-    format: "woff2",
-    variant: "static",
-    regularWeight: 500,
-    boldWeight: 600,
-  },
-} as const satisfies Record<LocalFontId, LocalFontConfig>;
+  cardillac: staticMidWeight("Cardillac", "Cardillac"),
+  "bespoke-serif": variableFont("Bespoke Serif", "BespokeSerif"),
+  "bespoke-slab": variableFont("Bespoke Slab", "BespokeSlab"),
+  "bespoke-sans": variableFont("Bespoke Sans", "BespokeSans"),
+  erode: variableFont("Erode", "Erode"),
+  gambetta: variableFont("Gambetta", "Gambetta"),
+  recia: variableFont("Recia", "Recia"),
+  rowan: variableFont("Rowan", "Rowan"),
+  sentient: variableFont("Sentient", "Sentient"),
+  zodiak: variableFont("Zodiak", "Zodiak"),
+  chubbo: variableFont("Chubbo", "Chubbo"),
+  neco: variableFont("Neco", "Neco"),
+  amulya: variableFont("Amulya", "Amulya"),
+  "general-sans": variableFont("General Sans", "GeneralSans"),
+  satoshi: variableFont("Satoshi", "Satoshi"),
+  supreme: variableFont("Supreme", "Supreme"),
+  switzer: variableFont("Switzer", "Switzer"),
+  tabular: variableFont("Tabular", "Tabular"),
+  frygia: staticMidWeight("Frygia", "Frygia"),
+  industry: staticMidWeight("Industry", "Industry"),
+} satisfies Record<LocalFontId, LocalFontConfig>;
 
 // Shared locals (Fontshare / other app fonts). Cardillac lives under
 // `brand-assets/` and is wired only via `@scribe/cardillac-assets` — Vite

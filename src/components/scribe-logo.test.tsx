@@ -9,7 +9,10 @@ const { ensureFontReady, isCardillacAllowed } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/fonts/load-font", () => ({ ensureFontReady }));
-vi.mock("@/fonts/brand", () => ({ isCardillacAllowed }));
+vi.mock("@/fonts/brand", () => ({
+  BRAND_FONT_ID: "cardillac",
+  isCardillacAllowed,
+}));
 
 describe("ScribeLogo", () => {
   beforeEach(() => {

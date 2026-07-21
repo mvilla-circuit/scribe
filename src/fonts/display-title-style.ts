@@ -5,9 +5,7 @@ import type { CSSProperties } from "react";
  * vars. Shared by document/book/collection/datagrid mastheads and previews so
  * optical size, weight, line-height, and tracking stay aligned with the editor.
  */
-export function displayTitleStyle(
-  extras?: CSSProperties,
-): CSSProperties {
+export function displayTitleStyle(extras?: CSSProperties): CSSProperties {
   return {
     fontFamily: "var(--font-display)",
     fontSize: "var(--font-display-size)",

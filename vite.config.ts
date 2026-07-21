@@ -33,17 +33,15 @@ export default defineConfig(({ command, mode }) => {
   // production builds include them only when VITE_ALLOW_CARDILLAC=true (shell
   // or .env* — loadEnv so .env.local matches import.meta.env).
   const env = loadEnv(mode, process.cwd(), "");
-  const allowCardillac =
-    command !== "build" ||
+  const cardillacAllowedInBuild =
     env.VITE_ALLOW_CARDILLAC === "true" ||
     process.env.VITE_ALLOW_CARDILLAC === "true";
+  const allowCardillac = command !== "build" || cardillacAllowedInBuild;
+  const cardillacModule = allowCardillac
+    ? "./src/fonts/cardillac-assets.ts"
+    : "./src/fonts/cardillac-assets-empty.ts";
   const cardillacAssets = fileURLToPath(
-    new URL(
-      allowCardillac
-        ? "./src/fonts/cardillac-assets.ts"
-        : "./src/fonts/cardillac-assets-empty.ts",
-      import.meta.url,
-    ),
+    new URL(cardillacModule, import.meta.url),
   );
 
   return {

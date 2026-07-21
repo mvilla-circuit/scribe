@@ -18,6 +18,7 @@ import { metricsFor } from "@/fonts/metrics";
 import { makeIcon } from "@/lib/make-icon";
 import { matchesNormalizedQuery } from "@/lib/text-match";
 import { cn } from "@/lib/utils";
+
 const CheckIcon = makeIcon(Check);
 const ExpandIcon = makeIcon(ChevronsUpDown);
 
@@ -39,6 +40,13 @@ interface FontPickerProps {
 
 function byFamilyName(a: FontEntry, b: FontEntry): number {
   return a.family.localeCompare(b.family);
+}
+
+function fontsMatching(
+  options: FontEntry[],
+  predicate: (font: FontEntry) => boolean,
+): FontEntry[] {
+  return options.filter(predicate).sort(byFamilyName);
 }
 
 // A searchable, live-previewed font picker for one role. The trigger shows the
@@ -70,11 +78,7 @@ export function FontPicker({
   const isInheriting = inheritMode && !overridden;
   // Highlight against the canonical catalog id so a stored legacy alias
   // (e.g. dm-sans → inter) still marks the successor option selected.
-  const selectedId = inheritMode
-    ? overridden
-      ? current.id
-      : undefined
-    : current.id;
+  const selectedId = !inheritMode || overridden ? current.id : undefined;
 
   useEffect(() => {
     let cancelled = false;
@@ -110,16 +114,10 @@ export function FontPicker({
       matchesNormalizedQuery(f.family, query),
     );
     return {
-      system: options.filter((f) => f.system).sort(byFamilyName),
-      serif: options
-        .filter((f) => !f.system && f.style === "serif")
-        .sort(byFamilyName),
-      sans: options
-        .filter((f) => !f.system && f.style === "sans")
-        .sort(byFamilyName),
-      mono: options
-        .filter((f) => !f.system && f.style === "mono")
-        .sort(byFamilyName),
+      system: fontsMatching(options, (f) => Boolean(f.system)),
+      serif: fontsMatching(options, (f) => !f.system && f.style === "serif"),
+      sans: fontsMatching(options, (f) => !f.system && f.style === "sans"),
+      mono: fontsMatching(options, (f) => !f.system && f.style === "mono"),
     };
   }, [role, query]);
 
@@ -324,17 +322,16 @@ function FontOption({
   onSelect: () => void;
 }) {
   const metrics = metricsFor(role, font.id);
+  const { regular, bold } = metrics;
   // Apply the preview face only after CSS + glyph cuts are ready. Painting the
   // stack earlier FOUTs from the system fallback (at optical weights) into the
   // real glyphs when hover finishes loading — the size/weight jump users notice.
   const [faceReady, setFaceReady] = useState(false);
 
   const revealFace = () => {
-    void ensureFontReady(font.id, [metrics.regular, metrics.bold]).then(
-      (ready) => {
-        if (ready) setFaceReady(true);
-      },
-    );
+    void ensureFontReady(font.id, [regular, bold]).then((ready) => {
+      if (ready) setFaceReady(true);
+    });
   };
 
   // Reveal once the face is already cached, or when this row is the selection
@@ -343,15 +340,13 @@ function FontOption({
     if (faceReady) return;
     if (!selected && !isFontLoaded(font.id)) return;
     let cancelled = false;
-    void ensureFontReady(font.id, [metrics.regular, metrics.bold]).then(
-      (ready) => {
-        if (!cancelled && ready) setFaceReady(true);
-      },
-    );
+    void ensureFontReady(font.id, [regular, bold]).then((ready) => {
+      if (!cancelled && ready) setFaceReady(true);
+    });
     return () => {
       cancelled = true;
     };
-  }, [selected, faceReady, font.id, metrics.regular, metrics.bold]);
+  }, [selected, faceReady, font.id, regular, bold]);
 
   return (
     <button

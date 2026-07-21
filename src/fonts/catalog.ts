@@ -86,26 +86,27 @@ function fontsourceLoader(id: string): () => Promise<unknown> {
   };
 }
 
-function webFont(id: string, style: FontStyle): FontEntry {
+function catalogFont(
+  id: string,
+  style: FontStyle,
+  load: () => Promise<unknown>,
+): FontEntry {
   const family = FONT_FAMILIES[id] ?? id;
   return {
     id,
     family,
     style,
     stack: stackFor(style, family),
-    load: fontsourceLoader(id),
+    load,
   };
 }
 
+function webFont(id: string, style: FontStyle): FontEntry {
+  return catalogFont(id, style, fontsourceLoader(id));
+}
+
 function localFont(id: string, style: FontStyle): FontEntry {
-  const family = FONT_FAMILIES[id] ?? id;
-  return {
-    id,
-    family,
-    style,
-    stack: stackFor(style, family),
-    load: localLoader(id),
-  };
+  return catalogFont(id, style, localLoader(id));
 }
 
 /** Role defaults shown in the picker System group (New York / SF / SF Mono). */
@@ -396,7 +397,7 @@ export const ROLE_FONTS: Record<FontRole, FontEntry[]> = {
 };
 
 // Brand wordmark face — loadable when allowed, never offered in ROLE_FONTS.
-entryFor("cardillac", "serif");
+entryFor(BRAND_FONT_ID, "serif");
 
 const DEFAULT_FONT: Record<FontRole, FontEntry> = {
   display: entryFor("system-serif", "serif"),

@@ -1,7 +1,7 @@
 import { Feather } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { isCardillacAllowed } from "@/fonts/brand";
+import { BRAND_FONT_ID, isCardillacAllowed } from "@/fonts/brand";
 import { ensureFontReady } from "@/fonts/load-font";
 import { makeIcon } from "@/lib/make-icon";
 import { cn } from "@/lib/utils";
@@ -44,11 +44,9 @@ export function ScribeLogo({
   useEffect(() => {
     if (!cardillacAllowed) return;
     let cancelled = false;
-    void ensureFontReady("cardillac", BRAND_WEIGHTS)
-      .then(() => {
-        if (!cancelled) setFaceReady(true);
-      })
-      .catch(() => {
+    void ensureFontReady(BRAND_FONT_ID, BRAND_WEIGHTS)
+      .catch(() => undefined)
+      .finally(() => {
         if (!cancelled) setFaceReady(true);
       });
     return () => {
