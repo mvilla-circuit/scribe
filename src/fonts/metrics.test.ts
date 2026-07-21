@@ -14,10 +14,10 @@ describe("metricsFor", () => {
       spacing: -0.01,
     });
     expect(text).toEqual({
-      size: 16,
+      size: 17,
       regular: 400,
       bold: 700,
-      line: 1.55,
+      line: 1.6,
       spacing: 0.01,
     });
     expect(display).not.toEqual(text);
