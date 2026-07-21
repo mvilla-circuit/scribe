@@ -22,6 +22,7 @@ import {
 import { Editor, type EditorHandle } from "@/editor/lazy-editor";
 import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";
+import { displayTitleStyle } from "@/fonts/display-title-style";
 import { useUIStore } from "@/store/ui";
 
 interface EntryViewProps {
@@ -139,8 +140,8 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
               renameEntry.mutate({ id: entry.id, title });
             }}
             onEnter={() => editorRef.current?.focusStart()}
-            className="text-[2.6rem] font-semibold leading-tight tracking-tight text-text"
-            style={{ fontFamily: "var(--font-display)" }}
+            className="leading-tight tracking-tight text-text"
+            style={displayTitleStyle()}
           />
         </Masthead>
 

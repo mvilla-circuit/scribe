@@ -23,4 +23,15 @@ describe("resolveFonts", () => {
     expect(resolved.text).toBe("inter");
     expect(resolved.display).toBe(DEFAULT_FONT_ID.display);
   });
+
+  it("canonicalizes legacy aliases so load and metrics share one id space", () => {
+    const resolved = resolveFonts({
+      display: "bodoni-moda",
+      text: "dm-sans",
+      code: "cousine",
+    });
+    expect(resolved.display).toBe("playfair-display");
+    expect(resolved.text).toBe("inter");
+    expect(resolved.code).toBe("source-code-pro");
+  });
 });

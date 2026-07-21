@@ -2,17 +2,27 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEFAULT_FONT_ID,
+  FONT_FAMILIES,
   FONT_REGISTRY,
   FONT_ROLES,
   resolveFontEntry,
   ROLE_FONTS,
 } from "./catalog";
+import metrics from "./metrics.json";
 
 describe("resolveFontEntry", () => {
   it("returns the matching entry for a known id", () => {
     const entry = resolveFontEntry("lora", "text");
     expect(entry.id).toBe("lora");
     expect(entry.family).toBe("Lora");
+  });
+
+  it("resolves retired catalog ids through their aliases", () => {
+    expect(resolveFontEntry("bodoni-moda", "display").id).toBe(
+      "playfair-display",
+    );
+    expect(resolveFontEntry("dm-sans", "text").id).toBe("inter");
+    expect(resolveFontEntry("victor-mono", "code").id).toBe("jetbrains-mono");
   });
 
   it("falls back to the role's system default for an unknown id", () => {
@@ -31,20 +41,25 @@ describe("resolveFontEntry", () => {
 });
 
 describe("FONT_REGISTRY", () => {
+  it("exports the locked lab family labels", () => {
+    expect(FONT_FAMILIES["red-hat-display"]).toBe("Red Hat Display");
+  });
+
   it("maps each entry under its own id", () => {
     for (const [id, entry] of Object.entries(FONT_REGISTRY)) {
       expect(entry.id).toBe(id);
     }
   });
 
-  it("dedupes fonts shared across roles to a single entry", () => {
-    // Vollkorn is offered in both Display and Text; both roles must resolve to
-    // the very same registry entry rather than two competing copies.
-    expect(resolveFontEntry("vollkorn", "display")).toBe(
-      resolveFontEntry("vollkorn", "text"),
+  it("shares each cross-role font entry by reference", () => {
+    const literataDisplay = ROLE_FONTS.display.find(
+      (entry) => entry.id === "literata",
     );
-    expect(FONT_REGISTRY.vollkorn).toBeDefined();
-    expect(FONT_REGISTRY.ubuntu).toBeDefined();
+    const literataText = ROLE_FONTS.text.find(
+      (entry) => entry.id === "literata",
+    );
+    expect(literataDisplay).toBe(literataText);
+    expect(FONT_REGISTRY.literata).toBe(literataDisplay);
   });
 
   it("exposes the three system defaults that DEFAULT_FONT_ID points at", () => {
@@ -64,5 +79,41 @@ describe("ROLE_FONTS.text", () => {
   it("keeps System sans as default while also offering System serif", () => {
     expect(DEFAULT_FONT_ID.text).toBe("system-sans");
     expect(resolveFontEntry("system-serif", "text").id).toBe("system-serif");
+  });
+});
+
+describe("ROLE_FONTS", () => {
+  it("contains every id from each lab metrics shortlist", () => {
+    for (const role of FONT_ROLES) {
+      expect(
+        [...new Set(ROLE_FONTS[role].map((entry) => entry.id))].sort(),
+      ).toEqual(Object.keys(metrics[role]).sort());
+    }
+  });
+
+  it("keeps Cardillac brand-only (registry, not picker)", () => {
+    expect(FONT_REGISTRY.cardillac).toBeDefined();
+    expect(ROLE_FONTS.display.some((f) => f.id === "cardillac")).toBe(false);
+    expect(ROLE_FONTS.text.some((f) => f.id === "cardillac")).toBe(false);
+  });
+
+  it("keeps only New York / San Francisco / SF Mono in the System group", () => {
+    for (const id of ["system-serif", "system-sans", "system-mono"]) {
+      expect(FONT_REGISTRY[id]?.system).toBe(true);
+      expect(FONT_REGISTRY[id]?.load).toBeUndefined();
+    }
+    for (const id of [
+      "georgia",
+      "hoefler-text",
+      "palatino",
+      "avenir-next",
+      "verdana",
+      "menlo",
+      "sf-mono",
+    ]) {
+      expect(FONT_REGISTRY[id]?.system).toBeUndefined();
+      expect(FONT_REGISTRY[id]?.load).toBeUndefined();
+      expect(FONT_REGISTRY[id]?.style).toMatch(/^(serif|sans|mono)$/);
+    }
   });
 });

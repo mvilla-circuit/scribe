@@ -25,6 +25,7 @@ import { type DocumentMeta, useCreateDocument } from "@/data/documents";
 import { endPositionFor } from "@/data/ordering";
 import { collectionAncestors } from "@/data/tree";
 import { useWhiteboards } from "@/data/whiteboards";
+import { displayTitleStyle } from "@/fonts/display-title-style";
 import { useCascadedFonts } from "@/fonts/use-cascaded-fonts";
 import { useUIStore } from "@/store/ui";
 
@@ -78,8 +79,6 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
       });
     },
   });
-  const titleFont = "var(--font-display)";
-
   const showSubtitle = bookShowSubtitle(book);
   const toggleSubtitle = () => {
     updateBook.mutate({
@@ -158,8 +157,8 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
         onCommit={(title) => {
           renameBook.mutate({ id: book.id, title });
         }}
-        className="text-[2.75rem] font-semibold leading-tight tracking-tight text-text"
-        style={{ fontFamily: titleFont }}
+        className="leading-tight tracking-tight text-text"
+        style={displayTitleStyle()}
       />
       {showSubtitle && (
         <EditableText
@@ -263,7 +262,6 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
           documents={documents}
           loading={loading}
           onCreateFirst={createFirstPage}
-          titleFont={titleFont}
           expandedIds={expandedIds}
           onToggle={toggleDoc}
         />

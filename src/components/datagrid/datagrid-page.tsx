@@ -26,6 +26,7 @@ import {
   useUpdateDatagrid,
 } from "@/data/datagrids";
 import { profileFonts, useProfile } from "@/data/profile";
+import { displayTitleStyle } from "@/fonts/display-title-style";
 import { resolveFonts } from "@/fonts/resolve";
 import { useFontOverrides } from "@/fonts/use-font-overrides";
 import { useScopedFonts } from "@/fonts/use-scoped-fonts";
@@ -404,8 +405,8 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
               onCommit={(name) => {
                 renameDatagrid.mutate({ id: datagridId, name });
               }}
-              className="text-2xl font-semibold leading-tight tracking-tight text-text"
-              style={{ fontFamily: "var(--font-display)" }}
+              className="leading-tight tracking-tight text-text"
+              style={displayTitleStyle()}
             />
             {showSubtitle && (
               <EditableText

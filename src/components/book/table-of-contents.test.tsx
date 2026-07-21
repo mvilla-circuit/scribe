@@ -85,7 +85,7 @@ describe("TableOfContents", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the empty title in the book display font", () => {
+  it("renders the empty title with full display optical metrics", () => {
     renderWithProviders(
       <TableOfContents
         documents={[]}
@@ -93,12 +93,15 @@ describe("TableOfContents", () => {
         expandedIds={new Set()}
         onToggle={vi.fn()}
         onCreateFirst={vi.fn()}
-        titleFont="var(--font-display)"
       />,
     );
 
     expect(screen.getByText("No documents yet")).toHaveStyle({
       fontFamily: "var(--font-display)",
+      fontSize: "var(--font-display-size)",
+      fontWeight: "var(--font-display-regular)",
+      lineHeight: "var(--font-display-line)",
+      letterSpacing: "var(--font-display-spacing)",
     });
     expect(screen.getByText("No documents yet")).toHaveClass("text-base");
   });

@@ -7,6 +7,7 @@ import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { useDragResize } from "@/components/ui/use-drag-resize";
 import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";
+import { displayTitleStyle } from "@/fonts/display-title-style";
 
 import { DatagridRowBody } from "./datagrid-row-body";
 import { DatagridRowBreadcrumbs } from "./datagrid-row-breadcrumbs";
@@ -26,8 +27,7 @@ const CLOSE_BUTTON_CLASS =
 const PANEL_STYLES = {
   modal: {
     headerClassName: "flex items-center gap-2 border-b border-border px-8 py-3",
-    titleClassName:
-      "text-2xl font-semibold leading-tight tracking-tight text-text",
+    titleClassName: "text-text",
     bodyClassName: "min-h-0 flex-1 overflow-y-auto px-8 pb-8 pt-8",
     propertiesClassName: "mt-6",
     editorClassName: "mt-8 border-t border-border pt-6",
@@ -35,8 +35,7 @@ const PANEL_STYLES = {
   split: {
     headerClassName:
       "flex items-center gap-2 border-b border-border px-6 py-2.5",
-    titleClassName:
-      "text-xl font-semibold leading-tight tracking-tight text-text",
+    titleClassName: "text-text",
     bodyClassName: "min-h-0 flex-1 overflow-y-auto bg-bg px-6 pb-6 pt-6",
     propertiesClassName: "mt-5",
     editorClassName: "mt-6 border-t border-border pt-5",
@@ -135,7 +134,7 @@ function RowPanelContent({
             placeholder="Untitled"
             onCommit={rename}
             className={styles.titleClassName}
-            style={{ fontFamily: "var(--font-display)" }}
+            style={displayTitleStyle()}
           />
           <div className={styles.propertiesClassName}>
             <DatagridRowProperties

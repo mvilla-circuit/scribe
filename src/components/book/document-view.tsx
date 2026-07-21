@@ -30,6 +30,7 @@ import { copyPageLink } from "@/editor/copy-page-link";
 import { Editor, type EditorHandle } from "@/editor/lazy-editor";
 import type { OutlineHeading } from "@/editor/outline";
 import type { SaveState } from "@/editor/use-autosave";
+import { displayTitleStyle } from "@/fonts/display-title-style";
 import { useCascadedFonts } from "@/fonts/use-cascaded-fonts";
 import { formatDateTime, formatRelativeTime } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
@@ -116,7 +117,6 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
       updateFontOverrides.mutate({ id: document.id, font_overrides: fonts });
     },
   });
-  const titleFont = "var(--font-display)";
   const bodyFont = "var(--font-text)";
 
   const setCover = async (file: File) => {
@@ -156,8 +156,8 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
             renameDocument.mutate({ id: document.id, title });
           }}
           onEnter={() => editorRef.current?.focusStart()}
-          className="text-[2.6rem] font-semibold leading-tight tracking-tight text-text"
-          style={{ fontFamily: titleFont }}
+          className="leading-tight tracking-tight text-text"
+          style={displayTitleStyle()}
         />
 
         {/* Notion-style quiet affordance: hidden until the title is hovered or

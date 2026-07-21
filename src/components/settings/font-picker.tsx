@@ -1,6 +1,6 @@
 import * as RPopover from "@radix-ui/react-popover";
 import { Check, ChevronsUpDown } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import {
@@ -9,7 +9,12 @@ import {
   resolveFontEntry,
   ROLE_FONTS,
 } from "@/fonts/catalog";
-import { ensureFontLoaded } from "@/fonts/load-font";
+import {
+  ensureFontLoaded,
+  ensureFontReady,
+  isFontLoaded,
+} from "@/fonts/load-font";
+import { metricsFor } from "@/fonts/metrics";
 import { makeIcon } from "@/lib/make-icon";
 import { matchesNormalizedQuery } from "@/lib/text-match";
 import { cn } from "@/lib/utils";
@@ -33,6 +38,17 @@ interface FontPickerProps {
   inheritLabel?: string;
 }
 
+function byFamilyName(a: FontEntry, b: FontEntry): number {
+  return a.family.localeCompare(b.family);
+}
+
+function fontsMatching(
+  options: FontEntry[],
+  predicate: (font: FontEntry) => boolean,
+): FontEntry[] {
+  return options.filter(predicate).sort(byFamilyName);
+}
+
 // A searchable, live-previewed font picker for one role. The trigger shows the
 // effective family in its own typeface; the popover lists curated options
 // grouped by Serif/Sans (Code is flat), each rendered in its own font with true
@@ -48,28 +64,60 @@ export function FontPicker({
 }: FontPickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const listRef = useRef<HTMLDivElement>(null);
   const current = resolveFontEntry(value, role);
+  const triggerMetrics = metricsFor(role, current.id);
+  // Apply the trigger face only after ensureFontReady (not merely CSS inject /
+  // isFontLoaded). System faces with no loader can paint immediately.
+  const [readyFontId, setReadyFontId] = useState<string | null>(() =>
+    current.load ? null : current.id,
+  );
+  const triggerReady = readyFontId === current.id;
 
   const inheritMode = onInherit != null;
   const isInheriting = inheritMode && !overridden;
-  // Only highlight a concrete option as selected when it is this level's own
-  // choice; while inheriting, the "Inherit" row is the selected one instead.
-  const selectedId = inheritMode ? (overridden ? value : undefined) : value;
+  // Highlight against the canonical catalog id so a stored legacy alias
+  // (e.g. dm-sans → inter) still marks the successor option selected.
+  const selectedId = !inheritMode || overridden ? current.id : undefined;
 
-  // Keep the trigger's preview face available.
   useEffect(() => {
-    void ensureFontLoaded(current.id);
-  }, [current.id]);
+    let cancelled = false;
+    void ensureFontReady(current.id, [
+      triggerMetrics.regular,
+      triggerMetrics.bold,
+    ]).then((ready) => {
+      if (!cancelled && ready) setReadyFontId(current.id);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [current.id, triggerMetrics.regular, triggerMetrics.bold]);
+
+  // Bring the current selection into view whenever the popover opens.
+  useEffect(() => {
+    if (!open || selectedId == null) return;
+    const frame = requestAnimationFrame(() => {
+      const option = listRef.current?.querySelector<HTMLElement>(
+        `[data-font-id="${selectedId}"]`,
+      );
+      if (option && typeof option.scrollIntoView === "function") {
+        option.scrollIntoView({ block: "nearest" });
+      }
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, [open, selectedId]);
 
   const groups = useMemo(() => {
     const options = ROLE_FONTS[role].filter((f) =>
       matchesNormalizedQuery(f.family, query),
     );
     return {
-      system: options.filter((f) => f.system),
-      serif: options.filter((f) => !f.system && f.style === "serif"),
-      sans: options.filter((f) => !f.system && f.style === "sans"),
-      mono: options.filter((f) => !f.system && f.style === "mono"),
+      system: fontsMatching(options, (f) => Boolean(f.system)),
+      serif: fontsMatching(options, (f) => !f.system && f.style === "serif"),
+      sans: fontsMatching(options, (f) => !f.system && f.style === "sans"),
+      mono: fontsMatching(options, (f) => !f.system && f.style === "mono"),
     };
   }, [role, query]);
 
@@ -104,8 +152,8 @@ export function FontPicker({
         >
           <span className="flex min-w-0 items-baseline gap-1.5">
             <span
-              className="truncate text-sm text-text"
-              style={{ fontFamily: current.stack }}
+              className="truncate font-sans text-sm text-text"
+              style={triggerReady ? { fontFamily: current.stack } : undefined}
             >
               {current.family}
             </span>
@@ -136,7 +184,7 @@ export function FontPicker({
           />
         </div>
 
-        <div className="flex-1 overflow-y-auto p-1.5">
+        <div ref={listRef} className="flex-1 overflow-y-auto p-1.5">
           {inheritMode && query.trim() === "" && (
             <InheritOption
               role={role}
@@ -148,24 +196,28 @@ export function FontPicker({
           )}
           <FontGroup
             label="System"
+            role={role}
             fonts={groups.system}
             selectedId={selectedId}
             onSelect={select}
           />
           <FontGroup
             label="Serif"
+            role={role}
             fonts={groups.serif}
             selectedId={selectedId}
             onSelect={select}
           />
           <FontGroup
             label="Sans"
+            role={role}
             fonts={groups.sans}
             selectedId={selectedId}
             onSelect={select}
           />
           <FontGroup
             label="Monospace"
+            role={role}
             fonts={groups.mono}
             selectedId={selectedId}
             onSelect={select}
@@ -226,11 +278,13 @@ function InheritOption({
 
 function FontGroup({
   label,
+  role,
   fonts,
   selectedId,
   onSelect,
 }: {
   label: string;
+  role: FontRole;
   fonts: FontEntry[];
   selectedId: string | undefined;
   onSelect: (fontId: string) => void;
@@ -245,6 +299,7 @@ function FontGroup({
         <FontOption
           key={font.id}
           font={font}
+          role={role}
           selected={font.id === selectedId}
           onSelect={() => {
             onSelect(font.id);
@@ -257,36 +312,79 @@ function FontGroup({
 
 function FontOption({
   font,
+  role,
   selected,
   onSelect,
 }: {
   font: FontEntry;
+  role: FontRole;
   selected: boolean;
   onSelect: () => void;
 }) {
-  // Load the preview face on first render; the browser repaints this row in the
-  // real font as soon as it arrives (System options need nothing).
+  const metrics = metricsFor(role, font.id);
+  const { regular, bold } = metrics;
+  // Apply the preview face only after CSS + glyph cuts are ready. Painting the
+  // stack earlier FOUTs from the system fallback (at optical weights) into the
+  // real glyphs when hover finishes loading — the size/weight jump users notice.
+  const [faceReady, setFaceReady] = useState(false);
+
+  const revealFace = () => {
+    void ensureFontReady(font.id, [regular, bold]).then((ready) => {
+      if (ready) setFaceReady(true);
+    });
+  };
+
+  // Reveal once the face is already cached, or when this row is the selection
+  // (the picker mount effect kicks that load off).
   useEffect(() => {
-    void ensureFontLoaded(font.id);
-  }, [font.id]);
+    if (faceReady) return;
+    if (!selected && !isFontLoaded(font.id)) return;
+    let cancelled = false;
+    void ensureFontReady(font.id, [regular, bold]).then((ready) => {
+      if (!cancelled && ready) setFaceReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selected, faceReady, font.id, regular, bold]);
 
   return (
     <button
       type="button"
+      data-font-id={font.id}
       onClick={onSelect}
-      style={{ fontFamily: font.stack }}
+      onPointerEnter={revealFace}
+      onFocus={revealFace}
       className={cn(
-        "flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left outline-none transition-colors hover:bg-hover focus-visible:bg-hover",
+        // Fixed row height + line boxes keep the list stable while a face
+        // reveals after load.
+        "flex h-[3.25rem] w-full flex-col justify-center gap-0.5 rounded-md px-2 py-1.5 text-left outline-none transition-colors hover:bg-hover focus-visible:bg-hover",
         selected && "bg-selected",
       )}
     >
-      <span className="flex items-center justify-between gap-2">
-        <span className="truncate text-[0.95rem] text-text">{font.family}</span>
-        {selected && <CheckIcon size={15} className="shrink-0 text-accent" />}
+      <span className="flex h-5 items-center justify-between gap-2">
+        <span className="truncate font-sans text-[0.95rem] leading-5 text-text">
+          {font.family}
+        </span>
+        <span className="inline-flex size-[15px] shrink-0 items-center justify-center">
+          {selected && <CheckIcon size={15} className="text-accent" />}
+        </span>
       </span>
-      <span className="truncate text-xs text-muted">
-        The quick brown fox <span style={{ fontWeight: 700 }}>jumps</span>{" "}
-        <span style={{ fontStyle: "italic" }}>over the lazy dog</span>
+      <span
+        className="h-4 truncate font-sans text-xs leading-4 text-muted"
+        style={
+          faceReady
+            ? { fontFamily: font.stack, fontWeight: metrics.regular }
+            : undefined
+        }
+      >
+        The quick brown fox{" "}
+        <span style={faceReady ? { fontWeight: metrics.bold } : undefined}>
+          jumps
+        </span>{" "}
+        <span style={faceReady ? { fontStyle: "italic" } : undefined}>
+          over the lazy dog
+        </span>
       </span>
     </button>
   );

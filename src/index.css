@@ -41,6 +41,27 @@
 }
 
 :root {
+  /* Editorial role fallbacks match ROLE_METRIC_DEFAULTS in fonts/metrics.ts.
+     Runtime font resolution replaces these on the root or reading surface. */
+  /* Brand wordmark stack. Cardillac loads only when VITE_ALLOW_CARDILLAC (or
+     DEV) permits it; otherwise the system serif fallbacks paint. Not offered
+     in the user-selectable FontMap / ROLE_FONTS picker. */
+  --font-brand: "Cardillac", "New York", "Iowan Old Style", Georgia, serif;
+  --font-display-size: 50px;
+  --font-display-regular: 400;
+  --font-display-bold: 700;
+  --font-display-line: 1.42;
+  --font-display-spacing: -0.01em;
+  --font-text-size: 16px;
+  --font-text-regular: 400;
+  --font-text-bold: 700;
+  --font-text-line: 1.55;
+  --font-text-spacing: 0em;
+  --font-code-size: 16px;
+  --font-code-regular: 400;
+  --font-code-bold: 700;
+  --font-code-line: 1.55;
+  --font-code-spacing: 0em;
   --bg: #faf9f7; /* warm paper */
   --surface: #ffffff;
   --elevated: #ffffff; /* popover/dialog surface */

@@ -7,6 +7,7 @@ This file applies to the whole repo. Scoped `AGENTS.md` files add area-specific 
 - [`src/components/ui/AGENTS.md`](src/components/ui/AGENTS.md) — design-system primitives
 - [`src/editor/AGENTS.md`](src/editor/AGENTS.md) — TipTap/ProseMirror editor
 - [`src/data/AGENTS.md`](src/data/AGENTS.md) — React Query data layer
+- [`src/fonts/AGENTS.md`](src/fonts/AGENTS.md) — font catalog, metrics, loaders
 - [`src/store/AGENTS.md`](src/store/AGENTS.md) — Zustand UI state
 - [`e2e/AGENTS.md`](e2e/AGENTS.md) — Playwright end-to-end specs
 - [`src-tauri/AGENTS.md`](src-tauri/AGENTS.md) — Rust/Tauri shell
@@ -15,7 +16,11 @@ This file applies to the whole repo. Scoped `AGENTS.md` files add area-specific 
 
 - Use **npm** (this repo pins it). Node `>=22 <23`, npm `>=10 <11`; the version is in `.nvmrc`.
 - Install with `npm install`.
-- App config lives in `.env.local` at the project root: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+- App config lives in `.env.local` at the project root: `VITE_SUPABASE_URL` and
+  `VITE_SUPABASE_ANON_KEY`. Optional: `VITE_ALLOW_CARDILLAC=true` for personal
+  production builds that embed the Cardillac brand face (allowed automatically
+  in Vite DEV; leave unset/`false` for commercial builds — see
+  [`src/fonts/AGENTS.md`](src/fonts/AGENTS.md)).
 - **Git worktrees:** `.env.local` is gitignored, so linked worktrees do not
   inherit it. Create worktrees with `./scripts/git-worktree-add.sh` (same args
   as `git worktree add`) so `.env.local` is copied from the primary checkout.
@@ -81,8 +86,9 @@ adding or changing UI, hold to the direction inferred from the existing styles
   stable system sans (`--font-sans`) — never serif or mono. The reading surface
   uses the editorial roles `--font-display` (titles/headings), `--font-text`
   (body), and `--font-code`, which are repointed at runtime to the user's chosen
-  catalog fonts. Body prose is ~17px at 1.7 line-height; headings get tight
-  tracking and clear hierarchy. Keep generous line-height and paragraph rhythm.
+  catalog fonts. Body/title/code sizes are metric-driven baselines (px via
+  `--font-*-size`); derived type uses em/rem. Keep generous line-height and
+  paragraph rhythm.
 - **Shape & spacing**: use the radius scale (`--radius-sm` 6 / `--radius-md` 8 /
   `--radius-lg` 12). Favor soft, rounded, framed surfaces (cards, popovers) over
   hard rules. Space the reading surface in `em` units so rhythm scales with type.

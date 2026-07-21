@@ -34,3 +34,9 @@ blob-report
 *.sln
 *.sw?
 .worktrees/
+
+# Local font lab workspace (self-hosted source dump; app uses src/fonts/assets/)
+/fonts/
+/font-lab.html
+/type-lab.html
+/mono-lab.html

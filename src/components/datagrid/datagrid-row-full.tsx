@@ -6,6 +6,7 @@ import { Masthead } from "@/components/ui/masthead";
 import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";
+import { displayTitleStyle } from "@/fonts/display-title-style";
 
 import { DatagridRowBody } from "./datagrid-row-body";
 import { DatagridRowBreadcrumbs } from "./datagrid-row-breadcrumbs";
@@ -105,8 +106,8 @@ export function DatagridRowFull({
             ariaLabel="Row title"
             placeholder="Untitled"
             onCommit={rename}
-            className="text-[2.6rem] font-semibold leading-tight tracking-tight text-text"
-            style={{ fontFamily: "var(--font-display)" }}
+            className="leading-tight tracking-tight text-text"
+            style={displayTitleStyle()}
           />
         </Masthead>
 
