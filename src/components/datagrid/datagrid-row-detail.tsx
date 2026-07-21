@@ -7,6 +7,7 @@ import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { useDragResize } from "@/components/ui/use-drag-resize";
 import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";
+import { displayTitleStyle } from "@/fonts/display-title-style";
 
 import { DatagridRowBody } from "./datagrid-row-body";
 import { DatagridRowBreadcrumbs } from "./datagrid-row-breadcrumbs";
@@ -133,13 +134,7 @@ function RowPanelContent({
             placeholder="Untitled"
             onCommit={rename}
             className={styles.titleClassName}
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "var(--font-display-size)",
-              fontWeight: "var(--font-display-regular)",
-              lineHeight: "var(--font-display-line)",
-              letterSpacing: "var(--font-display-spacing)",
-            }}
+            style={displayTitleStyle()}
           />
           <div className={styles.propertiesClassName}>
             <DatagridRowProperties

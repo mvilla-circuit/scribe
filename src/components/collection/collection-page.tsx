@@ -74,6 +74,7 @@ import {
   useDeleteWhiteboard,
   useWhiteboards,
 } from "@/data/whiteboards";
+import { displayTitleStyle } from "@/fonts/display-title-style";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
 
@@ -509,11 +510,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
               renameCollection.mutate({ id: collection.id, name });
             }}
             className="leading-tight tracking-tight text-text"
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "var(--font-display-size)",
-              fontWeight: "var(--font-display-regular)",
-            }}
+            style={displayTitleStyle()}
           />
           <EditableText
             value={collection.description ?? ""}

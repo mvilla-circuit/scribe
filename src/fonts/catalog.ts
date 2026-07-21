@@ -1,5 +1,6 @@
 import nameToId from "./_name-to-id.json";
 import { canonicalizeFontId } from "./aliases";
+import { BRAND_FONT_ID, isCardillacAllowed } from "./brand";
 import { LOCAL_FONT_IDS, localLoader } from "./loaders/local";
 import { weightUnionFor } from "./metrics";
 
@@ -213,7 +214,6 @@ const DISPLAY_SERIF = group(
     "bespoke-slab",
     "bitter",
     "brygada-1918",
-    "cardillac",
     "crimson-pro",
     "erode",
     "fraunces",
@@ -395,6 +395,9 @@ export const ROLE_FONTS: Record<FontRole, FontEntry[]> = {
   code: CODE,
 };
 
+// Brand wordmark face — loadable when allowed, never offered in ROLE_FONTS.
+entryFor("cardillac", "serif");
+
 const DEFAULT_FONT: Record<FontRole, FontEntry> = {
   display: entryFor("system-serif", "serif"),
   text: entryFor("system-sans", "sans"),
@@ -424,7 +427,13 @@ export function resolveFontEntry(
   role: FontRole,
 ): FontEntry {
   if (fontId) {
-    const entry = FONT_REGISTRY[canonicalizeFontId(fontId)];
+    const id = canonicalizeFontId(fontId);
+    // Cardillac is brand-only and license-gated; fall back when disallowed or
+    // when a stored map still points at it after it left the picker.
+    if (id === BRAND_FONT_ID && !isCardillacAllowed()) {
+      return DEFAULT_FONT[role];
+    }
+    const entry = FONT_REGISTRY[id];
     if (entry) return entry;
   }
   return DEFAULT_FONT[role];

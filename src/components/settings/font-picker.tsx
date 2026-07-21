@@ -58,6 +58,15 @@ export function FontPicker({
   const [query, setQuery] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
   const current = resolveFontEntry(value, role);
+  const triggerMetrics = metricsFor(role, current.id);
+  // Apply the trigger face only after cuts are ready (same anti-FOUT policy as
+  // option rows). Until then the label stays on chrome sans. Track readiness by
+  // font id so a selection change resets the face without syncing setState in
+  // the effect body.
+  const [readyFontId, setReadyFontId] = useState<string | null>(() =>
+    isFontLoaded(current.id) ? current.id : null,
+  );
+  const triggerReady = readyFontId === current.id;
 
   const inheritMode = onInherit != null;
   const isInheriting = inheritMode && !overridden;
@@ -69,10 +78,18 @@ export function FontPicker({
       : undefined
     : current.id;
 
-  // Keep the trigger's preview face available.
   useEffect(() => {
-    void ensureFontLoaded(current.id);
-  }, [current.id]);
+    let cancelled = false;
+    void ensureFontReady(current.id, [
+      triggerMetrics.regular,
+      triggerMetrics.bold,
+    ]).then((ready) => {
+      if (!cancelled && ready) setReadyFontId(current.id);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [current.id, triggerMetrics.regular, triggerMetrics.bold]);
 
   // Bring the current selection into view whenever the popover opens.
   useEffect(() => {
@@ -139,8 +156,8 @@ export function FontPicker({
         >
           <span className="flex min-w-0 items-baseline gap-1.5">
             <span
-              className="truncate text-sm text-text"
-              style={{ fontFamily: current.stack }}
+              className="truncate font-sans text-sm text-text"
+              style={triggerReady ? { fontFamily: current.stack } : undefined}
             >
               {current.family}
             </span>

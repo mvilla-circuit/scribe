@@ -9,13 +9,7 @@ const rowDetail = readFileSync(
 );
 
 describe("Datagrid row detail title typography contract", () => {
-  it("uses resolved display metrics for detail titles", () => {
-    for (const variable of [
-      "--font-display",
-      "--font-display-size",
-      "--font-display-regular",
-    ]) {
-      expect(rowDetail).toContain(variable);
-    }
+  it("uses displayTitleStyle for detail titles", () => {
+    expect(rowDetail).toContain("displayTitleStyle()");
   });
 });

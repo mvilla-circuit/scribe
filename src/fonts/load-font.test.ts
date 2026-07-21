@@ -151,6 +151,17 @@ describe("ensureFontReady", () => {
   it("returns false when the CSS loader fails", async () => {
     await expect(ensureFontReady("web-fail")).resolves.toBe(false);
   });
+
+  it("returns false when document.fonts.load rejects", async () => {
+    Object.defineProperty(document, "fonts", {
+      configurable: true,
+      value: {
+        load: vi.fn(() => Promise.reject(new Error("decode failed"))),
+      },
+    });
+
+    await expect(ensureFontReady("web-ready", [400])).resolves.toBe(false);
+  });
 });
 
 describe("ensureFontLoaded", () => {

@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buildDocTree, flattenTocExpanded } from "@/data/doc-tree";
 import type { DocumentMeta } from "@/data/documents";
+import { displayTitleStyle } from "@/fonts/display-title-style";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store/ui";
 
@@ -20,8 +21,6 @@ interface TableOfContentsProps {
    * Omitted when the list can't be empty (a parent page always has children).
    */
   onCreateFirst?: () => void;
-  /** The book's resolved title-role font, so the contents empty state echoes the cover. */
-  titleFont?: string;
   /** Ids of expanded parents; collapsed parents hide their subtree. */
   expandedIds: Set<string>;
   /** Toggle a single parent's expansion. */
@@ -40,7 +39,6 @@ export function TableOfContents({
   documents,
   loading,
   onCreateFirst,
-  titleFont = "var(--font-display)",
   expandedIds,
   onToggle,
   rootId = null,
@@ -69,7 +67,7 @@ export function TableOfContents({
         className="mt-10"
         tone="editorial"
         title="No documents yet"
-        titleStyle={{ fontFamily: titleFont }}
+        titleStyle={displayTitleStyle()}
         body="Add your first page to begin shaping this book."
         cta={
           <Button variant="primary" onClick={onCreateFirst}>

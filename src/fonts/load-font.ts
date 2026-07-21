@@ -8,6 +8,7 @@
 import type { CSSProperties } from "react";
 
 import { canonicalizeFontId } from "./aliases";
+import { BRAND_FONT_ID, isCardillacAllowed } from "./brand";
 import {
   FONT_REGISTRY,
   FONT_ROLES,
@@ -43,6 +44,8 @@ export function ensureFontLoaded(fontId: string): Promise<void> {
   const id = canonicalizeFontId(fontId);
   const entry = FONT_REGISTRY[id];
   if (!entry?.load || loaded.has(id)) return Promise.resolve();
+  // Never inject Cardillac assets in commercial / disallowed builds.
+  if (id === BRAND_FONT_ID && !isCardillacAllowed()) return Promise.resolve();
 
   const existing = inflight.get(id);
   if (existing) return existing;
@@ -82,12 +85,17 @@ export async function ensureFontReady(
   const fonts = globalThis.document?.fonts;
   if (fonts && typeof fonts.load === "function") {
     const family = `"${entry.family}"`;
-    await Promise.all(
-      weights.flatMap((weight) => [
-        fonts.load(`${weight} 16px ${family}`),
-        fonts.load(`italic ${weight} 16px ${family}`),
-      ]),
-    );
+    try {
+      await Promise.all(
+        weights.flatMap((weight) => [
+          fonts.load(`${weight} 16px ${family}`),
+          fonts.load(`italic ${weight} 16px ${family}`),
+        ]),
+      );
+    } catch {
+      // CSS is present; callers may still paint the stack without a hard fail.
+      return false;
+    }
   }
 
   return true;

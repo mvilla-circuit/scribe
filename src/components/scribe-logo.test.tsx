@@ -3,15 +3,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ScribeLogo } from "./scribe-logo";
 
-const { ensureFontReady } = vi.hoisted(() => ({
+const { ensureFontReady, isCardillacAllowed } = vi.hoisted(() => ({
   ensureFontReady: vi.fn(() => Promise.resolve(true)),
+  isCardillacAllowed: vi.fn(() => true),
 }));
 
 vi.mock("@/fonts/load-font", () => ({ ensureFontReady }));
+vi.mock("@/fonts/brand", () => ({ isCardillacAllowed }));
 
 describe("ScribeLogo", () => {
   beforeEach(() => {
     ensureFontReady.mockClear();
+    isCardillacAllowed.mockReset();
+    isCardillacAllowed.mockReturnValue(true);
     ensureFontReady.mockImplementation(() => Promise.resolve(true));
   });
 
@@ -44,6 +48,35 @@ describe("ScribeLogo", () => {
     await waitFor(() => {
       expect(screen.getByText("Scribe")).toHaveStyle({ opacity: "1" });
     });
+  });
+
+  it("shows the wordmark even when Cardillac fails to become ready", async () => {
+    ensureFontReady.mockResolvedValue(false);
+
+    render(<ScribeLogo />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Scribe")).toHaveStyle({ opacity: "1" });
+    });
+  });
+
+  it("shows the wordmark when ensureFontReady rejects", async () => {
+    ensureFontReady.mockRejectedValue(new Error("offline"));
+
+    render(<ScribeLogo />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Scribe")).toHaveStyle({ opacity: "1" });
+    });
+  });
+
+  it("skips Cardillac loading when the brand face is disallowed", () => {
+    isCardillacAllowed.mockReturnValue(false);
+
+    render(<ScribeLogo />);
+
+    expect(ensureFontReady).not.toHaveBeenCalled();
+    expect(screen.getByText("Scribe")).toHaveStyle({ opacity: "1" });
   });
 
   it("renders the feather brand icon alongside the wordmark", () => {

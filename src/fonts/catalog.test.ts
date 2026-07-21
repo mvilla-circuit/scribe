@@ -91,6 +91,12 @@ describe("ROLE_FONTS", () => {
     }
   });
 
+  it("keeps Cardillac brand-only (registry, not picker)", () => {
+    expect(FONT_REGISTRY.cardillac).toBeDefined();
+    expect(ROLE_FONTS.display.some((f) => f.id === "cardillac")).toBe(false);
+    expect(ROLE_FONTS.text.some((f) => f.id === "cardillac")).toBe(false);
+  });
+
   it("keeps only New York / San Francisco / SF Mono in the System group", () => {
     for (const id of ["system-serif", "system-sans", "system-mono"]) {
       expect(FONT_REGISTRY[id]?.system).toBe(true);

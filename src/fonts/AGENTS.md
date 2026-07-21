@@ -30,8 +30,10 @@ When changing the curated set or optical baselines:
 5. If retiring an id, add a successor in `aliases.ts` (do not rewrite stored JSONB).
 6. Run the gate tests below, then `npm run verify`.
 
-Brand face (Cardillac) assets are woff2 under `assets/`; see
-[`assets/LICENSES.md`](assets/LICENSES.md) before any commercial redistribution.
+Brand face (Cardillac) is **not** in `ROLE_FONTS`. It stays in `FONT_REGISTRY`
+for the wordmark only and loads when `isCardillacAllowed()` is true (Vite DEV
+or `VITE_ALLOW_CARDILLAC=true`). See [`assets/LICENSES.md`](assets/LICENSES.md)
+and [`brand.ts`](brand.ts). Reading-surface titles use `displayTitleStyle()`.
 
 ## Gate tests for a catalog change
 

@@ -10,6 +10,7 @@ import {
   useUpdateProfileFonts,
 } from "@/data/profile";
 import { DEFAULT_FONT_ID, type FontRole } from "@/fonts/catalog";
+import { displayTitleStyle } from "@/fonts/display-title-style";
 
 import { FontPicker } from "./font-picker";
 
@@ -86,16 +87,7 @@ function FontPreview() {
         Preview
       </p>
       <div className="rounded-lg border border-border bg-bg p-5">
-        <p
-          className="text-text"
-          style={{
-            fontFamily: "var(--font-display)",
-            fontSize: "var(--font-display-size)",
-            fontWeight: "var(--font-display-regular)",
-            lineHeight: "var(--font-display-line)",
-            letterSpacing: "var(--font-display-spacing)",
-          }}
-        >
+        <p className="text-text" style={displayTitleStyle()}>
           The Voyage Begins
         </p>
         <p

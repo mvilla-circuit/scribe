@@ -9,13 +9,12 @@ const settingsDialog = readFileSync(
 );
 
 describe("FontPreview typography contract", () => {
-  it("uses the resolved font metrics for every preview role", () => {
+  it("uses displayTitleStyle for the display preview", () => {
+    expect(settingsDialog).toContain("displayTitleStyle()");
+  });
+
+  it("uses the resolved font metrics for text and code previews", () => {
     for (const variable of [
-      "--font-display",
-      "--font-display-size",
-      "--font-display-regular",
-      "--font-display-line",
-      "--font-display-spacing",
       "--font-text",
       "--font-text-size",
       "--font-text-regular",

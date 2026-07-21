@@ -16,7 +16,11 @@ This file applies to the whole repo. Scoped `AGENTS.md` files add area-specific 
 
 - Use **npm** (this repo pins it). Node `>=22 <23`, npm `>=10 <11`; the version is in `.nvmrc`.
 - Install with `npm install`.
-- App config lives in `.env.local` at the project root: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+- App config lives in `.env.local` at the project root: `VITE_SUPABASE_URL` and
+  `VITE_SUPABASE_ANON_KEY`. Optional: `VITE_ALLOW_CARDILLAC=true` for personal
+  production builds that embed the Cardillac brand face (allowed automatically
+  in Vite DEV; leave unset/`false` for commercial builds — see
+  [`src/fonts/AGENTS.md`](src/fonts/AGENTS.md)).
 - **Git worktrees:** `.env.local` is gitignored, so linked worktrees do not
   inherit it. Create worktrees with `./scripts/git-worktree-add.sh` (same args
   as `git worktree add`) so `.env.local` is copied from the primary checkout.

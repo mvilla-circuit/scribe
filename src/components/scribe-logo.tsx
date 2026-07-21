@@ -1,6 +1,7 @@
 import { Feather } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { isCardillacAllowed } from "@/fonts/brand";
 import { ensureFontReady } from "@/fonts/load-font";
 import { makeIcon } from "@/lib/make-icon";
 import { cn } from "@/lib/utils";
@@ -34,19 +35,26 @@ export function ScribeLogo({
   textClassName,
   iconClassName,
 }: ScribeLogoProps) {
-  // Hide the wordmark until Cardillac cuts are ready so we don't FOUT from the
-  // --font-brand stack fallback (New York) into the real face.
-  const [faceReady, setFaceReady] = useState(false);
+  const cardillacAllowed = isCardillacAllowed();
+  // Hide briefly until Cardillac is ready (when allowed) to avoid FOUT. Always
+  // reveal afterward — including on load failure — so the wordmark never stays
+  // invisible on the brand stack fallback.
+  const [faceReady, setFaceReady] = useState(() => !cardillacAllowed);
 
   useEffect(() => {
+    if (!cardillacAllowed) return;
     let cancelled = false;
-    void ensureFontReady("cardillac", BRAND_WEIGHTS).then((ready) => {
-      if (!cancelled && ready) setFaceReady(true);
-    });
+    void ensureFontReady("cardillac", BRAND_WEIGHTS)
+      .then(() => {
+        if (!cancelled) setFaceReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) setFaceReady(true);
+      });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [cardillacAllowed]);
 
   return (
     <span
