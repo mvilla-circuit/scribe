@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 
 // `@tiptap/extension-drag-handle` imports its collaboration peers only to skip
 // Yjs-origin transactions. This app has no collaboration, so alias those peers
@@ -28,11 +28,15 @@ const dictDic = fileURLToPath(
 );
 
 // https://vite.dev/config/
-export default defineConfig(({ command }) => {
+export default defineConfig(({ command, mode }) => {
   // Cardillac is personal-use only. Serve/test always resolve the real assets;
-  // production builds include them only when VITE_ALLOW_CARDILLAC=true.
+  // production builds include them only when VITE_ALLOW_CARDILLAC=true (shell
+  // or .env* — loadEnv so .env.local matches import.meta.env).
+  const env = loadEnv(mode, process.cwd(), "");
   const allowCardillac =
-    command !== "build" || process.env.VITE_ALLOW_CARDILLAC === "true";
+    command !== "build" ||
+    env.VITE_ALLOW_CARDILLAC === "true" ||
+    process.env.VITE_ALLOW_CARDILLAC === "true";
   const cardillacAssets = fileURLToPath(
     new URL(
       allowCardillac

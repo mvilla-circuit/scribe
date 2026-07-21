@@ -19,6 +19,7 @@ describe("Cardillac packaging gate", () => {
     expect(viteConfigSrc).toContain("@scribe/cardillac-assets");
     expect(viteConfigSrc).toContain("cardillac-assets-empty.ts");
     expect(viteConfigSrc).toContain('command !== "build"');
+    expect(viteConfigSrc).toContain("loadEnv");
     expect(viteConfigSrc).toContain("VITE_ALLOW_CARDILLAC");
   });
 });
