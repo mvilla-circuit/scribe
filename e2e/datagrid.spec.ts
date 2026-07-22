@@ -47,10 +47,91 @@ test.describe("datagrid", () => {
       .click();
     await expect(authedPage.getByRole("dialog")).toBeVisible();
   });
+
+  test("switches empty create-flow datagrid to Gallery layout", async ({
+    authedPage,
+  }) => {
+    await authedPage.goto("/");
+
+    await authedPage.getByRole("button", { name: "Create" }).click();
+    await authedPage.getByRole("menuitem", { name: "New collection" }).click();
+    const collectionRename = authedPage.getByPlaceholder("Collection name");
+    await collectionRename.fill("Data");
+    await collectionRename.press("Enter");
+
+    const collectionRow = authedPage.getByRole("treeitem", { name: /Data/ });
+    await expect(collectionRow).toBeVisible();
+
+    // Create settle inserts the default view, then invalidates views so a
+    // mid-flight empty GET cannot leave the page without an active view.
+    // Wait for a non-empty views GET (post-heal) before switching Layout.
+    const defaultViewInserted = authedPage.waitForResponse((response) => {
+      const request = response.request();
+      return (
+        request.method() === "POST" &&
+        request.url().includes("/rest/v1/datagrid_views") &&
+        response.ok()
+      );
+    });
+    const viewsHealed = authedPage.waitForResponse(async (response) => {
+      const request = response.request();
+      if (
+        request.method() !== "GET" ||
+        !request.url().includes("/rest/v1/datagrid_views") ||
+        !response.ok()
+      ) {
+        return false;
+      }
+      try {
+        const body: unknown = await response.json();
+        return Array.isArray(body) && body.length > 0;
+      } catch {
+        return false;
+      }
+    });
+
+    await collectionRow.hover();
+    await collectionRow.getByRole("button", { name: "More actions" }).click();
+    await authedPage.getByRole("menuitem", { name: "New datagrid" }).click();
+
+    await expect(authedPage.getByText("This datagrid is empty")).toBeVisible();
+    await authedPage.keyboard.press("Enter");
+    await defaultViewInserted;
+    await viewsHealed;
+
+    // Layout lives under View options → Layout submenu.
+    await authedPage.getByRole("button", { name: "View options" }).click();
+    const layout = authedPage.getByRole("menuitem", { name: /Layout/ });
+    await layout.focus();
+    await authedPage.keyboard.press("ArrowRight");
+    await authedPage.getByRole("menuitem", { name: "Gallery" }).click();
+
+    // Empty gallery shows layout chrome, not the shared table empty state.
+    await expect(
+      authedPage.getByRole("region", { name: "Gallery" }),
+    ).toBeVisible();
+    await expect(
+      authedPage.getByRole("button", { name: "New card" }),
+    ).toBeVisible();
+    await expect(authedPage.getByText("This datagrid is empty")).toHaveCount(0);
+
+    // Still a single view — layout switched in place (tabs need 2+ views).
+    await expect(authedPage.getByRole("button", { name: "Table" })).toHaveCount(
+      0,
+    );
+
+    // Layout sticks: reopen the submenu and Gallery is the accented selection.
+    await authedPage.getByRole("button", { name: "View options" }).click();
+    await authedPage.getByRole("menuitem", { name: /Layout/ }).focus();
+    await authedPage.keyboard.press("ArrowRight");
+    await expect(
+      authedPage.getByRole("menuitem", { name: "Gallery" }),
+    ).toHaveClass(/text-accent/);
+  });
 });
 
-// A seeded datagrid gives the layout-switch flow a stable view to persist onto
-// (the create flow's optimistic view can race the stub's settle-time refetch).
+// Seeded datagrid: layout-switch regression with a pre-existing view/row.
+// Create-flow coverage lives above; settle now invalidates views.
 test.describe("datagrid with seeded data", () => {
   test.use({
     seed: {
