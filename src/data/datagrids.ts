@@ -172,6 +172,9 @@ export function useCreateDatagrid() {
       ...prev,
       newDatagridRow(input, requireUserId(session)),
     ],
+    // Heal the per-datagrid views cache on settle: a racing empty GET after the
+    // optimistic seed can wipe it before the default-view INSERT lands.
+    alsoInvalidate: (input) => [datagridViewsKey(input.id)],
     errorMessage: "Couldn't create datagrid",
   });
   return useMutation({
@@ -204,6 +207,9 @@ export function useCreateDatagrid() {
     onMutate: async (input: CreateDatagridInput) => {
       const userId = requireUserId(session);
       await qc.cancelQueries({ queryKey: datagridsKey });
+      // Defensive: drop any in-flight views fetch for this id before seeding so
+      // a late empty response can't clobber the optimistic default view.
+      await qc.cancelQueries({ queryKey: datagridViewsKey(input.id) });
       const previous = qc.getQueryData<Datagrid[]>(datagridsKey);
       qc.setQueryData<Datagrid[]>(datagridsKey, (prev) =>
         [...(prev ?? []), newDatagridRow(input, userId)]

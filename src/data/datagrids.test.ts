@@ -3,13 +3,14 @@ import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
 
 import type { DatagridField } from "@/lib/datagrid-schema";
-import { makeDatagrid } from "@/test/fixtures";
+import { makeDatagrid, makeDatagridView } from "@/test/fixtures";
 import { server } from "@/test/msw/server";
 import {
   createTestQueryClient,
   renderHookWithQuery,
 } from "@/test/render-with-query";
 
+import { useDatagridViews } from "./datagrid-views";
 import {
   datagridFontOverrides,
   datagridShowSubtitle,
@@ -154,6 +155,84 @@ describe("datagrids", () => {
       client.getQueryData<{ id: string }[]>(datagridViewsKey("grid-1"))?.[0]
         ?.id,
     ).toBe("view-1");
+  });
+
+  it("heals views cache after settle when a views observer fetched empty during create", async () => {
+    let viewInserted = false;
+    let releaseCreate: (() => void) | undefined;
+    const createGate = new Promise<void>((resolve) => {
+      releaseCreate = resolve;
+    });
+    server.use(
+      http.post(DATAGRIDS_URL, async () => {
+        await createGate;
+        return new HttpResponse(null, { status: 201 });
+      }),
+      http.post(VIEWS_URL, () => {
+        viewInserted = true;
+        return new HttpResponse(null, { status: 201 });
+      }),
+      http.get(VIEWS_URL, () => {
+        if (!viewInserted) {
+          return HttpResponse.json([]);
+        }
+        return HttpResponse.json([
+          makeDatagridView({
+            id: "view-1",
+            datagrid_id: "grid-1",
+            is_default: true,
+            name: "Table",
+            position: 0,
+          }),
+        ]);
+      }),
+    );
+    const client = createTestQueryClient();
+    client.setQueryData(datagridsKey, []);
+    const { result } = renderHookWithQuery(
+      () => ({
+        create: useCreateDatagrid(),
+        views: useDatagridViews("grid-1"),
+      }),
+      { client },
+    );
+
+    await waitFor(() => {
+      expect(result.current.views.isSuccess).toBe(true);
+    });
+    expect(result.current.views.data).toEqual([]);
+
+    result.current.create.mutate({
+      id: "grid-1",
+      collection_id: "collection-1",
+      name: "Tasks",
+      position: 1024,
+      viewId: "view-1",
+    });
+
+    await waitFor(() => {
+      expect(
+        client.getQueryData<{ id: string }[]>(datagridViewsKey("grid-1"))?.[0]
+          ?.id,
+      ).toBe("view-1");
+    });
+
+    // Simulate DatagridPage mounting a views refetch that lands before the
+    // default-view INSERT completes and wipes the optimistic seed.
+    await client.refetchQueries({ queryKey: datagridViewsKey("grid-1") });
+    expect(client.getQueryData(datagridViewsKey("grid-1"))).toEqual([]);
+
+    releaseCreate?.();
+
+    await waitFor(() => {
+      expect(result.current.create.isSuccess).toBe(true);
+    });
+    await waitFor(() => {
+      expect(
+        client.getQueryData<{ id: string }[]>(datagridViewsKey("grid-1"))?.[0]
+          ?.id,
+      ).toBe("view-1");
+    });
   });
 
   it("rolls back the datagrid and view cache when default view creation fails", async () => {
