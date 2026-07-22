@@ -48,6 +48,18 @@ const rows: DatagridDisplayRow[] = [
 ];
 
 describe("DatagridGalleryView", () => {
+  it("exposes a Gallery region for assistive tech", () => {
+    renderWithProviders(
+      <DatagridGalleryView
+        rows={rows}
+        fields={fields}
+        onOpenRow={vi.fn()}
+        onCreateRow={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("region", { name: "Gallery" })).toBeInTheDocument();
+  });
+
   it("renders a card per row with its property chips", () => {
     renderWithProviders(
       <DatagridGalleryView
