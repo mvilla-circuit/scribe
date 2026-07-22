@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { asJsonObject } from "@/lib/utils";
 
 import { execWrite, requireUserId } from "./crud";
-import { newDefaultViewRow } from "./datagrid-views";
+import { type DatagridView, newDefaultViewRow } from "./datagrid-views";
 import { coerceFontMap } from "./font-map";
 import { listHandlers, patchById, removeById } from "./optimistic-list";
 import { byPosition } from "./ordering";
@@ -172,9 +172,6 @@ export function useCreateDatagrid() {
       ...prev,
       newDatagridRow(input, requireUserId(session)),
     ],
-    // Heal the per-datagrid views cache on settle: a racing empty GET after the
-    // optimistic seed can wipe it before the default-view INSERT lands.
-    alsoInvalidate: (input) => [datagridViewsKey(input.id)],
     errorMessage: "Couldn't create datagrid",
   });
   return useMutation({
@@ -226,6 +223,20 @@ export function useCreateDatagrid() {
     onError: (error, input, context) => {
       handlers.onError(error, input, context);
       qc.removeQueries({ queryKey: datagridViewsKey(input.id) });
+    },
+    onSettled: (data, error, variables) => {
+      handlers.onSettled?.(data, error, variables);
+      // Heal only when a racing empty GET wiped the optimistic seed. Unconditional
+      // invalidate would refetch the still-table server row and clobber an
+      // in-flight layout persist (e.g. optimistic gallery).
+      const views = qc.getQueryData<DatagridView[]>(
+        datagridViewsKey(variables.id),
+      );
+      if (views == null || views.length === 0) {
+        void qc.invalidateQueries({
+          queryKey: datagridViewsKey(variables.id),
+        });
+      }
     },
   });
 }

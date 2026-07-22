@@ -2,6 +2,7 @@ import { waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
 
+import type { Json } from "@/lib/database.types";
 import type { DatagridField } from "@/lib/datagrid-schema";
 import { makeDatagrid, makeDatagridView } from "@/test/fixtures";
 import { server } from "@/test/msw/server";
@@ -10,7 +11,7 @@ import {
   renderHookWithQuery,
 } from "@/test/render-with-query";
 
-import { useDatagridViews } from "./datagrid-views";
+import { type DatagridView, useDatagridViews } from "./datagrid-views";
 import {
   datagridFontOverrides,
   datagridShowSubtitle,
@@ -233,6 +234,90 @@ describe("datagrids", () => {
           ?.id,
       ).toBe("view-1");
     });
+  });
+
+  it("does not heal views on create settle when the seed is still populated", async () => {
+    let releaseCreate: (() => void) | undefined;
+    const createGate = new Promise<void>((resolve) => {
+      releaseCreate = resolve;
+    });
+    let viewsGetCount = 0;
+    server.use(
+      http.post(DATAGRIDS_URL, async () => {
+        await createGate;
+        return new HttpResponse(null, { status: 201 });
+      }),
+      http.post(VIEWS_URL, () => new HttpResponse(null, { status: 201 })),
+      http.get(VIEWS_URL, () => {
+        viewsGetCount += 1;
+        // Server still has the default table layout — a settle heal would
+        // clobber an in-flight optimistic gallery patch.
+        const tableConfig: Json = { layout: "table" };
+        return HttpResponse.json([
+          makeDatagridView({
+            id: "view-1",
+            datagrid_id: "grid-1",
+            is_default: true,
+            name: "Table",
+            position: 0,
+            config: tableConfig,
+          }),
+        ]);
+      }),
+    );
+    const client = createTestQueryClient();
+    client.setQueryData(datagridsKey, []);
+    const { result } = renderHookWithQuery(
+      () => ({
+        create: useCreateDatagrid(),
+        views: useDatagridViews("grid-1"),
+      }),
+      { client },
+    );
+
+    result.current.create.mutate({
+      id: "grid-1",
+      collection_id: "collection-1",
+      name: "Tasks",
+      position: 1024,
+      viewId: "view-1",
+    });
+
+    await waitFor(() => {
+      expect(
+        client.getQueryData<{ id: string }[]>(datagridViewsKey("grid-1"))?.[0]
+          ?.id,
+      ).toBe("view-1");
+    });
+
+    // Simulate useUpdateDatagridView's optimistic layout patch racing create.
+    const galleryConfig: Json = { layout: "gallery" };
+    client.setQueryData(
+      datagridViewsKey("grid-1"),
+      (prev: DatagridView[] | undefined) =>
+        (prev ?? []).map((view) =>
+          view.id === "view-1" ? { ...view, config: galleryConfig } : view,
+        ),
+    );
+
+    const getsBeforeSettle = viewsGetCount;
+    releaseCreate?.();
+
+    await waitFor(() => {
+      expect(result.current.create.isSuccess).toBe(true);
+    });
+
+    // Give a settle heal refetch time to land if create still unconditionally
+    // invalidates the views key (that would replace gallery with table).
+    await new Promise((resolve) => {
+      setTimeout(resolve, 50);
+    });
+
+    expect(
+      client.getQueryData<DatagridView[]>(datagridViewsKey("grid-1"))?.[0]
+        ?.config,
+    ).toMatchObject({ layout: "gallery" });
+    expect(viewsGetCount).toBe(getsBeforeSettle);
   });
 
   it("rolls back the datagrid and view cache when default view creation fails", async () => {
