@@ -33,6 +33,23 @@ describe("CoverCard", () => {
     expect(subtitle).toHaveClass("text-muted", "line-clamp-2");
   });
 
+  it("applies coverPosition to the cover image object-position", () => {
+    render(
+      <CoverCard
+        title="Cropped"
+        icon={null}
+        coverUrl="https://example.test/crown.jpg"
+        coverPosition={25}
+        fallback={<span>fallback</span>}
+        onOpen={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("cover-card-media")).toHaveStyle(
+      "object-position: 50% 25%",
+    );
+  });
+
   it("omits the subtitle row when none is set", () => {
     render(
       <CoverCard

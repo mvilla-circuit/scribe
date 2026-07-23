@@ -92,6 +92,7 @@ export function useDatagridPageModel(datagridId: string) {
         title: row.title,
         icon: row.icon,
         cover_url: row.cover_url,
+        cover_position: row.cover_position ?? 50,
         properties: parseDatagridProperties(fields, row.properties),
         created_at: row.created_at,
         updated_at: row.updated_at,

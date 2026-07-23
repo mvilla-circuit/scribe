@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -269,6 +269,33 @@ describe("PageCover", () => {
     expect(
       screen.queryByRole("button", { name: "Save position" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("prevents Escape from propagating while repositioning", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Reposition cover" }));
+
+    const escape = new KeyboardEvent("keydown", {
+      key: "Escape",
+      bubbles: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(escape);
+
+    expect(escape.defaultPrevented).toBe(true);
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: "Save position" }),
+      ).not.toBeInTheDocument();
+    });
   });
 
   it("opens the lightbox from View", async () => {

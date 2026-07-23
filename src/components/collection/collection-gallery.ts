@@ -43,6 +43,7 @@ export function galleryChildMeta(child: GalleryChild): {
   kindLabel: string;
   icon: string | null;
   coverUrl: string | null;
+  coverPosition: number;
 } {
   switch (child.kind) {
     case "collection":
@@ -52,6 +53,7 @@ export function galleryChildMeta(child: GalleryChild): {
         kindLabel: "Collection",
         icon: child.collection.icon,
         coverUrl: child.collection.cover_url,
+        coverPosition: child.collection.cover_position ?? 50,
       };
     case "book":
       return {
@@ -60,6 +62,7 @@ export function galleryChildMeta(child: GalleryChild): {
         kindLabel: "Book",
         icon: child.book.icon,
         coverUrl: child.book.cover_url,
+        coverPosition: child.book.cover_position ?? 50,
       };
     case "entry":
       return {
@@ -68,6 +71,7 @@ export function galleryChildMeta(child: GalleryChild): {
         kindLabel: "Doc",
         icon: child.entry.icon,
         coverUrl: child.entry.cover_url,
+        coverPosition: child.entry.cover_position ?? 50,
       };
     case "datagrid":
       return {
@@ -76,6 +80,7 @@ export function galleryChildMeta(child: GalleryChild): {
         kindLabel: "Datagrid",
         icon: child.datagrid.icon,
         coverUrl: child.datagrid.cover_url,
+        coverPosition: child.datagrid.cover_position ?? 50,
       };
     case "whiteboard":
       return {
@@ -84,6 +89,7 @@ export function galleryChildMeta(child: GalleryChild): {
         kindLabel: "Whiteboard",
         icon: child.whiteboard.icon,
         coverUrl: child.whiteboard.cover_url,
+        coverPosition: child.whiteboard.cover_position ?? 50,
       };
   }
 }

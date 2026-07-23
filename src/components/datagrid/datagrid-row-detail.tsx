@@ -3,7 +3,10 @@ import { type ReactNode, useState } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { EditableText } from "@/components/ui/editable-text";
-import { ImageLightbox } from "@/components/ui/image-lightbox";
+import {
+  IMAGE_LIGHTBOX_CONTENT_CLASS,
+  ImageLightboxBody,
+} from "@/components/ui/image-lightbox";
 import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { useDragResize } from "@/components/ui/use-drag-resize";
 import { SaveStatus } from "@/editor/save-status";
@@ -88,6 +91,7 @@ function RowPanelContent({
   onClose,
   variant,
   onViewCover,
+  suppressDialogTitle = false,
 }: {
   datagridId: string;
   rowId: string;
@@ -98,6 +102,8 @@ function RowPanelContent({
    * single Dialog at a time instead of nesting ImageLightbox inside the modal.
    */
   onViewCover?: (src: string) => void;
+  /** Hide the row DialogTitle while the parent dialog shows the cover lightbox. */
+  suppressDialogTitle?: boolean;
 }) {
   const {
     row,
@@ -117,7 +123,7 @@ function RowPanelContent({
 
   return (
     <>
-      {variant === "modal" && (
+      {variant === "modal" && !suppressDialogTitle && (
         <DialogTitle className="sr-only">{title}</DialogTitle>
       )}
       <RowPanelChrome
@@ -186,27 +192,30 @@ export function DatagridRowModal({
   rowId: string;
   onClose: () => void;
 }) {
-  // Only one Dialog at a time: suspend the row modal (forceMount keeps the
-  // editor mounted) while the cover lightbox is open.
+  // One Dialog only: keep the row panel mounted (hidden) while the cover
+  // lightbox body is shown in the same dialog, so the TipTap editor survives.
   const [coverLightboxSrc, setCoverLightboxSrc] = useState<string | null>(null);
   const coverLightboxOpen = coverLightboxSrc !== null;
 
   return (
-    <>
-      <Dialog
-        open={!coverLightboxOpen}
-        onOpenChange={(o) => {
-          if (!o) onClose();
-        }}
+    <Dialog
+      open
+      onOpenChange={(o) => {
+        if (!o) {
+          if (coverLightboxOpen) setCoverLightboxSrc(null);
+          else onClose();
+        }
+      }}
+    >
+      <DialogContent
+        aria-describedby={undefined}
+        className={cn(
+          coverLightboxOpen
+            ? IMAGE_LIGHTBOX_CONTENT_CLASS
+            : "flex max-h-[85vh] w-[min(40rem,calc(100vw-2rem))] flex-col overflow-hidden p-0",
+        )}
       >
-        <DialogContent
-          forceMount
-          aria-describedby={undefined}
-          className={cn(
-            "flex max-h-[85vh] w-[min(40rem,calc(100vw-2rem))] flex-col overflow-hidden p-0",
-            coverLightboxOpen && "hidden",
-          )}
-        >
+        <div hidden={coverLightboxOpen}>
           <RowPanelContent
             key={rowId}
             datagridId={datagridId}
@@ -214,18 +223,20 @@ export function DatagridRowModal({
             onClose={onClose}
             variant="modal"
             onViewCover={setCoverLightboxSrc}
+            suppressDialogTitle={coverLightboxOpen}
           />
-        </DialogContent>
-      </Dialog>
-      <ImageLightbox
-        open={coverLightboxOpen}
-        onOpenChange={(open) => {
-          if (!open) setCoverLightboxSrc(null);
-        }}
-        src={coverLightboxSrc ?? ""}
-        alt="Page cover"
-      />
-    </>
+        </div>
+        {coverLightboxOpen ? (
+          <ImageLightboxBody
+            src={coverLightboxSrc}
+            alt="Page cover"
+            onClose={() => {
+              setCoverLightboxSrc(null);
+            }}
+          />
+        ) : null}
+      </DialogContent>
+    </Dialog>
   );
 }
 

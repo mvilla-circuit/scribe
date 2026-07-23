@@ -43,6 +43,7 @@ const rows: DatagridDisplayRow[] = [
     title: "Task A",
     icon: null,
     cover_url: null,
+    cover_position: 50,
     properties: { stage: "todo" },
     created_at: "2026-01-01T00:00:00.000Z",
     updated_at: "2026-01-01T00:00:00.000Z",
@@ -52,6 +53,7 @@ const rows: DatagridDisplayRow[] = [
     title: "Task B",
     icon: null,
     cover_url: null,
+    cover_position: 50,
     properties: {},
     created_at: "2026-01-01T00:00:00.000Z",
     updated_at: "2026-01-01T00:00:00.000Z",
@@ -120,6 +122,7 @@ describe("DatagridBoardView", () => {
         title: "Task A",
         icon: null,
         cover_url: null,
+        cover_position: 50,
         properties: {
           stage: "todo",
           f2: [{ type: "datagrid_row", id: "row-1" }],

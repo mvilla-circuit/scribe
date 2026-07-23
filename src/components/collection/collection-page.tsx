@@ -725,13 +725,15 @@ function GalleryCoverCard({
   actions: RowAction[];
   tags?: GalleryTag[];
 }) {
-  const { title, subtitle, icon, coverUrl } = galleryChildMeta(child);
+  const { title, subtitle, icon, coverUrl, coverPosition } =
+    galleryChildMeta(child);
   return (
     <CoverCard
       title={title}
       subtitle={subtitle}
       icon={icon}
       coverUrl={coverUrl}
+      coverPosition={coverPosition}
       fallback={galleryFallback(child)}
       onOpen={onOpen}
       actions={actions}

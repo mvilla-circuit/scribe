@@ -223,16 +223,19 @@ export function PageCover({
   useEffect(() => {
     if (!isRepositioning) return;
 
+    // Capture phase + preventDefault so parent Dialogs (e.g. DatagridRowModal)
+    // do not dismiss on Escape before we cancel reposition.
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        dragRef.current = null;
-        setIsDragging(false);
-        setIsRepositioning(false);
-      }
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      dragRef.current = null;
+      setIsDragging(false);
+      setIsRepositioning(false);
     };
-    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, true);
     return () => {
-      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keydown", onKeyDown, true);
     };
   }, [isRepositioning]);
 

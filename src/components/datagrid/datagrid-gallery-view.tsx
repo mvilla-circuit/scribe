@@ -178,6 +178,7 @@ function GalleryCard({
       title={row.title}
       icon={row.icon}
       coverUrl={row.cover_url}
+      coverPosition={row.cover_position}
       fallback={<DatagridIcon size={26} />}
       onOpen={() => {
         onOpenRow(row.id);

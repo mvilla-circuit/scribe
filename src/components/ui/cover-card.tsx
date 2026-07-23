@@ -18,6 +18,8 @@ interface CoverCardProps {
   subtitle?: string | null;
   icon: string | null;
   coverUrl: string | null;
+  /** Vertical focal point (0–100) for `object-position`, matching PageCover. */
+  coverPosition?: number;
   // Rendered in the cover area when there's no cover image and no stored icon —
   // the kind's default glyph (a book or a collection).
   fallback: ReactNode;
@@ -49,6 +51,7 @@ function CoverCardComponent({
   subtitle,
   icon,
   coverUrl,
+  coverPosition = 50,
   fallback,
   onOpen,
   actions,
@@ -72,6 +75,7 @@ function CoverCardComponent({
             src={coverUrl}
             alt=""
             data-testid="cover-card-media"
+            style={{ objectPosition: `50% ${coverPosition}%` }}
             className={cn(mediaAspect, "w-full object-cover")}
           />
         ) : (
