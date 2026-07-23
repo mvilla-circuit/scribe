@@ -178,13 +178,16 @@ describe("Edit Fields on modal and split rows", () => {
     ).toBeTruthy();
   });
 
-  it("uses editorial peek spacing on the modal body", () => {
+  it("uses editorial peek spacing on the modal content stack", () => {
     renderWithProviders(
       <DatagridRowModal datagridId={DGID} rowId={ROWID} onClose={vi.fn()} />,
       { client: seed() },
     );
     const body = screen.getByTestId("row-panel-body");
-    expect(body).toHaveClass("px-8", "pt-8", "pb-8");
+    expect(body).toHaveClass("min-h-0", "flex-1", "overflow-y-auto");
+    expect(body).not.toHaveClass("px-8");
+    const content = screen.getByTestId("row-panel-content");
+    expect(content).toHaveClass("px-8", "pt-8", "pb-8");
     expect(screen.getByTestId("row-panel-editor")).toHaveClass("mt-8", "pt-6");
   });
 });
