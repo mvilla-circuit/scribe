@@ -408,6 +408,7 @@ export type Database = {
           cover_position: number
           cover_url: string | null
           created_at: string
+          font_overrides: Json | null
           icon: string | null
           id: string
           position: number
@@ -422,6 +423,7 @@ export type Database = {
           cover_position?: number
           cover_url?: string | null
           created_at?: string
+          font_overrides?: Json | null
           icon?: string | null
           id?: string
           position?: number
@@ -436,6 +438,7 @@ export type Database = {
           cover_position?: number
           cover_url?: string | null
           created_at?: string
+          font_overrides?: Json | null
           icon?: string | null
           id?: string
           position?: number
