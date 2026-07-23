@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -16,7 +16,7 @@ describe("PageCover", () => {
       />,
     );
 
-    expect(screen.getByRole("img", { name: "Page cover" })).toHaveAttribute(
+    expect(screen.getByAltText("Page cover")).toHaveAttribute(
       "src",
       "https://example.com/cover.jpg",
     );
@@ -98,6 +98,105 @@ describe("PageCover", () => {
     await expect(
       user.upload(screen.getByLabelText("Choose cover image"), cover),
     ).resolves.toBeUndefined();
+  });
+
+  it("applies object-position from coverPosition", () => {
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        coverPosition={25}
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByAltText("Page cover")).toHaveStyle(
+      "object-position: 50% 25%",
+    );
+  });
+
+  it("saves a clamped position after dragging", async () => {
+    const user = userEvent.setup();
+    const onPositionChange = vi.fn();
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+        onPositionChange={onPositionChange}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Reposition cover" }));
+    const repositionSurface = screen.getByRole("button", {
+      name: "Adjust cover position",
+    });
+    vi.spyOn(repositionSurface, "getBoundingClientRect").mockReturnValue(
+      new DOMRect(0, 0, 300, 100),
+    );
+    fireEvent.pointerDown(repositionSurface, { pointerId: 1, clientY: 0 });
+    fireEvent.pointerMove(repositionSurface, { pointerId: 1, clientY: 200 });
+    await user.click(screen.getByRole("button", { name: "Save position" }));
+
+    expect(onPositionChange).toHaveBeenCalledExactlyOnceWith(100);
+  });
+
+  it("cancels a reposition draft with Cancel and Escape", async () => {
+    const user = userEvent.setup();
+    const onPositionChange = vi.fn();
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+        onPositionChange={onPositionChange}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Reposition cover" }));
+    await user.click(
+      screen.getByRole("button", { name: "Cancel repositioning" }),
+    );
+    expect(onPositionChange).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Reposition cover" }));
+    await user.keyboard("{Escape}");
+    expect(onPositionChange).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole("button", { name: "Save position" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("opens the lightbox from View", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "View cover" }));
+
+    expect(screen.getByRole("dialog", { name: "Cover image" })).toBeVisible();
+  });
+
+  it("does not open the lightbox for control clicks", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Reposition cover" }));
+
+    expect(
+      screen.queryByRole("dialog", { name: "Cover image" }),
+    ).not.toBeInTheDocument();
   });
 });
 

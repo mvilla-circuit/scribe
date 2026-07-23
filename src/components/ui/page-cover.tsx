@@ -1,9 +1,19 @@
-import { ImagePlus, X } from "lucide-react";
-import { type ChangeEvent, type ReactNode, useRef, useState } from "react";
+import { ImagePlus, Maximize2, MoveVertical, X } from "lucide-react";
+import {
+  type ChangeEvent,
+  type PointerEvent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { COVER_IMAGE_ACCEPT } from "@/data/cover-upload";
 import { cn } from "@/lib/utils";
 
+import { Button } from "./button";
+import { IconButton } from "./icon-button";
+import { ImageLightbox } from "./image-lightbox";
 import { Tooltip } from "./tooltip";
 
 /** Shared hover-pill styles matching Masthead's "Add icon" affordance. */
@@ -15,8 +25,11 @@ const COVER_CONTROL_CLASS =
 
 export interface PageCoverProps {
   coverUrl: string | null;
+  coverPosition?: number;
   onUpload: (file: File) => Promise<string>;
   onRemove: () => void;
+  /** Persist the cover's vertical position; call sites should provide this. */
+  onPositionChange?: (y: number) => void;
   className?: string;
 }
 
@@ -66,18 +79,47 @@ function CoverControl({
   isUploading,
   onChoose,
   onRemove,
+  onReposition,
+  onView,
 }: {
   isUploading: boolean;
   onChoose: () => void;
   onRemove: () => void;
+  onReposition: () => void;
+  onView: () => void;
 }) {
   return (
     <div className="flex items-center gap-1">
+      <IconButton
+        label="Reposition cover"
+        size="sm"
+        className={cn(COVER_CONTROL_CLASS, "hover:text-text")}
+        onClick={(event) => {
+          event.stopPropagation();
+          onReposition();
+        }}
+      >
+        <MoveVertical className="size-4" aria-hidden="true" />
+      </IconButton>
+      <IconButton
+        label="View cover"
+        size="sm"
+        className={cn(COVER_CONTROL_CLASS, "hover:text-text")}
+        onClick={(event) => {
+          event.stopPropagation();
+          onView();
+        }}
+      >
+        <Maximize2 className="size-4" aria-hidden="true" />
+      </IconButton>
       <Tooltip content="Change cover">
         <button
           type="button"
           aria-label="Change cover"
-          onClick={onChoose}
+          onClick={(event) => {
+            event.stopPropagation();
+            onChoose();
+          }}
           disabled={isUploading}
           className={cn(
             COVER_CONTROL_CLASS,
@@ -92,7 +134,10 @@ function CoverControl({
         <button
           type="button"
           aria-label="Remove cover"
-          onClick={onRemove}
+          onClick={(event) => {
+            event.stopPropagation();
+            onRemove();
+          }}
           disabled={isUploading}
           className={cn(COVER_CONTROL_CLASS, "size-8 hover:text-danger")}
         >
@@ -138,13 +183,69 @@ export function AddCoverButton({
  */
 export function PageCover({
   coverUrl,
+  coverPosition = 50,
   onUpload,
   onRemove,
+  onPositionChange,
   className,
 }: PageCoverProps) {
   const { isUploading, openPicker, fileInput } = useCoverFilePicker(onUpload);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [isRepositioning, setIsRepositioning] = useState(false);
+  const [draftPosition, setDraftPosition] = useState(coverPosition);
+  const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    if (!isRepositioning) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsRepositioning(false);
+        setIsDragging(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isRepositioning]);
 
   if (!coverUrl) return null;
+
+  const position = isRepositioning ? draftPosition : coverPosition;
+  const enterRepositioning = () => {
+    setIsLightboxOpen(false);
+    setDraftPosition(coverPosition);
+    setIsRepositioning(true);
+  };
+  const openLightbox = () => {
+    if (!isRepositioning) setIsLightboxOpen(true);
+  };
+  const updateDraftPosition = (event: PointerEvent<HTMLButtonElement>) => {
+    const { top, height } = event.currentTarget.getBoundingClientRect();
+    if (height === 0) return;
+    const nextPosition = ((event.clientY - top) / height) * 100;
+    setDraftPosition(Math.min(100, Math.max(0, nextPosition)));
+  };
+  const startDragging = (event: PointerEvent<HTMLButtonElement>) => {
+    if (!isRepositioning) return;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    setIsDragging(true);
+    updateDraftPosition(event);
+  };
+  const stopDragging = (event: PointerEvent<HTMLButtonElement>) => {
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    setIsDragging(false);
+  };
+  const savePosition = () => {
+    onPositionChange?.(Math.min(100, Math.max(0, draftPosition)));
+    setIsRepositioning(false);
+    setIsDragging(false);
+  };
+  const cancelRepositioning = () => {
+    setIsRepositioning(false);
+    setIsDragging(false);
+  };
 
   return (
     <section
@@ -154,26 +255,84 @@ export function PageCover({
         className,
       )}
     >
-      <img
-        src={coverUrl}
-        alt="Page cover"
-        className="absolute inset-0 size-full object-cover"
-      />
-      <div
-        data-testid="page-cover-controls"
+      <button
+        type="button"
+        aria-label={
+          isRepositioning ? "Adjust cover position" : "Open cover image"
+        }
+        onClick={openLightbox}
+        onKeyDown={(event) => {
+          if (isRepositioning) return;
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openLightbox();
+          }
+        }}
+        onPointerDown={startDragging}
+        onPointerMove={(event) => {
+          if (isDragging) updateDraftPosition(event);
+        }}
+        onPointerUp={stopDragging}
+        onPointerCancel={stopDragging}
         className={cn(
-          "absolute right-4 top-4 opacity-0 motion-safe:transition-opacity",
-          "pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto",
-          "group-hover:opacity-100 group-focus-within:opacity-100",
+          "absolute inset-0 size-full outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          isRepositioning
+            ? isDragging
+              ? "cursor-grabbing"
+              : "cursor-grab"
+            : "cursor-zoom-in",
         )}
       >
-        <CoverControl
-          isUploading={isUploading}
-          onChoose={openPicker}
-          onRemove={onRemove}
+        <img
+          src={coverUrl}
+          alt="Page cover"
+          style={{ objectPosition: `50% ${position}%` }}
+          className="size-full object-cover"
         />
-      </div>
+      </button>
+      {isRepositioning ? (
+        <>
+          <p className="sr-only" aria-live="polite">
+            Drag to adjust cover position
+          </p>
+          <div className="absolute right-4 top-4 flex gap-2">
+            <Button aria-label="Save position" onClick={savePosition}>
+              Save
+            </Button>
+            <Button
+              aria-label="Cancel repositioning"
+              variant="ghost"
+              onClick={cancelRepositioning}
+            >
+              Cancel
+            </Button>
+          </div>
+        </>
+      ) : (
+        <div
+          data-testid="page-cover-controls"
+          className={cn(
+            "absolute right-4 top-4 opacity-0 motion-safe:transition-opacity",
+            "pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto",
+            "group-hover:opacity-100 group-focus-within:opacity-100",
+          )}
+        >
+          <CoverControl
+            isUploading={isUploading}
+            onChoose={openPicker}
+            onRemove={onRemove}
+            onReposition={enterRepositioning}
+            onView={openLightbox}
+          />
+        </div>
+      )}
       {fileInput}
+      <ImageLightbox
+        open={isLightboxOpen}
+        onOpenChange={setIsLightboxOpen}
+        src={coverUrl}
+        alt="Page cover"
+      />
     </section>
   );
 }
