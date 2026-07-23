@@ -109,6 +109,15 @@ vi.mock("@/editor/lazy-editor", () => ({
 const DGID = "dg-1";
 const ROWID = "r1";
 
+/** Classes that establish a height-bounded flex column for nested scroll. */
+const FLEX_COLUMN_CHAIN = [
+  "flex",
+  "min-h-0",
+  "flex-1",
+  "flex-col",
+  "overflow-hidden",
+] as const;
+
 const asJson = (value: unknown): Json => JSON.parse(JSON.stringify(value));
 
 const fields: DatagridField[] = [
@@ -204,6 +213,66 @@ describe("DatagridRowModal", () => {
       screen.queryByRole("dialog", { name: "Cover image" }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Row title" })).toBeVisible();
+  });
+
+  it("modal lightbox wrapper and chrome establish flex scroll chain", () => {
+    renderWithProviders(
+      <DatagridRowModal datagridId={DGID} rowId={ROWID} onClose={vi.fn()} />,
+      { client: seed() },
+    );
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveClass("max-h-[85vh]", "overflow-hidden");
+
+    // DialogContent's direct child is the wrapper that gets `hidden` when the
+    // cover lightbox opens; it must join the flex chain for a bounded height.
+    // eslint-disable-next-line testing-library/no-node-access -- structural wrapper has no queryable role
+    const panelWrapper = dialog.firstElementChild;
+    expect(panelWrapper).not.toBeNull();
+    expect(panelWrapper).toHaveClass(...FLEX_COLUMN_CHAIN);
+
+    // RowPanelChrome root is the parent of the header that holds Close row.
+    const closeButton = screen.getByRole("button", { name: "Close row" });
+    // eslint-disable-next-line testing-library/no-node-access -- header is a non-interactive structural wrapper
+    const header = closeButton.closest("div");
+    expect(header).not.toBeNull();
+    expect(header).toHaveClass("shrink-0");
+    // eslint-disable-next-line testing-library/no-node-access -- chrome root has no queryable role
+    const chromeRoot = header?.parentElement ?? null;
+    expect(chromeRoot).not.toBeNull();
+    expect(chromeRoot).toHaveClass(...FLEX_COLUMN_CHAIN);
+  });
+
+  it("row panel body scrolls and includes cover", () => {
+    renderWithProviders(
+      <DatagridRowModal datagridId={DGID} rowId={ROWID} onClose={vi.fn()} />,
+      { client: seed("https://example.com/cover.jpg") },
+    );
+
+    const body = screen.getByTestId("row-panel-body");
+    expect(body).toHaveClass("min-h-0", "flex-1", "overflow-y-auto");
+    // Padding lives on the inner content stack so the cover can full-bleed.
+    expect(body).not.toHaveClass("px-8");
+
+    const cover = screen.getByRole("region", { name: "Page cover" });
+    expect(body.contains(cover)).toBe(true);
+  });
+
+  it("row panel header stays outside scroll body", () => {
+    renderWithProviders(
+      <DatagridRowModal datagridId={DGID} rowId={ROWID} onClose={vi.fn()} />,
+      { client: seed() },
+    );
+
+    const body = screen.getByTestId("row-panel-body");
+    const closeButton = screen.getByRole("button", { name: "Close row" });
+    expect(closeButton).toBeInTheDocument();
+    expect(body.contains(closeButton)).toBe(false);
+
+    const openModeButton = screen.getByRole("button", {
+      name: "Open in side panel",
+    });
+    expect(body.contains(openModeButton)).toBe(false);
   });
 });
 

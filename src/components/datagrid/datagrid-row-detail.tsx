@@ -33,19 +33,26 @@ const clampSplit = (w: number) => Math.min(SPLIT_MAX, Math.max(SPLIT_MIN, w));
 const CLOSE_BUTTON_CLASS =
   "flex size-7 items-center justify-center rounded-md text-muted outline-none hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring";
 
+/** Flex column that bounds height so a child `overflow-y-auto` can scroll. */
+const PANEL_FLEX_COLUMN = "flex min-h-0 flex-1 flex-col overflow-hidden";
+const PANEL_HEADER = "flex shrink-0 items-center gap-2 border-b border-border";
+/** Unpadded scroll shell — PageCover full-bleeds; padding is on the content stack. */
+const PANEL_SCROLL = "min-h-0 flex-1 overflow-y-auto";
+
 const PANEL_STYLES = {
   modal: {
-    headerClassName: "flex items-center gap-2 border-b border-border px-8 py-3",
+    headerClassName: `${PANEL_HEADER} px-8 py-3`,
     titleClassName: "text-text",
-    bodyClassName: "min-h-0 flex-1 overflow-y-auto px-8 pb-8 pt-8",
+    scrollClassName: PANEL_SCROLL,
+    contentClassName: "px-8 pb-8 pt-8",
     propertiesClassName: "mt-6",
     editorClassName: "mt-8 border-t border-border pt-6",
   },
   split: {
-    headerClassName:
-      "flex items-center gap-2 border-b border-border px-6 py-2.5",
+    headerClassName: `${PANEL_HEADER} px-6 py-2.5`,
     titleClassName: "text-text",
-    bodyClassName: "min-h-0 flex-1 overflow-y-auto bg-bg px-6 pb-6 pt-6",
+    scrollClassName: `${PANEL_SCROLL} bg-bg`,
+    contentClassName: "px-6 pb-6 pt-6",
     propertiesClassName: "mt-5",
     editorClassName: "mt-6 border-t border-border pt-5",
   },
@@ -67,7 +74,7 @@ function RowPanelChrome({
   children: ReactNode;
 }) {
   return (
-    <>
+    <div className={PANEL_FLEX_COLUMN}>
       <div className={headerClassName}>
         <DatagridRowBreadcrumbs datagridId={datagridId} />
         <span className="ml-auto flex shrink-0 items-center gap-1.5">
@@ -84,7 +91,7 @@ function RowPanelChrome({
         </span>
       </div>
       {children}
-    </>
+    </div>
   );
 }
 
@@ -138,46 +145,51 @@ function RowPanelContent({
         headerClassName={styles.headerClassName}
         datagridId={datagridId}
       >
-        <PageCover
-          coverUrl={coverUrl}
-          coverPosition={row?.cover_position ?? 50}
-          onUpload={setCover}
-          onRemove={clearCover}
-          onPositionChange={setCoverPosition}
-          onViewCover={onViewCover}
-          onRepositioningChange={onRepositioningChange}
-        />
-        <div className={styles.bodyClassName} data-testid="row-panel-body">
-          {!coverUrl && (
-            <div className="group/masthead mb-3">
-              <AddCoverButton onUpload={setCover} />
-            </div>
-          )}
-          <EditableText
-            value={title}
-            ariaLabel="Row title"
-            placeholder="Untitled"
-            onCommit={rename}
-            className={styles.titleClassName}
-            style={displayTitleStyle()}
+        <div className={styles.scrollClassName} data-testid="row-panel-body">
+          <PageCover
+            coverUrl={coverUrl}
+            coverPosition={row?.cover_position ?? 50}
+            onUpload={setCover}
+            onRemove={clearCover}
+            onPositionChange={setCoverPosition}
+            onViewCover={onViewCover}
+            onRepositioningChange={onRepositioningChange}
           />
-          <div className={styles.propertiesClassName}>
-            <DatagridRowProperties
-              fields={fields}
-              properties={properties}
-              createdAt={row?.created_at ?? ""}
-              updatedAt={row?.updated_at ?? ""}
-              relationTargets={relationTargets}
-              onPatch={patchProperty}
-            />
-            <DatagridRowFieldsBar datagridId={datagridId} fields={fields} />
-          </div>
           <div
-            className={styles.editorClassName}
-            data-testid="row-panel-editor"
-            style={{ fontFamily: "var(--font-text)" }}
+            className={styles.contentClassName}
+            data-testid="row-panel-content"
           >
-            <DatagridRowBody rowId={rowId} onSaveStateChange={setSaveState} />
+            {!coverUrl && (
+              <div className="group/masthead mb-3">
+                <AddCoverButton onUpload={setCover} />
+              </div>
+            )}
+            <EditableText
+              value={title}
+              ariaLabel="Row title"
+              placeholder="Untitled"
+              onCommit={rename}
+              className={styles.titleClassName}
+              style={displayTitleStyle()}
+            />
+            <div className={styles.propertiesClassName}>
+              <DatagridRowProperties
+                fields={fields}
+                properties={properties}
+                createdAt={row?.created_at ?? ""}
+                updatedAt={row?.updated_at ?? ""}
+                relationTargets={relationTargets}
+                onPatch={patchProperty}
+              />
+              <DatagridRowFieldsBar datagridId={datagridId} fields={fields} />
+            </div>
+            <div
+              className={styles.editorClassName}
+              data-testid="row-panel-editor"
+              style={{ fontFamily: "var(--font-text)" }}
+            >
+              <DatagridRowBody rowId={rowId} onSaveStateChange={setSaveState} />
+            </div>
           </div>
         </div>
       </RowPanelChrome>
@@ -235,7 +247,7 @@ export function DatagridRowModal({
             : "flex max-h-[85vh] w-[min(40rem,calc(100vw-2rem))] flex-col overflow-hidden p-0",
         )}
       >
-        <div hidden={coverLightboxOpen}>
+        <div className={PANEL_FLEX_COLUMN} hidden={coverLightboxOpen}>
           <RowPanelContent
             key={rowId}
             datagridId={datagridId}
