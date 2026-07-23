@@ -13,10 +13,16 @@ import type { EntryMeta } from "./entries";
 import {
   entryFontOverrides,
   useCreateEntry,
+  useDeleteEntry,
+  useEntries,
+  useEntryContent,
+  useMoveEntry,
+  useRenameEntry,
   useUpdateEntry,
+  useUpdateEntryContent,
   useUpdateEntryFontOverrides,
 } from "./entries";
-import { entriesKey } from "./query-keys";
+import { entriesKey, entryContentKey } from "./query-keys";
 
 // The data hooks read the session for the user id; stub auth so we don't pull
 // auth.tsx (and its Tauri plugin imports) into the test runtime.
@@ -41,32 +47,186 @@ describe("entryFontOverrides", () => {
   });
 });
 
-describe("useCreateEntry", () => {
-  it("optimistically adds the new entry with subtitle/outline defaults", async () => {
+describe("entries", () => {
+  it("lists entry metadata without content", async () => {
+    let select: string | null = null;
     server.use(
-      http.post(ENTRIES_URL, () => new HttpResponse(null, { status: 201 })),
+      http.get(ENTRIES_URL, ({ request }) => {
+        select = new URL(request.url).searchParams.get("select");
+        const { content: _content, ...metadata } = makeEntry({
+          id: "entry-1",
+          content: { type: "doc" },
+        });
+        return HttpResponse.json([metadata]);
+      }),
+    );
+
+    const { result } = renderHookWithQuery(() => useEntries());
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(select).not.toContain("content");
+    expect(select).toContain("font_overrides");
+    expect(select).toContain("subtitle");
+    expect(select).toContain("show_subtitle");
+    expect(select).toContain("show_outline");
+    expect(result.current.data?.[0]).not.toHaveProperty("content");
+  });
+
+  it("creates an entry in a collection", async () => {
+    let inserted: Record<string, unknown> | undefined;
+    server.use(
+      http.post(ENTRIES_URL, async ({ request }) => {
+        inserted = (await request.json()) as Record<string, unknown>;
+        return new HttpResponse(null, { status: 201 });
+      }),
     );
 
     const client = createTestQueryClient();
     client.setQueryData(entriesKey, []);
-
     const { result } = renderHookWithQuery(() => useCreateEntry(), { client });
+
     result.current.mutate({
       id: "entry-1",
       collection_id: "collection-1",
-      title: "Untitled",
+      title: "New entry",
       position: 1024,
     });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
-
-    const cached = client.getQueryData<EntryMeta[]>(entriesKey);
-    expect(cached?.[0]).toMatchObject({
+    expect(inserted).toMatchObject({
+      id: "entry-1",
+      collection_id: "collection-1",
+      title: "New entry",
+      user_id: "user-1",
+    });
+    const cached = client.getQueryData<EntryMeta[]>(entriesKey)?.[0];
+    expect(cached).toMatchObject({
+      id: "entry-1",
+      collection_id: "collection-1",
+      title: "New entry",
+      position: 1024,
+      font_overrides: null,
       subtitle: null,
       show_subtitle: false,
       show_outline: false,
+    });
+  });
+
+  it("renames an entry", async () => {
+    server.use(
+      http.patch(ENTRIES_URL, () => new HttpResponse(null, { status: 204 })),
+    );
+    const client = createTestQueryClient();
+    client.setQueryData(entriesKey, [
+      makeEntry({ id: "entry-1", title: "Old" }),
+    ]);
+    const { result } = renderHookWithQuery(() => useRenameEntry(), { client });
+
+    result.current.mutate({ id: "entry-1", title: "New" });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(
+      client.getQueryData<{ title: string }[]>(entriesKey)?.[0]?.title,
+    ).toBe("New");
+  });
+
+  it("deletes an entry", async () => {
+    server.use(
+      http.delete(ENTRIES_URL, () => new HttpResponse(null, { status: 204 })),
+    );
+    const client = createTestQueryClient();
+    client.setQueryData(entriesKey, [makeEntry({ id: "entry-1" })]);
+    const { result } = renderHookWithQuery(() => useDeleteEntry(), { client });
+
+    result.current.mutate({ id: "entry-1" });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(client.getQueryData(entriesKey)).toEqual([]);
+  });
+
+  it("loads and updates entry content", async () => {
+    server.use(
+      http.get(ENTRIES_URL, () =>
+        HttpResponse.json({ content: { type: "doc", content: [] } }),
+      ),
+      http.patch(ENTRIES_URL, () => new HttpResponse(null, { status: 204 })),
+    );
+    const client = createTestQueryClient();
+    const { result: contentResult } = renderHookWithQuery(
+      () => useEntryContent("entry-1"),
+      { client },
+    );
+
+    await waitFor(() => {
+      expect(contentResult.current.isSuccess).toBe(true);
+    });
+    expect(contentResult.current.data).toEqual({ type: "doc", content: [] });
+
+    const { result: updateResult } = renderHookWithQuery(
+      () => useUpdateEntryContent(),
+      { client },
+    );
+    updateResult.current.mutate({
+      id: "entry-1",
+      content: { type: "doc", content: [{ type: "paragraph" }] },
+    });
+
+    await waitFor(() => {
+      expect(updateResult.current.isSuccess).toBe(true);
+    });
+    expect(client.getQueryData(entryContentKey("entry-1"))).toEqual({
+      type: "doc",
+      content: [{ type: "paragraph" }],
+    });
+  });
+
+  it("moves an entry to another collection and position", async () => {
+    let patched: Record<string, unknown> | undefined;
+    server.use(
+      http.patch(ENTRIES_URL, async ({ request }) => {
+        patched = (await request.json()) as Record<string, unknown>;
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const client = createTestQueryClient();
+    client.setQueryData(entriesKey, [
+      makeEntry({
+        id: "entry-1",
+        collection_id: "c1",
+        position: 1024,
+      }),
+    ]);
+    const { result } = renderHookWithQuery(() => useMoveEntry(), { client });
+
+    result.current.mutate({
+      id: "entry-1",
+      collection_id: "c2",
+      position: 2048,
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(patched).toMatchObject({
+      collection_id: "c2",
+      position: 2048,
+    });
+    expect(
+      client.getQueryData<
+        { id: string; collection_id: string; position: number }[]
+      >(entriesKey)?.[0],
+    ).toMatchObject({
+      id: "entry-1",
+      collection_id: "c2",
+      position: 2048,
     });
   });
 });
