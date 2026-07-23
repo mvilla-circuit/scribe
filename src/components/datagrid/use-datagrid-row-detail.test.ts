@@ -82,6 +82,7 @@ describe("useDatagridRowDetail cover mutators", () => {
     expect(hooks.update.mutateAsync).toHaveBeenCalledWith({
       id: ROWID,
       cover_url: "https://example.test/new.png",
+      cover_position: 50,
     });
     await waitFor(() => {
       expect(hooks.deleteCoverObject).toHaveBeenCalledWith(

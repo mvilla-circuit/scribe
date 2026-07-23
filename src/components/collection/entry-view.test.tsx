@@ -182,6 +182,7 @@ describe("EntryView", () => {
       expect(hooks.update.mutateAsync).toHaveBeenCalledWith({
         id: "e1",
         cover_url: "https://example.com/new.png",
+        cover_position: 50,
       });
     });
   });

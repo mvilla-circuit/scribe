@@ -156,6 +156,7 @@ describe("DocumentView cover and banner", () => {
     expect(cover.update.mutateAsync).toHaveBeenCalledWith({
       id: "d1",
       cover_url: "https://example.com/cover.png",
+      cover_position: 50,
       banner_color: null,
       banner_text: null,
     });

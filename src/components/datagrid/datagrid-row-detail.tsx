@@ -98,6 +98,7 @@ function RowPanelContent({
     relationTargets,
     rename,
     setCover,
+    setCoverPosition,
     clearCover,
     patchProperty,
   } = useDatagridRowDetail(datagridId, rowId);
@@ -119,8 +120,10 @@ function RowPanelContent({
       >
         <PageCover
           coverUrl={coverUrl}
+          coverPosition={row?.cover_position ?? 50}
           onUpload={setCover}
           onRemove={clearCover}
+          onPositionChange={setCoverPosition}
         />
         <div className={styles.bodyClassName} data-testid="row-panel-body">
           {!coverUrl && (

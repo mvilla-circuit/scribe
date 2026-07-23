@@ -194,7 +194,11 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
   const setCover = async (file: File) => {
     const previous = datagrid.cover_url;
     const coverUrl = await uploadCover.mutateAsync(file);
-    await updateDatagrid.mutateAsync({ id: datagridId, cover_url: coverUrl });
+    await updateDatagrid.mutateAsync({
+      id: datagridId,
+      cover_url: coverUrl,
+      cover_position: 50,
+    });
     void deleteCoverObject(previous);
     return coverUrl;
   };
@@ -215,7 +219,11 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
     const previous =
       orderedRows.find((row) => row.id === rowId)?.cover_url ?? null;
     const coverUrl = await uploadCover.mutateAsync(file);
-    await updateRow.mutateAsync({ id: rowId, cover_url: coverUrl });
+    await updateRow.mutateAsync({
+      id: rowId,
+      cover_url: coverUrl,
+      cover_position: 50,
+    });
     void deleteCoverObject(previous);
     return coverUrl;
   };
@@ -379,8 +387,15 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
 
         <PageCover
           coverUrl={datagrid.cover_url}
+          coverPosition={datagrid.cover_position ?? 50}
           onUpload={setCover}
           onRemove={clearCover}
+          onPositionChange={(coverPosition) => {
+            updateDatagrid.mutate({
+              id: datagridId,
+              cover_position: coverPosition,
+            });
+          }}
         />
 
         <div className="mx-auto w-full max-w-6xl px-8 pb-10 pt-3">

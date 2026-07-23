@@ -35,6 +35,7 @@ export function DatagridRowFull({
     rename,
     setIcon,
     setCover,
+    setCoverPosition,
     clearCover,
     patchProperty,
     isLoading,
@@ -85,8 +86,10 @@ export function DatagridRowFull({
 
       <PageCover
         coverUrl={row.cover_url}
+        coverPosition={row.cover_position ?? 50}
         onUpload={setCover}
         onRemove={clearCover}
+        onPositionChange={setCoverPosition}
       />
 
       <article className="mx-auto w-full max-w-[68ch] px-8 py-12 sm:py-16">

@@ -131,7 +131,11 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
   const setCover = async (file: File) => {
     const previous = book.cover_url;
     const coverUrl = await uploadCover.mutateAsync(file);
-    await updateBook.mutateAsync({ id: book.id, cover_url: coverUrl });
+    await updateBook.mutateAsync({
+      id: book.id,
+      cover_url: coverUrl,
+      cover_position: 50,
+    });
     void deleteCoverObject(previous);
     return coverUrl;
   };
@@ -236,8 +240,12 @@ export function TitlePage({ book, documents, loading }: TitlePageProps) {
 
       <PageCover
         coverUrl={book.cover_url}
+        coverPosition={book.cover_position ?? 50}
         onUpload={setCover}
         onRemove={clearCover}
+        onPositionChange={(coverPosition) => {
+          updateBook.mutate({ id: book.id, cover_position: coverPosition });
+        }}
       />
 
       <article className="mx-auto w-full max-w-[68ch] px-8 pb-16 pt-8 sm:pb-24 sm:pt-12">
