@@ -27,6 +27,7 @@ type ConfigUpdater = (prev: DatagridViewConfig) => DatagridViewConfig;
 
 function renderMenu({
   config: viewConfig = config(),
+  layoutEnabled = true,
   onChange = vi.fn<(update: ConfigUpdater) => void>(),
   onCreateView = vi.fn<() => void>(),
   onExportCsv = vi.fn<() => void>(),
@@ -34,6 +35,7 @@ function renderMenu({
   onOpenFields = vi.fn<() => void>(),
 }: {
   config?: DatagridViewConfig;
+  layoutEnabled?: boolean;
   onChange?: ReturnType<typeof vi.fn<(update: ConfigUpdater) => void>>;
   onCreateView?: ReturnType<typeof vi.fn<() => void>>;
   onExportCsv?: ReturnType<typeof vi.fn<() => void>>;
@@ -50,6 +52,7 @@ function renderMenu({
       <DatagridToolbarMenu
         fields={fields}
         config={viewConfig}
+        layoutEnabled={layoutEnabled}
         onChange={onChange}
         onCreateView={onCreateView}
         onOpenFields={onOpenFields}
@@ -83,6 +86,18 @@ describe("DatagridToolbarMenu", () => {
     expect(update?.(config({ layout: "table" }))).toMatchObject({
       layout: "gallery",
     });
+  });
+
+  it("disables Layout when layoutEnabled is false", async () => {
+    const { onChange } = renderMenu({
+      config: config({ layout: "table" }),
+      layoutEnabled: false,
+    });
+    await openMenu();
+
+    const layout = await screen.findByRole("menuitem", { name: /Layout/ });
+    expect(layout).toHaveAttribute("aria-disabled", "true");
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it("invokes fields and CSV actions", async () => {

@@ -110,7 +110,11 @@ export function DatagridGalleryView({
   onDeleteRow,
 }: GalleryViewProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div
+      role="region"
+      aria-label="Gallery"
+      className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+    >
       {rows.map((row) => (
         <GalleryCard
           key={row.id}

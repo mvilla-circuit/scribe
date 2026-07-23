@@ -171,7 +171,6 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
     collectionsQuery.data?.find((c) => c.id === datagrid.collection_id) ?? null;
 
   const layout = config.layout;
-  const isCardLayout = layout === "gallery" || layout === "board";
   const fieldVisibility =
     layout === "table"
       ? {
@@ -236,8 +235,14 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
     deleteRow(target.id);
   };
 
+  // Table keeps the shared EmptyState; gallery/board render their own chrome
+  // even with zero rows. "No matches" is only for a non-empty grid whose
+  // filters hide every row (board always shows columns instead).
+  const showFilteredEmpty =
+    !isTrulyEmpty && orderedRows.length === 0 && layout !== "board";
+
   let layoutView: ReactNode;
-  if (isTrulyEmpty) {
+  if (isTrulyEmpty && layout === "table") {
     layoutView = (
       <EmptyState
         className="mt-4"
@@ -247,16 +252,12 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
           </div>
         }
         title="This datagrid is empty"
-        body={
-          isCardLayout
-            ? "Add a card to start building records, or import existing data from a CSV."
-            : "Add a row to start building records, or import existing data from a CSV."
-        }
+        body="Add a row to start building records, or import existing data from a CSV."
         cta={
           <div className="flex gap-2">
             <Button variant="primary" onClick={handleCreateRow}>
               <Plus className="size-4" aria-hidden="true" />
-              {isCardLayout ? "New card" : "New row"}
+              New row
             </Button>
             <Button
               variant="secondary"
@@ -271,7 +272,7 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
         }
       />
     );
-  } else if (orderedRows.length === 0 && layout !== "board") {
+  } else if (showFilteredEmpty) {
     layoutView = (
       <p className="py-6 text-center text-sm text-muted">No matches</p>
     );
@@ -440,6 +441,7 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
               onQueryChange={setQuery}
               fields={fields}
               config={config}
+              layoutEnabled={activeView != null}
               onChangeConfig={persistConfig}
               onOpenFields={() => {
                 setFieldsOpen(true);

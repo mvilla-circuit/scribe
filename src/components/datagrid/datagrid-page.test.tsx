@@ -105,30 +105,57 @@ describe("DatagridPage", () => {
     renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
     expect(screen.getByText("This datagrid is empty")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New row" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Import CSV" }),
+    ).toBeInTheDocument();
   });
 
-  it("uses New card on the empty-state CTA for gallery layout", () => {
+  it("shows gallery chrome with New card when there are no rows", () => {
     const client = seed({ rows: [], viewConfig: { layout: "gallery" } });
     renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
     expect(
       screen.getByRole("button", { name: "New card" }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "New row" })).toBeNull();
-    expect(
-      screen.getByText(/Add a card to start building records/),
-    ).toBeInTheDocument();
+    expect(screen.queryByText("This datagrid is empty")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Import CSV" })).toBeNull();
   });
 
-  it("uses New card on the empty-state CTA for board layout", () => {
-    const client = seed({ rows: [], viewConfig: { layout: "board" } });
+  it("shows board group-field prompt when empty without a group field", () => {
+    const client = seed({
+      fields: textFields,
+      rows: [],
+      viewConfig: { layout: "board" },
+    });
     renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
+    expect(screen.getByText("No group field yet")).toBeInTheDocument();
+    expect(screen.queryByText("This datagrid is empty")).toBeNull();
+  });
+
+  it("shows board columns and New card when empty with a group field", () => {
+    const client = seed({
+      fields: [
+        {
+          id: "stage",
+          name: "Stage",
+          type: "select",
+          config: {
+            options: [
+              { id: "todo", name: "To do", color: "gray" },
+              { id: "done", name: "Done", color: "green" },
+            ],
+          },
+        },
+      ],
+      rows: [],
+      viewConfig: { layout: "board", boardFieldId: "stage" },
+    });
+    renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
+    expect(screen.getByRole("region", { name: "To do" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Done" })).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "New card" }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "New row" })).toBeNull();
-    expect(
-      screen.getByText(/Add a card to start building records/),
-    ).toBeInTheDocument();
+    expect(screen.queryByText("This datagrid is empty")).toBeNull();
   });
 
   it("prompts to add a group field on a board view without one", () => {
@@ -341,6 +368,17 @@ describe("DatagridPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("disables Layout when there is no active view to persist onto", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = seed({ rows: [] });
+    client.setQueryData(datagridViewsKey(DGID), []);
+    renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
+
+    await user.click(screen.getByRole("button", { name: "View options" }));
+    const layout = await screen.findByRole("menuitem", { name: /Layout/ });
+    expect(layout).toHaveAttribute("aria-disabled", "true");
+  });
+
   it("exposes subtitle and font controls in the top-right nav", () => {
     const client = seed({ rows: [] });
     renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
@@ -508,6 +546,35 @@ describe("DatagridPage", () => {
       );
     });
     expect(screen.queryByText("Writer")).not.toBeInTheDocument();
+  });
+
+  it("persists Layout → Gallery on the active view config", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    server.use(
+      http.patch(
+        "http://supabase.test/rest/v1/datagrid_views",
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    );
+    const client = seed({
+      rows: [makeDatagridRow({ id: "r1", datagrid_id: DGID, title: "First" })],
+      viewConfig: { layout: "table" },
+    });
+
+    renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
+
+    await user.click(screen.getByRole("button", { name: "View options" }));
+    const layout = await screen.findByRole("menuitem", { name: /Layout/ });
+    layout.focus();
+    await user.keyboard("{ArrowRight}");
+    await user.click(await screen.findByRole("menuitem", { name: "Gallery" }));
+
+    await waitFor(() => {
+      const view = client.getQueryData<{ config: unknown }[]>(
+        datagridViewsKey(DGID),
+      )?.[0];
+      expect(parseDatagridViewConfig(view?.config).layout).toBe("gallery");
+    });
   });
 
   it("Fields on a non-default gallery view does not rewrite the default view", async () => {

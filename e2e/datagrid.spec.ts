@@ -1,6 +1,15 @@
+import type { Page } from "@playwright/test";
+
 import { expect, test } from "./fixtures";
 
 const TS = "2026-01-01T00:00:00.000Z";
+
+/** Open View options → Layout submenu (focus + ArrowRight). */
+async function openLayoutSubmenu(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "View options" }).click();
+  await page.getByRole("menuitem", { name: /Layout/ }).focus();
+  await page.keyboard.press("ArrowRight");
+}
 
 test.describe("datagrid", () => {
   // The create flow: a datagrid is born inside a collection and opens on its
@@ -47,10 +56,68 @@ test.describe("datagrid", () => {
       .click();
     await expect(authedPage.getByRole("dialog")).toBeVisible();
   });
+
+  test("switches empty create-flow datagrid to Gallery layout", async ({
+    authedPage,
+  }) => {
+    await authedPage.goto("/");
+
+    await authedPage.getByRole("button", { name: "Create" }).click();
+    await authedPage.getByRole("menuitem", { name: "New collection" }).click();
+    const collectionRename = authedPage.getByPlaceholder("Collection name");
+    await collectionRename.fill("Data");
+    await collectionRename.press("Enter");
+
+    const collectionRow = authedPage.getByRole("treeitem", { name: /Data/ });
+    await expect(collectionRow).toBeVisible();
+
+    // Wait for the default-view INSERT. Settle only refetches views when the
+    // optimistic seed was wiped — when the seed survives (the common case),
+    // there is no heal GET to wait for.
+    const defaultViewInserted = authedPage.waitForResponse((response) => {
+      const request = response.request();
+      return (
+        request.method() === "POST" &&
+        request.url().includes("/rest/v1/datagrid_views") &&
+        response.ok()
+      );
+    });
+
+    await collectionRow.hover();
+    await collectionRow.getByRole("button", { name: "More actions" }).click();
+    await authedPage.getByRole("menuitem", { name: "New datagrid" }).click();
+
+    await expect(authedPage.getByText("This datagrid is empty")).toBeVisible();
+    await authedPage.keyboard.press("Enter");
+    await defaultViewInserted;
+
+    await openLayoutSubmenu(authedPage);
+    await authedPage.getByRole("menuitem", { name: "Gallery" }).click();
+
+    // Empty gallery shows layout chrome, not the shared table empty state.
+    await expect(
+      authedPage.getByRole("region", { name: "Gallery" }),
+    ).toBeVisible();
+    await expect(
+      authedPage.getByRole("button", { name: "New card" }),
+    ).toBeVisible();
+    await expect(authedPage.getByText("This datagrid is empty")).toHaveCount(0);
+
+    // Still a single view — layout switched in place (tabs need 2+ views).
+    await expect(authedPage.getByRole("button", { name: "Table" })).toHaveCount(
+      0,
+    );
+
+    // Layout sticks: reopen the submenu and Gallery is the accented selection.
+    await openLayoutSubmenu(authedPage);
+    await expect(
+      authedPage.getByRole("menuitem", { name: "Gallery" }),
+    ).toHaveClass(/text-accent/);
+  });
 });
 
-// A seeded datagrid gives the layout-switch flow a stable view to persist onto
-// (the create flow's optimistic view can race the stub's settle-time refetch).
+// Seeded datagrid: layout-switch regression with a pre-existing view/row.
+// Create-flow coverage lives above; settle heals views only when wiped.
 test.describe("datagrid with seeded data", () => {
   test.use({
     seed: {
@@ -140,17 +207,11 @@ test.describe("datagrid with seeded data", () => {
     // The seeded row shows in the default table layout.
     await expect(authedPage.getByRole("table")).toBeVisible();
 
-    // Layout lives under View options → Layout submenu.
-    await authedPage.getByRole("button", { name: "View options" }).click();
-    const layout = authedPage.getByRole("menuitem", { name: /Layout/ });
-    await layout.focus();
-    await authedPage.keyboard.press("ArrowRight");
+    await openLayoutSubmenu(authedPage);
     await authedPage.getByRole("menuitem", { name: "Gallery" }).click();
     await expect(authedPage.getByRole("table")).toHaveCount(0);
 
-    await authedPage.getByRole("button", { name: "View options" }).click();
-    await authedPage.getByRole("menuitem", { name: /Layout/ }).focus();
-    await authedPage.keyboard.press("ArrowRight");
+    await openLayoutSubmenu(authedPage);
     await authedPage.getByRole("menuitem", { name: "Table" }).click();
     await expect(authedPage.getByRole("table")).toBeVisible();
 

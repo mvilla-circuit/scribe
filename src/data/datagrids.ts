@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { asJsonObject } from "@/lib/utils";
 
 import { execWrite, requireUserId } from "./crud";
-import { newDefaultViewRow } from "./datagrid-views";
+import { type DatagridView, newDefaultViewRow } from "./datagrid-views";
 import { coerceFontMap } from "./font-map";
 import { listHandlers, patchById, removeById } from "./optimistic-list";
 import { byPosition } from "./ordering";
@@ -204,6 +204,9 @@ export function useCreateDatagrid() {
     onMutate: async (input: CreateDatagridInput) => {
       const userId = requireUserId(session);
       await qc.cancelQueries({ queryKey: datagridsKey });
+      // Cancel in-flight views fetches before seeding so a late empty response
+      // cannot clobber the optimistic default view.
+      await qc.cancelQueries({ queryKey: datagridViewsKey(input.id) });
       const previous = qc.getQueryData<Datagrid[]>(datagridsKey);
       qc.setQueryData<Datagrid[]>(datagridsKey, (prev) =>
         [...(prev ?? []), newDatagridRow(input, userId)]
@@ -220,6 +223,23 @@ export function useCreateDatagrid() {
     onError: (error, input, context) => {
       handlers.onError(error, input, context);
       qc.removeQueries({ queryKey: datagridViewsKey(input.id) });
+    },
+    onSettled: (data, error, variables) => {
+      handlers.onSettled?.(data, error, variables);
+      // Failed creates already clear the views seed in onError — skip heal so
+      // we don't refetch a rolled-back grid.
+      if (error) return;
+      // Heal only when a racing empty GET wiped the optimistic seed.
+      // Unconditional invalidate would refetch the still-table server row and
+      // clobber an in-flight layout persist (e.g. optimistic gallery).
+      const views = qc.getQueryData<DatagridView[]>(
+        datagridViewsKey(variables.id),
+      );
+      if (!views?.length) {
+        void qc.invalidateQueries({
+          queryKey: datagridViewsKey(variables.id),
+        });
+      }
     },
   });
 }

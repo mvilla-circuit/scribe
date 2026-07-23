@@ -48,6 +48,8 @@ interface DatagridToolbarMenuProps {
   onOpenFields: () => void;
   onImportCsv: () => void;
   onExportCsv: () => void;
+  /** When false, Layout is disabled (persistConfig no-ops without a view). */
+  layoutEnabled?: boolean;
 }
 
 /**
@@ -63,6 +65,7 @@ export function DatagridToolbarMenu({
   onOpenFields,
   onImportCsv,
   onExportCsv,
+  layoutEnabled = true,
 }: DatagridToolbarMenuProps) {
   const setLayout = (layout: DatagridLayout) => {
     onChange((prev) => ({ ...prev, layout }));
@@ -92,7 +95,7 @@ export function DatagridToolbarMenu({
         />
 
         <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
+          <DropdownMenuSubTrigger disabled={!layoutEnabled}>
             <Table2 className="size-4" aria-hidden="true" />
             Layout
           </DropdownMenuSubTrigger>

@@ -2,14 +2,16 @@ import { waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
 
+import type { Json } from "@/lib/database.types";
 import type { DatagridField } from "@/lib/datagrid-schema";
-import { makeDatagrid } from "@/test/fixtures";
+import { makeDatagrid, makeDatagridView } from "@/test/fixtures";
 import { server } from "@/test/msw/server";
 import {
   createTestQueryClient,
   renderHookWithQuery,
 } from "@/test/render-with-query";
 
+import { type DatagridView, useDatagridViews } from "./datagrid-views";
 import {
   datagridFontOverrides,
   datagridShowSubtitle,
@@ -35,6 +37,40 @@ vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 
 const DATAGRIDS_URL = "http://supabase.test/rest/v1/datagrids";
 const VIEWS_URL = "http://supabase.test/rest/v1/datagrid_views";
+
+const CREATE_GRID_INPUT = {
+  id: "grid-1",
+  collection_id: "collection-1",
+  name: "Tasks",
+  position: 1024,
+  viewId: "view-1",
+} as const;
+
+/** Promise + release used to hold the create POST mid-flight in race tests. */
+function openCreateGate(): { gate: Promise<void>; release: () => void } {
+  let releaseFn: (() => void) | undefined;
+  const gate = new Promise<void>((resolve) => {
+    releaseFn = resolve;
+  });
+  return {
+    gate,
+    release() {
+      releaseFn?.();
+    },
+  };
+}
+
+async function expectDefaultViewSeeded(
+  client: ReturnType<typeof createTestQueryClient>,
+  datagridId = CREATE_GRID_INPUT.id,
+): Promise<void> {
+  await waitFor(() => {
+    expect(
+      client.getQueryData<{ id: string }[]>(datagridViewsKey(datagridId))?.[0]
+        ?.id,
+    ).toBe(CREATE_GRID_INPUT.viewId);
+  });
+}
 
 describe("datagridTheme", () => {
   it("returns the stored theme object", () => {
@@ -124,13 +160,7 @@ describe("datagrids", () => {
       client,
     });
 
-    result.current.mutate({
-      id: "grid-1",
-      collection_id: "collection-1",
-      name: "Tasks",
-      position: 1024,
-      viewId: "view-1",
-    });
+    result.current.mutate({ ...CREATE_GRID_INPUT });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -156,11 +186,150 @@ describe("datagrids", () => {
     ).toBe("view-1");
   });
 
+  it("heals views cache after settle when a views observer fetched empty during create", async () => {
+    let viewInserted = false;
+    const { gate, release } = openCreateGate();
+    server.use(
+      http.post(DATAGRIDS_URL, async () => {
+        await gate;
+        return new HttpResponse(null, { status: 201 });
+      }),
+      http.post(VIEWS_URL, () => {
+        viewInserted = true;
+        return new HttpResponse(null, { status: 201 });
+      }),
+      http.get(VIEWS_URL, () => {
+        if (!viewInserted) {
+          return HttpResponse.json([]);
+        }
+        return HttpResponse.json([
+          makeDatagridView({
+            id: CREATE_GRID_INPUT.viewId,
+            datagrid_id: CREATE_GRID_INPUT.id,
+            is_default: true,
+            name: "Table",
+            position: 0,
+          }),
+        ]);
+      }),
+    );
+    const client = createTestQueryClient();
+    client.setQueryData(datagridsKey, []);
+    const { result } = renderHookWithQuery(
+      () => ({
+        create: useCreateDatagrid(),
+        views: useDatagridViews(CREATE_GRID_INPUT.id),
+      }),
+      { client },
+    );
+
+    await waitFor(() => {
+      expect(result.current.views.isSuccess).toBe(true);
+    });
+    expect(result.current.views.data).toEqual([]);
+
+    result.current.create.mutate({ ...CREATE_GRID_INPUT });
+    await expectDefaultViewSeeded(client);
+
+    // Simulate DatagridPage mounting a views refetch that lands before the
+    // default-view INSERT completes and wipes the optimistic seed.
+    await client.refetchQueries({
+      queryKey: datagridViewsKey(CREATE_GRID_INPUT.id),
+    });
+    expect(client.getQueryData(datagridViewsKey(CREATE_GRID_INPUT.id))).toEqual(
+      [],
+    );
+
+    release();
+
+    await waitFor(() => {
+      expect(result.current.create.isSuccess).toBe(true);
+    });
+    await expectDefaultViewSeeded(client);
+  });
+
+  it("does not heal views on create settle when the seed is still populated", async () => {
+    const { gate, release } = openCreateGate();
+    let viewsGetCount = 0;
+    server.use(
+      http.post(DATAGRIDS_URL, async () => {
+        await gate;
+        return new HttpResponse(null, { status: 201 });
+      }),
+      http.post(VIEWS_URL, () => new HttpResponse(null, { status: 201 })),
+      http.get(VIEWS_URL, () => {
+        viewsGetCount += 1;
+        // Server still has the default table layout — a settle heal would
+        // clobber an in-flight optimistic gallery patch.
+        const tableConfig = { layout: "table" } satisfies Json;
+        return HttpResponse.json([
+          makeDatagridView({
+            id: CREATE_GRID_INPUT.viewId,
+            datagrid_id: CREATE_GRID_INPUT.id,
+            is_default: true,
+            name: "Table",
+            position: 0,
+            config: tableConfig,
+          }),
+        ]);
+      }),
+    );
+    const client = createTestQueryClient();
+    client.setQueryData(datagridsKey, []);
+    const { result } = renderHookWithQuery(
+      () => ({
+        create: useCreateDatagrid(),
+        views: useDatagridViews(CREATE_GRID_INPUT.id),
+      }),
+      { client },
+    );
+
+    result.current.create.mutate({ ...CREATE_GRID_INPUT });
+    await expectDefaultViewSeeded(client);
+
+    // Simulate useUpdateDatagridView's optimistic layout patch racing create.
+    const galleryConfig = { layout: "gallery" } satisfies Json;
+    client.setQueryData(
+      datagridViewsKey(CREATE_GRID_INPUT.id),
+      (prev: DatagridView[] | undefined) =>
+        (prev ?? []).map((view) =>
+          view.id === CREATE_GRID_INPUT.viewId
+            ? { ...view, config: galleryConfig }
+            : view,
+        ),
+    );
+
+    const getsBeforeSettle = viewsGetCount;
+    release();
+
+    await waitFor(() => {
+      expect(result.current.create.isSuccess).toBe(true);
+    });
+
+    // Give a settle heal refetch time to land if create still unconditionally
+    // invalidates the views key (that would replace gallery with table).
+    await new Promise((resolve) => {
+      setTimeout(resolve, 50);
+    });
+
+    expect(
+      client.getQueryData<DatagridView[]>(
+        datagridViewsKey(CREATE_GRID_INPUT.id),
+      )?.[0]?.config,
+    ).toMatchObject({ layout: "gallery" });
+    expect(viewsGetCount).toBe(getsBeforeSettle);
+  });
+
   it("rolls back the datagrid and view cache when default view creation fails", async () => {
     let deletedGridId: string | null = null;
+    let viewsGetCount = 0;
     server.use(
       http.post(DATAGRIDS_URL, () => new HttpResponse(null, { status: 201 })),
       http.post(VIEWS_URL, () => new HttpResponse(null, { status: 500 })),
+      http.get(VIEWS_URL, () => {
+        viewsGetCount += 1;
+        return HttpResponse.json([]);
+      }),
       http.delete(DATAGRIDS_URL, ({ request }) => {
         deletedGridId = new URL(request.url).searchParams.get("id");
         return new HttpResponse(null, { status: 204 });
@@ -187,6 +356,8 @@ describe("datagrids", () => {
     expect(
       client.getQueryData(datagridViewsKey("grid-failed")),
     ).toBeUndefined();
+    // Settle must not heal/refetch views after a rolled-back create.
+    expect(viewsGetCount).toBe(0);
   });
 
   it("surfaces a compensating-delete failure instead of swallowing it", async () => {
