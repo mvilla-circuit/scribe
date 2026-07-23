@@ -19,7 +19,7 @@ export type WhiteboardMeta = Omit<Whiteboard, "scene">;
 
 /** Every whiteboard column except `scene`, for the structural list. */
 const WHITEBOARD_META_COLUMNS =
-  "id, user_id, collection_id, book_id, parent_document_id, name, icon, cover_url, position, created_at, updated_at" as const;
+  "id, user_id, collection_id, book_id, parent_document_id, name, icon, cover_url, cover_position, position, created_at, updated_at" as const;
 
 type CreateWhiteboardInput =
   | {
@@ -45,7 +45,7 @@ interface RenameWhiteboardInput {
 }
 
 type UpdateWhiteboardInput = { id: string } & Partial<
-  Pick<Whiteboard, "name" | "icon" | "cover_url">
+  Pick<Whiteboard, "name" | "icon" | "cover_url" | "cover_position">
 >;
 
 type MoveWhiteboardInput =
@@ -126,6 +126,7 @@ function newWhiteboardRow(
       "parent_document_id" in input ? (input.parent_document_id ?? null) : null,
     name: input.name ?? "Untitled",
     icon: null,
+    cover_position: 50,
     cover_url: null,
     position: input.position,
     created_at: now,

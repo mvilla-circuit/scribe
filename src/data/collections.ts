@@ -43,7 +43,10 @@ interface MoveCollectionInput {
   position: number;
 }
 type UpdateCollectionInput = { id: string } & Partial<
-  Pick<Collection, "name" | "icon" | "description" | "cover_url" | "view">
+  Pick<
+    Collection,
+    "name" | "icon" | "description" | "cover_url" | "cover_position" | "view"
+  >
 >;
 interface DeleteCollectionInput {
   id: string;
@@ -89,6 +92,7 @@ function newCollectionRow(
     user_id: userId,
     name: input.name,
     icon: input.icon ?? null,
+    cover_position: 50,
     cover_url: null,
     description: null,
     parent_collection_id: input.parent_collection_id ?? null,

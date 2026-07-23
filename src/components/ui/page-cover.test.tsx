@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -16,7 +16,7 @@ describe("PageCover", () => {
       />,
     );
 
-    expect(screen.getByRole("img", { name: "Page cover" })).toHaveAttribute(
+    expect(screen.getByAltText("Page cover")).toHaveAttribute(
       "src",
       "https://example.com/cover.jpg",
     );
@@ -45,7 +45,51 @@ describe("PageCover", () => {
     expect(screen.getByTestId("page-cover-controls")).toHaveClass(
       "pointer-events-none",
       "group-hover:pointer-events-auto",
+      "z-10",
     );
+  });
+
+  it("styles cover floating controls as compact inverted chrome", () => {
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+
+    for (const name of [
+      "Reposition cover",
+      "View cover",
+      "Change cover",
+      "Remove cover",
+    ]) {
+      expect(screen.getByRole("button", { name })).toHaveClass("bg-inverted");
+    }
+    for (const name of ["Reposition cover", "View cover", "Remove cover"]) {
+      expect(screen.getByRole("button", { name })).toHaveClass("size-7");
+    }
+  });
+
+  it("keeps Save and Cancel readable inverted chips while repositioning", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Reposition cover" }));
+
+    expect(screen.getByRole("button", { name: "Save position" })).toHaveClass(
+      "bg-inverted",
+      "text-xs",
+    );
+    expect(
+      screen.getByRole("button", { name: "Cancel repositioning" }),
+    ).toHaveClass("bg-inverted", "text-xs");
   });
 
   it("removes the current cover", async () => {
@@ -98,6 +142,242 @@ describe("PageCover", () => {
     await expect(
       user.upload(screen.getByLabelText("Choose cover image"), cover),
     ).resolves.toBeUndefined();
+  });
+
+  it("applies object-position from coverPosition", () => {
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        coverPosition={25}
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByAltText("Page cover")).toHaveStyle(
+      "object-position: 50% 25%",
+    );
+  });
+
+  it("saves a clamped position after dragging by delta", async () => {
+    const user = userEvent.setup();
+    const onPositionChange = vi.fn();
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        coverPosition={40}
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+        onPositionChange={onPositionChange}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Reposition cover" }));
+    const repositionSurface = screen.getByRole("button", {
+      name: "Adjust cover position",
+    });
+    vi.spyOn(repositionSurface, "getBoundingClientRect").mockReturnValue(
+      new DOMRect(0, 0, 300, 100),
+    );
+    // Drag down 30px on a 100px-tall band → position decreases by 30.
+    fireEvent.pointerDown(repositionSurface, { pointerId: 1, clientY: 50 });
+    fireEvent.pointerMove(repositionSurface, { pointerId: 1, clientY: 80 });
+    fireEvent.pointerUp(repositionSurface, { pointerId: 1, clientY: 80 });
+    await user.click(screen.getByRole("button", { name: "Save position" }));
+
+    expect(onPositionChange).toHaveBeenCalledExactlyOnceWith(10);
+  });
+
+  it("does not jump the draft position on a click without drag", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        coverPosition={20}
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Reposition cover" }));
+    const repositionSurface = screen.getByRole("button", {
+      name: "Adjust cover position",
+    });
+    vi.spyOn(repositionSurface, "getBoundingClientRect").mockReturnValue(
+      new DOMRect(0, 0, 300, 100),
+    );
+
+    fireEvent.pointerDown(repositionSurface, { pointerId: 1, clientY: 50 });
+    fireEvent.pointerUp(repositionSurface, { pointerId: 1, clientY: 50 });
+
+    expect(screen.getByAltText("Page cover")).toHaveStyle(
+      "object-position: 50% 20%",
+    );
+  });
+
+  it("stops updating position after pointer up", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        coverPosition={50}
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Reposition cover" }));
+    const repositionSurface = screen.getByRole("button", {
+      name: "Adjust cover position",
+    });
+    vi.spyOn(repositionSurface, "getBoundingClientRect").mockReturnValue(
+      new DOMRect(0, 0, 300, 100),
+    );
+
+    fireEvent.pointerDown(repositionSurface, { pointerId: 1, clientY: 40 });
+    fireEvent.pointerMove(repositionSurface, { pointerId: 1, clientY: 60 });
+    fireEvent.pointerUp(repositionSurface, { pointerId: 1, clientY: 60 });
+    // Further moves must not pan (no sticky drag).
+    fireEvent.pointerMove(repositionSurface, { pointerId: 1, clientY: 90 });
+
+    expect(screen.getByAltText("Page cover")).toHaveStyle(
+      "object-position: 50% 30%",
+    );
+  });
+
+  it("cancels a reposition draft with Cancel and Escape", async () => {
+    const user = userEvent.setup();
+    const onPositionChange = vi.fn();
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+        onPositionChange={onPositionChange}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Reposition cover" }));
+    await user.click(
+      screen.getByRole("button", { name: "Cancel repositioning" }),
+    );
+    expect(onPositionChange).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Reposition cover" }));
+    await user.keyboard("{Escape}");
+    expect(onPositionChange).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole("button", { name: "Save position" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("exposes a cancel session while repositioning", async () => {
+    const user = userEvent.setup();
+    const onRepositioningChange = vi.fn();
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+        onRepositioningChange={onRepositioningChange}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Reposition cover" }));
+
+    const session = onRepositioningChange.mock.calls.at(-1)?.[0] as {
+      cancel: () => void;
+    } | null;
+    expect(session?.cancel).toEqual(expect.any(Function));
+    session?.cancel();
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: "Save position" }),
+      ).not.toBeInTheDocument();
+    });
+    expect(onRepositioningChange).toHaveBeenLastCalledWith(null);
+  });
+
+  it("prevents Escape from propagating while repositioning", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Reposition cover" }));
+
+    const escape = new KeyboardEvent("keydown", {
+      key: "Escape",
+      bubbles: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(escape);
+
+    expect(escape.defaultPrevented).toBe(true);
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: "Save position" }),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it("opens the lightbox from View", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "View cover" }));
+
+    expect(screen.getByRole("dialog", { name: "Cover image" })).toBeVisible();
+  });
+
+  it("delegates View to onViewCover instead of nesting a lightbox", async () => {
+    const user = userEvent.setup();
+    const onViewCover = vi.fn();
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+        onViewCover={onViewCover}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "View cover" }));
+
+    expect(onViewCover).toHaveBeenCalledExactlyOnceWith(
+      "https://example.com/cover.jpg",
+    );
+    expect(
+      screen.queryByRole("dialog", { name: "Cover image" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not open the lightbox for control clicks", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Reposition cover" }));
+
+    expect(
+      screen.queryByRole("dialog", { name: "Cover image" }),
+    ).not.toBeInTheDocument();
   });
 });
 

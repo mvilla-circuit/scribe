@@ -1,5 +1,6 @@
 import { memo, type ReactNode, useState } from "react";
 
+import { COVER_FLOATING_CONTROL_CLASS } from "@/components/ui/cover-floating-control";
 import { DocumentIcon } from "@/components/ui/document-icon";
 import {
   type RowAction,
@@ -17,6 +18,8 @@ interface CoverCardProps {
   subtitle?: string | null;
   icon: string | null;
   coverUrl: string | null;
+  /** Vertical focal point (0–100) for `object-position`, matching PageCover. */
+  coverPosition?: number;
   // Rendered in the cover area when there's no cover image and no stored icon —
   // the kind's default glyph (a book or a collection).
   fallback: ReactNode;
@@ -48,6 +51,7 @@ function CoverCardComponent({
   subtitle,
   icon,
   coverUrl,
+  coverPosition = 50,
   fallback,
   onOpen,
   actions,
@@ -71,6 +75,7 @@ function CoverCardComponent({
             src={coverUrl}
             alt=""
             data-testid="cover-card-media"
+            style={{ objectPosition: `50% ${coverPosition}%` }}
             className={cn(mediaAspect, "w-full object-cover")}
           />
         ) : (
@@ -144,7 +149,8 @@ function CoverCardActions({
     <div
       data-testid="cover-card-actions"
       className={cn(
-        "absolute right-1.5 top-1.5 rounded-md border border-border bg-elevated text-text shadow-popover transition-opacity motion-reduce:transition-none",
+        "absolute right-1.5 top-1.5 transition-opacity motion-reduce:transition-none",
+        COVER_FLOATING_CONTROL_CLASS,
         menuOpen
           ? "opacity-100"
           : "opacity-0 focus-within:opacity-100 group-hover:opacity-100",
@@ -154,6 +160,7 @@ function CoverCardActions({
         actions={actions}
         label={`Actions for ${label}`}
         onOpenChange={setMenuOpen}
+        triggerClassName="text-inverted-text/85 hover:bg-transparent hover:text-inverted-text data-[state=open]:bg-transparent data-[state=open]:text-inverted-text"
       />
     </div>
   );

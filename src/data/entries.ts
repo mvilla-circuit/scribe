@@ -18,7 +18,7 @@ export type EntryMeta = Omit<Entry, "content">;
 
 /** Every entry column except `content`, for the lightweight structural list. */
 const ENTRY_META_COLUMNS =
-  "id, user_id, collection_id, title, icon, cover_url, properties, position, created_at, updated_at" as const;
+  "id, user_id, collection_id, title, icon, cover_url, cover_position, properties, position, created_at, updated_at" as const;
 
 interface CreateEntryInput {
   id: string;
@@ -33,7 +33,7 @@ interface RenameEntryInput {
 }
 
 type UpdateEntryInput = { id: string } & Partial<
-  Pick<Entry, "title" | "icon" | "cover_url" | "properties">
+  Pick<Entry, "title" | "icon" | "cover_url" | "cover_position" | "properties">
 >;
 
 interface DeleteEntryInput {
@@ -96,6 +96,7 @@ function newEntryRow(input: CreateEntryInput, userId: string): EntryMeta {
     collection_id: input.collection_id,
     title: input.title,
     icon: null,
+    cover_position: 50,
     cover_url: null,
     properties: {},
     position: input.position,

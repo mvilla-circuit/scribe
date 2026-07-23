@@ -1,22 +1,118 @@
-import { ImagePlus, X } from "lucide-react";
-import { type ChangeEvent, type ReactNode, useRef, useState } from "react";
+import { ImagePlus, Maximize2, MoveVertical, X } from "lucide-react";
+import {
+  type ChangeEvent,
+  type MouseEvent,
+  type PointerEvent,
+  type ReactNode,
+  type RefObject,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { COVER_IMAGE_ACCEPT } from "@/data/cover-upload";
 import { cn } from "@/lib/utils";
 
+import {
+  COVER_FLOATING_CONTROL_CLASS,
+  COVER_FLOATING_ICON_BUTTON_CLASS,
+  COVER_FLOATING_LABEL_CLASS,
+} from "./cover-floating-control";
+import { IconButton } from "./icon-button";
+import { ImageLightbox } from "./image-lightbox";
 import { Tooltip } from "./tooltip";
 
 /** Shared hover-pill styles matching Masthead's "Add icon" affordance. */
 const ADD_AFFORDANCE_CLASS =
   "inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm text-muted opacity-0 outline-none transition-opacity hover:bg-hover hover:text-text focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring group-hover/masthead:opacity-100 disabled:opacity-60";
 
-const COVER_CONTROL_CLASS =
-  "inline-flex items-center justify-center rounded-md bg-elevated text-muted shadow-popover outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60";
+/** Cancel handle exposed to parent Dialogs while a reposition draft is active. */
+export interface CoverRepositionSession {
+  cancel: () => void;
+}
+
+function clampCoverPosition(value: number): number {
+  return Math.min(100, Math.max(0, value));
+}
+
+function coverSurfaceCursor(
+  isRepositioning: boolean,
+  isDragging: boolean,
+): string {
+  if (!isRepositioning) return "cursor-zoom-in";
+  if (isDragging) return "cursor-grabbing";
+  return "cursor-grab";
+}
+
+function trySetPointerCapture(target: HTMLElement, pointerId: number): void {
+  try {
+    target.setPointerCapture(pointerId);
+  } catch {
+    // jsdom and some environments lack pointer capture.
+  }
+}
+
+function tryReleasePointerCapture(
+  target: HTMLElement,
+  pointerId: number,
+): void {
+  try {
+    if (target.hasPointerCapture(pointerId)) {
+      target.releasePointerCapture(pointerId);
+    }
+  } catch {
+    // ignore unsupported pointer capture APIs
+  }
+}
+
+interface CoverDragSession {
+  pointerId: number;
+  startY: number;
+  startPosition: number;
+}
+
+function clearCoverDrag(
+  dragRef: RefObject<CoverDragSession | null>,
+  setIsDragging: (dragging: boolean) => void,
+): void {
+  dragRef.current = null;
+  setIsDragging(false);
+}
+
+function endCoverReposition(
+  dragRef: RefObject<CoverDragSession | null>,
+  setIsDragging: (dragging: boolean) => void,
+  setIsRepositioning: (active: boolean) => void,
+): void {
+  clearCoverDrag(dragRef, setIsDragging);
+  setIsRepositioning(false);
+}
+
+/** Stop bubbling so cover-surface click/lightbox doesn't fire for chrome. */
+function stopAndCall(handler: () => void) {
+  return (event: MouseEvent) => {
+    event.stopPropagation();
+    handler();
+  };
+}
 
 export interface PageCoverProps {
   coverUrl: string | null;
+  coverPosition?: number;
   onUpload: (file: File) => Promise<string>;
   onRemove: () => void;
+  /** Persist the cover's vertical position; call sites should provide this. */
+  onPositionChange?: (y: number) => void;
+  /**
+   * When set, View / image click delegates here instead of opening an internal
+   * lightbox — use this to avoid stacking Dialogs (e.g. inside DatagridRowModal).
+   */
+  onViewCover?: (src: string) => void;
+  /**
+   * Notifies when reposition mode is active so a parent Dialog can intercept
+   * backdrop dismiss and cancel the draft instead of closing.
+   */
+  onRepositioningChange?: (session: CoverRepositionSession | null) => void;
   className?: string;
 }
 
@@ -66,39 +162,57 @@ function CoverControl({
   isUploading,
   onChoose,
   onRemove,
+  onReposition,
+  onView,
 }: {
   isUploading: boolean;
   onChoose: () => void;
   onRemove: () => void;
+  onReposition: () => void;
+  onView: () => void;
 }) {
   return (
     <div className="flex items-center gap-1">
+      <IconButton
+        label="Reposition cover"
+        size="sm"
+        className={COVER_FLOATING_ICON_BUTTON_CLASS}
+        onClick={stopAndCall(onReposition)}
+      >
+        <MoveVertical className="size-3.5" aria-hidden="true" />
+      </IconButton>
+      <IconButton
+        label="View cover"
+        size="sm"
+        className={COVER_FLOATING_ICON_BUTTON_CLASS}
+        onClick={stopAndCall(onView)}
+      >
+        <Maximize2 className="size-3.5" aria-hidden="true" />
+      </IconButton>
       <Tooltip content="Change cover">
         <button
           type="button"
           aria-label="Change cover"
-          onClick={onChoose}
+          onClick={stopAndCall(onChoose)}
           disabled={isUploading}
           className={cn(
-            COVER_CONTROL_CLASS,
-            "gap-1.5 px-2.5 py-1.5 text-sm font-medium hover:text-text",
+            COVER_FLOATING_CONTROL_CLASS,
+            COVER_FLOATING_LABEL_CLASS,
           )}
         >
-          <ImagePlus className="size-4" aria-hidden="true" />
+          <ImagePlus className="size-3.5" aria-hidden="true" />
           {isUploading ? "Uploading…" : "Change cover"}
         </button>
       </Tooltip>
-      <Tooltip content="Remove cover">
-        <button
-          type="button"
-          aria-label="Remove cover"
-          onClick={onRemove}
-          disabled={isUploading}
-          className={cn(COVER_CONTROL_CLASS, "size-8 hover:text-danger")}
-        >
-          <X className="size-4" aria-hidden="true" />
-        </button>
-      </Tooltip>
+      <IconButton
+        label="Remove cover"
+        size="sm"
+        disabled={isUploading}
+        className={cn(COVER_FLOATING_ICON_BUTTON_CLASS, "hover:text-danger")}
+        onClick={stopAndCall(onRemove)}
+      >
+        <X className="size-3.5" aria-hidden="true" />
+      </IconButton>
     </div>
   );
 }
@@ -138,13 +252,118 @@ export function AddCoverButton({
  */
 export function PageCover({
   coverUrl,
+  coverPosition = 50,
   onUpload,
   onRemove,
+  onPositionChange,
+  onViewCover,
+  onRepositioningChange,
   className,
 }: PageCoverProps) {
   const { isUploading, openPicker, fileInput } = useCoverFilePicker(onUpload);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [isRepositioning, setIsRepositioning] = useState(false);
+  const [draftPosition, setDraftPosition] = useState(coverPosition);
+  const [isDragging, setIsDragging] = useState(false);
+  const draftPositionRef = useRef(draftPosition);
+  const dragRef = useRef<CoverDragSession | null>(null);
+
+  useEffect(() => {
+    draftPositionRef.current = draftPosition;
+  }, [draftPosition]);
+
+  useEffect(() => {
+    if (!isRepositioning) return;
+
+    // Capture phase + preventDefault so parent Dialogs (e.g. DatagridRowModal)
+    // do not dismiss on Escape before we cancel reposition.
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      endCoverReposition(dragRef, setIsDragging, setIsRepositioning);
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown, true);
+    };
+  }, [isRepositioning]);
+
+  useEffect(() => {
+    if (!coverUrl || !isRepositioning) {
+      onRepositioningChange?.(null);
+      return;
+    }
+    onRepositioningChange?.({
+      cancel: () => {
+        endCoverReposition(dragRef, setIsDragging, setIsRepositioning);
+      },
+    });
+    return () => {
+      onRepositioningChange?.(null);
+    };
+  }, [coverUrl, isRepositioning, onRepositioningChange]);
 
   if (!coverUrl) return null;
+
+  const position = isRepositioning ? draftPosition : coverPosition;
+  const clearDragging = () => {
+    clearCoverDrag(dragRef, setIsDragging);
+  };
+  const endRepositioning = () => {
+    endCoverReposition(dragRef, setIsDragging, setIsRepositioning);
+  };
+
+  const enterRepositioning = () => {
+    setIsLightboxOpen(false);
+    draftPositionRef.current = coverPosition;
+    setDraftPosition(coverPosition);
+    setIsRepositioning(true);
+  };
+
+  const openLightbox = () => {
+    if (isRepositioning) return;
+    if (onViewCover) {
+      onViewCover(coverUrl);
+      return;
+    }
+    setIsLightboxOpen(true);
+  };
+
+  const startDragging = (event: PointerEvent<HTMLButtonElement>) => {
+    if (!isRepositioning) return;
+    // Keep focus/click from fighting the drag session.
+    event.preventDefault();
+    trySetPointerCapture(event.currentTarget, event.pointerId);
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      startPosition: draftPositionRef.current,
+    };
+    setIsDragging(true);
+  };
+
+  const moveDragging = (event: PointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    if (drag?.pointerId !== event.pointerId) return;
+    const { height } = event.currentTarget.getBoundingClientRect();
+    if (height === 0) return;
+    // Pan the crop with the pointer: drag down → show more of the top.
+    const deltaRatio = (event.clientY - drag.startY) / height;
+    setDraftPosition(clampCoverPosition(drag.startPosition - deltaRatio * 100));
+  };
+
+  const endDragging = (event: PointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    if (drag?.pointerId !== event.pointerId) return;
+    clearDragging();
+    tryReleasePointerCapture(event.currentTarget, event.pointerId);
+  };
+
+  const savePosition = () => {
+    onPositionChange?.(clampCoverPosition(draftPosition));
+    endRepositioning();
+  };
 
   return (
     <section
@@ -154,26 +373,87 @@ export function PageCover({
         className,
       )}
     >
-      <img
-        src={coverUrl}
-        alt="Page cover"
-        className="absolute inset-0 size-full object-cover"
-      />
-      <div
-        data-testid="page-cover-controls"
+      <button
+        type="button"
+        aria-label={
+          isRepositioning ? "Adjust cover position" : "Open cover image"
+        }
+        onClick={openLightbox}
+        onPointerDown={startDragging}
+        onPointerMove={moveDragging}
+        onPointerUp={endDragging}
+        onPointerCancel={endDragging}
+        onLostPointerCapture={clearDragging}
         className={cn(
-          "absolute right-4 top-4 opacity-0 motion-safe:transition-opacity",
-          "pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto",
-          "group-hover:opacity-100 group-focus-within:opacity-100",
+          "absolute inset-0 size-full touch-none outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          coverSurfaceCursor(isRepositioning, isDragging),
         )}
       >
-        <CoverControl
-          isUploading={isUploading}
-          onChoose={openPicker}
-          onRemove={onRemove}
+        <img
+          src={coverUrl}
+          alt="Page cover"
+          style={{ objectPosition: `50% ${position}%` }}
+          className="size-full object-cover"
         />
-      </div>
+      </button>
+      {isRepositioning ? (
+        <>
+          <p className="sr-only" aria-live="polite">
+            Drag to adjust cover position
+          </p>
+          <div className="absolute right-4 top-4 z-10 flex gap-1">
+            <button
+              type="button"
+              aria-label="Save position"
+              onClick={savePosition}
+              className={cn(
+                COVER_FLOATING_CONTROL_CLASS,
+                COVER_FLOATING_LABEL_CLASS,
+              )}
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              aria-label="Cancel repositioning"
+              onClick={endRepositioning}
+              className={cn(
+                COVER_FLOATING_CONTROL_CLASS,
+                COVER_FLOATING_LABEL_CLASS,
+                "text-inverted-text/70 hover:text-inverted-text",
+              )}
+            >
+              Cancel
+            </button>
+          </div>
+        </>
+      ) : (
+        <div
+          data-testid="page-cover-controls"
+          className={cn(
+            "absolute right-4 top-4 z-10 opacity-0 motion-safe:transition-opacity",
+            "pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto",
+            "group-hover:opacity-100 group-focus-within:opacity-100",
+          )}
+        >
+          <CoverControl
+            isUploading={isUploading}
+            onChoose={openPicker}
+            onRemove={onRemove}
+            onReposition={enterRepositioning}
+            onView={openLightbox}
+          />
+        </div>
+      )}
       {fileInput}
+      {!onViewCover && (
+        <ImageLightbox
+          open={isLightboxOpen}
+          onOpenChange={setIsLightboxOpen}
+          src={coverUrl}
+          alt="Page cover"
+        />
+      )}
     </section>
   );
 }

@@ -8,4 +8,6 @@ import type { DatagridQueryRow } from "@/lib/datagrid-query";
 export interface DatagridDisplayRow extends DatagridQueryRow {
   icon: string | null;
   cover_url: string | null;
+  /** Vertical cover focal point (0–100); defaults applied at the page layer. */
+  cover_position: number;
 }

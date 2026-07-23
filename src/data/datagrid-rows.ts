@@ -35,7 +35,7 @@ export type DatagridRowMeta = Omit<DatagridRow, "content">;
 
 // Every column except `content`, so the per-datagrid list query stays light.
 const DATAGRID_ROW_META_COLUMNS =
-  "id, user_id, datagrid_id, title, icon, cover_url, properties, position, created_at, updated_at" as const;
+  "id, user_id, datagrid_id, title, icon, cover_url, cover_position, properties, position, created_at, updated_at" as const;
 
 /** Mutation input shapes, shared between each `mutationFn` and its updater. */
 interface CreateDatagridRowInput {
@@ -48,6 +48,7 @@ type UpdateDatagridRowInput = { id: string } & Partial<{
   title: string;
   icon: string | null;
   cover_url: string | null;
+  cover_position: number;
   properties: DatagridProperties;
   propertyPatch: DatagridProperties;
 }>;
@@ -126,6 +127,7 @@ function newRowMeta(
     datagrid_id: datagridId,
     title: input.title ?? "Untitled",
     icon: null,
+    cover_position: 50,
     cover_url: null,
     properties:
       input.properties === undefined ? {} : (input.properties as Json),
@@ -145,6 +147,9 @@ function toRowPatch(
   if (input.title !== undefined) patch.title = input.title;
   if (input.icon !== undefined) patch.icon = input.icon;
   if (input.cover_url !== undefined) patch.cover_url = input.cover_url;
+  if (input.cover_position !== undefined) {
+    patch.cover_position = input.cover_position;
+  }
   if (input.propertyPatch !== undefined) {
     const properties: DatagridProperties = {
       ...toDatagridProperties(currentProperties),

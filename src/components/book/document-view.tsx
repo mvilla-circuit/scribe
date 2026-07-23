@@ -125,6 +125,7 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
     await updateDocument.mutateAsync({
       id: document.id,
       cover_url: coverUrl,
+      cover_position: 50,
       banner_color: null,
       banner_text: null,
     });
@@ -266,8 +267,15 @@ export function DocumentView({ book, document, documents }: DocumentViewProps) {
 
       <PageCover
         coverUrl={document.cover_url}
+        coverPosition={document.cover_position ?? 50}
         onUpload={setCover}
         onRemove={clearCover}
+        onPositionChange={(coverPosition) => {
+          updateDocument.mutate({
+            id: document.id,
+            cover_position: coverPosition,
+          });
+        }}
       />
 
       {!document.cover_url && (

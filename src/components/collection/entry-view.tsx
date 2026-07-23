@@ -81,7 +81,11 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
   const setCover = async (file: File) => {
     const previous = entry.cover_url;
     const coverUrl = await uploadCover.mutateAsync(file);
-    await updateEntry.mutateAsync({ id: entry.id, cover_url: coverUrl });
+    await updateEntry.mutateAsync({
+      id: entry.id,
+      cover_url: coverUrl,
+      cover_position: 50,
+    });
     void deleteCoverObject(previous);
     return coverUrl;
   };
@@ -113,8 +117,12 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
 
       <PageCover
         coverUrl={entry.cover_url}
+        coverPosition={entry.cover_position ?? 50}
         onUpload={setCover}
         onRemove={clearCover}
+        onPositionChange={(coverPosition) => {
+          updateEntry.mutate({ id: entry.id, cover_position: coverPosition });
+        }}
       />
 
       <article className="mx-auto w-full max-w-[68ch] px-8 py-12 sm:py-16">

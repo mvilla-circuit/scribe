@@ -198,6 +198,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
     await updateCollection.mutateAsync({
       id: collectionId,
       cover_url: coverUrl,
+      cover_position: 50,
     });
     void deleteCoverObject(previous);
     return coverUrl;
@@ -482,8 +483,15 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
 
       <PageCover
         coverUrl={collection.cover_url}
+        coverPosition={collection.cover_position ?? 50}
         onUpload={setCover}
         onRemove={clearCover}
+        onPositionChange={(coverPosition) => {
+          updateCollection.mutate({
+            id: collectionId,
+            cover_position: coverPosition,
+          });
+        }}
       />
 
       <div className="mx-auto w-full max-w-5xl px-8 pb-16 pt-8 sm:pb-24">
@@ -717,13 +725,15 @@ function GalleryCoverCard({
   actions: RowAction[];
   tags?: GalleryTag[];
 }) {
-  const { title, subtitle, icon, coverUrl } = galleryChildMeta(child);
+  const { title, subtitle, icon, coverUrl, coverPosition } =
+    galleryChildMeta(child);
   return (
     <CoverCard
       title={title}
       subtitle={subtitle}
       icon={icon}
       coverUrl={coverUrl}
+      coverPosition={coverPosition}
       fallback={galleryFallback(child)}
       onOpen={onOpen}
       actions={actions}

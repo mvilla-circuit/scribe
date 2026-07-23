@@ -63,11 +63,21 @@ export function useDatagridRowDetail(datagridId: string, rowId: string) {
     async (file: File) => {
       const previous = row?.cover_url ?? null;
       const coverUrl = await uploadCover.mutateAsync(file);
-      await updateRow.mutateAsync({ id: rowId, cover_url: coverUrl });
+      await updateRow.mutateAsync({
+        id: rowId,
+        cover_url: coverUrl,
+        cover_position: 50,
+      });
       void deleteCoverObject(previous);
       return coverUrl;
     },
     [row?.cover_url, uploadCover, updateRow, rowId],
+  );
+  const setCoverPosition = useCallback(
+    (coverPosition: number) => {
+      updateRow.mutate({ id: rowId, cover_position: coverPosition });
+    },
+    [updateRow, rowId],
   );
   const clearCover = useCallback(() => {
     const previous = row?.cover_url ?? null;
@@ -90,6 +100,7 @@ export function useDatagridRowDetail(datagridId: string, rowId: string) {
     rename,
     setIcon,
     setCover,
+    setCoverPosition,
     clearCover,
     patchProperty,
     isLoading: rowsQuery.isLoading,

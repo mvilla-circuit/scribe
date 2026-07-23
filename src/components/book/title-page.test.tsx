@@ -165,6 +165,7 @@ describe("TitlePage covers", () => {
       expect(hooks.update.mutateAsync).toHaveBeenCalledWith({
         id: "book-1",
         cover_url: "https://example.com/book.png",
+        cover_position: 50,
       });
     });
   });

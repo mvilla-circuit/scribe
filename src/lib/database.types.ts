@@ -42,6 +42,7 @@ export type Database = {
       books: {
         Row: {
           collection_id: string | null
+          cover_position: number
           cover_url: string | null
           created_at: string
           folder_id: string | null
@@ -56,6 +57,7 @@ export type Database = {
         }
         Insert: {
           collection_id?: string | null
+          cover_position?: number
           cover_url?: string | null
           created_at?: string
           folder_id?: string | null
@@ -70,6 +72,7 @@ export type Database = {
         }
         Update: {
           collection_id?: string | null
+          cover_position?: number
           cover_url?: string | null
           created_at?: string
           folder_id?: string | null
@@ -101,6 +104,7 @@ export type Database = {
       }
       collections: {
         Row: {
+          cover_position: number
           cover_url: string | null
           created_at: string
           description: string | null
@@ -115,6 +119,7 @@ export type Database = {
           view: Json
         }
         Insert: {
+          cover_position?: number
           cover_url?: string | null
           created_at?: string
           description?: string | null
@@ -129,6 +134,7 @@ export type Database = {
           view?: Json
         }
         Update: {
+          cover_position?: number
           cover_url?: string | null
           created_at?: string
           description?: string | null
@@ -155,6 +161,7 @@ export type Database = {
       datagrid_rows: {
         Row: {
           content: Json
+          cover_position: number
           cover_url: string | null
           created_at: string
           datagrid_id: string
@@ -168,6 +175,7 @@ export type Database = {
         }
         Insert: {
           content?: Json
+          cover_position?: number
           cover_url?: string | null
           created_at?: string
           datagrid_id: string
@@ -181,6 +189,7 @@ export type Database = {
         }
         Update: {
           content?: Json
+          cover_position?: number
           cover_url?: string | null
           created_at?: string
           datagrid_id?: string
@@ -249,6 +258,7 @@ export type Database = {
       datagrids: {
         Row: {
           collection_id: string
+          cover_position: number
           cover_url: string | null
           created_at: string
           fields: Json
@@ -263,6 +273,7 @@ export type Database = {
         }
         Insert: {
           collection_id: string
+          cover_position?: number
           cover_url?: string | null
           created_at?: string
           fields?: Json
@@ -277,6 +288,7 @@ export type Database = {
         }
         Update: {
           collection_id?: string
+          cover_position?: number
           cover_url?: string | null
           created_at?: string
           fields?: Json
@@ -305,6 +317,7 @@ export type Database = {
           banner_text: string | null
           book_id: string
           content: Json
+          cover_position: number
           cover_url: string | null
           created_at: string
           font_overrides: Json | null
@@ -328,6 +341,7 @@ export type Database = {
           banner_text?: string | null
           book_id: string
           content?: Json
+          cover_position?: number
           cover_url?: string | null
           created_at?: string
           font_overrides?: Json | null
@@ -351,6 +365,7 @@ export type Database = {
           banner_text?: string | null
           book_id?: string
           content?: Json
+          cover_position?: number
           cover_url?: string | null
           created_at?: string
           font_overrides?: Json | null
@@ -390,6 +405,7 @@ export type Database = {
         Row: {
           collection_id: string
           content: Json
+          cover_position: number
           cover_url: string | null
           created_at: string
           icon: string | null
@@ -403,6 +419,7 @@ export type Database = {
         Insert: {
           collection_id: string
           content?: Json
+          cover_position?: number
           cover_url?: string | null
           created_at?: string
           icon?: string | null
@@ -416,6 +433,7 @@ export type Database = {
         Update: {
           collection_id?: string
           content?: Json
+          cover_position?: number
           cover_url?: string | null
           created_at?: string
           icon?: string | null
@@ -639,6 +657,7 @@ export type Database = {
         Row: {
           book_id: string | null
           collection_id: string | null
+          cover_position: number
           cover_url: string | null
           created_at: string
           icon: string | null
@@ -653,6 +672,7 @@ export type Database = {
         Insert: {
           book_id?: string | null
           collection_id?: string | null
+          cover_position?: number
           cover_url?: string | null
           created_at?: string
           icon?: string | null
@@ -667,6 +687,7 @@ export type Database = {
         Update: {
           book_id?: string | null
           collection_id?: string | null
+          cover_position?: number
           cover_url?: string | null
           created_at?: string
           icon?: string | null

@@ -41,6 +41,7 @@ const rows: DatagridDisplayRow[] = [
     title: "Card one",
     icon: null,
     cover_url: null,
+    cover_position: 50,
     properties: { f1: "o1" },
     created_at: "2026-01-01T00:00:00.000Z",
     updated_at: "2026-01-01T00:00:00.000Z",
@@ -136,6 +137,7 @@ describe("DatagridGalleryView", () => {
         title: "Card one",
         icon: null,
         cover_url: null,
+        cover_position: 50,
         properties: { f2: [{ type: "datagrid_row", id: "row-1" }] },
         created_at: "2026-01-01T00:00:00.000Z",
         updated_at: "2026-01-01T00:00:00.000Z",
@@ -161,6 +163,7 @@ describe("DatagridGalleryView", () => {
         title: "Card one",
         icon: null,
         cover_url: "https://example.test/card.png",
+        cover_position: 25,
         properties: { f1: "o1" },
         created_at: "2026-01-01T00:00:00.000Z",
         updated_at: "2026-01-01T00:00:00.000Z",
@@ -175,10 +178,9 @@ describe("DatagridGalleryView", () => {
       />,
     );
 
-    expect(screen.getByTestId("cover-card-media")).toHaveAttribute(
-      "src",
-      "https://example.test/card.png",
-    );
+    const media = screen.getByTestId("cover-card-media");
+    expect(media).toHaveAttribute("src", "https://example.test/card.png");
+    expect(media).toHaveStyle("object-position: 50% 25%");
   });
 
   it("uploads a cover from the media overlay without opening the row", async () => {
