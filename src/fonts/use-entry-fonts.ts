@@ -46,9 +46,8 @@ export function useEntryFonts({
 }: UseEntryFontsOptions): EntryFonts {
   const { data: profile } = useProfile();
 
-  // The cascade only depends on the profile and entry; recompute it (and the
-  // `resolveFonts` layering) only when one of those changes rather than on
-  // every render.
+  // Recompute only when the profile or entry changes (same memo shape as
+  // useCascadedFonts).
   const { overrides, inherited, resolved } = useMemo(() => {
     const globalFonts = profileFonts(profile);
     const entryOverrides = entry ? entryFontOverrides(entry) : {};

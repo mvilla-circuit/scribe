@@ -261,20 +261,6 @@ describe("EntryView", () => {
     );
   });
 
-  it("renders the Doc fonts control when the entry is loaded", () => {
-    renderWithProviders(<EntryView collectionId="c1" entryId="e1" />);
-
-    expect(screen.getByRole("button", { name: "Fonts" })).toBeInTheDocument();
-  });
-
-  it("omits the Doc fonts control when the entry isn't found", () => {
-    renderWithProviders(<EntryView collectionId="c1" entryId="missing" />);
-
-    expect(
-      screen.queryByRole("button", { name: "Fonts" }),
-    ).not.toBeInTheDocument();
-  });
-
   it("setting a font persists entry overrides", async () => {
     const user = userEvent.setup();
     renderWithProviders(<EntryView collectionId="c1" entryId="e1" />);

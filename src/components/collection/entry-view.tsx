@@ -29,14 +29,29 @@ import { Editor, type EditorHandle } from "@/editor/lazy-editor";
 import type { OutlineHeading } from "@/editor/outline";
 import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";
+import type { FontMap, ResolvedFonts } from "@/fonts/catalog";
 import { displayTitleStyle } from "@/fonts/display-title-style";
-import { type EntryFonts, useEntryFonts } from "@/fonts/use-entry-fonts";
+import { useEntryFonts } from "@/fonts/use-entry-fonts";
 import type { FontOverrideHandlers } from "@/fonts/use-font-overrides";
 import { useUIStore } from "@/store/ui";
 
 interface EntryViewProps {
   collectionId: string;
   entryId: string;
+}
+
+/**
+ * Subtitle, outline, and fonts controls for a loaded entry. Omitted from
+ * EntryBar while the entry is loading or missing.
+ */
+interface EntryBarControls {
+  showSubtitle: boolean;
+  onToggleSubtitle: () => void;
+  showOutline: boolean;
+  onToggleOutline: () => void;
+  fontOverrides: FontMap;
+  inheritedFonts: ResolvedFonts;
+  fontHandlers: FontOverrideHandlers;
 }
 
 /**
@@ -68,12 +83,14 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
     collectionsQuery.data?.find((item) => item.id === resolvedCollectionId) ??
     null;
 
-  // Entries cascade straight from the global font map (no collection layer in
-  // between). `entry: null` (loading/not-found) still resolves a safe
-  // global-only cascade; `onChangeOverrides` is only ever invoked through
-  // handlers wired to a real entry below, so the guard here is just belt-and-
-  // suspenders against a stale closure outliving its entry.
-  const fonts = useEntryFonts({
+  // Entries cascade global -> entry (no collection layer). `entry: null` still
+  // resolves a safe global-only cascade for the loading/not-found shell.
+  const {
+    fontVars,
+    overrides,
+    inherited,
+    handlers: fontHandlers,
+  } = useEntryFonts({
     entry,
     onChangeOverrides: (nextOverrides) => {
       if (!entry) return;
@@ -83,13 +100,12 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
       });
     },
   });
+  const bodyFont = "var(--font-text)";
 
   if (!entry) {
-    const status = entriesQuery.isLoading
-      ? "Loading doc…"
-      : entriesQuery.isError
-        ? "Couldn't load this doc"
-        : "Doc not found";
+    let status = "Doc not found";
+    if (entriesQuery.isLoading) status = "Loading doc…";
+    else if (entriesQuery.isError) status = "Couldn't load this doc";
     return (
       <div className="flex h-full flex-col bg-bg">
         <EntryBar
@@ -137,7 +153,7 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-bg" style={fonts.fontVars}>
+    <div className="h-full overflow-y-auto bg-bg" style={fontVars}>
       <EntryBar
         collectionName={collection?.name}
         saveState={saveState}
@@ -156,7 +172,9 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
               show_outline: !entry.show_outline,
             });
           },
-          fonts,
+          fontOverrides: overrides,
+          inheritedFonts: inherited,
+          fontHandlers,
         }}
         onOpenCollection={() => {
           navigateTo({
@@ -219,7 +237,7 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
                   });
                 }}
                 className="mt-2 text-xl leading-snug text-muted"
-                style={{ fontFamily: "var(--font-text)" }}
+                style={{ fontFamily: bodyFont }}
               />
             )}
           </Masthead>
@@ -227,7 +245,7 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
           <div
             ref={proseContainerRef}
             className="mt-8"
-            style={{ fontFamily: "var(--font-text)" }}
+            style={{ fontFamily: bodyFont }}
           >
             {contentQuery.isSuccess ? (
               <EditorBridgeHost>
@@ -279,20 +297,7 @@ function EntryBar({
 }: {
   collectionName: string | undefined;
   saveState: SaveState;
-  /**
-   * Subtitle, outline, and fonts controls — bundled since they only apply
-   * once an entry row exists (omitted, and hidden, while it's loading or
-   * missing).
-   */
-  controls?: {
-    showSubtitle: boolean;
-    onToggleSubtitle: () => void;
-    showOutline: boolean;
-    onToggleOutline: () => void;
-    fonts: Pick<EntryFonts, "overrides" | "inherited"> & {
-      handlers: FontOverrideHandlers;
-    };
-  };
+  controls?: EntryBarControls;
   onOpenCollection: () => void;
 }) {
   return (
@@ -331,11 +336,11 @@ function EntryBar({
             <FontControl
               heading="Doc fonts"
               inheritLabel="global"
-              overrides={controls.fonts.overrides}
-              inherited={controls.fonts.inherited}
-              onSet={controls.fonts.handlers.setFont}
-              onClear={controls.fonts.handlers.clearFont}
-              onClearAll={controls.fonts.handlers.clearAll}
+              overrides={controls.fontOverrides}
+              inherited={controls.inheritedFonts}
+              onSet={controls.fontHandlers.setFont}
+              onClear={controls.fontHandlers.clearFont}
+              onClearAll={controls.fontHandlers.clearAll}
             />
           </>
         )}
