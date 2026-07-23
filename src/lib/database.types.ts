@@ -413,6 +413,9 @@ export type Database = {
           id: string
           position: number
           properties: Json
+          show_outline: boolean
+          show_subtitle: boolean
+          subtitle: string | null
           title: string
           updated_at: string
           user_id: string
@@ -428,6 +431,9 @@ export type Database = {
           id?: string
           position?: number
           properties?: Json
+          show_outline?: boolean
+          show_subtitle?: boolean
+          subtitle?: string | null
           title?: string
           updated_at?: string
           user_id: string
@@ -443,6 +449,9 @@ export type Database = {
           id?: string
           position?: number
           properties?: Json
+          show_outline?: boolean
+          show_subtitle?: boolean
+          subtitle?: string | null
           title?: string
           updated_at?: string
           user_id?: string

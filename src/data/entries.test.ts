@@ -10,7 +10,12 @@ import {
 } from "@/test/render-with-query";
 
 import type { EntryMeta } from "./entries";
-import { entryFontOverrides, useUpdateEntryFontOverrides } from "./entries";
+import {
+  entryFontOverrides,
+  useCreateEntry,
+  useUpdateEntry,
+  useUpdateEntryFontOverrides,
+} from "./entries";
 import { entriesKey } from "./query-keys";
 
 // The data hooks read the session for the user id; stub auth so we don't pull
@@ -33,6 +38,85 @@ describe("entryFontOverrides", () => {
     expect(entryFontOverrides(makeEntry({ font_overrides: ["lora"] }))).toEqual(
       {},
     );
+  });
+});
+
+describe("useCreateEntry", () => {
+  it("optimistically adds the new entry with subtitle/outline defaults", async () => {
+    server.use(
+      http.post(ENTRIES_URL, () => new HttpResponse(null, { status: 201 })),
+    );
+
+    const client = createTestQueryClient();
+    client.setQueryData(entriesKey, []);
+
+    const { result } = renderHookWithQuery(() => useCreateEntry(), { client });
+    result.current.mutate({
+      id: "entry-1",
+      collection_id: "collection-1",
+      title: "Untitled",
+      position: 1024,
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    const cached = client.getQueryData<EntryMeta[]>(entriesKey);
+    expect(cached?.[0]).toMatchObject({
+      subtitle: null,
+      show_subtitle: false,
+      show_outline: false,
+    });
+  });
+});
+
+describe("useUpdateEntry", () => {
+  it("patches subtitle and outline flags", async () => {
+    let patch:
+      | { subtitle?: unknown; show_subtitle?: unknown; show_outline?: unknown }
+      | undefined;
+    server.use(
+      http.patch(ENTRIES_URL, async ({ request }) => {
+        patch = (await request.json()) as typeof patch;
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    const client = createTestQueryClient();
+    client.setQueryData(entriesKey, [
+      makeEntry({
+        id: "entry-1",
+        subtitle: null,
+        show_subtitle: false,
+        show_outline: false,
+      }),
+    ]);
+
+    const { result } = renderHookWithQuery(() => useUpdateEntry(), { client });
+    result.current.mutate({
+      id: "entry-1",
+      subtitle: "A closer look",
+      show_subtitle: true,
+      show_outline: true,
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(patch).toEqual({
+      subtitle: "A closer look",
+      show_subtitle: true,
+      show_outline: true,
+    });
+
+    const cached = client.getQueryData<EntryMeta[]>(entriesKey);
+    expect(cached?.[0]).toMatchObject({
+      subtitle: "A closer look",
+      show_subtitle: true,
+      show_outline: true,
+    });
   });
 });
 
