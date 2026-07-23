@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import type { FontMap } from "@/fonts/catalog";
 import { useAuth } from "@/lib/auth";
 import type { Json, Tables, TablesUpdate } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
 
 import { execWrite, requireUserId } from "./crud";
+import { coerceFontMap } from "./font-map";
 import { listHandlers, patchById, removeById } from "./optimistic-list";
 import { byPosition } from "./ordering";
 import { entriesKey, entryContentKey, NO_COLLECTION } from "./query-keys";
@@ -18,7 +20,7 @@ export type EntryMeta = Omit<Entry, "content">;
 
 /** Every entry column except `content`, for the lightweight structural list. */
 const ENTRY_META_COLUMNS =
-  "id, user_id, collection_id, title, icon, cover_url, cover_position, properties, position, created_at, updated_at" as const;
+  "id, user_id, collection_id, title, icon, cover_url, cover_position, properties, font_overrides, subtitle, show_subtitle, show_outline, position, created_at, updated_at" as const;
 
 interface CreateEntryInput {
   id: string;
@@ -33,7 +35,17 @@ interface RenameEntryInput {
 }
 
 type UpdateEntryInput = { id: string } & Partial<
-  Pick<Entry, "title" | "icon" | "cover_url" | "cover_position" | "properties">
+  Pick<
+    Entry,
+    | "title"
+    | "icon"
+    | "cover_url"
+    | "cover_position"
+    | "properties"
+    | "subtitle"
+    | "show_subtitle"
+    | "show_outline"
+  >
 >;
 
 interface DeleteEntryInput {
@@ -49,6 +61,23 @@ interface MoveEntryInput {
 interface UpdateEntryContentInput {
   id: string;
   content: Json;
+}
+
+interface UpdateEntryFontOverridesInput {
+  id: string;
+  font_overrides: EntryFontOverrides | null;
+}
+
+/**
+ * An entry's per-role font overrides (a partial role -> fontId map). NULL on
+ * the row means the entry inherits the global choice — entries cascade
+ * straight from the global font map, with no collection layer in between.
+ */
+export type EntryFontOverrides = FontMap;
+
+/** Typed view of the entries.font_overrides jsonb column. */
+export function entryFontOverrides(entry: EntryMeta): EntryFontOverrides {
+  return coerceFontMap(entry.font_overrides);
 }
 
 /** Query hook for all entry metadata, ordered by position. */
@@ -99,6 +128,10 @@ function newEntryRow(input: CreateEntryInput, userId: string): EntryMeta {
     cover_position: 50,
     cover_url: null,
     properties: {},
+    font_overrides: null,
+    subtitle: null,
+    show_subtitle: false,
+    show_outline: false,
     position: input.position,
     created_at: now,
     updated_at: now,
@@ -223,5 +256,24 @@ export function useUpdateEntryContent() {
       if (context) qc.setQueryData(context.key, context.previous);
       toast.error("Couldn't save changes");
     },
+  });
+}
+
+/**
+ * Writes or clears an entry's font-role overrides. Passing `null` clears the
+ * column so the entry inherits the global font map again ("Inherit").
+ */
+export function useUpdateEntryFontOverrides() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: UpdateEntryFontOverridesInput) =>
+      updateEntryRow(input.id, { font_overrides: input.font_overrides }),
+    ...listHandlers<EntryMeta, UpdateEntryFontOverridesInput>({
+      qc,
+      key: entriesKey,
+      update: (prev, input) =>
+        patchById(prev, input.id, { font_overrides: input.font_overrides }),
+      errorMessage: "Couldn't update entry fonts",
+    }),
   });
 }

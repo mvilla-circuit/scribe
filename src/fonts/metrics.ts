@@ -32,11 +32,12 @@ const METRICS = raw as MetricsTable;
 
 /**
  * Fallbacks when a stored id has no lab metrics (unknown / partial catalogs).
- * Sized to match the historic editor defaults (~17px body, display titles, code).
+ * Sized to match the historic editor defaults (display titles, ~16px code);
+ * body text was shrunk from the original ~17px baseline to 15px.
  */
 export const ROLE_METRIC_DEFAULTS: Record<FontRole, FontMetrics> = {
   display: { size: 50, regular: 400, bold: 700, line: 1.42, spacing: -0.01 },
-  text: { size: 16, regular: 400, bold: 700, line: 1.55, spacing: 0 },
+  text: { size: 15, regular: 400, bold: 700, line: 1.55, spacing: 0 },
   code: { size: 16, regular: 400, bold: 700, line: 1.55, spacing: 0 },
 };
 

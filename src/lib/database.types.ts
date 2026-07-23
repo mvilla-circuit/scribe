@@ -408,10 +408,14 @@ export type Database = {
           cover_position: number
           cover_url: string | null
           created_at: string
+          font_overrides: Json | null
           icon: string | null
           id: string
           position: number
           properties: Json
+          show_outline: boolean
+          show_subtitle: boolean
+          subtitle: string | null
           title: string
           updated_at: string
           user_id: string
@@ -422,10 +426,14 @@ export type Database = {
           cover_position?: number
           cover_url?: string | null
           created_at?: string
+          font_overrides?: Json | null
           icon?: string | null
           id?: string
           position?: number
           properties?: Json
+          show_outline?: boolean
+          show_subtitle?: boolean
+          subtitle?: string | null
           title?: string
           updated_at?: string
           user_id: string
@@ -436,10 +444,14 @@ export type Database = {
           cover_position?: number
           cover_url?: string | null
           created_at?: string
+          font_overrides?: Json | null
           icon?: string | null
           id?: string
           position?: number
           properties?: Json
+          show_outline?: boolean
+          show_subtitle?: boolean
+          subtitle?: string | null
           title?: string
           updated_at?: string
           user_id?: string

@@ -1,15 +1,20 @@
 import { useRef, useState } from "react";
 
 import { EditorBridgeHost } from "@/components/book/editor-bridge-host";
+import { FontControl } from "@/components/book/font-control";
+import { ListIcon } from "@/components/book/icons";
 import { NavHistoryControls } from "@/components/book/nav-history-controls";
+import { PageOutline } from "@/components/book/page-outline";
 import { Breadcrumb, BreadcrumbLink } from "@/components/ui/breadcrumb";
 import {
   EditableText,
   type EditableTextHandle,
 } from "@/components/ui/editable-text";
+import { IconButton } from "@/components/ui/icon-button";
 import { Masthead } from "@/components/ui/masthead";
 import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { SkeletonText } from "@/components/ui/skeleton";
+import { SubtitleToggle } from "@/components/ui/subtitle-toggle";
 import { useCollections } from "@/data/collections";
 import { deleteCoverObject, useUploadCover } from "@/data/cover-upload";
 import {
@@ -18,11 +23,16 @@ import {
   useRenameEntry,
   useUpdateEntry,
   useUpdateEntryContent,
+  useUpdateEntryFontOverrides,
 } from "@/data/entries";
 import { Editor, type EditorHandle } from "@/editor/lazy-editor";
+import type { OutlineHeading } from "@/editor/outline";
 import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";
+import type { FontMap, ResolvedFonts } from "@/fonts/catalog";
 import { displayTitleStyle } from "@/fonts/display-title-style";
+import { useEntryFonts } from "@/fonts/use-entry-fonts";
+import type { FontOverrideHandlers } from "@/fonts/use-font-overrides";
 import { useUIStore } from "@/store/ui";
 
 interface EntryViewProps {
@@ -31,9 +41,23 @@ interface EntryViewProps {
 }
 
 /**
+ * Subtitle, outline, and fonts controls for a loaded entry. Omitted from
+ * EntryBar while the entry is loading or missing.
+ */
+interface EntryBarControls {
+  showSubtitle: boolean;
+  onToggleSubtitle: () => void;
+  showOutline: boolean;
+  onToggleOutline: () => void;
+  fontOverrides: FontMap;
+  inheritedFonts: ResolvedFonts;
+  fontHandlers: FontOverrideHandlers;
+}
+
+/**
  * A collection entry rendered as a document reading surface with an editable
- * title, rich-text body, quiet save status, and a breadcrumb back to its
- * collection gallery.
+ * title, optional subtitle, rich-text body with an optional outline rail, a
+ * quiet save status, and a breadcrumb back to its collection gallery.
  */
 export function EntryView({ collectionId, entryId }: EntryViewProps) {
   const entriesQuery = useEntries();
@@ -43,10 +67,13 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
   const updateEntry = useUpdateEntry();
   const uploadCover = useUploadCover();
   const updateContent = useUpdateEntryContent();
+  const updateFontOverrides = useUpdateEntryFontOverrides();
   const navigateTo = useUIStore((state) => state.navigateTo);
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [headings, setHeadings] = useState<OutlineHeading[]>([]);
   const editorRef = useRef<EditorHandle>(null);
   const titleRef = useRef<EditableTextHandle>(null);
+  const proseContainerRef = useRef<HTMLDivElement>(null);
 
   const entry = entriesQuery.data?.find((item) => item.id === entryId) ?? null;
   // Prefer the entry row's collection_id so a successful (or optimistic) move
@@ -56,12 +83,29 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
     collectionsQuery.data?.find((item) => item.id === resolvedCollectionId) ??
     null;
 
+  // Entries cascade global -> entry (no collection layer). `entry: null` still
+  // resolves a safe global-only cascade for the loading/not-found shell.
+  const {
+    fontVars,
+    overrides,
+    inherited,
+    handlers: fontHandlers,
+  } = useEntryFonts({
+    entry,
+    onChangeOverrides: (nextOverrides) => {
+      if (!entry) return;
+      updateFontOverrides.mutate({
+        id: entry.id,
+        font_overrides: nextOverrides,
+      });
+    },
+  });
+  const bodyFont = "var(--font-text)";
+
   if (!entry) {
-    const status = entriesQuery.isLoading
-      ? "Loading doc…"
-      : entriesQuery.isError
-        ? "Couldn't load this doc"
-        : "Doc not found";
+    let status = "Doc not found";
+    if (entriesQuery.isLoading) status = "Loading doc…";
+    else if (entriesQuery.isError) status = "Couldn't load this doc";
     return (
       <div className="flex h-full flex-col bg-bg">
         <EntryBar
@@ -77,6 +121,12 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
       </div>
     );
   }
+
+  // Reserve the outline gutter from first paint on the stable page flag rather
+  // than waiting for async headings, so the reading column keeps a constant
+  // width. `PageOutline` renders nothing until headings arrive, so the
+  // reserved column simply starts empty.
+  const reserveOutline = entry.show_outline;
 
   const setCover = async (file: File) => {
     const previous = entry.cover_url;
@@ -103,10 +153,29 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-bg">
+    <div className="h-full overflow-y-auto bg-bg" style={fontVars}>
       <EntryBar
         collectionName={collection?.name}
         saveState={saveState}
+        controls={{
+          showSubtitle: entry.show_subtitle,
+          onToggleSubtitle: () => {
+            updateEntry.mutate({
+              id: entry.id,
+              show_subtitle: !entry.show_subtitle,
+            });
+          },
+          showOutline: entry.show_outline,
+          onToggleOutline: () => {
+            updateEntry.mutate({
+              id: entry.id,
+              show_outline: !entry.show_outline,
+            });
+          },
+          fontOverrides: overrides,
+          inheritedFonts: inherited,
+          fontHandlers,
+        }}
         onOpenCollection={() => {
           navigateTo({
             collectionId: entry.collection_id,
@@ -125,61 +194,97 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
         }}
       />
 
-      <article className="mx-auto w-full max-w-[68ch] px-8 py-12 sm:py-16">
-        <Masthead
-          icon={entry.icon}
-          onSelectIcon={(icon) => {
-            updateEntry.mutate({ id: entry.id, icon });
-          }}
-          onRemoveIcon={() => {
-            updateEntry.mutate({ id: entry.id, icon: null });
-          }}
-          changeIconLabel="Change document icon"
-          actions={
-            entry.cover_url ? undefined : <AddCoverButton onUpload={setCover} />
-          }
-        >
-          <EditableText
-            ref={titleRef}
-            value={entry.title || "Untitled"}
-            ariaLabel="Document title"
-            placeholder="Untitled"
-            onCommit={(title) => {
-              renameEntry.mutate({ id: entry.id, title });
+      <div className="mx-auto flex w-full max-w-[1120px] justify-center gap-12 px-8 py-12 sm:py-16">
+        <article className="w-full min-w-0 max-w-[68ch]">
+          <Masthead
+            icon={entry.icon}
+            onSelectIcon={(icon) => {
+              updateEntry.mutate({ id: entry.id, icon });
             }}
-            onEnter={() => editorRef.current?.focusStart()}
-            className="leading-tight tracking-tight text-text"
-            style={displayTitleStyle()}
-          />
-        </Masthead>
+            onRemoveIcon={() => {
+              updateEntry.mutate({ id: entry.id, icon: null });
+            }}
+            changeIconLabel="Change document icon"
+            actions={
+              entry.cover_url ? undefined : (
+                <AddCoverButton onUpload={setCover} />
+              )
+            }
+          >
+            <EditableText
+              ref={titleRef}
+              value={entry.title || "Untitled"}
+              ariaLabel="Document title"
+              placeholder="Untitled"
+              onCommit={(title) => {
+                renameEntry.mutate({ id: entry.id, title });
+              }}
+              onEnter={() => editorRef.current?.focusStart()}
+              className="leading-tight tracking-tight text-text"
+              style={displayTitleStyle()}
+            />
 
-        <div className="mt-8" style={{ fontFamily: "var(--font-text)" }}>
-          {contentQuery.isSuccess ? (
-            <EditorBridgeHost>
-              <Editor
-                ref={editorRef}
-                key={entry.id}
-                documentId={entry.id}
-                initialContent={contentQuery.data}
-                editable
-                onLeaveStart={() => {
-                  titleRef.current?.focus();
-                  return true;
+            {entry.show_subtitle && (
+              <EditableText
+                value={entry.subtitle ?? ""}
+                ariaLabel="Document subtitle"
+                placeholder="Add a subtitle"
+                allowEmpty
+                onCommit={(subtitle) => {
+                  updateEntry.mutate({
+                    id: entry.id,
+                    subtitle: subtitle || null,
+                  });
                 }}
-                onPersist={(content) =>
-                  updateContent.mutateAsync({ id: entry.id, content })
-                }
-                onSaveStateChange={setSaveState}
+                className="mt-2 text-xl leading-snug text-muted"
+                style={{ fontFamily: bodyFont }}
               />
-            </EditorBridgeHost>
-          ) : (
-            <div className="flex flex-col gap-6" aria-hidden>
-              <SkeletonText lines={3} lineHeight="0.85rem" />
-              <SkeletonText lines={4} lineHeight="0.85rem" />
-            </div>
-          )}
-        </div>
-      </article>
+            )}
+          </Masthead>
+
+          <div
+            ref={proseContainerRef}
+            className="mt-8"
+            style={{ fontFamily: bodyFont }}
+          >
+            {contentQuery.isSuccess ? (
+              <EditorBridgeHost>
+                <Editor
+                  ref={editorRef}
+                  key={entry.id}
+                  documentId={entry.id}
+                  initialContent={contentQuery.data}
+                  editable
+                  onOutlineChange={setHeadings}
+                  onLeaveStart={() => {
+                    titleRef.current?.focus();
+                    return true;
+                  }}
+                  onPersist={(content) =>
+                    updateContent.mutateAsync({ id: entry.id, content })
+                  }
+                  onSaveStateChange={setSaveState}
+                />
+              </EditorBridgeHost>
+            ) : (
+              <div className="flex flex-col gap-6" aria-hidden>
+                <SkeletonText lines={3} lineHeight="0.85rem" />
+                <SkeletonText lines={4} lineHeight="0.85rem" />
+              </div>
+            )}
+          </div>
+        </article>
+
+        {reserveOutline && (
+          <aside className="hidden w-52 shrink-0 md:block">
+            <PageOutline
+              headings={headings}
+              containerRef={proseContainerRef}
+              onSelect={(pos) => editorRef.current?.scrollToPos(pos)}
+            />
+          </aside>
+        )}
+      </div>
     </div>
   );
 }
@@ -187,10 +292,12 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
 function EntryBar({
   collectionName,
   saveState,
+  controls,
   onOpenCollection,
 }: {
   collectionName: string | undefined;
   saveState: SaveState;
+  controls?: EntryBarControls;
   onOpenCollection: () => void;
 }) {
   return (
@@ -207,8 +314,36 @@ function EntryBar({
           </BreadcrumbLink>
         </Breadcrumb>
       )}
-      <span className="ml-auto shrink-0">
-        <SaveStatus state={saveState} />
+      <span className="ml-auto flex shrink-0 items-center gap-1">
+        <span className="mr-2">
+          <SaveStatus state={saveState} />
+        </span>
+        {controls && (
+          <>
+            <SubtitleToggle
+              active={controls.showSubtitle}
+              onToggle={controls.onToggleSubtitle}
+            />
+            <IconButton
+              label={controls.showOutline ? "Hide outline" : "Show outline"}
+              size="sm"
+              selected={controls.showOutline}
+              aria-pressed={controls.showOutline}
+              onClick={controls.onToggleOutline}
+            >
+              <ListIcon size={16} />
+            </IconButton>
+            <FontControl
+              heading="Doc fonts"
+              inheritLabel="global"
+              overrides={controls.fontOverrides}
+              inherited={controls.inheritedFonts}
+              onSet={controls.fontHandlers.setFont}
+              onClear={controls.fontHandlers.clearFont}
+              onClearAll={controls.fontHandlers.clearAll}
+            />
+          </>
+        )}
       </span>
     </nav>
   );

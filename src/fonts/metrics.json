@@ -507,455 +507,455 @@
   },
   "text": {
     "bespoke-serif": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 700,
       "line": 1.55,
       "spacing": 0.01
     },
     "bespoke-slab": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 700,
       "line": 1.55,
       "spacing": 0.01
     },
     "crimson-pro": {
-      "size": 20,
+      "size": 19,
       "regular": 500,
       "bold": 700,
       "line": 1.3,
       "spacing": 0
     },
     "erode": {
-      "size": 19,
+      "size": 18,
       "regular": 500,
       "bold": 700,
       "line": 1.45,
       "spacing": 0.01
     },
     "gambetta": {
-      "size": 18,
+      "size": 17,
       "regular": 500,
       "bold": 700,
       "line": 1.5,
       "spacing": 0.01
     },
     "gentium-book-plus": {
-      "size": 19,
+      "size": 18,
       "regular": 400,
       "bold": 700,
       "line": 1.45,
       "spacing": 0.01
     },
     "georgia": {
-      "size": 18,
+      "size": 17,
       "regular": 500,
       "bold": 600,
       "line": 1.55,
       "spacing": 0.01
     },
     "hoefler-text": {
-      "size": 19,
+      "size": 18,
       "regular": 500,
       "bold": 600,
       "line": 1.45,
       "spacing": 0
     },
     "libre-caslon-text": {
-      "size": 16,
+      "size": 15,
       "regular": 400,
       "bold": 700,
       "line": 1.65,
       "spacing": 0.01
     },
     "literata": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 700,
       "line": 1.6,
       "spacing": 0.01
     },
     "lora": {
-      "size": 17,
+      "size": 16,
       "regular": 500,
       "bold": 700,
       "line": 1.55,
       "spacing": 0.01
     },
     "merriweather": {
-      "size": 16,
+      "size": 15,
       "regular": 500,
       "bold": 800,
       "line": 1.65,
       "spacing": 0
     },
     "neuton": {
-      "size": 20,
+      "size": 19,
       "regular": 400,
       "bold": 700,
       "line": 1.35,
       "spacing": 0.02
     },
     "newsreader": {
-      "size": 19,
+      "size": 18,
       "regular": 500,
       "bold": 700,
       "line": 1.5,
       "spacing": 0
     },
     "noto-serif": {
-      "size": 17,
+      "size": 16,
       "regular": 500,
       "bold": 700,
       "line": 1.6,
       "spacing": 0.01
     },
     "old-standard-tt": {
-      "size": 19,
+      "size": 18,
       "regular": 400,
       "bold": 700,
       "line": 1.5,
       "spacing": 0.01
     },
     "palatino": {
-      "size": 18,
+      "size": 17,
       "regular": 500,
       "bold": 600,
       "line": 1.55,
       "spacing": 0.01
     },
     "petrona": {
-      "size": 18,
+      "size": 17,
       "regular": 500,
       "bold": 800,
       "line": 1.5,
       "spacing": 0.01
     },
     "piazzolla": {
-      "size": 18,
+      "size": 17,
       "regular": 500,
       "bold": 800,
       "line": 1.45,
       "spacing": 0.01
     },
     "pt-serif": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 700,
       "line": 1.55,
       "spacing": 0.01
     },
     "recia": {
-      "size": 17,
+      "size": 16,
       "regular": 500,
       "bold": 700,
       "line": 1.55,
       "spacing": 0.01
     },
     "roboto-serif": {
-      "size": 16,
+      "size": 15,
       "regular": 500,
       "bold": 700,
       "line": 1.6,
       "spacing": 0.01
     },
     "rowan": {
-      "size": 17,
+      "size": 16,
       "regular": 500,
       "bold": 700,
       "line": 1.55,
       "spacing": 0.01
     },
     "sentient": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 700,
       "line": 1.55,
       "spacing": 0
     },
     "source-serif-4": {
-      "size": 17,
+      "size": 16,
       "regular": 500,
       "bold": 700,
       "line": 1.55,
       "spacing": 0.01
     },
     "stix-two-text": {
-      "size": 18,
+      "size": 17,
       "regular": 500,
       "bold": 700,
       "line": 1.55,
       "spacing": 0.01
     },
     "system-serif": {
-      "size": 17,
+      "size": 16,
       "regular": 500,
       "bold": 800,
       "line": 1.55,
       "spacing": 0.01
     },
     "tinos": {
-      "size": 19,
+      "size": 18,
       "regular": 400,
       "bold": 700,
       "line": 1.45,
       "spacing": 0.01
     },
     "vollkorn": {
-      "size": 18,
+      "size": 17,
       "regular": 400,
       "bold": 800,
       "line": 1.45,
       "spacing": 0
     },
     "zilla-slab": {
-      "size": 19,
+      "size": 18,
       "regular": 500,
       "bold": 700,
       "line": 1.45,
       "spacing": 0.01
     },
     "chubbo": {
-      "size": 18,
+      "size": 17,
       "regular": 400,
       "bold": 700,
       "line": 1.55,
       "spacing": 0.01
     },
     "amulya": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 700,
       "line": 1.55,
       "spacing": 0
     },
     "barlow": {
-      "size": 18,
+      "size": 17,
       "regular": 500,
       "bold": 800,
       "line": 1.55,
       "spacing": 0.01
     },
     "be-vietnam-pro": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 800,
       "line": 1.6,
       "spacing": 0.01
     },
     "bespoke-sans": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 750,
       "line": 1.55,
       "spacing": 0.01
     },
     "chivo": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 800,
       "line": 1.55,
       "spacing": 0
     },
     "epilogue": {
-      "size": 16.5,
+      "size": 15.5,
       "regular": 400,
       "bold": 800,
       "line": 1.6,
       "spacing": 0
     },
     "figtree": {
-      "size": 17,
+      "size": 16,
       "regular": 500,
       "bold": 800,
       "line": 1.55,
       "spacing": 0.01
     },
     "fira-sans": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 700,
       "line": 1.55,
       "spacing": 0.01
     },
     "frygia": {
-      "size": 18,
+      "size": 17,
       "regular": 500,
       "bold": 600,
       "line": 1.55,
       "spacing": 0
     },
     "geist": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 800,
       "line": 1.6,
       "spacing": 0
     },
     "general-sans": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 700,
       "line": 1.55,
       "spacing": 0.01
     },
     "hanken-grotesk": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 900,
       "line": 1.55,
       "spacing": 0.01
     },
     "ibm-plex-sans": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 700,
       "line": 1.55,
       "spacing": 0.01
     },
     "industry": {
-      "size": 17,
+      "size": 16,
       "regular": 500,
       "bold": 600,
       "line": 1.55,
       "spacing": 0.01
     },
     "inter": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 800,
       "line": 1.55,
       "spacing": 0.01
     },
     "mulish": {
-      "size": 17,
+      "size": 16,
       "regular": 500,
       "bold": 800,
       "line": 1.55,
       "spacing": 0.01
     },
     "nunito-sans": {
-      "size": 17,
+      "size": 16,
       "regular": 500,
       "bold": 800,
       "line": 1.55,
       "spacing": 0
     },
     "open-sans": {
-      "size": 16.5,
+      "size": 15.5,
       "regular": 500,
       "bold": 700,
       "line": 1.6,
       "spacing": 0.01
     },
     "overpass": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 800,
       "line": 1.55,
       "spacing": 0.01
     },
     "plus-jakarta-sans": {
-      "size": 16.5,
+      "size": 15.5,
       "regular": 500,
       "bold": 700,
       "line": 1.6,
       "spacing": 0
     },
     "pt-sans": {
-      "size": 18,
+      "size": 17,
       "regular": 400,
       "bold": 700,
       "line": 1.55,
       "spacing": 0.01
     },
     "public-sans": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 800,
       "line": 1.55,
       "spacing": 0
     },
     "red-hat-text": {
-      "size": 17.5,
+      "size": 16.5,
       "regular": 400,
       "bold": 700,
       "line": 1.55,
       "spacing": 0.01
     },
     "roboto": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 800,
       "line": 1.55,
       "spacing": 0.01
     },
     "rubik": {
-      "size": 16.5,
+      "size": 15.5,
       "regular": 400,
       "bold": 700,
       "line": 1.6,
       "spacing": 0.01
     },
     "saira": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 800,
       "line": 1.55,
       "spacing": 0.01
     },
     "satoshi": {
-      "size": 17.5,
+      "size": 16.5,
       "regular": 500,
       "bold": 800,
       "line": 1.55,
       "spacing": 0
     },
     "source-sans-3": {
-      "size": 18.5,
+      "size": 17.5,
       "regular": 400,
       "bold": 700,
       "line": 1.55,
       "spacing": 0.01
     },
     "supreme": {
-      "size": 18,
+      "size": 17,
       "regular": 400,
       "bold": 800,
       "line": 1.55,
       "spacing": 0.01
     },
     "switzer": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 700,
       "line": 1.6,
       "spacing": 0.01
     },
     "system-sans": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 800,
       "line": 1.55,
       "spacing": 0.01
     },
     "ubuntu-sans": {
-      "size": 16.5,
+      "size": 15.5,
       "regular": 500,
       "bold": 700,
       "line": 1.6,
       "spacing": 0.01
     },
     "verdana": {
-      "size": 16,
+      "size": 15,
       "regular": 500,
       "bold": 600,
       "line": 1.65,
       "spacing": 0.01
     },
     "work-sans": {
-      "size": 17,
+      "size": 16,
       "regular": 400,
       "bold": 600,
       "line": 1.55,
