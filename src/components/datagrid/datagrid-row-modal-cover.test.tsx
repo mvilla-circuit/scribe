@@ -143,6 +143,30 @@ describe("DatagridRowModal cover interactions", () => {
     ).toBeInTheDocument();
   });
 
+  it("backdrop click during reposition cancels the draft without closing the modal", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    renderWithProviders(
+      <DatagridRowModal datagridId={DGID} rowId={ROWID} onClose={onClose} />,
+      { client: seed() },
+    );
+
+    await user.click(screen.getByRole("button", { name: "Reposition cover" }));
+    expect(
+      screen.getByRole("button", { name: "Save position" }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("dialog-overlay"));
+
+    expect(
+      screen.queryByRole("button", { name: "Save position" }),
+    ).not.toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("textbox", { name: "Row title" }),
+    ).toBeInTheDocument();
+  });
+
   it("keeps the editor mounted while the cover lightbox is open", async () => {
     const user = userEvent.setup();
     renderWithProviders(

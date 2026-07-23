@@ -46,6 +46,11 @@ export interface PageCoverProps {
    * lightbox — use this to avoid stacking Dialogs (e.g. inside DatagridRowModal).
    */
   onViewCover?: (src: string) => void;
+  /**
+   * Notifies when reposition mode is active so a parent Dialog can intercept
+   * backdrop dismiss and cancel the draft instead of closing.
+   */
+  onRepositioningChange?: (session: { cancel: () => void } | null) => void;
   className?: string;
 }
 
@@ -202,6 +207,7 @@ export function PageCover({
   onRemove,
   onPositionChange,
   onViewCover,
+  onRepositioningChange,
   className,
 }: PageCoverProps) {
   const { isUploading, openPicker, fileInput } = useCoverFilePicker(onUpload);
@@ -238,6 +244,23 @@ export function PageCover({
       window.removeEventListener("keydown", onKeyDown, true);
     };
   }, [isRepositioning]);
+
+  useEffect(() => {
+    if (!coverUrl || !isRepositioning) {
+      onRepositioningChange?.(null);
+      return;
+    }
+    onRepositioningChange?.({
+      cancel: () => {
+        dragRef.current = null;
+        setIsDragging(false);
+        setIsRepositioning(false);
+      },
+    });
+    return () => {
+      onRepositioningChange?.(null);
+    };
+  }, [coverUrl, isRepositioning, onRepositioningChange]);
 
   if (!coverUrl) return null;
 

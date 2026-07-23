@@ -271,6 +271,41 @@ describe("PageCover", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("exposes a cancel session while repositioning", async () => {
+    const user = userEvent.setup();
+    const onRepositioningChange = vi.fn();
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+        onRepositioningChange={onRepositioningChange}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Reposition cover" }));
+
+    const session = onRepositioningChange.mock.calls.at(-1)?.[0];
+    expect(session).toEqual(
+      expect.objectContaining({ cancel: expect.any(Function) }),
+    );
+    if (
+      session &&
+      typeof session === "object" &&
+      "cancel" in session &&
+      typeof session.cancel === "function"
+    ) {
+      session.cancel();
+    }
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: "Save position" }),
+      ).not.toBeInTheDocument();
+    });
+    expect(onRepositioningChange).toHaveBeenLastCalledWith(null);
+  });
+
   it("prevents Escape from propagating while repositioning", async () => {
     const user = userEvent.setup();
     renderWithProviders(

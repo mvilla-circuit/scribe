@@ -91,6 +91,7 @@ function RowPanelContent({
   onClose,
   variant,
   onViewCover,
+  onRepositioningChange,
   suppressDialogTitle = false,
 }: {
   datagridId: string;
@@ -102,6 +103,7 @@ function RowPanelContent({
    * single Dialog at a time instead of nesting ImageLightbox inside the modal.
    */
   onViewCover?: (src: string) => void;
+  onRepositioningChange?: (session: { cancel: () => void } | null) => void;
   /** Hide the row DialogTitle while the parent dialog shows the cover lightbox. */
   suppressDialogTitle?: boolean;
 }) {
@@ -139,6 +141,7 @@ function RowPanelContent({
           onRemove={clearCover}
           onPositionChange={setCoverPosition}
           onViewCover={onViewCover}
+          onRepositioningChange={onRepositioningChange}
         />
         <div className={styles.bodyClassName} data-testid="row-panel-body">
           {!coverUrl && (
@@ -196,6 +199,9 @@ export function DatagridRowModal({
   // lightbox body is shown in the same dialog, so the TipTap editor survives.
   const [coverLightboxSrc, setCoverLightboxSrc] = useState<string | null>(null);
   const coverLightboxOpen = coverLightboxSrc !== null;
+  const [coverReposition, setCoverReposition] = useState<{
+    cancel: () => void;
+  } | null>(null);
 
   return (
     <Dialog
@@ -209,6 +215,16 @@ export function DatagridRowModal({
     >
       <DialogContent
         aria-describedby={undefined}
+        onPointerDownOutside={(event) => {
+          if (!coverReposition) return;
+          // Match Escape: cancel the draft, keep the row modal open.
+          event.preventDefault();
+          coverReposition.cancel();
+        }}
+        onInteractOutside={(event) => {
+          if (!coverReposition) return;
+          event.preventDefault();
+        }}
         className={cn(
           coverLightboxOpen
             ? IMAGE_LIGHTBOX_CONTENT_CLASS
@@ -223,6 +239,7 @@ export function DatagridRowModal({
             onClose={onClose}
             variant="modal"
             onViewCover={setCoverLightboxSrc}
+            onRepositioningChange={setCoverReposition}
             suppressDialogTitle={coverLightboxOpen}
           />
         </div>
