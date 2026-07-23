@@ -204,8 +204,8 @@ export function useCreateDatagrid() {
     onMutate: async (input: CreateDatagridInput) => {
       const userId = requireUserId(session);
       await qc.cancelQueries({ queryKey: datagridsKey });
-      // Defensive: drop any in-flight views fetch for this id before seeding so
-      // a late empty response can't clobber the optimistic default view.
+      // Cancel in-flight views fetches before seeding so a late empty response
+      // cannot clobber the optimistic default view.
       await qc.cancelQueries({ queryKey: datagridViewsKey(input.id) });
       const previous = qc.getQueryData<Datagrid[]>(datagridsKey);
       qc.setQueryData<Datagrid[]>(datagridsKey, (prev) =>
@@ -226,16 +226,16 @@ export function useCreateDatagrid() {
     },
     onSettled: (data, error, variables) => {
       handlers.onSettled?.(data, error, variables);
-      // onError already cleared the views seed for a failed create — don't
-      // refetch a grid that was rolled back.
+      // Failed creates already clear the views seed in onError — skip heal so
+      // we don't refetch a rolled-back grid.
       if (error) return;
-      // Heal only when a racing empty GET wiped the optimistic seed. Unconditional
-      // invalidate would refetch the still-table server row and clobber an
-      // in-flight layout persist (e.g. optimistic gallery).
+      // Heal only when a racing empty GET wiped the optimistic seed.
+      // Unconditional invalidate would refetch the still-table server row and
+      // clobber an in-flight layout persist (e.g. optimistic gallery).
       const views = qc.getQueryData<DatagridView[]>(
         datagridViewsKey(variables.id),
       );
-      if (views == null || views.length === 0) {
+      if (!views?.length) {
         void qc.invalidateQueries({
           queryKey: datagridViewsKey(variables.id),
         });

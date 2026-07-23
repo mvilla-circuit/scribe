@@ -235,6 +235,12 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
     deleteRow(target.id);
   };
 
+  // Table keeps the shared EmptyState; gallery/board render their own chrome
+  // even with zero rows. "No matches" is only for a non-empty grid whose
+  // filters hide every row (board always shows columns instead).
+  const showFilteredEmpty =
+    !isTrulyEmpty && orderedRows.length === 0 && layout !== "board";
+
   let layoutView: ReactNode;
   if (isTrulyEmpty && layout === "table") {
     layoutView = (
@@ -266,7 +272,7 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
         }
       />
     );
-  } else if (!isTrulyEmpty && orderedRows.length === 0 && layout !== "board") {
+  } else if (showFilteredEmpty) {
     layoutView = (
       <p className="py-6 text-center text-sm text-muted">No matches</p>
     );

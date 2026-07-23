@@ -9,6 +9,7 @@ import { DatagridToolbarMenu } from "./datagrid-toolbar-menu";
 interface DatagridPageToolbarProps {
   config: DatagridViewConfig;
   fields: DatagridField[];
+  /** Forwarded to the view menu; Layout is disabled when false. */
   layoutEnabled?: boolean;
   onChangeConfig: (
     update: (prev: DatagridViewConfig) => DatagridViewConfig,

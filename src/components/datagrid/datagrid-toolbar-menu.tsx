@@ -48,10 +48,7 @@ interface DatagridToolbarMenuProps {
   onOpenFields: () => void;
   onImportCsv: () => void;
   onExportCsv: () => void;
-  /**
-   * When false, Layout options are disabled so a missing active view cannot
-   * look like a silent no-op (persistConfig bails without a view).
-   */
+  /** When false, Layout is disabled (persistConfig no-ops without a view). */
   layoutEnabled?: boolean;
 }
 
@@ -106,7 +103,6 @@ export function DatagridToolbarMenu({
             {LAYOUT_OPTIONS.map(({ value, label, Icon }) => (
               <DropdownMenuItem
                 key={value}
-                disabled={!layoutEnabled}
                 onSelect={() => {
                   setLayout(value);
                 }}

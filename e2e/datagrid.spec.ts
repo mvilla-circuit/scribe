@@ -1,6 +1,15 @@
+import type { Page } from "@playwright/test";
+
 import { expect, test } from "./fixtures";
 
 const TS = "2026-01-01T00:00:00.000Z";
+
+/** Open View options → Layout submenu (focus + ArrowRight). */
+async function openLayoutSubmenu(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "View options" }).click();
+  await page.getByRole("menuitem", { name: /Layout/ }).focus();
+  await page.keyboard.press("ArrowRight");
+}
 
 test.describe("datagrid", () => {
   // The create flow: a datagrid is born inside a collection and opens on its
@@ -82,11 +91,7 @@ test.describe("datagrid", () => {
     await authedPage.keyboard.press("Enter");
     await defaultViewInserted;
 
-    // Layout lives under View options → Layout submenu.
-    await authedPage.getByRole("button", { name: "View options" }).click();
-    const layout = authedPage.getByRole("menuitem", { name: /Layout/ });
-    await layout.focus();
-    await authedPage.keyboard.press("ArrowRight");
+    await openLayoutSubmenu(authedPage);
     await authedPage.getByRole("menuitem", { name: "Gallery" }).click();
 
     // Empty gallery shows layout chrome, not the shared table empty state.
@@ -104,9 +109,7 @@ test.describe("datagrid", () => {
     );
 
     // Layout sticks: reopen the submenu and Gallery is the accented selection.
-    await authedPage.getByRole("button", { name: "View options" }).click();
-    await authedPage.getByRole("menuitem", { name: /Layout/ }).focus();
-    await authedPage.keyboard.press("ArrowRight");
+    await openLayoutSubmenu(authedPage);
     await expect(
       authedPage.getByRole("menuitem", { name: "Gallery" }),
     ).toHaveClass(/text-accent/);
@@ -204,17 +207,11 @@ test.describe("datagrid with seeded data", () => {
     // The seeded row shows in the default table layout.
     await expect(authedPage.getByRole("table")).toBeVisible();
 
-    // Layout lives under View options → Layout submenu.
-    await authedPage.getByRole("button", { name: "View options" }).click();
-    const layout = authedPage.getByRole("menuitem", { name: /Layout/ });
-    await layout.focus();
-    await authedPage.keyboard.press("ArrowRight");
+    await openLayoutSubmenu(authedPage);
     await authedPage.getByRole("menuitem", { name: "Gallery" }).click();
     await expect(authedPage.getByRole("table")).toHaveCount(0);
 
-    await authedPage.getByRole("button", { name: "View options" }).click();
-    await authedPage.getByRole("menuitem", { name: /Layout/ }).focus();
-    await authedPage.keyboard.press("ArrowRight");
+    await openLayoutSubmenu(authedPage);
     await authedPage.getByRole("menuitem", { name: "Table" }).click();
     await expect(authedPage.getByRole("table")).toBeVisible();
 
