@@ -133,12 +133,13 @@ describe("PageCover", () => {
     );
   });
 
-  it("saves a clamped position after dragging", async () => {
+  it("saves a clamped position after dragging by delta", async () => {
     const user = userEvent.setup();
     const onPositionChange = vi.fn();
     renderWithProviders(
       <PageCover
         coverUrl="https://example.com/cover.jpg"
+        coverPosition={40}
         onUpload={vi.fn()}
         onRemove={vi.fn()}
         onPositionChange={onPositionChange}
@@ -152,11 +153,70 @@ describe("PageCover", () => {
     vi.spyOn(repositionSurface, "getBoundingClientRect").mockReturnValue(
       new DOMRect(0, 0, 300, 100),
     );
-    fireEvent.pointerDown(repositionSurface, { pointerId: 1, clientY: 0 });
-    fireEvent.pointerMove(repositionSurface, { pointerId: 1, clientY: 200 });
+    // Drag down 30px on a 100px-tall band → position decreases by 30.
+    fireEvent.pointerDown(repositionSurface, { pointerId: 1, clientY: 50 });
+    fireEvent.pointerMove(repositionSurface, { pointerId: 1, clientY: 80 });
+    fireEvent.pointerUp(repositionSurface, { pointerId: 1, clientY: 80 });
     await user.click(screen.getByRole("button", { name: "Save position" }));
 
-    expect(onPositionChange).toHaveBeenCalledExactlyOnceWith(100);
+    expect(onPositionChange).toHaveBeenCalledExactlyOnceWith(10);
+  });
+
+  it("does not jump the draft position on a click without drag", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        coverPosition={20}
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Reposition cover" }));
+    const repositionSurface = screen.getByRole("button", {
+      name: "Adjust cover position",
+    });
+    vi.spyOn(repositionSurface, "getBoundingClientRect").mockReturnValue(
+      new DOMRect(0, 0, 300, 100),
+    );
+
+    fireEvent.pointerDown(repositionSurface, { pointerId: 1, clientY: 50 });
+    fireEvent.pointerUp(repositionSurface, { pointerId: 1, clientY: 50 });
+
+    expect(screen.getByAltText("Page cover")).toHaveStyle(
+      "object-position: 50% 20%",
+    );
+  });
+
+  it("stops updating position after pointer up", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        coverPosition={50}
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Reposition cover" }));
+    const repositionSurface = screen.getByRole("button", {
+      name: "Adjust cover position",
+    });
+    vi.spyOn(repositionSurface, "getBoundingClientRect").mockReturnValue(
+      new DOMRect(0, 0, 300, 100),
+    );
+
+    fireEvent.pointerDown(repositionSurface, { pointerId: 1, clientY: 40 });
+    fireEvent.pointerMove(repositionSurface, { pointerId: 1, clientY: 60 });
+    fireEvent.pointerUp(repositionSurface, { pointerId: 1, clientY: 60 });
+    // Further moves must not pan (no sticky drag).
+    fireEvent.pointerMove(repositionSurface, { pointerId: 1, clientY: 90 });
+
+    expect(screen.getByAltText("Page cover")).toHaveStyle(
+      "object-position: 50% 30%",
+    );
   });
 
   it("cancels a reposition draft with Cancel and Escape", async () => {
