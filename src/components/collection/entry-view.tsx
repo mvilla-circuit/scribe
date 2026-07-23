@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 
 import { EditorBridgeHost } from "@/components/book/editor-bridge-host";
+import { FontControl } from "@/components/book/font-control";
 import { NavHistoryControls } from "@/components/book/nav-history-controls";
 import { Breadcrumb, BreadcrumbLink } from "@/components/ui/breadcrumb";
 import {
@@ -18,11 +19,14 @@ import {
   useRenameEntry,
   useUpdateEntry,
   useUpdateEntryContent,
+  useUpdateEntryFontOverrides,
 } from "@/data/entries";
 import { Editor, type EditorHandle } from "@/editor/lazy-editor";
 import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";
 import { displayTitleStyle } from "@/fonts/display-title-style";
+import { type EntryFonts, useEntryFonts } from "@/fonts/use-entry-fonts";
+import type { FontOverrideHandlers } from "@/fonts/use-font-overrides";
 import { useUIStore } from "@/store/ui";
 
 interface EntryViewProps {
@@ -43,6 +47,7 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
   const updateEntry = useUpdateEntry();
   const uploadCover = useUploadCover();
   const updateContent = useUpdateEntryContent();
+  const updateFontOverrides = useUpdateEntryFontOverrides();
   const navigateTo = useUIStore((state) => state.navigateTo);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const editorRef = useRef<EditorHandle>(null);
@@ -55,6 +60,22 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
   const collection =
     collectionsQuery.data?.find((item) => item.id === resolvedCollectionId) ??
     null;
+
+  // Entries cascade straight from the global font map (no collection layer in
+  // between). `entry: null` (loading/not-found) still resolves a safe
+  // global-only cascade; `onChangeOverrides` is only ever invoked through
+  // handlers wired to a real entry below, so the guard here is just belt-and-
+  // suspenders against a stale closure outliving its entry.
+  const fonts = useEntryFonts({
+    entry,
+    onChangeOverrides: (nextOverrides) => {
+      if (!entry) return;
+      updateFontOverrides.mutate({
+        id: entry.id,
+        font_overrides: nextOverrides,
+      });
+    },
+  });
 
   if (!entry) {
     const status = entriesQuery.isLoading
@@ -103,10 +124,11 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-bg">
+    <div className="h-full overflow-y-auto bg-bg" style={fonts.fontVars}>
       <EntryBar
         collectionName={collection?.name}
         saveState={saveState}
+        fonts={fonts}
         onOpenCollection={() => {
           navigateTo({
             collectionId: entry.collection_id,
@@ -187,10 +209,15 @@ export function EntryView({ collectionId, entryId }: EntryViewProps) {
 function EntryBar({
   collectionName,
   saveState,
+  fonts,
   onOpenCollection,
 }: {
   collectionName: string | undefined;
   saveState: SaveState;
+  /** Doc fonts control state — omitted (and hidden) while there's no entry row. */
+  fonts?: Pick<EntryFonts, "overrides" | "inherited"> & {
+    handlers: FontOverrideHandlers;
+  };
   onOpenCollection: () => void;
 }) {
   return (
@@ -207,8 +234,19 @@ function EntryBar({
           </BreadcrumbLink>
         </Breadcrumb>
       )}
-      <span className="ml-auto shrink-0">
+      <span className="ml-auto flex shrink-0 items-center gap-1">
         <SaveStatus state={saveState} />
+        {fonts && (
+          <FontControl
+            heading="Doc fonts"
+            inheritLabel="global"
+            overrides={fonts.overrides}
+            inherited={fonts.inherited}
+            onSet={fonts.handlers.setFont}
+            onClear={fonts.handlers.clearFont}
+            onClearAll={fonts.handlers.clearAll}
+          />
+        )}
       </span>
     </nav>
   );

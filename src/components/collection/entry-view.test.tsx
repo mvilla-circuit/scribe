@@ -1,7 +1,9 @@
 import { fireEvent, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { forwardRef, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { EntryFontOverrides } from "@/data/entries";
 import { useUIStore } from "@/store/ui";
 import { renderWithProviders } from "@/test/render-with-query";
 
@@ -11,9 +13,11 @@ const hooks = vi.hoisted(() => ({
   rename: { mutate: vi.fn() },
   update: { mutate: vi.fn(), mutateAsync: vi.fn() },
   updateContent: { mutateAsync: vi.fn() },
+  updateFontOverrides: { mutate: vi.fn(), mutateAsync: vi.fn() },
   upload: { mutateAsync: vi.fn() },
   entryCollectionId: "c1",
   entryCoverUrl: null as string | null,
+  entryFontOverrides: null as EntryFontOverrides | null,
 }));
 
 vi.mock("@/components/ui/page-cover", () => ({
@@ -54,30 +58,47 @@ vi.mock("@/data/cover-upload", () => ({
   deleteCoverObject: vi.fn(),
 }));
 
-vi.mock("@/data/entries", () => ({
-  useEntries: () => ({
-    data: [
-      {
-        id: "e1",
-        user_id: "user-1",
-        collection_id: hooks.entryCollectionId,
-        title: "Field notes",
-        icon: null,
-        cover_url: hooks.entryCoverUrl,
-        properties: {},
-        position: 1024,
-        created_at: "2026-01-01T00:00:00.000Z",
-        updated_at: "2026-01-01T00:00:00.000Z",
-      },
-    ],
-    isLoading: false,
-    isError: false,
-  }),
-  useEntryContent: () => ({ data: {}, isSuccess: true }),
-  useRenameEntry: () => hooks.rename,
-  useUpdateEntry: () => hooks.update,
-  useUpdateEntryContent: () => hooks.updateContent,
-}));
+vi.mock("@/data/entries", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/data/entries")>();
+  return {
+    ...actual,
+    useEntries: () => ({
+      data: [
+        {
+          id: "e1",
+          user_id: "user-1",
+          collection_id: hooks.entryCollectionId,
+          title: "Field notes",
+          icon: null,
+          cover_url: hooks.entryCoverUrl,
+          properties: {},
+          font_overrides: hooks.entryFontOverrides,
+          position: 1024,
+          created_at: "2026-01-01T00:00:00.000Z",
+          updated_at: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+      isLoading: false,
+      isError: false,
+    }),
+    useEntryContent: () => ({ data: {}, isSuccess: true }),
+    useRenameEntry: () => hooks.rename,
+    useUpdateEntry: () => hooks.update,
+    useUpdateEntryContent: () => hooks.updateContent,
+    useUpdateEntryFontOverrides: () => hooks.updateFontOverrides,
+  };
+});
+
+// useEntryFonts reads the signed-in profile for the global font layer; a
+// no-profile stub keeps the entry's own overrides the whole cascade so tests
+// don't need to stand up auth/session state to exercise the fonts control.
+vi.mock("@/data/profile", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/data/profile")>();
+  return {
+    ...actual,
+    useProfile: () => ({ data: null, isLoading: false }),
+  };
+});
 
 vi.mock("@/data/collections", () => ({
   useCollections: () => ({
@@ -117,6 +138,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   hooks.entryCollectionId = "c1";
   hooks.entryCoverUrl = null;
+  hooks.entryFontOverrides = null;
 });
 
 describe("EntryView", () => {
@@ -197,5 +219,56 @@ describe("EntryView", () => {
       { id: "e1", cover_url: null },
       expect.any(Object),
     );
+  });
+
+  it("renders the Doc fonts control when the entry is loaded", () => {
+    renderWithProviders(<EntryView collectionId="c1" entryId="e1" />);
+
+    expect(screen.getByRole("button", { name: "Fonts" })).toBeInTheDocument();
+  });
+
+  it("omits the Doc fonts control when the entry isn't found", () => {
+    renderWithProviders(<EntryView collectionId="c1" entryId="missing" />);
+
+    expect(
+      screen.queryByRole("button", { name: "Fonts" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("setting a font persists entry overrides", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<EntryView collectionId="c1" entryId="e1" />);
+
+    await user.click(screen.getByRole("button", { name: "Fonts" }));
+    await user.click(
+      await screen.findByRole("button", { name: /system \(new york\)/i }),
+    );
+    await user.click(
+      await screen.findByRole("button", {
+        name: /aleothe quick brown fox jumps over the lazy dog/i,
+      }),
+    );
+
+    expect(hooks.updateFontOverrides.mutate).toHaveBeenCalledWith({
+      id: "e1",
+      font_overrides: { display: "aleo" },
+    });
+  });
+
+  it("clearing the last override persists a null font_overrides", async () => {
+    hooks.entryFontOverrides = { display: "playfair-display" };
+    const user = userEvent.setup();
+    renderWithProviders(<EntryView collectionId="c1" entryId="e1" />);
+
+    await user.click(screen.getByRole("button", { name: "Fonts" }));
+    await user.click(
+      await screen.findByRole("button", { name: /playfair display/i }),
+    );
+    await user.click(await screen.findByText("Inherit"));
+
+    expect(hooks.updateFontOverrides.mutate).toHaveBeenCalledWith({
+      id: "e1",
+      font_overrides: null,
+    });
   });
 });
