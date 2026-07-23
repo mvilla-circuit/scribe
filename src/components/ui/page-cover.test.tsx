@@ -45,7 +45,25 @@ describe("PageCover", () => {
     expect(screen.getByTestId("page-cover-controls")).toHaveClass(
       "pointer-events-none",
       "group-hover:pointer-events-auto",
+      "z-10",
     );
+  });
+
+  it("styles Reposition and View like the existing icon cover controls", () => {
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+
+    for (const name of ["Reposition cover", "View cover", "Remove cover"]) {
+      expect(screen.getByRole("button", { name })).toHaveClass(
+        "bg-elevated",
+        "size-8",
+      );
+    }
   });
 
   it("removes the current cover", async () => {

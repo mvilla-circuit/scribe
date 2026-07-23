@@ -12,7 +12,6 @@ import { COVER_IMAGE_ACCEPT } from "@/data/cover-upload";
 import { cn } from "@/lib/utils";
 
 import { Button } from "./button";
-import { IconButton } from "./icon-button";
 import { ImageLightbox } from "./image-lightbox";
 import { Tooltip } from "./tooltip";
 
@@ -90,28 +89,32 @@ function CoverControl({
 }) {
   return (
     <div className="flex items-center gap-1">
-      <IconButton
-        label="Reposition cover"
-        size="sm"
-        className={cn(COVER_CONTROL_CLASS, "hover:text-text")}
-        onClick={(event) => {
-          event.stopPropagation();
-          onReposition();
-        }}
-      >
-        <MoveVertical className="size-4" aria-hidden="true" />
-      </IconButton>
-      <IconButton
-        label="View cover"
-        size="sm"
-        className={cn(COVER_CONTROL_CLASS, "hover:text-text")}
-        onClick={(event) => {
-          event.stopPropagation();
-          onView();
-        }}
-      >
-        <Maximize2 className="size-4" aria-hidden="true" />
-      </IconButton>
+      <Tooltip content="Reposition cover">
+        <button
+          type="button"
+          aria-label="Reposition cover"
+          onClick={(event) => {
+            event.stopPropagation();
+            onReposition();
+          }}
+          className={cn(COVER_CONTROL_CLASS, "size-8 hover:text-text")}
+        >
+          <MoveVertical className="size-4" aria-hidden="true" />
+        </button>
+      </Tooltip>
+      <Tooltip content="View cover">
+        <button
+          type="button"
+          aria-label="View cover"
+          onClick={(event) => {
+            event.stopPropagation();
+            onView();
+          }}
+          className={cn(COVER_CONTROL_CLASS, "size-8 hover:text-text")}
+        >
+          <Maximize2 className="size-4" aria-hidden="true" />
+        </button>
+      </Tooltip>
       <Tooltip content="Change cover">
         <button
           type="button"
@@ -312,7 +315,7 @@ export function PageCover({
         <div
           data-testid="page-cover-controls"
           className={cn(
-            "absolute right-4 top-4 opacity-0 motion-safe:transition-opacity",
+            "absolute right-4 top-4 z-10 opacity-0 motion-safe:transition-opacity",
             "pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto",
             "group-hover:opacity-100 group-focus-within:opacity-100",
           )}
