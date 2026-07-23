@@ -65,6 +65,13 @@ export function useTableState(editor: Editor): TableState {
   return useEditorState({
     editor,
     selector: ({ editor: e }) => {
+      // Dialog remount / Strict Mode can run this selector against a torn-down
+      // editor. TipTap nulls `commandManager` in destroy(); `can()` then throws
+      // (`null is not an object (evaluating 'this.commandManager.can')`).
+      // `isDestroyed` is also true before the first mount (no editorView yet).
+      // `extensionManager` is cleared in the same destroy() as `commandManager`.
+      if (e.isDestroyed || e.extensionManager == null) return NO_TABLE_STATE;
+
       const { selection } = e.state;
       const { $from } = selection;
       let pos = -1;
