@@ -226,6 +226,9 @@ export function useCreateDatagrid() {
     },
     onSettled: (data, error, variables) => {
       handlers.onSettled?.(data, error, variables);
+      // onError already cleared the views seed for a failed create — don't
+      // refetch a grid that was rolled back.
+      if (error) return;
       // Heal only when a racing empty GET wiped the optimistic seed. Unconditional
       // invalidate would refetch the still-table server row and clobber an
       // in-flight layout persist (e.g. optimistic gallery).

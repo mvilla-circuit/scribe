@@ -9,6 +9,7 @@ import { DatagridToolbarMenu } from "./datagrid-toolbar-menu";
 interface DatagridPageToolbarProps {
   config: DatagridViewConfig;
   fields: DatagridField[];
+  layoutEnabled?: boolean;
   onChangeConfig: (
     update: (prev: DatagridViewConfig) => DatagridViewConfig,
   ) => void;
@@ -24,6 +25,7 @@ interface DatagridPageToolbarProps {
 export function DatagridPageToolbar({
   config,
   fields,
+  layoutEnabled = true,
   onChangeConfig,
   onCreateRow,
   onCreateView,
@@ -45,6 +47,7 @@ export function DatagridPageToolbar({
       <DatagridToolbarMenu
         fields={fields}
         config={config}
+        layoutEnabled={layoutEnabled}
         onChange={onChangeConfig}
         onCreateView={onCreateView}
         onOpenFields={onOpenFields}

@@ -368,6 +368,17 @@ describe("DatagridPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("disables Layout when there is no active view to persist onto", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const client = seed({ rows: [] });
+    client.setQueryData(datagridViewsKey(DGID), []);
+    renderWithProviders(<DatagridPage datagridId={DGID} />, { client });
+
+    await user.click(screen.getByRole("button", { name: "View options" }));
+    const layout = await screen.findByRole("menuitem", { name: /Layout/ });
+    expect(layout).toHaveAttribute("aria-disabled", "true");
+  });
+
   it("exposes subtitle and font controls in the top-right nav", () => {
     const client = seed({ rows: [] });
     renderWithProviders(<DatagridPage datagridId={DGID} />, { client });

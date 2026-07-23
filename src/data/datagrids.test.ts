@@ -322,9 +322,14 @@ describe("datagrids", () => {
 
   it("rolls back the datagrid and view cache when default view creation fails", async () => {
     let deletedGridId: string | null = null;
+    let viewsGetCount = 0;
     server.use(
       http.post(DATAGRIDS_URL, () => new HttpResponse(null, { status: 201 })),
       http.post(VIEWS_URL, () => new HttpResponse(null, { status: 500 })),
+      http.get(VIEWS_URL, () => {
+        viewsGetCount += 1;
+        return HttpResponse.json([]);
+      }),
       http.delete(DATAGRIDS_URL, ({ request }) => {
         deletedGridId = new URL(request.url).searchParams.get("id");
         return new HttpResponse(null, { status: 204 });
@@ -351,6 +356,8 @@ describe("datagrids", () => {
     expect(
       client.getQueryData(datagridViewsKey("grid-failed")),
     ).toBeUndefined();
+    // Settle must not heal/refetch views after a rolled-back create.
+    expect(viewsGetCount).toBe(0);
   });
 
   it("surfaces a compensating-delete failure instead of swallowing it", async () => {

@@ -435,6 +435,7 @@ export function DatagridPage({ datagridId }: { datagridId: string }) {
               onQueryChange={setQuery}
               fields={fields}
               config={config}
+              layoutEnabled={activeView != null}
               onChangeConfig={persistConfig}
               onOpenFields={() => {
                 setFieldsOpen(true);
