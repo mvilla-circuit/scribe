@@ -39,7 +39,7 @@ export type DocumentMeta = Omit<Document, "content">;
 // Every column except `content`, so the per-book list query stays lightweight.
 // `as const` preserves the literal type so Supabase still infers the row shape.
 const DOCUMENT_META_COLUMNS =
-  "id, user_id, book_id, parent_document_id, title, icon, cover_url, subtitle, banner_color, banner_text, show_outline, show_subtitle, show_contents, spellcheck_enabled, spellcheck_ignores, is_title_page, position, font_overrides, created_at, updated_at" as const;
+  "id, user_id, book_id, parent_document_id, title, icon, cover_url, cover_position, subtitle, banner_color, banner_text, show_outline, show_subtitle, show_contents, spellcheck_enabled, spellcheck_ignores, is_title_page, position, font_overrides, created_at, updated_at" as const;
 
 /** Mutation input shapes, shared between each `mutationFn` and its optimistic updater. */
 interface CreateDocumentInput {
@@ -65,6 +65,7 @@ type UpdateDocumentInput = { id: string } & Partial<
     | "title"
     | "icon"
     | "cover_url"
+    | "cover_position"
     | "subtitle"
     | "banner_color"
     | "banner_text"
@@ -225,6 +226,7 @@ function newDocumentRow(
     parent_document_id: input.parent_document_id,
     title: input.title,
     icon: null,
+    cover_position: 50,
     cover_url: null,
     subtitle: null,
     banner_color: null,

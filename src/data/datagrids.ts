@@ -76,6 +76,7 @@ type UpdateDatagridInput = { id: string } & Partial<{
   name: string;
   icon: string | null;
   cover_url: string | null;
+  cover_position: number;
   subtitle: string | null;
   theme: DatagridTheme;
   /** Shallow-merged onto the latest cached theme (avoids stale full replaces). */
@@ -126,6 +127,7 @@ function newDatagridRow(input: CreateDatagridInput, userId: string): Datagrid {
     collection_id: input.collection_id,
     name: input.name ?? "Untitled",
     icon: null,
+    cover_position: 50,
     cover_url: null,
     subtitle: null,
     theme: {},
@@ -146,6 +148,9 @@ function toDatagridPatch(
   if (input.name !== undefined) patch.name = input.name;
   if (input.icon !== undefined) patch.icon = input.icon;
   if (input.cover_url !== undefined) patch.cover_url = input.cover_url;
+  if (input.cover_position !== undefined) {
+    patch.cover_position = input.cover_position;
+  }
   if (input.subtitle !== undefined) patch.subtitle = input.subtitle;
   if (input.themePatch !== undefined) {
     patch.theme = asJson({ ...currentTheme, ...input.themePatch });

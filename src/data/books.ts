@@ -36,7 +36,10 @@ interface RenameBookInput {
   title: string;
 }
 type UpdateBookInput = { id: string } & Partial<
-  Pick<Book, "title" | "subtitle" | "icon" | "cover_url" | "theme">
+  Pick<
+    Book,
+    "title" | "subtitle" | "icon" | "cover_url" | "cover_position" | "theme"
+  >
 >;
 interface MoveBookInput {
   id: string;
@@ -113,6 +116,7 @@ function newBookRow(input: CreateBookInput, userId: string): Book {
     user_id: userId,
     title: input.title,
     subtitle: null,
+    cover_position: 50,
     cover_url: null,
     icon: null,
     theme: {},
