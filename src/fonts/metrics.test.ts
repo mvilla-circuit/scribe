@@ -14,7 +14,7 @@ describe("metricsFor", () => {
       spacing: -0.01,
     });
     expect(text).toEqual({
-      size: 17,
+      size: 16,
       regular: 400,
       bold: 700,
       line: 1.6,

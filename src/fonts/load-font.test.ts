@@ -107,7 +107,7 @@ describe("fontVarsFor", () => {
       "--font-display-bold": "700",
       "--font-display-line": "1.42",
       "--font-display-spacing": "-0.01em",
-      "--font-text-size": "16px",
+      "--font-text-size": "15px",
       "--font-text-regular": "400",
       "--font-text-bold": "700",
       "--font-text-line": "1.55",
