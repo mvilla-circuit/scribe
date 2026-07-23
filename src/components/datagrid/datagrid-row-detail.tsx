@@ -33,30 +33,30 @@ const clampSplit = (w: number) => Math.min(SPLIT_MAX, Math.max(SPLIT_MIN, w));
 const CLOSE_BUTTON_CLASS =
   "flex size-7 items-center justify-center rounded-md text-muted outline-none hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring";
 
+/** Flex column that bounds height so a child `overflow-y-auto` can scroll. */
+const PANEL_FLEX_COLUMN = "flex min-h-0 flex-1 flex-col overflow-hidden";
+const PANEL_HEADER = "flex shrink-0 items-center gap-2 border-b border-border";
+/** Unpadded scroll shell — PageCover full-bleeds; padding is on the content stack. */
+const PANEL_SCROLL = "min-h-0 flex-1 overflow-y-auto";
+
 const PANEL_STYLES = {
   modal: {
-    headerClassName:
-      "flex shrink-0 items-center gap-2 border-b border-border px-8 py-3",
+    headerClassName: `${PANEL_HEADER} px-8 py-3`,
     titleClassName: "text-text",
-    // Unpadded scroll shell so PageCover can full-bleed; padding lives on
-    // the inner content stack.
-    scrollClassName: "min-h-0 flex-1 overflow-y-auto",
+    scrollClassName: PANEL_SCROLL,
     contentClassName: "px-8 pb-8 pt-8",
     propertiesClassName: "mt-6",
     editorClassName: "mt-8 border-t border-border pt-6",
   },
   split: {
-    headerClassName:
-      "flex shrink-0 items-center gap-2 border-b border-border px-6 py-2.5",
+    headerClassName: `${PANEL_HEADER} px-6 py-2.5`,
     titleClassName: "text-text",
-    scrollClassName: "min-h-0 flex-1 overflow-y-auto bg-bg",
+    scrollClassName: `${PANEL_SCROLL} bg-bg`,
     contentClassName: "px-6 pb-6 pt-6",
     propertiesClassName: "mt-5",
     editorClassName: "mt-6 border-t border-border pt-5",
   },
 } as const;
-
-const PANEL_FLEX_COLUMN = "flex min-h-0 flex-1 flex-col overflow-hidden";
 
 type PanelVariant = keyof typeof PANEL_STYLES;
 

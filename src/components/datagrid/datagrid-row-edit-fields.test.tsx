@@ -183,11 +183,17 @@ describe("Edit Fields on modal and split rows", () => {
       <DatagridRowModal datagridId={DGID} rowId={ROWID} onClose={vi.fn()} />,
       { client: seed() },
     );
+
+    // Scroll shell is unpadded so the cover can full-bleed; spacing is inner.
     const body = screen.getByTestId("row-panel-body");
     expect(body).toHaveClass("min-h-0", "flex-1", "overflow-y-auto");
     expect(body).not.toHaveClass("px-8");
-    const content = screen.getByTestId("row-panel-content");
-    expect(content).toHaveClass("px-8", "pt-8", "pb-8");
+
+    expect(screen.getByTestId("row-panel-content")).toHaveClass(
+      "px-8",
+      "pt-8",
+      "pb-8",
+    );
     expect(screen.getByTestId("row-panel-editor")).toHaveClass("mt-8", "pt-6");
   });
 });
