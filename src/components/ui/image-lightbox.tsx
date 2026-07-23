@@ -3,10 +3,7 @@ import { useRef } from "react";
 
 import { cn } from "@/lib/utils";
 
-import {
-  COVER_FLOATING_CONTROL_CLASS,
-  COVER_FLOATING_ICON_CLASS,
-} from "./cover-floating-control";
+import { COVER_FLOATING_ICON_BUTTON_CLASS } from "./cover-floating-control";
 import { Dialog, DialogContent, DialogTitle } from "./dialog";
 import { IconButton } from "./icon-button";
 
@@ -45,9 +42,8 @@ export function ImageLightboxBody({
         size="sm"
         onClick={onClose}
         className={cn(
-          COVER_FLOATING_CONTROL_CLASS,
-          COVER_FLOATING_ICON_CLASS,
-          "absolute right-2 top-2 hover:bg-inverted hover:text-inverted-text",
+          COVER_FLOATING_ICON_BUTTON_CLASS,
+          "absolute right-2 top-2",
         )}
       >
         <X className="size-3.5" aria-hidden="true" />

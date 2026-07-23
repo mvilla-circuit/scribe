@@ -7,7 +7,11 @@ import {
   IMAGE_LIGHTBOX_CONTENT_CLASS,
   ImageLightboxBody,
 } from "@/components/ui/image-lightbox";
-import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
+import {
+  AddCoverButton,
+  type CoverRepositionSession,
+  PageCover,
+} from "@/components/ui/page-cover";
 import { useDragResize } from "@/components/ui/use-drag-resize";
 import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";
@@ -103,7 +107,7 @@ function RowPanelContent({
    * single Dialog at a time instead of nesting ImageLightbox inside the modal.
    */
   onViewCover?: (src: string) => void;
-  onRepositioningChange?: (session: { cancel: () => void } | null) => void;
+  onRepositioningChange?: (session: CoverRepositionSession | null) => void;
   /** Hide the row DialogTitle while the parent dialog shows the cover lightbox. */
   suppressDialogTitle?: boolean;
 }) {
@@ -199,18 +203,19 @@ export function DatagridRowModal({
   // lightbox body is shown in the same dialog, so the TipTap editor survives.
   const [coverLightboxSrc, setCoverLightboxSrc] = useState<string | null>(null);
   const coverLightboxOpen = coverLightboxSrc !== null;
-  const [coverReposition, setCoverReposition] = useState<{
-    cancel: () => void;
-  } | null>(null);
+  const [coverReposition, setCoverReposition] =
+    useState<CoverRepositionSession | null>(null);
 
   return (
     <Dialog
       open
-      onOpenChange={(o) => {
-        if (!o) {
-          if (coverLightboxOpen) setCoverLightboxSrc(null);
-          else onClose();
+      onOpenChange={(open) => {
+        if (open) return;
+        if (coverLightboxOpen) {
+          setCoverLightboxSrc(null);
+          return;
         }
+        onClose();
       }}
     >
       <DialogContent
@@ -222,8 +227,7 @@ export function DatagridRowModal({
           coverReposition.cancel();
         }}
         onInteractOutside={(event) => {
-          if (!coverReposition) return;
-          event.preventDefault();
+          if (coverReposition) event.preventDefault();
         }}
         className={cn(
           coverLightboxOpen

@@ -9,5 +9,8 @@ export const COVER_FLOATING_CONTROL_CLASS =
 /** Square icon hit target for cover floating controls. */
 export const COVER_FLOATING_ICON_CLASS = "size-7";
 
+/** Icon button: square hit target + inverted hover fill. */
+export const COVER_FLOATING_ICON_BUTTON_CLASS = `${COVER_FLOATING_CONTROL_CLASS} ${COVER_FLOATING_ICON_CLASS} hover:bg-inverted hover:text-inverted-text`;
+
 /** Compact labeled control (Change cover, Save, Cancel). */
 export const COVER_FLOATING_LABEL_CLASS = "gap-1 px-2 py-1 text-xs font-medium";

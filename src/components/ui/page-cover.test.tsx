@@ -285,18 +285,11 @@ describe("PageCover", () => {
 
     await user.click(screen.getByRole("button", { name: "Reposition cover" }));
 
-    const session = onRepositioningChange.mock.calls.at(-1)?.[0];
-    expect(session).toEqual(
-      expect.objectContaining({ cancel: expect.any(Function) }),
-    );
-    if (
-      session &&
-      typeof session === "object" &&
-      "cancel" in session &&
-      typeof session.cancel === "function"
-    ) {
-      session.cancel();
-    }
+    const session = onRepositioningChange.mock.calls.at(-1)?.[0] as {
+      cancel: () => void;
+    } | null;
+    expect(session?.cancel).toEqual(expect.any(Function));
+    session?.cancel();
 
     await waitFor(() => {
       expect(
