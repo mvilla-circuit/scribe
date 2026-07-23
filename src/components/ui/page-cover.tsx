@@ -16,8 +16,15 @@ import {
   COVER_FLOATING_ICON_CLASS,
   COVER_FLOATING_LABEL_CLASS,
 } from "./cover-floating-control";
+import { IconButton } from "./icon-button";
 import { ImageLightbox } from "./image-lightbox";
 import { Tooltip } from "./tooltip";
+
+const COVER_FLOATING_ICON_BUTTON_CLASS = cn(
+  COVER_FLOATING_CONTROL_CLASS,
+  COVER_FLOATING_ICON_CLASS,
+  "hover:bg-inverted hover:text-inverted-text",
+);
 
 /** Shared hover-pill styles matching Masthead's "Add icon" affordance. */
 const ADD_AFFORDANCE_CLASS =
@@ -34,6 +41,11 @@ export interface PageCoverProps {
   onRemove: () => void;
   /** Persist the cover's vertical position; call sites should provide this. */
   onPositionChange?: (y: number) => void;
+  /**
+   * When set, View / image click delegates here instead of opening an internal
+   * lightbox — use this to avoid stacking Dialogs (e.g. inside DatagridRowModal).
+   */
+  onViewCover?: (src: string) => void;
   className?: string;
 }
 
@@ -94,38 +106,28 @@ function CoverControl({
 }) {
   return (
     <div className="flex items-center gap-1">
-      <Tooltip content="Reposition cover">
-        <button
-          type="button"
-          aria-label="Reposition cover"
-          onClick={(event) => {
-            event.stopPropagation();
-            onReposition();
-          }}
-          className={cn(
-            COVER_FLOATING_CONTROL_CLASS,
-            COVER_FLOATING_ICON_CLASS,
-          )}
-        >
-          <MoveVertical className="size-3.5" aria-hidden="true" />
-        </button>
-      </Tooltip>
-      <Tooltip content="View cover">
-        <button
-          type="button"
-          aria-label="View cover"
-          onClick={(event) => {
-            event.stopPropagation();
-            onView();
-          }}
-          className={cn(
-            COVER_FLOATING_CONTROL_CLASS,
-            COVER_FLOATING_ICON_CLASS,
-          )}
-        >
-          <Maximize2 className="size-3.5" aria-hidden="true" />
-        </button>
-      </Tooltip>
+      <IconButton
+        label="Reposition cover"
+        size="sm"
+        className={COVER_FLOATING_ICON_BUTTON_CLASS}
+        onClick={(event) => {
+          event.stopPropagation();
+          onReposition();
+        }}
+      >
+        <MoveVertical className="size-3.5" aria-hidden="true" />
+      </IconButton>
+      <IconButton
+        label="View cover"
+        size="sm"
+        className={COVER_FLOATING_ICON_BUTTON_CLASS}
+        onClick={(event) => {
+          event.stopPropagation();
+          onView();
+        }}
+      >
+        <Maximize2 className="size-3.5" aria-hidden="true" />
+      </IconButton>
       <Tooltip content="Change cover">
         <button
           type="button"
@@ -144,24 +146,18 @@ function CoverControl({
           {isUploading ? "Uploading…" : "Change cover"}
         </button>
       </Tooltip>
-      <Tooltip content="Remove cover">
-        <button
-          type="button"
-          aria-label="Remove cover"
-          onClick={(event) => {
-            event.stopPropagation();
-            onRemove();
-          }}
-          disabled={isUploading}
-          className={cn(
-            COVER_FLOATING_CONTROL_CLASS,
-            COVER_FLOATING_ICON_CLASS,
-            "hover:text-danger",
-          )}
-        >
-          <X className="size-3.5" aria-hidden="true" />
-        </button>
-      </Tooltip>
+      <IconButton
+        label="Remove cover"
+        size="sm"
+        disabled={isUploading}
+        className={cn(COVER_FLOATING_ICON_BUTTON_CLASS, "hover:text-danger")}
+        onClick={(event) => {
+          event.stopPropagation();
+          onRemove();
+        }}
+      >
+        <X className="size-3.5" aria-hidden="true" />
+      </IconButton>
     </div>
   );
 }
@@ -205,6 +201,7 @@ export function PageCover({
   onUpload,
   onRemove,
   onPositionChange,
+  onViewCover,
   className,
 }: PageCoverProps) {
   const { isUploading, openPicker, fileInput } = useCoverFilePicker(onUpload);
@@ -249,7 +246,12 @@ export function PageCover({
     setIsRepositioning(true);
   };
   const openLightbox = () => {
-    if (!isRepositioning) setIsLightboxOpen(true);
+    if (isRepositioning) return;
+    if (onViewCover) {
+      onViewCover(coverUrl);
+      return;
+    }
+    setIsLightboxOpen(true);
   };
   const startDragging = (event: PointerEvent<HTMLButtonElement>) => {
     if (!isRepositioning) return;
@@ -395,12 +397,14 @@ export function PageCover({
         </div>
       )}
       {fileInput}
-      <ImageLightbox
-        open={isLightboxOpen}
-        onOpenChange={setIsLightboxOpen}
-        src={coverUrl}
-        alt="Page cover"
-      />
+      {!onViewCover && (
+        <ImageLightbox
+          open={isLightboxOpen}
+          onOpenChange={setIsLightboxOpen}
+          src={coverUrl}
+          alt="Page cover"
+        />
+      )}
     </section>
   );
 }

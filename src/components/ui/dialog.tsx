@@ -12,7 +12,10 @@ export const DialogContent = forwardRef<
   React.ComponentPropsWithoutRef<typeof RDialog.Content>
 >(({ className, children, ...props }, ref) => (
   <RDialog.Portal>
-    <RDialog.Overlay className="scribe-overlay fixed inset-0 z-50 bg-black/40 backdrop-blur-[1px]" />
+    <RDialog.Overlay
+      data-testid="dialog-overlay"
+      className="scribe-overlay fixed inset-0 z-50 bg-black/40 backdrop-blur-[1px]"
+    />
     <RDialog.Content
       ref={ref}
       className={cn(

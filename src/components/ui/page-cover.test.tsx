@@ -286,6 +286,28 @@ describe("PageCover", () => {
     expect(screen.getByRole("dialog", { name: "Cover image" })).toBeVisible();
   });
 
+  it("delegates View to onViewCover instead of nesting a lightbox", async () => {
+    const user = userEvent.setup();
+    const onViewCover = vi.fn();
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+        onViewCover={onViewCover}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "View cover" }));
+
+    expect(onViewCover).toHaveBeenCalledExactlyOnceWith(
+      "https://example.com/cover.jpg",
+    );
+    expect(
+      screen.queryByRole("dialog", { name: "Cover image" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("does not open the lightbox for control clicks", async () => {
     const user = userEvent.setup();
     renderWithProviders(

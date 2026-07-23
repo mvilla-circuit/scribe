@@ -3,11 +3,13 @@ import { type ReactNode, useState } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { EditableText } from "@/components/ui/editable-text";
+import { ImageLightbox } from "@/components/ui/image-lightbox";
 import { AddCoverButton, PageCover } from "@/components/ui/page-cover";
 import { useDragResize } from "@/components/ui/use-drag-resize";
 import { SaveStatus } from "@/editor/save-status";
 import type { SaveState } from "@/editor/use-autosave";
 import { displayTitleStyle } from "@/fonts/display-title-style";
+import { cn } from "@/lib/utils";
 
 import { DatagridRowBody } from "./datagrid-row-body";
 import { DatagridRowBreadcrumbs } from "./datagrid-row-breadcrumbs";
@@ -85,11 +87,17 @@ function RowPanelContent({
   rowId,
   onClose,
   variant,
+  onViewCover,
 }: {
   datagridId: string;
   rowId: string;
   onClose: () => void;
   variant: PanelVariant;
+  /**
+   * When provided (row modal), View cover is lifted so the parent can show a
+   * single Dialog at a time instead of nesting ImageLightbox inside the modal.
+   */
+  onViewCover?: (src: string) => void;
 }) {
   const {
     row,
@@ -124,6 +132,7 @@ function RowPanelContent({
           onUpload={setCover}
           onRemove={clearCover}
           onPositionChange={setCoverPosition}
+          onViewCover={onViewCover}
         />
         <div className={styles.bodyClassName} data-testid="row-panel-body">
           {!coverUrl && (
@@ -177,26 +186,46 @@ export function DatagridRowModal({
   rowId: string;
   onClose: () => void;
 }) {
+  // Only one Dialog at a time: suspend the row modal (forceMount keeps the
+  // editor mounted) while the cover lightbox is open.
+  const [coverLightboxSrc, setCoverLightboxSrc] = useState<string | null>(null);
+  const coverLightboxOpen = coverLightboxSrc !== null;
+
   return (
-    <Dialog
-      open
-      onOpenChange={(o) => {
-        if (!o) onClose();
-      }}
-    >
-      <DialogContent
-        aria-describedby={undefined}
-        className="flex max-h-[85vh] w-[min(40rem,calc(100vw-2rem))] flex-col overflow-hidden p-0"
+    <>
+      <Dialog
+        open={!coverLightboxOpen}
+        onOpenChange={(o) => {
+          if (!o) onClose();
+        }}
       >
-        <RowPanelContent
-          key={rowId}
-          datagridId={datagridId}
-          rowId={rowId}
-          onClose={onClose}
-          variant="modal"
-        />
-      </DialogContent>
-    </Dialog>
+        <DialogContent
+          forceMount
+          aria-describedby={undefined}
+          className={cn(
+            "flex max-h-[85vh] w-[min(40rem,calc(100vw-2rem))] flex-col overflow-hidden p-0",
+            coverLightboxOpen && "hidden",
+          )}
+        >
+          <RowPanelContent
+            key={rowId}
+            datagridId={datagridId}
+            rowId={rowId}
+            onClose={onClose}
+            variant="modal"
+            onViewCover={setCoverLightboxSrc}
+          />
+        </DialogContent>
+      </Dialog>
+      <ImageLightbox
+        open={coverLightboxOpen}
+        onOpenChange={(open) => {
+          if (!open) setCoverLightboxSrc(null);
+        }}
+        src={coverLightboxSrc ?? ""}
+        alt="Page cover"
+      />
+    </>
   );
 }
 

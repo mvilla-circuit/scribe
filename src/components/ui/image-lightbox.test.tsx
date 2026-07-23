@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -39,7 +39,8 @@ describe("ImageLightbox", () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("closes when Escape is pressed", () => {
+  it("closes when Escape is pressed", async () => {
+    const user = userEvent.setup();
     const onOpenChange = vi.fn();
     renderWithProviders(
       <ImageLightbox
@@ -49,8 +50,36 @@ describe("ImageLightbox", () => {
       />,
     );
 
-    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    await user.keyboard("{Escape}");
 
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("closes when the backdrop overlay is clicked", async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    renderWithProviders(
+      <ImageLightbox
+        open
+        onOpenChange={onOpenChange}
+        src="https://example.com/cover.jpg"
+      />,
+    );
+
+    await user.click(screen.getByTestId("dialog-overlay"));
+
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("keeps content compact so the overlay remains the dismiss target", () => {
+    renderWithProviders(
+      <ImageLightbox
+        open
+        onOpenChange={vi.fn()}
+        src="https://example.com/cover.jpg"
+      />,
+    );
+
+    expect(screen.getByRole("dialog")).toHaveClass("w-auto", "bg-transparent");
   });
 });

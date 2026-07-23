@@ -1,4 +1,5 @@
 import { fireEvent, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { forwardRef, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -43,13 +44,25 @@ vi.mock("@/components/ui/page-cover", () => ({
   PageCover: ({
     coverUrl,
     onRemove,
+    onViewCover,
   }: {
     coverUrl: string | null;
     onRemove: () => void;
+    onViewCover?: (src: string) => void;
   }) =>
     coverUrl ? (
       <section aria-label="Page cover">
         <img src={coverUrl} alt="Page cover" />
+        {onViewCover ? (
+          <button
+            type="button"
+            onClick={() => {
+              onViewCover(coverUrl);
+            }}
+          >
+            View cover
+          </button>
+        ) : null}
         <button type="button" onClick={onRemove}>
           Remove cover
         </button>
@@ -167,6 +180,30 @@ describe("DatagridRowModal", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Close row" }));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("opens the cover lightbox as the only dialog", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <DatagridRowModal datagridId={DGID} rowId={ROWID} onClose={vi.fn()} />,
+      { client: seed("https://example.com/cover.jpg") },
+    );
+
+    await user.click(screen.getByRole("button", { name: "View cover" }));
+
+    const lightbox = screen.getByRole("dialog", { name: "Cover image" });
+    expect(lightbox).toBeVisible();
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    expect(
+      screen.queryByRole("textbox", { name: "Row title" }),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Close image" }));
+
+    expect(
+      screen.queryByRole("dialog", { name: "Cover image" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Row title" })).toBeVisible();
   });
 });
 
