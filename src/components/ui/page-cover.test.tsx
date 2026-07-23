@@ -49,7 +49,7 @@ describe("PageCover", () => {
     );
   });
 
-  it("styles Reposition and View like the existing icon cover controls", () => {
+  it("styles cover floating controls as compact inverted chrome", () => {
     renderWithProviders(
       <PageCover
         coverUrl="https://example.com/cover.jpg"
@@ -58,12 +58,38 @@ describe("PageCover", () => {
       />,
     );
 
-    for (const name of ["Reposition cover", "View cover", "Remove cover"]) {
-      expect(screen.getByRole("button", { name })).toHaveClass(
-        "bg-elevated",
-        "size-8",
-      );
+    for (const name of [
+      "Reposition cover",
+      "View cover",
+      "Change cover",
+      "Remove cover",
+    ]) {
+      expect(screen.getByRole("button", { name })).toHaveClass("bg-inverted");
     }
+    for (const name of ["Reposition cover", "View cover", "Remove cover"]) {
+      expect(screen.getByRole("button", { name })).toHaveClass("size-7");
+    }
+  });
+
+  it("keeps Save and Cancel readable inverted chips while repositioning", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <PageCover
+        coverUrl="https://example.com/cover.jpg"
+        onUpload={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Reposition cover" }));
+
+    expect(screen.getByRole("button", { name: "Save position" })).toHaveClass(
+      "bg-inverted",
+      "text-xs",
+    );
+    expect(
+      screen.getByRole("button", { name: "Cancel repositioning" }),
+    ).toHaveClass("bg-inverted", "text-xs");
   });
 
   it("removes the current cover", async () => {

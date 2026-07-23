@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import { makeIcon } from "@/lib/make-icon";
+import { cn } from "@/lib/utils";
 
 import {
   ContextMenu,
@@ -161,6 +162,7 @@ export function RowActionDropdown({
   label = "More actions",
   tooltipSide,
   onOpenChange,
+  triggerClassName,
 }: {
   actions: RowAction[];
   label?: string;
@@ -168,6 +170,8 @@ export function RowActionDropdown({
   tooltipSide?: ComponentProps<typeof Tooltip>["side"];
   /** Fired when the dropdown opens or closes (e.g. to keep a hover chip visible). */
   onOpenChange?: (open: boolean) => void;
+  /** Override classes for the more-actions trigger (e.g. inverted cover chrome). */
+  triggerClassName?: string;
 }) {
   return (
     <DropdownMenu onOpenChange={onOpenChange}>
@@ -183,7 +187,10 @@ export function RowActionDropdown({
             onPointerDown={(e) => {
               e.stopPropagation();
             }}
-            className="flex h-6 w-6 items-center justify-center rounded text-muted outline-none hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-hover data-[state=open]:text-text"
+            className={cn(
+              "flex h-6 w-6 items-center justify-center rounded text-muted outline-none hover:bg-hover hover:text-text focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-hover data-[state=open]:text-text",
+              triggerClassName,
+            )}
           >
             <MoreIcon size={15} />
           </button>

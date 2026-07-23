@@ -11,16 +11,17 @@ import {
 import { COVER_IMAGE_ACCEPT } from "@/data/cover-upload";
 import { cn } from "@/lib/utils";
 
-import { Button } from "./button";
+import {
+  COVER_FLOATING_CONTROL_CLASS,
+  COVER_FLOATING_ICON_CLASS,
+  COVER_FLOATING_LABEL_CLASS,
+} from "./cover-floating-control";
 import { ImageLightbox } from "./image-lightbox";
 import { Tooltip } from "./tooltip";
 
 /** Shared hover-pill styles matching Masthead's "Add icon" affordance. */
 const ADD_AFFORDANCE_CLASS =
   "inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm text-muted opacity-0 outline-none transition-opacity hover:bg-hover hover:text-text focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring group-hover/masthead:opacity-100 disabled:opacity-60";
-
-const COVER_CONTROL_CLASS =
-  "inline-flex items-center justify-center rounded-md bg-elevated text-muted shadow-popover outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60";
 
 function clampCoverPosition(value: number): number {
   return Math.min(100, Math.max(0, value));
@@ -101,9 +102,12 @@ function CoverControl({
             event.stopPropagation();
             onReposition();
           }}
-          className={cn(COVER_CONTROL_CLASS, "size-8 hover:text-text")}
+          className={cn(
+            COVER_FLOATING_CONTROL_CLASS,
+            COVER_FLOATING_ICON_CLASS,
+          )}
         >
-          <MoveVertical className="size-4" aria-hidden="true" />
+          <MoveVertical className="size-3.5" aria-hidden="true" />
         </button>
       </Tooltip>
       <Tooltip content="View cover">
@@ -114,9 +118,12 @@ function CoverControl({
             event.stopPropagation();
             onView();
           }}
-          className={cn(COVER_CONTROL_CLASS, "size-8 hover:text-text")}
+          className={cn(
+            COVER_FLOATING_CONTROL_CLASS,
+            COVER_FLOATING_ICON_CLASS,
+          )}
         >
-          <Maximize2 className="size-4" aria-hidden="true" />
+          <Maximize2 className="size-3.5" aria-hidden="true" />
         </button>
       </Tooltip>
       <Tooltip content="Change cover">
@@ -129,11 +136,11 @@ function CoverControl({
           }}
           disabled={isUploading}
           className={cn(
-            COVER_CONTROL_CLASS,
-            "gap-1.5 px-2.5 py-1.5 text-sm font-medium hover:text-text",
+            COVER_FLOATING_CONTROL_CLASS,
+            COVER_FLOATING_LABEL_CLASS,
           )}
         >
-          <ImagePlus className="size-4" aria-hidden="true" />
+          <ImagePlus className="size-3.5" aria-hidden="true" />
           {isUploading ? "Uploading…" : "Change cover"}
         </button>
       </Tooltip>
@@ -146,9 +153,13 @@ function CoverControl({
             onRemove();
           }}
           disabled={isUploading}
-          className={cn(COVER_CONTROL_CLASS, "size-8 hover:text-danger")}
+          className={cn(
+            COVER_FLOATING_CONTROL_CLASS,
+            COVER_FLOATING_ICON_CLASS,
+            "hover:text-danger",
+          )}
         >
-          <X className="size-4" aria-hidden="true" />
+          <X className="size-3.5" aria-hidden="true" />
         </button>
       </Tooltip>
     </div>
@@ -339,17 +350,30 @@ export function PageCover({
           <p className="sr-only" aria-live="polite">
             Drag to adjust cover position
           </p>
-          <div className="absolute right-4 top-4 flex gap-2">
-            <Button aria-label="Save position" onClick={savePosition}>
+          <div className="absolute right-4 top-4 z-10 flex gap-1">
+            <button
+              type="button"
+              aria-label="Save position"
+              onClick={savePosition}
+              className={cn(
+                COVER_FLOATING_CONTROL_CLASS,
+                COVER_FLOATING_LABEL_CLASS,
+              )}
+            >
               Save
-            </Button>
-            <Button
+            </button>
+            <button
+              type="button"
               aria-label="Cancel repositioning"
-              variant="ghost"
               onClick={cancelRepositioning}
+              className={cn(
+                COVER_FLOATING_CONTROL_CLASS,
+                COVER_FLOATING_LABEL_CLASS,
+                "text-inverted-text/70 hover:text-inverted-text",
+              )}
             >
               Cancel
-            </Button>
+            </button>
           </div>
         </>
       ) : (

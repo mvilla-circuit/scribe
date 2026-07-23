@@ -3,6 +3,10 @@ import { type ChangeEvent, useMemo, useRef, useState } from "react";
 
 import { DatagridIcon, TrashIcon } from "@/components/sidebar/icons";
 import { CoverCard } from "@/components/ui/cover-card";
+import {
+  COVER_FLOATING_CONTROL_CLASS,
+  COVER_FLOATING_ICON_CLASS,
+} from "@/components/ui/cover-floating-control";
 import { DashedAddTile } from "@/components/ui/dashed-add-tile";
 import { type RowAction } from "@/components/ui/row-action-menu";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -73,11 +77,11 @@ function GalleryCoverUpload({
             inputRef.current?.click();
           }}
           className={cn(
-            "inline-flex size-8 items-center justify-center rounded-md bg-elevated text-muted shadow-popover outline-none",
-            "hover:text-text focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60",
+            COVER_FLOATING_CONTROL_CLASS,
+            COVER_FLOATING_ICON_CLASS,
           )}
         >
-          <ImagePlus className="size-4" aria-hidden="true" />
+          <ImagePlus className="size-3.5" aria-hidden="true" />
         </button>
       </Tooltip>
       <input

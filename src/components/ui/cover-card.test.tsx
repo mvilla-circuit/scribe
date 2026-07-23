@@ -126,7 +126,7 @@ describe("CoverCard", () => {
     );
 
     const chip = screen.getByTestId("cover-card-actions");
-    expect(chip).toHaveClass("bg-elevated", "border-border");
+    expect(chip).toHaveClass("bg-inverted");
     expect(
       screen.getByRole("button", { name: "Actions for A Crown So Heavy" }),
     ).toBeInTheDocument();

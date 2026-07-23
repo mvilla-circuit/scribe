@@ -1,5 +1,6 @@
 import { memo, type ReactNode, useState } from "react";
 
+import { COVER_FLOATING_CONTROL_CLASS } from "@/components/ui/cover-floating-control";
 import { DocumentIcon } from "@/components/ui/document-icon";
 import {
   type RowAction,
@@ -144,7 +145,8 @@ function CoverCardActions({
     <div
       data-testid="cover-card-actions"
       className={cn(
-        "absolute right-1.5 top-1.5 rounded-md border border-border bg-elevated text-text shadow-popover transition-opacity motion-reduce:transition-none",
+        "absolute right-1.5 top-1.5 transition-opacity motion-reduce:transition-none",
+        COVER_FLOATING_CONTROL_CLASS,
         menuOpen
           ? "opacity-100"
           : "opacity-0 focus-within:opacity-100 group-hover:opacity-100",
@@ -154,6 +156,7 @@ function CoverCardActions({
         actions={actions}
         label={`Actions for ${label}`}
         onOpenChange={setMenuOpen}
+        triggerClassName="text-inverted-text/85 hover:bg-transparent hover:text-inverted-text data-[state=open]:bg-transparent data-[state=open]:text-inverted-text"
       />
     </div>
   );

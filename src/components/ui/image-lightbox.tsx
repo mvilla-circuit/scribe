@@ -2,8 +2,11 @@ import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+import {
+  COVER_FLOATING_CONTROL_CLASS,
+  COVER_FLOATING_ICON_CLASS,
+} from "./cover-floating-control";
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "./dialog";
-import { IconButton } from "./icon-button";
 import { Tooltip } from "./tooltip";
 
 export interface ImageLightboxProps {
@@ -45,13 +48,17 @@ export function ImageLightbox({
         />
         <Tooltip content="Close image">
           <DialogClose asChild>
-            <IconButton
-              label="Close image"
-              tooltip={false}
-              className="absolute right-2 top-2 bg-elevated shadow-popover hover:bg-hover"
+            <button
+              type="button"
+              aria-label="Close image"
+              className={cn(
+                COVER_FLOATING_CONTROL_CLASS,
+                COVER_FLOATING_ICON_CLASS,
+                "absolute right-2 top-2",
+              )}
             >
-              <X className="size-4" aria-hidden="true" />
-            </IconButton>
+              <X className="size-3.5" aria-hidden="true" />
+            </button>
           </DialogClose>
         </Tooltip>
       </DialogContent>
