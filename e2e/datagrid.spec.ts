@@ -62,9 +62,9 @@ test.describe("datagrid", () => {
     const collectionRow = authedPage.getByRole("treeitem", { name: /Data/ });
     await expect(collectionRow).toBeVisible();
 
-    // Create settle inserts the default view, then invalidates views so a
-    // mid-flight empty GET cannot leave the page without an active view.
-    // Wait for a non-empty views GET (post-heal) before switching Layout.
+    // Wait for the default-view INSERT. Settle only refetches views when the
+    // optimistic seed was wiped — when the seed survives (the common case),
+    // there is no heal GET to wait for.
     const defaultViewInserted = authedPage.waitForResponse((response) => {
       const request = response.request();
       return (
@@ -72,22 +72,6 @@ test.describe("datagrid", () => {
         request.url().includes("/rest/v1/datagrid_views") &&
         response.ok()
       );
-    });
-    const viewsHealed = authedPage.waitForResponse(async (response) => {
-      const request = response.request();
-      if (
-        request.method() !== "GET" ||
-        !request.url().includes("/rest/v1/datagrid_views") ||
-        !response.ok()
-      ) {
-        return false;
-      }
-      try {
-        const body: unknown = await response.json();
-        return Array.isArray(body) && body.length > 0;
-      } catch {
-        return false;
-      }
     });
 
     await collectionRow.hover();
@@ -97,7 +81,6 @@ test.describe("datagrid", () => {
     await expect(authedPage.getByText("This datagrid is empty")).toBeVisible();
     await authedPage.keyboard.press("Enter");
     await defaultViewInserted;
-    await viewsHealed;
 
     // Layout lives under View options → Layout submenu.
     await authedPage.getByRole("button", { name: "View options" }).click();
@@ -131,7 +114,7 @@ test.describe("datagrid", () => {
 });
 
 // Seeded datagrid: layout-switch regression with a pre-existing view/row.
-// Create-flow coverage lives above; settle now invalidates views.
+// Create-flow coverage lives above; settle heals views only when wiped.
 test.describe("datagrid with seeded data", () => {
   test.use({
     seed: {
