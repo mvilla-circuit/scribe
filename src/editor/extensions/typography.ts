@@ -13,7 +13,14 @@ import { Extension, textInputRule } from "@tiptap/core";
 //
 // `--` → em dash (—). StarterKit's horizontal-rule rule also matches "—-", so
 // typing a third dash right after the conversion still yields a divider, and
-// the familiar `---` shortcut keeps working.
+// the familiar `---` shortcut keeps working. That interaction is untouched by
+// the glyph rules below.
+//
+// Arrows, ellipsis, plus-minus, and (tm)/(c)/(r) glyphs are handled the same
+// way, driven by the GLYPH_RULES table below. One entry needs a repair pass:
+// typing `<->` fires the `<-$` rule the moment the second character lands
+// (leaving `←`), so the trailing `>` sees `←>` rather than `<->` and needs its
+// own `/←>$/` rule to finish as `↔`.
 //
 // Straight quotes → curly "typographer's" quotes. Owning this in ProseMirror is
 // also what keeps the caret honest: when the OS's own smart-quote substitution
@@ -31,12 +38,28 @@ const OPEN_SINGLE = "\u2018"; // ‘
 const CLOSE_SINGLE = "\u2019"; // ’
 const QUOTE_BOUNDARY = "[\\s{[(<'\"\u2018\u201C]";
 
+// Non-quote glyph substitutions. Listed longest-/repair-first for clarity;
+// the `$`-anchored patterns here do not compete with each other.
+const GLYPH_RULES: { find: RegExp; replace: string }[] = [
+  { find: /<->$/, replace: "↔" }, // pasted/multi-char chunk, e.g. IME or paste
+  { find: /←>$/, replace: "↔" }, // repair: `<-` already fired on keystroke 2 of `<->`
+  { find: /<-$/, replace: "←" },
+  { find: /->$/, replace: "→" },
+  { find: /=>$/, replace: "⇒" },
+  { find: /\.\.\.$/, replace: "…" },
+  { find: /\+-$/, replace: "±" },
+  { find: /\(tm\)$/i, replace: "™" },
+  { find: /\(c\)$/i, replace: "©" },
+  { find: /\(r\)$/i, replace: "®" },
+  { find: /--$/, replace: "—" },
+];
+
 export const Typography = Extension.create({
   name: "scribeTypography",
 
   addInputRules() {
     return [
-      textInputRule({ find: /--$/, replace: "—" }),
+      ...GLYPH_RULES.map((r) => textInputRule(r)),
       // Open rules require a leading boundary and must come before the catch-all
       // close rules, since the input-rule runner applies the first match.
       textInputRule({

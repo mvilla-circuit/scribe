@@ -28,12 +28,17 @@ function mount(text: string): Editor {
 // Drive the real input-rule pipeline the way ProseMirror does on a keystroke:
 // the `inputRules` plugin exposes `handleTextInput`, which inspects the text
 // before the caret plus the new character and applies the first matching rule.
+// If no rule claims the character, insert it — matching the editor's fallback
+// path so multi-keystroke sequences (e.g. `->`, `<->`) can build up.
 function typeChar(char: string): void {
   const { view } = editor;
   const { from, to } = view.state.selection;
-  view.someProp("handleTextInput", (handler) =>
+  const handled = view.someProp("handleTextInput", (handler) =>
     handler(view, from, to, char, () => view.state.tr),
   );
+  if (!handled) {
+    view.dispatch(view.state.tr.insertText(char, from, to));
+  }
 }
 
 afterEach(() => {
@@ -75,5 +80,82 @@ describe("Typography smart quotes", () => {
     mount("a-");
     typeChar("-");
     expect(editor.state.doc.textContent).toBe("a—");
+  });
+});
+
+describe("Typography glyph substitutions", () => {
+  it("converts -> to right arrow", () => {
+    mount("a");
+    typeChar("-");
+    typeChar(">");
+    expect(editor.state.doc.textContent).toBe("a→");
+  });
+
+  it("converts <- to left arrow", () => {
+    mount("");
+    typeChar("<");
+    typeChar("-");
+    expect(editor.state.doc.textContent).toBe("←");
+  });
+
+  it("converts sequential <-> to bidirectional arrow", () => {
+    mount("");
+    // <- fires mid-way and converts to ←, then the trailing > must repair
+    // that into the bidirectional arrow rather than leaving "←>" behind.
+    typeChar("<");
+    typeChar("-");
+    typeChar(">");
+    expect(editor.state.doc.textContent).toBe("↔");
+  });
+
+  it("converts => to double right arrow", () => {
+    mount("");
+    typeChar("=");
+    typeChar(">");
+    expect(editor.state.doc.textContent).toBe("⇒");
+  });
+
+  it("converts ... to ellipsis", () => {
+    mount("");
+    typeChar(".");
+    typeChar(".");
+    typeChar(".");
+    expect(editor.state.doc.textContent).toBe("…");
+  });
+
+  it("converts +- to plus-minus", () => {
+    mount("");
+    typeChar("+");
+    typeChar("-");
+    expect(editor.state.doc.textContent).toBe("±");
+  });
+
+  it.each([
+    { input: "(c)", expected: "©" },
+    { input: "(C)", expected: "©" },
+    { input: "(r)", expected: "®" },
+    { input: "(tm)", expected: "™" },
+    { input: "(TM)", expected: "™" },
+  ])(
+    "converts $input to $expected case-insensitively",
+    ({ input, expected }) => {
+      mount("");
+      for (const char of input) {
+        typeChar(char);
+      }
+      expect(editor.state.doc.textContent).toBe(expected);
+    },
+  );
+
+  it("keeps --- as horizontal rule", () => {
+    mount("");
+    // "--" converts to an em dash first; the third "-" must still trigger
+    // StarterKit's horizontal-rule rule rather than leaving stray text.
+    typeChar("-");
+    typeChar("-");
+    typeChar("-");
+    expect(JSON.stringify(editor.getJSON())).toContain(
+      '"type":"horizontalRule"',
+    );
   });
 });
